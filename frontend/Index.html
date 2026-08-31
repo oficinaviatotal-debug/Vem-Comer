@@ -1,1 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <title>Vem Comer</title>
+  <link rel="stylesheet" href="./src/styles.css">
+</head>
+<body>
+  <header class="header">
+    <h1>Vem Comer</h1>
+    <p>Comida boa, pedido fácil.</p>
+  </header>
 
+  <main>
+    <section class="search">
+      <input
+        id="search"
+        type="search"
+        placeholder="O que você quer comer?"
+      >
+    </section>
+
+    <section>
+      <h2>Restaurantes</h2>
+
+      <article class="restaurant">
+        <h3>Restaurante Exemplo</h3>
+        <p>🍔 Hambúrguer • 🥤 Bebidas</p>
+        <p class="status">Aberto</p>
+
+        <button onclick="openMenu()">
+          Ver cardápio
+        </button>
+      </article>
+    </section>
+
+    <section id="feedback" class="feedback hidden">
+      <h2>Como foi sua experiência?</h2>
+
+      <button onclick="sendFeedback('comida_boa')">
+        Comida boa
+      </button>
+
+      <button onclick="sendFeedback('faltou_sal')">
+        Faltou sal
+      </button>
+
+      <button onclick="sendFeedback('muito_sal')">
+        Muito sal
+      </button>
+
+      <button onclick="sendFeedback('atendimento_bom')">
+        Atendeu bem
+      </button>
+
+      <button onclick="sendFeedback('atendimento_ruim')">
+        Poderia atender melhor
+      </button>
+
+      <button onclick="sendFeedback('pedido_rapido')">
+        Pedido rápido
+      </button>
+
+      <button onclick="sendFeedback('pedido_demorado')">
+        Pedido demorou
+      </button>
+
+      <textarea
+        id="comment"
+        placeholder="Quer contar mais alguma coisa?"
+      ></textarea>
+
+      <button onclick="sendFeedback('comentario')">
+        Enviar comentário
+      </button>
+    </section>
+  </main>
+
+  <script src="./src/app.js"></script>
+</body>
+</html>
