@@ -7,6 +7,7 @@
   <title>Vem Comer</title>
   <link rel="stylesheet" href="./src/styles.css">
 </head>
+
 <body>
   <header class="header">
     <h1>Vem Comer</h1>
@@ -15,62 +16,41 @@
 
   <main>
     <section class="search">
-      <input
-        id="search"
-        type="search"
-        placeholder="O que você quer comer?"
-      >
+      <input id="search" type="search" placeholder="O que você quer comer?">
     </section>
 
     <section>
-      <h2>Restaurantes</h2>
+      <h2>Restaurante Exemplo</h2>
+      <p class="status">● Aberto</p>
 
-      <article class="restaurant">
-        <h3>Restaurante Exemplo</h3>
-        <p>🍔 Hambúrguer • 🥤 Bebidas</p>
-        <p class="status">Aberto</p>
+      <div id="menu"></div>
+    </section>
 
-        <button onclick="openMenu()">
-          Ver cardápio
-        </button>
-      </article>
+    <section id="cart" class="cart">
+      <h2>Seu pedido</h2>
+      <div id="cartItems"></div>
+
+      <div class="total">
+        Total: R$ <span id="total">0,00</span>
+      </div>
+
+      <button id="checkout" onclick="checkout()" disabled>
+        Finalizar pedido
+      </button>
     </section>
 
     <section id="feedback" class="feedback hidden">
       <h2>Como foi sua experiência?</h2>
 
-      <button onclick="sendFeedback('comida_boa')">
-        Comida boa
-      </button>
+      <button onclick="sendFeedback('comida_boa')">👍 Comida boa</button>
+      <button onclick="sendFeedback('faltou_sal')">🧂 Faltou sal</button>
+      <button onclick="sendFeedback('muito_sal')">🧂 Muito sal</button>
+      <button onclick="sendFeedback('atendimento_bom')">😊 Atendeu bem</button>
+      <button onclick="sendFeedback('atendimento_ruim')">😕 Poderia atender melhor</button>
+      <button onclick="sendFeedback('pedido_rapido')">⚡ Pedido rápido</button>
+      <button onclick="sendFeedback('pedido_demorado')">🕐 Pedido demorou</button>
 
-      <button onclick="sendFeedback('faltou_sal')">
-        Faltou sal
-      </button>
-
-      <button onclick="sendFeedback('muito_sal')">
-        Muito sal
-      </button>
-
-      <button onclick="sendFeedback('atendimento_bom')">
-        Atendeu bem
-      </button>
-
-      <button onclick="sendFeedback('atendimento_ruim')">
-        Poderia atender melhor
-      </button>
-
-      <button onclick="sendFeedback('pedido_rapido')">
-        Pedido rápido
-      </button>
-
-      <button onclick="sendFeedback('pedido_demorado')">
-        Pedido demorou
-      </button>
-
-      <textarea
-        id="comment"
-        placeholder="Quer contar mais alguma coisa?"
-      ></textarea>
+      <textarea id="comment" placeholder="Quer contar mais alguma coisa?"></textarea>
 
       <button onclick="sendFeedback('comentario')">
         Enviar comentário
