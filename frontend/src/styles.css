@@ -1,0 +1,75 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f7f7f7;
+  color: #222;
+}
+
+.header {
+  padding: 24px;
+  text-align: center;
+  background: white;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.header p {
+  margin-bottom: 0;
+}
+
+main {
+  width: min(600px, 100%);
+  margin: auto;
+  padding: 16px;
+}
+
+.search input {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+.restaurant,
+.feedback {
+  background: white;
+  padding: 20px;
+  margin-top: 16px;
+  border-radius: 16px;
+}
+
+.status {
+  font-weight: bold;
+}
+
+button {
+  width: 100%;
+  padding: 15px;
+  margin-top: 10px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 100px;
+  margin-top: 15px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  resize: vertical;
+}
+
+.hidden {
+  display: none;
+}
