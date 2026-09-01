@@ -45,6 +45,7 @@ export default function App() {
   const [deliveryRating, setDeliveryRating] = useState("rapido");
   const [comment, setComment] = useState("");
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [orderMessage, setOrderMessage] = useState("");
 
   useEffect(() => {
     async function loadData() {
@@ -54,13 +55,10 @@ export default function App() {
           fetch(`${API_URL}/companies/${COMPANY_ID}/products`),
           fetch(`${API_URL}/companies/${COMPANY_ID}/menus`)
         ]);
-
         if (!companyRes.ok || !productsRes.ok || !menusRes.ok) throw new Error();
-
         const companyData = await companyRes.json();
         const productsData = await productsRes.json();
         const menusData = await menusRes.json();
-
         setCompany(companyData);
         setProducts(Array.isArray(productsData) ? productsData : []);
         setMenus(Array.isArray(menusData) ? menusData : []);
@@ -70,7 +68,6 @@ export default function App() {
         setLoading(false);
       }
     }
-
     loadData();
   }, []);
 
@@ -94,6 +91,25 @@ export default function App() {
     );
   }
 
+  async function handleOrderSubmit() {
+    try {
+      const response = await fetch(`${API_URL}/companies/${COMPANY_ID}/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer_name: "Cliente Balcão",
+          total_price: cartTotal,
+          items: cart
+        })
+      });
+      if (!response.ok) throw new Error();
+      setOrderMessage("Pedido realizado com sucesso!");
+      setCart([]);
+    } catch {
+      setOrderMessage("Erro ao fechar o pedido. Tente novamente.");
+    }
+  }
+
   async function handleFeedbackSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -107,9 +123,7 @@ export default function App() {
           comment: comment,
         }),
       });
-
       if (!response.ok) throw new Error();
-
       setFeedbackMessage("Avaliação enviada com sucesso! Obrigado.");
       setComment("");
     } catch {
@@ -148,6 +162,7 @@ export default function App() {
           </nav>
         </div>
       </header>
+
       <main className="main-content">
         <section className="hero-section" aria-labelledby="hero-title">
           <h1 id="hero-title">Encontre o que você quer comer</h1>
@@ -246,7 +261,8 @@ export default function App() {
               <p className="cart-panel__total" style={{ fontSize: '1.25rem', margin: '1.5rem 0' }}>
                 <strong>Total: R$ {cartTotal.toFixed(2)}</strong>
               </p>
-              <button className="button-action" type="button" style={{ width: '100%' }}>Continuar pedido</button>
+              <button className="button-action" type="button" style={{ width: '100%' }} onClick={handleOrderSubmit}>Continuar pedido</button>
+              {orderMessage && <p style={{ textAlign: 'center', fontWeight: 600, color: 'var(--color-accent)', marginTop: '1rem' }} role="status">{orderMessage}</p>}
             </>
           )}
         </aside>

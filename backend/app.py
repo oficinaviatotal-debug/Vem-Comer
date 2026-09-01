@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from psycopg2.extras import RealDictCursor
 from db import query_db, get_db_connection
 
 app = Flask(__name__)
@@ -97,33 +98,41 @@ def create_company_order(company_id):
         total_price = data.get('total_price', 0)
         
         if not cart_items:
-            return jsonify({"error": "O carrinho está vazio"}), 400
+            return jsonify({"error": "O carrinho esta vazio"}), 400
             
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # 1. Insere o pedido mestre e retorna o ID gerado
         cur.execute(
             "INSERT INTO orders (company_id, customer_name, total_price) VALUES (%s, %s, %s) RETURNING id;",
             (str(company_id), customer_name, total_price)
         )
-        order_id = cur.fetchone()[0]
+        order_row = cur.fetchone()
+        order_id = order_row['id']
         
-        # 2. Insere todos os itens vinculados ao ID do pedido
         for item in cart_items:
+            product_id = item.get('id')
+            quantity = item.get('quantity', 1)
+            price = item.get('price')
+            
+            if price is None:
+                cur.execute("SELECT price FROM products WHERE id = %s;", (str(product_id),))
+                prod_row = cur.fetchone()
+                # Lê usando a chave do dicionário de forma segura
+                price = prod_row['price'] if prod_row else 0
+                
             cur.execute(
                 "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (%s, %s, %s, %s);",
-                (str(order_id), str(item.get('id')), item.get('quantity'), item.get('price'))
+                (str(order_id), str(product_id), int(quantity), float(price))
             )
             
         conn.commit()
         cur.close()
         conn.close()
         
-        return jsonify({"message": "Pedido realizado com sucesso", "order_id": order_id}), 201
+        return jsonify({"message": "Pedido realizado com sucesso", "order_id": str(order_id)}), 201
     except Exception as e:
         return jsonify({"error": "Erro interno ao processar pedido", "details": str(e)}), 500
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
