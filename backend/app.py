@@ -3,7 +3,7 @@ from flask_cors import CORS
 from db import query_db
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -20,10 +20,8 @@ def get_company(company_id):
             (str(company_id),), 
             one=True
         )
-        
         if not company:
             return jsonify({"error": "Estabelecimento não encontrado"}), 404
-            
         return jsonify(company), 200
     except Exception as e:
         return jsonify({"error": "Erro interno no servidor", "details": str(e)}), 500

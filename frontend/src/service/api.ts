@@ -1,4 +1,4 @@
-const API_URL = "https://organic-space-winner-vxprqwv646vhrvp-5000.app.github.dev/api/companies/e63e3538-e71e-4921-baa7-c4ce755a27ed";
+const API_URL = 'https://github.dev';
 
 export async function fetchCompany(companyId: string) {
   const response = await fetch(`${API_URL}/companies/${companyId}`);

@@ -1,0 +1,312 @@
+:root {
+  --bg-primary: #fcfbfa;
+  --bg-secondary: #f4f2ee;
+  --text-main: #1a1917;
+  --text-muted: #615f5c;
+  --color-accent: #d44d26;
+  --color-accent-hover: #b03917;
+  --border-color: #e4e2de;
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --transition-bezier: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #fcfbfa;
+  color: #1a1917;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.main-header {
+  border-bottom: 1px solid var(--border-color);
+  background-color: rgba(252, 251, 250, 0.8);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.main-header__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.25rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.main-header__logo {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-decoration: none;
+  letter-spacing: -0.03em;
+}
+
+.main-header__nav {
+  display: flex;
+  gap: 2rem;
+}
+
+.main-header__nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: color 0.2s var(--transition-bezier);
+}
+
+.main-header__nav a:hover {
+  color: var(--text-main);
+}
+
+.main-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.hero-section {
+  padding: clamp(3rem, 8vh, 6rem) 0;
+  max-width: 680px;
+}
+
+.hero-section h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 1.5rem;
+}
+
+.hero-section__subtitle {
+  font-size: clamp(1.1rem, 2vw, 1.25rem);
+  color: var(--text-muted);
+  margin-bottom: 2.5rem;
+}
+
+.search-form {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 500px;
+}
+
+.search-form__input {
+  flex: 1;
+  padding: 0.875rem 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  background-color: var(--bg-secondary);
+  color: var(--text-main);
+  transition: all 0.3s var(--transition-bezier);
+}
+
+.search-form__input:focus {
+  outline: none;
+  border-color: var(--text-main);
+  background-color: #ffffff;
+}
+
+.button-action {
+  background-color: var(--text-main);
+  color: #ffffff;
+  border: none;
+  padding: 0.875rem 1.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s var(--transition-bezier);
+}
+
+.button-action:hover {
+  background-color: var(--color-accent);
+}
+
+.menu-section, .feedback-section {
+  padding: 4rem 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.menu-section h2, .feedback-section h2 {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 2.5rem;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+}
+
+.product-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.5rem;
+  transition: all 0.3s var(--transition-bezier);
+}
+
+.product-card:hover {
+  border-color: var(--border-color);
+  background-color: #ffffff;
+  box-shadow: 0 12px 24px rgba(26, 25, 23, 0.04);
+  transform: translateY(-2px);
+}
+
+.product-card__title {
+  font-family: var(--font-sans);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.product-card__description {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  overflow-wrap: break-word;
+}
+
+.product-card__actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+.product-card__price {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.feedback-section__intro {
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+}
+
+.feedback-form {
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.feedback-form__group {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.feedback-form__group legend {
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0 0.5rem;
+  color: var(--text-muted);
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.radio-label input[type="radio"] {
+  accent-color: var(--color-accent);
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.feedback-form__comment {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.feedback-form__comment label {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.feedback-form__comment textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  background-color: var(--bg-secondary);
+  resize: vertical;
+  transition: all 0.3s var(--transition-bezier);
+}
+
+.feedback-form__comment textarea:focus {
+  outline: none;
+  border-color: var(--text-main);
+  background-color: #ffffff;
+}
+
+.button-action--wide {
+  width: 100%;
+}
+
+.form-status {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-align: center;
+}
+
+.main-footer {
+  text-align: center;
+  padding: 4rem 2rem;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.loading-state, .error-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+}
