@@ -4,7 +4,6 @@ from db import query_db, get_db_connection
 
 app = Flask(__name__)
 
-# Configuração irrestrita para aceitar qualquer método e cabeçalho de fora
 CORS(app, resources={r"/*": {
     "origins": "*",
     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -77,6 +76,17 @@ def create_feedback(company_id):
         return jsonify({"message": "Feedback salvo com sucesso"}), 201
     except Exception as e:
         return jsonify({"error": "Erro ao salvar feedback", "details": str(e)}), 500
+
+@app.route('/api/companies/<uuid:company_id>/menus', methods=['GET'])
+def get_company_menus(company_id):
+    try:
+        menus = query_db(
+            "SELECT id, company_id, name, active FROM menus WHERE company_id = %s AND active = TRUE;",
+            (str(company_id),)
+        )
+        return jsonify(menus), 200
+    except Exception as e:
+        return jsonify({"error": "Erro interno ao buscar categorias", "details": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
