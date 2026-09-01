@@ -2,6 +2,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -9,17 +13,31 @@ body {
   color: #222;
 }
 
+a {
+  color: inherit;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
 .site-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: 24px;
   padding: 16px 24px;
   background: #fff;
   border-bottom: 1px solid #ddd;
 }
 
 .site-header__logo {
-  color: inherit;
   font-size: 24px;
   font-weight: 700;
   text-decoration: none;
@@ -30,95 +48,49 @@ body {
   gap: 16px;
 }
 
-.site-header__nav a {
-  color: inherit;
-  text-decoration: none;
-}
-
-main {
-  width: min(100% - 32px, 900px);
+.hero,
+#cardapio {
+  width: min(100% - 32px, 1000px);
   margin: 0 auto;
 }
 
 .hero {
-  padding: 48px 0;
+  padding: 48px 0 32px;
 }
 
 .hero h1 {
-  max-width: 700px;
-  margin-bottom: 12px;
+  margin: 0 0 12px;
   font-size: clamp(32px, 6vw, 52px);
 }
 
-.search-form {
+.menu {
   display: grid;
-  gap: 8px;
-  max-width: 600px;
-  margin-top: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  padding-bottom: 48px;
 }
 
-.search-form label,
-.feedback label {
-  font-weight: 600;
-}
-
-.search-form input,
-.feedback textarea {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid #bbb;
-  border-radius: 8px;
-  font: inherit;
-}
-
-.btn-primary {
-  padding: 14px 20px;
-  border: 0;
-  border-radius: 8px;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.restaurants,
-.feedback {
-  padding: 32px 0;
-}
-
-.restaurant-card {
-  padding: 24px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-}
-
-.restaurant-card__status {
-  font-weight: 700;
-}
-
-.feedback form {
-  display: grid;
-  gap: 20px;
-  padding: 24px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-}
-
-.feedback fieldset {
+.product-card {
   display: grid;
   gap: 12px;
+  padding: 20px;
+  background: #fff;
   border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
-.feedback__message {
-  min-height: 24px;
-  margin-top: 16px;
+.product-card h3,
+.product-card p {
+  margin: 0;
+}
+
+.product-card button {
+  padding: 14px;
+  border: 0;
+  border-radius: 8px;
 }
 
 .site-footer {
-  margin-top: 48px;
   padding: 24px;
   text-align: center;
   background: #fff;
@@ -129,7 +101,6 @@ main {
   .site-header {
     align-items: flex-start;
     flex-direction: column;
-    gap: 12px;
   }
 
   .site-header__nav {
