@@ -3,25 +3,21 @@ from flask_cors import CORS
 from db import query_db
 
 app = Flask(__name__)
-# Permite que o frontend React acesse a API sem erros de CORS
 CORS(app)
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """Rota de validação operacional da API."""
     return jsonify({
         "status": "ok",
         "service": "vem-comer-api"
     }), 200
 
-@app.route('/api/companies/<company_id>', methods=['GET'])
+@app.route('/api/companies/<uuid:company_id>', methods=['GET'])
 def get_company(company_id):
-    """Busca os dados públicos de uma empresa específica (Multiempresa)."""
     try:
-        # Consulta segura contra SQL Injection usando tupla de argumentos
         company = query_db(
-            "SELECT id, name, slug, logo_url FROM companies WHERE id = %s;", 
-            (company_id,), 
+            "SELECT id, name, slug FROM companies WHERE id = %s;", 
+            (str(company_id),), 
             one=True
         )
         
@@ -32,6 +28,27 @@ def get_company(company_id):
     except Exception as e:
         return jsonify({"error": "Erro interno no servidor", "details": str(e)}), 500
 
+@app.route('/api/companies/<uuid:company_id>/users', methods=['GET'])
+def get_company_users(company_id):
+    try:
+        users = query_db(
+            "SELECT id, company_id, name, email, role FROM users WHERE company_id = %s;",
+            (str(company_id),)
+        )
+        return jsonify(users), 200
+    except Exception as e:
+        return jsonify({"error": "Erro interno ao buscar usuários", "details": str(e)}), 500
+
+@app.route('/api/companies/<uuid:company_id>/products', methods=['GET'])
+def get_company_products(company_id):
+    try:
+        products = query_db(
+            "SELECT id, company_id, name, description, price FROM products WHERE company_id = %s;",
+            (str(company_id),)
+        )
+        return jsonify(products), 200
+    except Exception as e:
+        return jsonify({"error": "Erro interno ao buscar produtos", "details": str(e)}), 500
+
 if __name__ == '__main__':
-    # Roda o servidor Flask na porta 5000 acessível pelo Codespaces
     app.run(host='0.0.0.0', port=5000)

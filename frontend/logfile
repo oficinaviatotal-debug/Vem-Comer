@@ -21,3 +21,5 @@
 2026-09-01 04:31:32.668 UTC [109061] FATAL:  database "codespace" does not exist
 2026-09-01 04:31:37.947 UTC [109167] FATAL:  database "codespace" does not exist
 2026-09-01 04:32:12.729 UTC [109498] FATAL:  database "codespace" does not exist
+2026-09-01 05:07:39.322 UTC [127715] ERROR:  column "logo_url" does not exist at character 24
+2026-09-01 05:07:39.322 UTC [127715] STATEMENT:  SELECT id, name, slug, logo_url FROM companies WHERE id = 'e63e3538-e71e-4921-baa7-c4ce755a27ed';
