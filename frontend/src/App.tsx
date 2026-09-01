@@ -14,6 +14,12 @@ type Product = {
   price: number;
 };
 
+type Menu = {
+  id: string;
+  name: string;
+  active: boolean;
+};
+
 type CartItem = Product & {
   quantity: number;
 };
@@ -27,6 +33,7 @@ export default function App() {
 
   const [company, setCompany] = useState<Company | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [menus, setMenus] = useState<Menu[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,16 +47,21 @@ export default function App() {
   useEffect(() => {
     async function loadData() {
       try {
-        const companyRes = await fetch(`${API_URL}/companies/${COMPANY_ID}`);
-        if (!companyRes.ok) throw new Error();
-        const companyData = await companyRes.json();
+        const [companyRes, productsRes, menusRes] = await Promise.all([
+          fetch(`${API_URL}/companies/${COMPANY_ID}`),
+          fetch(`${API_URL}/companies/${COMPANY_ID}/products`),
+          fetch(`${API_URL}/companies/${COMPANY_ID}/menus`)
+        ]);
 
-        const productsRes = await fetch(`${API_URL}/companies/${COMPANY_ID}/products`);
-        if (!productsRes.ok) throw new Error();
+        if (!companyRes.ok || !productsRes.ok || !menusRes.ok) throw new Error();
+
+        const companyData = await companyRes.json();
         const productsData = await productsRes.json();
+        const menusData = await menusRes.json();
 
         setCompany(companyData);
         setProducts(Array.isArray(productsData) ? productsData : []);
+        setMenus(Array.isArray(menusData) ? menusData : []);
       } catch {
         setError("Erro ao carregar dados do estabelecimento.");
       } finally {
@@ -154,7 +166,17 @@ export default function App() {
           </form>
         </section>
 
-        <section className="menu-section" id="cardapio" aria-labelledby="menu-title">
+        {menus.length > 0 && (
+          <nav className="categories-nav" aria-label="Categorias do cardápio" style={{ display: 'flex', gap: '1rem', padding: '1rem 0', borderBottom: '1px solid var(--border-color)', marginBottom: '2rem', overflowX: 'auto' }}>
+            {menus.map((menu) => (
+              <a key={menu.id} href={`#cat-${menu.id}`} style={{ textDecoration: 'none', color: 'var(--text-main)', fontWeight: 600, backgroundColor: 'var(--bg-secondary)', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
+                {menu.name}
+              </a>
+            ))}
+          </nav>
+        )}
+
+        <section className="menu-section" id="cardapio" aria-labelledby="menu-title" style={{ marginBottom: '4rem' }}>
           <h2 id="menu-title">Nosso Cardápio</h2>
           <div className="menu-grid">
             {products.length === 0 ? (
