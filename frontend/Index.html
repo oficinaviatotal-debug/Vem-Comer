@@ -3,61 +3,132 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Vem Comer: encontre restaurantes, consulte cardápios e faça seu pedido.">
   <title>Vem Comer</title>
   <link rel="stylesheet" href="src/styles.css">
+  <script src="src/app.js" defer></script>
 </head>
 
 <body>
-  <header class="header">
-    <h1>Vem Comer</h1>
-    <p>Comida boa, pedido fácil.</p>
+  <header class="site-header">
+    <a class="site-header__logo" href="/" aria-label="Vem Comer - página inicial">
+      Vem Comer
+    </a>
+
+    <nav class="site-header__nav" aria-label="Navegação principal">
+      <a href="#restaurantes">Restaurantes</a>
+      <a href="#feedback">Avaliar pedido</a>
+    </nav>
   </header>
 
   <main>
-    <section class="search">
-      <input id="search" type="search" placeholder="O que você quer comer?">
+    <section class="hero" aria-labelledby="hero-title">
+      <h1 id="hero-title">Encontre o que você quer comer</h1>
+      <p>Consulte o cardápio, faça seu pedido e acompanhe tudo em um só lugar.</p>
+
+      <form class="search-form" id="search-form">
+        <label for="restaurant-search">Buscar restaurante ou comida</label>
+        <input
+          id="restaurant-search"
+          name="search"
+          type="search"
+          placeholder="Ex.: pizza, hambúrguer, comida..."
+          autocomplete="off"
+        >
+        <button class="btn-primary" type="submit">Buscar</button>
+      </form>
     </section>
 
-    <section>
-      <h2>Restaurante Exemplo</h2>
-      <p class="status">● Aberto</p>
+    <section class="restaurants" id="restaurantes" aria-labelledby="restaurants-title">
+      <h2 id="restaurants-title">Restaurantes</h2>
 
-      <div id="menu"></div>
+      <article class="restaurant-card">
+        <h3 class="restaurant-card__title">Restaurante Exemplo</h3>
+        <p class="restaurant-card__description">Hambúrgueres, refeições e bebidas.</p>
+        <p class="restaurant-card__status">Aberto</p>
+
+        <button
+          class="btn-primary"
+          id="open-menu"
+          type="button"
+        >
+          Ver cardápio
+        </button>
+      </article>
     </section>
 
-    <section id="cart" class="cart">
-      <h2>Seu pedido</h2>
-      <div id="cartItems"></div>
+    <section class="feedback" id="feedback" aria-labelledby="feedback-title">
+      <h2 id="feedback-title">Como foi sua experiência?</h2>
+      <p>Seu feedback ajuda o estabelecimento a melhorar.</p>
 
-      <div class="total">
-        Total: R$ <span id="total">0,00</span>
-      </div>
+      <form id="feedback-form">
+        <fieldset>
+          <legend>Sobre a comida</legend>
 
-      <button id="checkout" onclick="checkout()" disabled>
-        Finalizar pedido
-      </button>
-    </section>
+          <label>
+            <input type="radio" name="food" value="boa">
+            A comida estava boa
+          </label>
 
-    <section id="feedback" class="feedback hidden">
-      <h2>Como foi sua experiência?</h2>
+          <label>
+            <input type="radio" name="food" value="faltou-sal">
+            Faltou sal
+          </label>
 
-      <button onclick="sendFeedback('comida_boa')">👍 Comida boa</button>
-      <button onclick="sendFeedback('faltou_sal')">🧂 Faltou sal</button>
-      <button onclick="sendFeedback('muito_sal')">🧂 Muito sal</button>
-      <button onclick="sendFeedback('atendimento_bom')">😊 Atendeu bem</button>
-      <button onclick="sendFeedback('atendimento_ruim')">😕 Poderia atender melhor</button>
-      <button onclick="sendFeedback('pedido_rapido')">⚡ Pedido rápido</button>
-      <button onclick="sendFeedback('pedido_demorado')">🕐 Pedido demorou</button>
+          <label>
+            <input type="radio" name="food" value="muito-sal">
+            Estava muito salgada
+          </label>
+        </fieldset>
 
-      <textarea id="comment" placeholder="Quer contar mais alguma coisa?"></textarea>
+        <fieldset>
+          <legend>Sobre o atendimento</legend>
 
-      <button onclick="sendFeedback('comentario')">
-        Enviar comentário
-      </button>
+          <label>
+            <input type="radio" name="service" value="bom">
+            Fui bem atendido
+          </label>
+
+          <label>
+            <input type="radio" name="service" value="melhorar">
+            O atendimento pode melhorar
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Sobre o pedido</legend>
+
+          <label>
+            <input type="radio" name="delivery" value="rapido">
+            O pedido chegou rápido
+          </label>
+
+          <label>
+            <input type="radio" name="delivery" value="demorado">
+            O pedido demorou
+          </label>
+        </fieldset>
+
+        <label for="feedback-comment">Comentário</label>
+        <textarea
+          id="feedback-comment"
+          name="comment"
+          rows="4"
+          maxlength="500"
+          placeholder="Conte algo que possa ajudar..."
+        ></textarea>
+
+        <button class="btn-primary" type="submit">
+          Enviar feedback
+        </button>
+      </form>
+
+      <p id="feedback-message" class="feedback__message" role="status"></p>
     </section>
   </main>
 
-  <script src="src/app.js"></script>
+  <footer class="site-footer">
+    <p>Vem Comer</p>
+  </footer>
 </body>
 </html>
