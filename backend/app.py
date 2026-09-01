@@ -53,7 +53,7 @@ def get_company_users(company_id):
 def get_company_products(company_id):
     try:
         products = query_db(
-            "SELECT id, company_id, name, description, price FROM products WHERE company_id = %s;",
+            "SELECT id, company_id, menu_id, name, description, price FROM products WHERE company_id = %s;",
             (str(company_id),)
         )
         return jsonify(products), 200
@@ -87,6 +87,43 @@ def get_company_menus(company_id):
         return jsonify(menus), 200
     except Exception as e:
         return jsonify({"error": "Erro interno ao buscar categorias", "details": str(e)}), 500
+
+@app.route('/api/companies/<uuid:company_id>/orders', methods=['POST'])
+def create_company_order(company_id):
+    try:
+        data = request.get_json()
+        customer_name = data.get('customer_name', 'Cliente Balcão')
+        cart_items = data.get('items', [])
+        total_price = data.get('total_price', 0)
+        
+        if not cart_items:
+            return jsonify({"error": "O carrinho está vazio"}), 400
+            
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # 1. Insere o pedido mestre e retorna o ID gerado
+        cur.execute(
+            "INSERT INTO orders (company_id, customer_name, total_price) VALUES (%s, %s, %s) RETURNING id;",
+            (str(company_id), customer_name, total_price)
+        )
+        order_id = cur.fetchone()[0]
+        
+        # 2. Insere todos os itens vinculados ao ID do pedido
+        for item in cart_items:
+            cur.execute(
+                "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (%s, %s, %s, %s);",
+                (str(order_id), str(item.get('id')), item.get('quantity'), item.get('price'))
+            )
+            
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"message": "Pedido realizado com sucesso", "order_id": order_id}), 201
+    except Exception as e:
+        return jsonify({"error": "Erro interno ao processar pedido", "details": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

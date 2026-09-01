@@ -9,6 +9,8 @@ type Company = {
 
 type Product = {
   id: string;
+  company_id: string;
+  menu_id: string | null;
   name: string;
   description: string;
   price: number;
@@ -146,7 +148,6 @@ export default function App() {
           </nav>
         </div>
       </header>
-
       <main className="main-content">
         <section className="hero-section" aria-labelledby="hero-title">
           <h1 id="hero-title">Encontre o que você quer comer</h1>
@@ -178,30 +179,51 @@ export default function App() {
 
         <section className="menu-section" id="cardapio" aria-labelledby="menu-title" style={{ marginBottom: '4rem' }}>
           <h2 id="menu-title">Nosso Cardápio</h2>
-          <div className="menu-grid">
-            {products.length === 0 ? (
-              <p className="menu-grid__empty">Nenhum produto disponível neste momento.</p>
-            ) : (
-              products.map((product) => (
+          
+          {menus.length === 0 ? (
+            <div className="menu-grid">
+              {products.map((product) => (
                 <article key={product.id} className="product-card">
                   <div className="product-card__content">
                     <h3 className="product-card__title">{product.name}</h3>
-                    <p className="product-card__description">
-                      {product.description || "Sem descrição cadastrada."}
-                    </p>
+                    <p className="product-card__description">{product.description || "Sem descrição cadastrada."}</p>
                   </div>
                   <div className="product-card__actions">
                     <span className="product-card__price">R$ {Number(product.price).toFixed(2)}</span>
-                    <button className="button-action" type="button" onClick={() => addToCart(product)}>
-                      Adicionar
-                    </button>
+                    <button className="button-action" type="button" onClick={() => addToCart(product)}>Adicionar</button>
                   </div>
                 </article>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            menus.map((menu) => {
+              const categoryProducts = products.filter((p) => p.menu_id === menu.id);
+              if (categoryProducts.length === 0) return null;
+              
+              return (
+                <div key={menu.id} id={`cat-${menu.id}`} style={{ marginBottom: '3rem' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', marginBottom: '1.5rem', borderBottom: '2px solid var(--text-main)', paddingBottom: '0.5rem', display: 'inline-block' }}>
+                    {menu.name}
+                  </h3>
+                  <div className="menu-grid">
+                    {categoryProducts.map((product) => (
+                      <article key={product.id} className="product-card">
+                        <div className="product-card__content">
+                          <h3 className="product-card__title">{product.name}</h3>
+                          <p className="product-card__description">{product.description || "Sem descrição cadastrada."}</p>
+                        </div>
+                        <div className="product-card__actions">
+                          <span className="product-card__price">R$ {Number(product.price).toFixed(2)}</span>
+                          <button className="button-action" type="button" onClick={() => addToCart(product)}>Adicionar</button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </section>
-
         <aside className="cart-panel" id="pedido" aria-labelledby="cart-title" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '3rem', paddingBottom: '3rem' }}>
           <h2 id="cart-title">Seu pedido</h2>
           {cart.length === 0 ? (
