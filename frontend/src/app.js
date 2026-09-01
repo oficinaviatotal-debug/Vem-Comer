@@ -1,135 +1,47 @@
-const products = [
-  {
-    id: 1,
-    name: "Hambúrguer da Casa",
-    description: "Pão, carne, queijo e molho especial.",
-    price: 24.90
-  },
-  {
-    id: 2,
-    name: "Batata Frita",
-    description: "Porção crocante.",
-    price: 12.90
-  },
-  {
-    id: 3,
-    name: "Refrigerante",
-    description: "Lata 350ml.",
-    price: 6.00
-  }
-];
+const API_URL = "/api";
 
-const cart = [];
+const openMenuButton = document.querySelector("#open-menu");
+const feedbackForm = document.querySelector("#feedback-form");
+const feedbackMessage = document.querySelector("#feedback-message");
 
-function money(value) {
-  return value.toFixed(2).replace(".", ",");
-}
+openMenuButton.addEventListener("click", async () => {
+  const response = await fetch(`${API_URL}/menu`);
 
-function renderMenu(list = products) {
-  document.getElementById("menu").innerHTML = list.map(product => `
-    <article class="product">
-      <div>
-        <h3>${product.name}</h3>
-        <p>${product.description}</p>
-        <strong>R$ ${money(product.price)}</strong>
-      </div>
-
-      <button onclick="addToCart(${product.id})">
-        + Adicionar
-      </button>
-    </article>
-  `).join("");
-}
-
-function addToCart(id) {
-  const product = products.find(item => item.id === id);
-  const item = cart.find(item => item.id === id);
-
-  if (item) {
-    item.quantity++;
-  } else {
-    cart.push({
-      ...product,
-      quantity: 1
-    });
+  if (!response.ok) {
+    feedbackMessage.textContent = "Não foi possível carregar o cardápio.";
+    return;
   }
 
-  renderCart();
-}
+  const menu = await response.json();
 
-function removeFromCart(id) {
-  const item = cart.find(item => item.id === id);
-
-  if (!item) return;
-
-  item.quantity--;
-
-  if (item.quantity === 0) {
-    const index = cart.findIndex(item => item.id === id);
-    cart.splice(index, 1);
-  }
-
-  renderCart();
-}
-
-function renderCart() {
-  const cartItems = document.getElementById("cartItems");
-  const checkout = document.getElementById("checkout");
-
-  cartItems.innerHTML = cart.length
-    ? cart.map(item => `
-      <div class="cartItem">
-        <span>
-          ${item.name}<br>
-          ${item.quantity}x R$ ${money(item.price)}
-        </span>
-
-        <button onclick="removeFromCart(${item.id})">−</button>
-        <button onclick="addToCart(${item.id})">+</button>
-      </div>
-    `).join("")
-    : "<p>Seu carrinho está vazio.</p>";
-
-  const total = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-
-  document.getElementById("total").textContent = money(total);
-  checkout.disabled = cart.length === 0;
-}
-
-function checkout() {
-  if (!cart.length) return;
-
-  document.getElementById("feedback").classList.remove("hidden");
-
-  alert("Pedido criado! A próxima etapa será conectar o pagamento Pix.");
-}
-
-function sendFeedback(type) {
-  const comment = document.getElementById("comment").value;
-
-  console.log({
-    type,
-    comment,
-    date: new Date().toISOString()
-  });
-
-  alert("Obrigado pelo feedback!");
-}
-
-document.getElementById("search").addEventListener("input", event => {
-  const term = event.target.value.toLowerCase();
-
-  renderMenu(
-    products.filter(product =>
-      `${product.name} ${product.description}`
-        .toLowerCase()
-        .includes(term)
-    )
-  );
+  console.log(menu);
 });
 
-renderMenu();
-renderCart();
+feedbackForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const formData = new FormData(feedbackForm);
+
+  const feedback = {
+    food: formData.get("food"),
+    service: formData.get("service"),
+    delivery: formData.get("delivery"),
+    comment: formData.get("comment")
+  };
+
+  const response = await fetch(`${API_URL}/feedback`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(feedback)
+  });
+
+  if (!response.ok) {
+    feedbackMessage.textContent = "Não foi possível enviar o feedback.";
+    return;
+  }
+
+  feedbackForm.reset();
+  feedbackMessage.textContent = "Feedback enviado. Obrigado!";
+});
