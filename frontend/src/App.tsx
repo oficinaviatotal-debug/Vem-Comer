@@ -1,5 +1,6 @@
-import './styles/styles.css'; 
-import { useState } from "react";
+import './styles/styles.css';
+import { useState, useEffect } from "react";
+import { fetchCompany, fetchProducts } from "./service/api";
 
 type FeedbackType =
   | "food-good"
@@ -15,7 +16,27 @@ type Feedback = {
   comment: string;
 };
 
+type Company = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type Product = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+};
+
 export default function App() {
+  const COMPANY_ID = "e63e3538-e71e-4921-baa7-c4ce755a27ed";
+
+  const [company, setCompany] = useState<Company | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [feedback, setFeedback] = useState<Feedback>({
     type: "food-good",
     comment: ""
@@ -23,43 +44,77 @@ export default function App() {
 
   const [message, setMessage] = useState("");
 
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [companyData, productsData] = await Promise.all([
+          fetchCompany(COMPANY_ID),
+          fetchProducts(COMPANY_ID)
+        ]);
+        setCompany(companyData);
+        setProducts(productsData);
+      } catch (err) {
+        setError("Erro ao carregar dados do estabelecimento.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
   function sendFeedback() {
     console.log(feedback);
     setMessage("Feedback enviado. Obrigado!");
+  }
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <p>Carregando estabelecimento...</p>
+      </div>
+    );
+  }
+
+  if (error || !company) {
+    return (
+      <div className="error-container">
+        <p>{error || "Estabelecimento nao encontrado."}</p>
+      </div>
+    );
   }
 
   return (
     <>
       <header className="site-header">
         <a className="site-header__logo" href="/">
-          Vem Comer
+          {company.name}
         </a>
 
-        <nav className="site-header__nav" aria-label="Navegação principal">
-          <a href="#restaurantes">Restaurantes</a>
+        <nav className="site-header__nav" aria-label="Navegacao principal">
+          <a href="#restaurantes">Cardapio</a>
           <a href="#feedback">Avaliar pedido</a>
         </nav>
       </header>
 
       <main>
         <section className="hero" aria-labelledby="hero-title">
-          <h1 id="hero-title">Encontre o que você quer comer</h1>
+          <h1 id="hero-title">Encontre o que voce quer comer</h1>
 
           <p>
-            Consulte o cardápio, faça seu pedido e acompanhe tudo em um só
+            Consulte o cardapio, faca seu pedido e acompanhe tudo em um so
             lugar.
           </p>
 
           <form className="search-form">
             <label htmlFor="restaurant-search">
-              Buscar restaurante ou comida
+              Buscar no cardapio
             </label>
 
             <input
               id="restaurant-search"
               name="search"
               type="search"
-              placeholder="Ex.: pizza, hambúrguer, comida"
+              placeholder="Ex.: pizza, hamburguer, comida"
             />
 
             <button className="btn-primary" type="submit">
@@ -73,23 +128,33 @@ export default function App() {
           id="restaurantes"
           aria-labelledby="restaurants-title"
         >
-          <h2 id="restaurants-title">Restaurantes</h2>
+          <h2 id="restaurants-title">Nosso Cardapio</h2>
 
-          <article className="restaurant-card">
-            <h3 className="restaurant-card__title">
-              Restaurante Exemplo
-            </h3>
+          <div className="products-grid">
+            {products.length === 0 ? (
+              <p>Nenhum produto cadastrado no momento.</p>
+            ) : (
+              products.map((product) => (
+                <article key={product.id} className="restaurant-card">
+                  <h3 className="restaurant-card__title">
+                    {product.name}
+                  </h3>
 
-            <p className="restaurant-card__description">
-              Hambúrgueres, refeições e bebidas.
-            </p>
+                  <p className="restaurant-card__description">
+                    {product.description || "Sem descricao disponivel."}
+                  </p>
 
-            <p className="restaurant-card__status">Aberto</p>
+                  <p className="restaurant-card__status">
+                    R$ {Number(product.price).toFixed(2)}
+                  </p>
 
-            <button className="btn-primary" type="button">
-              Ver cardápio
-            </button>
-          </article>
+                  <button className="btn-primary" type="button">
+                    Adicionar ao carrinho
+                  </button>
+                </article>
+              ))
+            )}
+          </div>
         </section>
 
         <section
@@ -97,7 +162,7 @@ export default function App() {
           id="feedback"
           aria-labelledby="feedback-title"
         >
-          <h2 id="feedback-title">Como foi sua experiência?</h2>
+          <h2 id="feedback-title">Como foi sua experiencia?</h2>
 
           <p>
             Seu feedback ajuda o estabelecimento a melhorar.
@@ -206,7 +271,7 @@ export default function App() {
             </label>
           </fieldset>
 
-          <label htmlFor="feedback-comment">Comentário</label>
+          <label htmlFor="feedback-comment">Comentario</label>
 
           <textarea
             id="feedback-comment"
@@ -236,7 +301,7 @@ export default function App() {
       </main>
 
       <footer className="site-footer">
-        <p>Vem Comer</p>
+        <p>{company.name}</p>
       </footer>
     </>
   );
