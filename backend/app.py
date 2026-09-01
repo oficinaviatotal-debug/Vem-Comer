@@ -1,9 +1,22 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from db import query_db
+from db import query_db, get_db_connection
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# Configuração irrestrita para aceitar qualquer método e cabeçalho de fora
+CORS(app, resources={r"/*": {
+    "origins": "*",
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "allow_headers": ["Content-Type", "Authorization"]
+}})
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
+    return response
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -48,5 +61,22 @@ def get_company_products(company_id):
     except Exception as e:
         return jsonify({"error": "Erro interno ao buscar produtos", "details": str(e)}), 500
 
+@app.route('/api/companies/<uuid:company_id>/feedbacks', methods=['POST'])
+def create_feedback(company_id):
+    try:
+        data = request.get_json()
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO feedbacks (company_id, food_rating, service_rating, delivery_rating, comment) VALUES (%s, %s, %s, %s, %s);",
+            (str(company_id), data.get('food'), data.get('service'), data.get('delivery'), data.get('comment'))
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Feedback salvo com sucesso"}), 201
+    except Exception as e:
+        return jsonify({"error": "Erro ao salvar feedback", "details": str(e)}), 500
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
