@@ -130,6 +130,57 @@ def create_company_order(company_id):
             cur.close()
             conn.close()
         return jsonify({"error": "Erro interno ao processar pedido", "details": str(e)}), 500
+@app.route('/api/orders/<uuid:order_id>', methods=['GET'])
+def get_order(order_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute(
+            """
+            SELECT id, company_id, customer_name, total_price, status
+            FROM orders
+            WHERE id = %s;
+            """,
+            (str(order_id),)
+        )
+
+        order = cur.fetchone()
+
+        if not order:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Pedido não encontrado"}), 404
+
+        cur.execute(
+            """
+            SELECT
+                oi.product_id,
+                oi.quantity,
+                oi.unit_price,
+                oi.total,
+                p.name
+            FROM order_items oi
+            JOIN products p ON p.id = oi.product_id
+            WHERE oi.order_id = %s;
+            """,
+            (str(order_id),)
+        )
+
+        items = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        order["items"] = items
+
+        return jsonify(order), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "Erro ao buscar pedido",
+            "details": str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
