@@ -75,6 +75,7 @@ export default function App() {
   }, []);
 
   function addToCart(product: Product) {
+    setOrderMessage("");
     setCart((currentCart) => {
       const existing = currentCart.find((item) => item.id === product.id);
 
@@ -345,12 +346,18 @@ export default function App() {
           )}
         </section>
 
-        <aside
+                <aside
           className="cart-panel"
           id="pedido"
           aria-labelledby="cart-title"
         >
           <h2 id="cart-title">Seu pedido</h2>
+
+          {orderMessage && (
+            <p className="cart-panel__message" role="status" style={{ marginBottom: "1.5rem", color: "var(--color-accent)", fontWeight: "600" }}>
+              {orderMessage}
+            </p>
+          )}
 
           {cart.length === 0 ? (
             <p>Seu carrinho está vazio.</p>
@@ -399,18 +406,10 @@ export default function App() {
               >
                 Continuar pedido
               </button>
-
-              {orderMessage && (
-                <p
-                  className="cart-panel__message"
-                  role="status"
-                >
-                  {orderMessage}
-                </p>
-              )}
             </>
           )}
         </aside>
+
 
         <section
           className="feedback-section"
