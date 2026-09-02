@@ -327,3 +327,57 @@ body {
   clip: rect(0, 0, 0, 0);
   border: 0;
 }
+/* --- Telas de Carregamento e Erro Profissionais --- */
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  font-family: var(--font-display);
+  color: var(--text-main);
+  text-align: center;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+.loading-state p {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Indicador visual animado (Spinner) */
+.loading-state p::before {
+  content: "";
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--bg-secondary);
+  border-top: 4px solid var(--text-main);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.error-state p {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #ef4444; /* Vermelho elegante de erro */
+  background-color: #fef2f2;
+  border: 1px solid #fca5a5;
+  padding: 1.5rem 2.5rem;
+  border-radius: 8px;
+  max-width: 400px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
