@@ -7,6 +7,7 @@ import {
   fetchCompany,
   fetchMenus,
   fetchProducts,
+  fetchOrder,
 } from "./service/api";
 
 type Company = {

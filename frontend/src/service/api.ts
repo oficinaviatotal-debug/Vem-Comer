@@ -1,5 +1,7 @@
-export const API_URL =
-  "https://sturdy-halibut-gqpr76q4w6g3746-5000.app.github.dev/api";
+const currentHost = window.location.hostname;
+const apiHost = currentHost.replace("-5174.", "-5000.");
+export const API_URL = `https://${apiHost}/api`;
+
 
 export async function fetchCompany(companyId: string) {
   const response = await fetch(`${API_URL}/companies/${companyId}`);
