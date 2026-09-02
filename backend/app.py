@@ -96,42 +96,39 @@ def create_company_order(company_id):
         customer_name = data.get('customer_name', 'Cliente Balcão')
         cart_items = data.get('items', [])
         total_price = data.get('total_price', 0)
-        
         if not cart_items:
             return jsonify({"error": "O carrinho esta vazio"}), 400
-            
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        
         cur.execute(
-            "INSERT INTO orders (company_id, customer_name, total_price) VALUES (%s, %s, %s) RETURNING id;",
-            (str(company_id), customer_name, total_price)
+            "INSERT INTO orders (company_id, customer_name, customer, total_price, total) VALUES (%s, %s, %s, %s, %s) RETURNING id;",
+            (str(company_id), customer_name, customer_name, total_price, total_price)
         )
         order_row = cur.fetchone()
         order_id = order_row['id']
-        
         for item in cart_items:
             product_id = item.get('id')
-            quantity = item.get('quantity', 1)
+            quantity = int(item.get('quantity', 1))
             price = item.get('price')
-            
             if price is None:
                 cur.execute("SELECT price FROM products WHERE id = %s;", (str(product_id),))
                 prod_row = cur.fetchone()
-                # Lê usando a chave do dicionário de forma segura
                 price = prod_row['price'] if prod_row else 0
-                
+            item_price = float(price)
+            item_total = item_price * quantity
             cur.execute(
-                "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (%s, %s, %s, %s);",
-                (str(order_id), str(product_id), int(quantity), float(price))
+                "INSERT INTO order_items (order_id, product_id, quantity, unit_price, total, price, value) VALUES (%s, %s, %s, %s, %s, %s, %s);",
+                (str(order_id), str(product_id), quantity, item_price, item_total, item_price, item_price)
             )
-            
         conn.commit()
         cur.close()
         conn.close()
-        
         return jsonify({"message": "Pedido realizado com sucesso", "order_id": str(order_id)}), 201
     except Exception as e:
+        if 'conn' in locals() and not conn.closed:
+            conn.rollback()
+            cur.close()
+            conn.close()
         return jsonify({"error": "Erro interno ao processar pedido", "details": str(e)}), 500
 
 if __name__ == '__main__':
