@@ -103,7 +103,7 @@ export default function App() {
     );
   }
 
-  async function handleOrderSubmit() {
+    async function handleOrderSubmit() {
     try {
       const response = await createOrder(
         COMPANY_ID,
@@ -112,16 +112,19 @@ export default function App() {
         cart
       );
 
-      if (!response) {
+      if (!response || !response.order_id) {
         throw new Error();
       }
 
       setOrderMessage("Pedido realizado com sucesso!");
       setCart([]);
+      
+      setActiveOrderId(response.order_id);
     } catch {
       setOrderMessage("Erro ao fechar o pedido. Tente novamente.");
     }
   }
+
 
   async function handleFeedbackSubmit(e: React.FormEvent) {
     e.preventDefault();
