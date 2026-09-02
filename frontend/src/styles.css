@@ -2,16 +2,16 @@
 
 :root {
   --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --bg-primary: #0f0f12;
-  --bg-secondary: #1a1a22;
-  --bg-tertiary: #252530;
-  --text-main: #f4f4f7;
-  --text-muted: #a1a1aa;
-  --border-color: #27273a;
-  --color-accent: #f59e0b;
-  --color-accent-hover: #d97706;
-  --color-danger: #ef4444;
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --bg-primary: #fbfbf8;       /* Fundo bege bem claro, cor de algodão/papel premium */
+  --bg-secondary: #f4f3eb;     /* Containers e cards em bege pastel suave */
+  --bg-tertiary: #eae8dc;      /* Inputs e hover mais marcados */
+  --text-main: #2b2927;        /* Marrom café profundo para leitura confortável */
+  --text-muted: #7c776e;       /* Cinza marronzado para descrições */
+  --border-color: #e3e0cf;     /* Divisórias pasteis sutis */
+  --color-accent: #d97706;     /* Laranja âmbar/caramelo para destaque gourmet */
+  --color-accent-hover: #b45309;
+  --color-danger: #dc2626;     /* Vermelho pastel para remoção */
+  --shadow-sm: 0 4px 14px rgba(43, 41, 39, 0.04);
 }
 
 body {
@@ -25,7 +25,7 @@ body {
 .main-header {
   border-bottom: 1px solid var(--border-color);
   padding: 1.25rem 2rem;
-  background-color: rgba(15, 15, 18, 0.85);
+  background-color: rgba(251, 251, 248, 0.9);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -77,6 +77,7 @@ body {
   font-weight: 800;
   letter-spacing: -1px;
   margin-bottom: 0.5rem;
+  color: var(--text-main);
 }
 
 .hero-section__subtitle {
@@ -107,9 +108,14 @@ body {
   outline: none;
 }
 
+.search-form__input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
 .button-action {
   background-color: var(--color-accent);
-  color: #0f0f12;
+  color: #ffffff;
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
@@ -188,17 +194,19 @@ body {
   border-radius: 14px;
   background-color: var(--bg-secondary);
   box-shadow: var(--shadow-sm);
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .product-card:hover {
-  border-color: #3f3f56;
+  border-color: var(--text-muted);
+  background-color: var(--bg-primary);
 }
 
 .product-card__title {
   margin: 0 0 0.5rem 0;
   font-size: 1.25rem;
   font-weight: 700;
+  color: var(--text-main);
 }
 
 .product-card__description {
@@ -279,7 +287,7 @@ body {
 
 .cart-panel__remove:hover {
   background-color: var(--color-danger);
-  color: #fff;
+  color: #ffffff;
 }
 
 .cart-panel__total {
@@ -378,7 +386,7 @@ body {
   padding: 1.25rem;
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-primary);
   color: var(--text-main);
   font-family: inherit;
   font-size: 1rem;
@@ -403,7 +411,7 @@ body {
   border-radius: 14px;
   background-color: var(--bg-secondary);
   margin-bottom: 3.5rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 25px rgba(43, 41, 39, 0.05);
 }
 
 .loading-state,
