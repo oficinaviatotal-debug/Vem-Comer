@@ -141,7 +141,8 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     return acc;
   }, {});
   const ordersByPayment = orders.reduce<Record<string, number>>((acc, o) => {
-    acc[o.payment_method] = (acc[o.payment_method] || 0) + 1;
+    const key = o.payment_method || "Não informado";
+    acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
 
