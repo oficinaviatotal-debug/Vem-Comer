@@ -84,3 +84,27 @@ export async function updateOrderStatus(orderId: string, status: string) {
   if (!response.ok) throw new Error("Falha ao atualizar status do pedido");
   return response.json();
 }
+
+export async function createProduct(
+  companyId: string,
+  name: string,
+  description: string,
+  price: number,
+  menuId: string
+) {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/products`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, description, price, menu_id: menuId }),
+  });
+  if (!response.ok) throw new Error("Falha ao criar produto");
+  return response.json();
+}
+
+export async function deleteProduct(productId: string) {
+  const response = await fetch(`${API_URL}/admin/products/${productId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) throw new Error("Falha ao remover produto");
+  return response.json();
+}
