@@ -66,3 +66,21 @@ export async function fetchOrder(orderId: string) {
   if (!response.ok) throw new Error("Falha ao buscar pedido");
   return response.json();
 }
+
+export async function fetchAdminOrders(companyId: string) {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/orders`);
+  if (!response.ok) throw new Error("Falha ao buscar pedidos do paines");
+  return response.json();
+}
+
+export async function updateOrderStatus(orderId: string, status: string) {
+  const response = await fetch(`${API_URL}/orders/${orderId}/status`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status }),
+  });
+  if (!response.ok) throw new Error("Falha ao atualizar status do pedido");
+  return response.json();
+}
