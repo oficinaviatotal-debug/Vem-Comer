@@ -196,6 +196,23 @@ def get_order(order_id):
             "error": "Erro ao buscar pedido",
             "details": str(e)
         }), 500
+        
+@app.route('/api/companies/<uuid:company_id>/admin/orders', methods=['GET'])
+def get_admin_orders(company_id):
+    try:
+        orders = query_db(
+            """
+            SELECT id, customer_name, total_price, status, payment_method, payment_change, created_at 
+            FROM orders 
+            WHERE company_id = %s 
+            ORDER BY created_at DESC;
+            """,
+            (str(company_id),)
+        )
+        return jsonify(orders), 200
+    except Exception as e:
+        return jsonify({"error": "Erro ao buscar pedidos do painel", "details": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
