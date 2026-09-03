@@ -293,5 +293,54 @@ def admin_delete_product(product_id):
             conn.close()
         return jsonify({"error": "Erro ao deletar produto", "details": str(e)}), 500
 
+@app.route('/api/companies/<uuid:company_id>/admin/menus', methods=['POST'])
+def admin_create_menu(company_id):
+    try:
+        data = request.get_json()
+        name = data.get('name')
+
+        if not name:
+            return jsonify({"error": "Nome e obrigatorio"}), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            """
+            INSERT INTO menus (company_id, name)
+            VALUES (%s, %s)
+            RETURNING id;
+            """,
+            (str(company_id), name)
+        )
+        new_menu = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({"message": "Categoria criada com sucesso", "menu_id": new_menu['id']}), 201
+    except Exception as e:
+        if 'conn' in locals() and not conn.closed:
+            conn.rollback()
+            cur.close()
+            conn.close()
+        return jsonify({"error": "Erro ao criar categoria", "details": str(e)}), 500
+
+@app.route('/api/admin/menus/<uuid:menu_id>', methods=['DELETE'])
+def admin_delete_menu(menu_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM menus WHERE id = %s;", (str(menu_id),))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Categoria removida com sucesso"}), 200
+    except Exception as e:
+        if 'conn' in locals() and not conn.closed:
+            conn.rollback()
+            cur.close()
+            conn.close()
+        return jsonify({"error": "Erro ao deletar categoria", "details": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

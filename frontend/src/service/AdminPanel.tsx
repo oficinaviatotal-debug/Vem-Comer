@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchAdminOrders, updateOrderStatus, fetchProducts, fetchMenus, createProduct, deleteProduct } from "./api";
+import { fetchAdminOrders, updateOrderStatus, fetchProducts, fetchMenus, createProduct, deleteProduct, createMenu, deleteMenu } from "./api";
 
 type Order = {
   id: string;
@@ -59,13 +59,14 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     }
   }
 
-  const [view, setView] = useState<"pedidos" | "produtos">("pedidos");
+  const [view, setView] = useState<"pedidos" | "produtos" | "categorias">("pedidos");
   const [products, setProducts] = useState<Product[]>([]);
   const [menus, setMenus] = useState<Menu[]>([]);
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newPrice, setNewPrice] = useState("");
   const [newMenuId, setNewMenuId] = useState("");
+  const [newMenuName, setNewMenuName] = useState("");
 
   async function loadProducts() {
     try {
@@ -78,7 +79,7 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
   }
 
   useEffect(() => {
-    if (view === "produtos") loadProducts();
+    if (view === "produtos" || view === "categorias") loadProducts();
   }, [view, companyId]);
 
   async function handleCreateProduct() {
@@ -104,6 +105,26 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     }
   }
 
+  async function handleCreateMenu() {
+    if (!newMenuName) return;
+    try {
+      await createMenu(companyId, newMenuName);
+      setNewMenuName("");
+      loadProducts();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleDeleteMenu(menuId: string) {
+    try {
+      await deleteMenu(menuId);
+      loadProducts();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ textAlign: "center", padding: "3rem", color: "var(--text-muted)" }}>
@@ -122,6 +143,9 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
           </button>
           <button className="button-action" onClick={() => setView("produtos")} style={{ backgroundColor: view === "produtos" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "produtos" ? "#fff" : "var(--text-main)" }}>
             Produtos
+          </button>
+          <button className="button-action" onClick={() => setView("categorias")} style={{ backgroundColor: view === "categorias" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "categorias" ? "#fff" : "var(--text-main)" }}>
+            Categorias
           </button>
           <button className="button-action" onClick={onBack} style={{ backgroundColor: "var(--text-main)", color: "#fff" }}>
             Voltar para o Cardápio
@@ -157,6 +181,29 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
                   <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{product.description}</div>
                 </div>
                 <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem", backgroundColor: "#ef4444", color: "#fff" }} onClick={() => handleDeleteProduct(product.id)}>
+                  Remover
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      ) : view === "categorias" ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div style={{ padding: "1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <h3 style={{ margin: 0 }}>Nova Categoria</h3>
+            <input placeholder="Nome da categoria" value={newMenuName} onChange={(e) => setNewMenuName(e.target.value)} style={{ padding: "0.5rem", borderRadius: "8px", border: "1px solid var(--border-color)" }} />
+            <button className="button-action" onClick={handleCreateMenu} style={{ backgroundColor: "#22c55e", color: "#fff" }}>
+              Adicionar Categoria
+            </button>
+          </div>
+
+          {menus.length === 0 ? (
+            <p style={{ color: "var(--text-muted)", textAlign: "center" }}>Nenhuma categoria cadastrada.</p>
+          ) : (
+            menus.map((menu) => (
+              <div key={menu.id} style={{ padding: "1rem 1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <strong>{menu.name}</strong>
+                <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem", backgroundColor: "#ef4444", color: "#fff" }} onClick={() => handleDeleteMenu(menu.id)}>
                   Remover
                 </button>
               </div>

@@ -108,3 +108,21 @@ export async function deleteProduct(productId: string) {
   if (!response.ok) throw new Error("Falha ao remover produto");
   return response.json();
 }
+
+export async function createMenu(companyId: string, name: string) {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/menus`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  if (!response.ok) throw new Error("Falha ao criar categoria");
+  return response.json();
+}
+
+export async function deleteMenu(menuId: string) {
+  const response = await fetch(`${API_URL}/admin/menus/${menuId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) throw new Error("Falha ao remover categoria");
+  return response.json();
+}
