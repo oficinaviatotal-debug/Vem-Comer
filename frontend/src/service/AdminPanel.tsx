@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchAdminOrders, updateOrderStatus } from "./api";
+import { fetchAdminOrders, updateOrderStatus, fetchProducts, fetchMenus, createProduct, deleteProduct } from "./api";
 
 type Order = {
   id: string;
@@ -9,6 +9,19 @@ type Order = {
   payment_method: string;
   payment_change: number;
   created_at: string;
+};
+
+type Product = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  menu_id: string;
+};
+
+type Menu = {
+  id: string;
+  name: string;
 };
 
 type AdminPanelProps = {
@@ -46,6 +59,51 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     }
   }
 
+  const [view, setView] = useState<"pedidos" | "produtos">("pedidos");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [menus, setMenus] = useState<Menu[]>([]);
+  const [newName, setNewName] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newPrice, setNewPrice] = useState("");
+  const [newMenuId, setNewMenuId] = useState("");
+
+  async function loadProducts() {
+    try {
+      const [productsData, menusData] = await Promise.all([fetchProducts(companyId), fetchMenus(companyId)]);
+      setProducts(Array.isArray(productsData) ? productsData : []);
+      setMenus(Array.isArray(menusData) ? menusData : []);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  useEffect(() => {
+    if (view === "produtos") loadProducts();
+  }, [view, companyId]);
+
+  async function handleCreateProduct() {
+    if (!newName || !newPrice) return;
+    try {
+      await createProduct(companyId, newName, newDescription, Number(newPrice), newMenuId);
+      setNewName("");
+      setNewDescription("");
+      setNewPrice("");
+      setNewMenuId("");
+      loadProducts();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleDeleteProduct(productId: string) {
+    try {
+      await deleteProduct(productId);
+      loadProducts();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ textAlign: "center", padding: "3rem", color: "var(--text-muted)" }}>
@@ -57,13 +115,55 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
   return (
     <div style={{ padding: "1rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "1rem" }}>
-        <h2 style={{ margin: 0, fontWeight: "800" }}>Painel de Controle — Pedidos</h2>
-        <button className="button-action" onClick={onBack} style={{ backgroundColor: "var(--text-main)", color: "#fff" }}>
-          Voltar para o Cardápio
-        </button>
+        <h2 style={{ margin: 0, fontWeight: "800" }}>Painel de Controle</h2>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button className="button-action" onClick={() => setView("pedidos")} style={{ backgroundColor: view === "pedidos" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "pedidos" ? "#fff" : "var(--text-main)" }}>
+            Pedidos
+          </button>
+          <button className="button-action" onClick={() => setView("produtos")} style={{ backgroundColor: view === "produtos" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "produtos" ? "#fff" : "var(--text-main)" }}>
+            Produtos
+          </button>
+          <button className="button-action" onClick={onBack} style={{ backgroundColor: "var(--text-main)", color: "#fff" }}>
+            Voltar para o Cardápio
+          </button>
+        </div>
       </div>
 
-      {orders.length === 0 ? (
+      {view === "produtos" ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div style={{ padding: "1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <h3 style={{ margin: 0 }}>Novo Produto</h3>
+            <input placeholder="Nome" value={newName} onChange={(e) => setNewName(e.target.value)} style={{ padding: "0.5rem", borderRadius: "8px", border: "1px solid var(--border-color)" }} />
+            <input placeholder="Descrição" value={newDescription} onChange={(e) => setNewDescription(e.target.value)} style={{ padding: "0.5rem", borderRadius: "8px", border: "1px solid var(--border-color)" }} />
+            <input placeholder="Preço" type="number" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} style={{ padding: "0.5rem", borderRadius: "8px", border: "1px solid var(--border-color)" }} />
+            <select value={newMenuId} onChange={(e) => setNewMenuId(e.target.value)} style={{ padding: "0.5rem", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+              <option value="">Selecione a categoria</option>
+              {menus.map((menu) => (
+                <option key={menu.id} value={menu.id}>{menu.name}</option>
+              ))}
+            </select>
+            <button className="button-action" onClick={handleCreateProduct} style={{ backgroundColor: "#22c55e", color: "#fff" }}>
+              Adicionar Produto
+            </button>
+          </div>
+
+          {products.length === 0 ? (
+            <p style={{ color: "var(--text-muted)", textAlign: "center" }}>Nenhum produto cadastrado.</p>
+          ) : (
+            products.map((product) => (
+              <div key={product.id} style={{ padding: "1rem 1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <strong>{product.name}</strong> — R$ {Number(product.price).toFixed(2)}
+                  <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{product.description}</div>
+                </div>
+                <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem", backgroundColor: "#ef4444", color: "#fff" }} onClick={() => handleDeleteProduct(product.id)}>
+                  Remover
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      ) : orders.length === 0 ? (
         <p style={{ color: "var(--text-muted)", textAlign: "center" }}>Nenhum pedido recebido ainda.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
