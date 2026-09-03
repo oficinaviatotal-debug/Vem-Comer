@@ -96,16 +96,29 @@ def create_company_order(company_id):
         customer_name = data.get('customer_name', 'Cliente Balcão')
         cart_items = data.get('items', [])
         total_price = data.get('total_price', 0)
+        
+        # Captura os dados de checkout enviados pelo React
+        payment_method = data.get('payment_method', 'pix')
+        payment_change = data.get('payment_change', 0)
+        
         if not cart_items:
             return jsonify({"error": "O carrinho esta vazio"}), 400
+            
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Alimenta as novas colunas com os parâmetros dinâmicos
         cur.execute(
-            "INSERT INTO orders (company_id, customer_name, customer, total_price, total) VALUES (%s, %s, %s, %s, %s) RETURNING id;",
-            (str(company_id), customer_name, customer_name, total_price, total_price)
+            """
+            INSERT INTO orders (company_id, customer_name, customer, total_price, total, payment_method, payment_change) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s) 
+            RETURNING id;
+            """,
+            (str(company_id), customer_name, customer_name, total_price, total_price, payment_method, float(payment_change or 0))
         )
         order_row = cur.fetchone()
         order_id = order_row['id']
+        
         for item in cart_items:
             product_id = item.get('id')
             quantity = int(item.get('quantity', 1))
@@ -120,6 +133,7 @@ def create_company_order(company_id):
                 "INSERT INTO order_items (order_id, product_id, quantity, unit_price, total, price, value) VALUES (%s, %s, %s, %s, %s, %s, %s);",
                 (str(order_id), str(product_id), quantity, item_price, item_total, item_price, item_price)
             )
+            
         conn.commit()
         cur.close()
         conn.close()
@@ -130,6 +144,7 @@ def create_company_order(company_id):
             cur.close()
             conn.close()
         return jsonify({"error": "Erro interno ao processar pedido", "details": str(e)}), 500
+
 @app.route('/api/orders/<uuid:order_id>', methods=['GET'])
 def get_order(order_id):
     try:
