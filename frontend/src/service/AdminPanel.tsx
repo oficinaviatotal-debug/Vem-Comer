@@ -57,7 +57,7 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
   return (
     <div style={{ padding: "1rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "1rem" }}>
-        <h2 style={{ margin: 0, fontVerg: "800" }}>Painel de Controle — Pedidos</h2>
+        <h2 style={{ margin: 0, fontWeight: "800" }}>Painel de Controle — Pedidos</h2>
         <button className="button-action" onClick={onBack} style={{ backgroundColor: "var(--text-main)", color: "#fff" }}>
           Voltar para o Cardápio
         </button>
