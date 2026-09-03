@@ -9,6 +9,7 @@ import {
   fetchProducts,
   fetchOrder,
 } from "./service/api";
+import AdminPanel from "./service/AdminPanel";
 
 type Company = {
   id: string;
@@ -73,7 +74,7 @@ export default function App() {
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>("pix");
   const [paymentChange, setPaymentChange] = useState<string>("");
-
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
 
   useEffect(() => {
     async function loadData() {
@@ -97,12 +98,11 @@ export default function App() {
     loadData();
   }, []);
 
-    useEffect(() => {
+  useEffect(() => {
     if (!activeOrderId) return;
 
     async function pollOrder() {
-      
-      if (!activeOrderId) return; 
+      if (!activeOrderId) return;
 
       try {
         const orderData = await fetchOrder(activeOrderId);
@@ -116,7 +116,6 @@ export default function App() {
     const interval = setInterval(pollOrder, 5000);
     return () => clearInterval(interval);
   }, [activeOrderId]);
-
 
   function addToCart(product: Product) {
     setOrderMessage("");
@@ -141,7 +140,7 @@ export default function App() {
     );
   }
 
-    async function handleOrderSubmit() {
+  async function handleOrderSubmit() {
     try {
       const response = await createOrder(
         COMPANY_ID,
@@ -164,7 +163,6 @@ export default function App() {
     }
   }
 
-
   async function handleFeedbackSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -178,6 +176,7 @@ export default function App() {
   }
 
   const cartTotal = cart.reduce((total, item) => total + Number(item.price) * item.quantity, 0);
+
   if (loading) {
     return (
       <main className="loading-state">
@@ -208,12 +207,21 @@ export default function App() {
               Meu pedido ({cart.reduce((sum, item) => sum + item.quantity, 0)})
             </a>
             <a href="#feedback">Avaliar</a>
+            <button 
+              type="button"
+              onClick={() => setIsAdminMode(true)}
+              style={{ background: "none", border: "none", color: "var(--text-muted)", fontWeight: "600", fontSize: "0.95rem", cursor: "pointer", marginLeft: "1.5rem" }}
+            >
+              Painel Admin
+            </button>
           </nav>
         </div>
       </header>
 
       <main className="main-content">
-        {activeOrder ? (
+        {isAdminMode ? (
+          <AdminPanel companyId={COMPANY_ID} onBack={() => setIsAdminMode(false)} />
+        ) : activeOrder ? (
           <section className="order-tracking-panel" style={{ padding: "2rem", border: "1px solid var(--border-color)", borderRadius: "8px", backgroundColor: "var(--bg-secondary)", marginBottom: "3rem" }}>
             <h2 style={{ marginTop: 0 }}>Acompanhe seu Pedido</h2>
             <p style={{ color: "var(--text-muted)" }}>ID do Pedido: <small>{activeOrder.id}</small></p>
@@ -323,111 +331,71 @@ export default function App() {
               )}
             </section>
 
-                    <aside
-          className="cart-panel"
-          id="pedido"
-          aria-labelledby="cart-title"
-        >
-          <h2 id="cart-title">Seu pedido</h2>
+            <aside className="cart-panel" id="pedido" aria-labelledby="cart-title">
+              <h2 id="cart-title">Seu pedido</h2>
+              {orderMessage && (
+                <p className="cart-panel__message" role="status" style={{ marginBottom: "1.5rem", color: "var(--color-accent)", fontWeight: "600" }}>
+                  {orderMessage}
+                </p>
+              )}
+              {cart.length === 0 ? (
+                <p>Seu carrinho está vazio.</p>
+              ) : (
+                <>
+                  <ul className="cart-panel__items">
+                    {cart.map((item) => (
+                      <li key={item.id} className="cart-panel__item">
+                        <div className="cart-panel__item-info">
+                          <span className="cart-panel__item-name">{item.name}</span>
+                          <span className="cart-panel__item-price">{item.quantity}x R$ {Number(item.price).toFixed(2)}</span>
+                        </div>
+                        <button className="button-action cart-panel__remove" type="button" onClick={() => removeFromCart(item.id)}>Remover</button>
+                      </li>
+                    ))}
+                  </ul>
 
-          {orderMessage && (
-            <p className="cart-panel__message" role="status" style={{ marginBottom: "1.5rem", color: "var(--color-accent)", fontWeight: "600" }}>
-              {orderMessage}
-            </p>
-          )}
-
-          {cart.length === 0 ? (
-            <p>Seu carrinho está vazio.</p>
-          ) : (
-            <>
-              <ul className="cart-panel__items">
-                {cart.map((item) => (
-                  <li
-                    key={item.id}
-                    className="cart-panel__item"
-                  >
-                    <div className="cart-panel__item-info">
-                      <span className="cart-panel__item-name">
-                        {item.name}
-                      </span>
-
-                      <span className="cart-panel__item-price">
-                        {item.quantity}x R$ {Number(item.price).toFixed(2)}
-                      </span>
+                  <div style={{ margin: "2rem 0", padding: "1.5rem", backgroundColor: "var(--bg-secondary)", borderRadius: "10px", border: "1px solid var(--border-color)" }}>
+                    <h3 style={{ marginTop: 0, fontSize: "1.1rem", marginBottom: "1rem" }}>Forma de Pagamento</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                        <input type="radio" name="payment" value="pix" checked={paymentMethod === "pix"} onChange={(e) => setPaymentMethod(e.target.value)} style={{ accentColor: "var(--color-accent)" }} />
+                        <span>Pix</span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                        <input type="radio" name="payment" value="cartao" checked={paymentMethod === "cartao"} onChange={(e) => setPaymentMethod(e.target.value)} style={{ accentColor: "var(--color-accent)" }} />
+                        <span>Cartão de Crédito/Débito</span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                        <input type="radio" name="payment" value="dinheiro" checked={paymentMethod === "dinheiro"} onChange={(e) => setPaymentMethod(e.target.value)} style={{ accentColor: "var(--color-accent)" }} />
+                        <span>Dinheiro</span>
+                      </label>
                     </div>
 
-                    <button
-                      className="button-action cart-panel__remove"
-                      type="button"
-                      onClick={() =>
-                        removeFromCart(item.id)
-                      }
-                    >
-                      Remover
-                    </button>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Interface Seletora de Pagamento Premium */}
-              <div style={{ margin: "2rem 0", padding: "1.5rem", backgroundColor: "var(--bg-secondary)", borderRadius: "10px", border: "1px solid var(--border-color)" }}>
-                <h3 style={{ marginTop: 0, fontSize: "1.1rem", marginBottom: "1rem" }}>Forma de Pagamento</h3>
-                
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-                    <input type="radio" name="payment" value="pix" checked={paymentMethod === "pix"} onChange={(e) => setPaymentMethod(e.target.value)} style={{ accentColor: "var(--color-accent)" }} />
-                    <span>Pix</span>
-                  </label>
-
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-                    <input type="radio" name="payment" value="cartao" checked={paymentMethod === "cartao"} onChange={(e) => setPaymentMethod(e.target.value)} style={{ accentColor: "var(--color-accent)" }} />
-                    <span>Cartão de Crédito/Débito</span>
-                  </label>
-
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-                    <input type="radio" name="payment" value="dinheiro" checked={paymentMethod === "dinheiro"} onChange={(e) => setPaymentMethod(e.target.value)} style={{ accentColor: "var(--color-accent)" }} />
-                    <span>Dinheiro</span>
-                  </label>
-                </div>
-
-                {/* Caixinha de Troco dinâmica que só aparece se escolher Dinheiro */}
-                {paymentMethod === "dinheiro" && (
-                  <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    <label htmlFor="payment-change" style={{ fontSize: "0.9rem", fontWeight: "600" }}>Precisa de troco para quanto?</label>
-                    <input
-                      id="payment-change"
-                      type="number"
-                      placeholder="Ex: 50"
-                      value={paymentChange}
-                      onChange={(e) => setPaymentChange(e.target.value)}
-                      style={{ padding: "0.6rem 0.75rem", borderRadius: "6px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-primary)", color: "var(--text-main)", outline: "none", fontSize: "1rem", width: "100%", boxSizing: "border-box" }}
-                    />
+                    {paymentMethod === "dinheiro" && (
+                      <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                        <label htmlFor="payment-change" style={{ fontSize: "0.9rem", fontWeight: "600" }}>Precisa de troco para quanto?</label>
+                        <input
+                          id="payment-change"
+                          type="number"
+                          placeholder="Ex: 50"
+                          value={paymentChange}
+                          onChange={(e) => setPaymentChange(e.target.value)}
+                          style={{ padding: "0.6rem 0.75rem", borderRadius: "6px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-primary)", color: "var(--text-main)", outline: "none", fontSize: "1rem", width: "100%", boxSizing: "border-box" }}
+                        />
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <p className="cart-panel__total">
-                <strong>
-                  Total: R$ {cartTotal.toFixed(2)}
-                </strong>
-              </p>
-
-              <button
-                className="button-action cart-panel__submit"
-                type="button"
-                onClick={handleOrderSubmit}
-              >
-                Continuar pedido
-              </button>
-            </>
-          )}
-        </aside>
-
+                  <p className="cart-panel__total"><strong>Total: R$ {cartTotal.toFixed(2)}</strong></p>
+                  <button className="button-action cart-panel__submit" type="button" onClick={handleOrderSubmit}>Continuar pedido</button>
+                </>
+              )}
+            </aside>
           </>
         )}
 
         <section className="feedback-section" id="feedback" aria-labelledby="feedback-title">
-          <h2 id="feedback-title">Como foi sua experiência?</h2>
+          <h2>Como foi sua experiência?</h2>
           <p className="feedback-section__intro">Seu feedback ajuda o estabelecimento a melhorar.</p>
           <form onSubmit={handleFeedbackSubmit} className="feedback-form">
             <fieldset className="feedback-form__fieldset">
