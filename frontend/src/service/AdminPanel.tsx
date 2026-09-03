@@ -59,7 +59,7 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     }
   }
 
-  const [view, setView] = useState<"pedidos" | "produtos" | "categorias">("pedidos");
+  const [view, setView] = useState<"pedidos" | "produtos" | "categorias" | "dashboard">("pedidos");
   const [products, setProducts] = useState<Product[]>([]);
   const [menus, setMenus] = useState<Menu[]>([]);
   const [newName, setNewName] = useState("");
@@ -133,6 +133,18 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     );
   }
 
+  const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total_price), 0);
+  const totalOrders = orders.length;
+  const avgTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+  const ordersByStatus = orders.reduce<Record<string, number>>((acc, o) => {
+    acc[o.status] = (acc[o.status] || 0) + 1;
+    return acc;
+  }, {});
+  const ordersByPayment = orders.reduce<Record<string, number>>((acc, o) => {
+    acc[o.payment_method] = (acc[o.payment_method] || 0) + 1;
+    return acc;
+  }, {});
+
   return (
     <div style={{ padding: "1rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "1rem" }}>
@@ -147,13 +159,54 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
           <button className="button-action" onClick={() => setView("categorias")} style={{ backgroundColor: view === "categorias" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "categorias" ? "#fff" : "var(--text-main)" }}>
             Categorias
           </button>
+          <button className="button-action" onClick={() => setView("dashboard")} style={{ backgroundColor: view === "dashboard" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "dashboard" ? "#fff" : "var(--text-main)" }}>
+            Dashboard
+          </button>
           <button className="button-action" onClick={onBack} style={{ backgroundColor: "var(--text-main)", color: "#fff" }}>
             Voltar para o Cardápio
           </button>
         </div>
       </div>
 
-      {view === "produtos" ? (
+      {view === "dashboard" ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: "180px", padding: "1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)" }}>
+              <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Faturamento total</div>
+              <div style={{ fontSize: "1.8rem", fontWeight: "800" }}>R$ {totalRevenue.toFixed(2)}</div>
+            </div>
+            <div style={{ flex: 1, minWidth: "180px", padding: "1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)" }}>
+              <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Pedidos</div>
+              <div style={{ fontSize: "1.8rem", fontWeight: "800" }}>{totalOrders}</div>
+            </div>
+            <div style={{ flex: 1, minWidth: "180px", padding: "1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)" }}>
+              <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Ticket médio</div>
+              <div style={{ fontSize: "1.8rem", fontWeight: "800" }}>R$ {avgTicket.toFixed(2)}</div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: "220px", padding: "1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)" }}>
+              <h3 style={{ margin: "0 0 1rem 0" }}>Pedidos por status</h3>
+              {Object.entries(ordersByStatus).map(([status, count]) => (
+                <div key={status} style={{ display: "flex", justifyContent: "space-between", padding: "0.4rem 0", borderBottom: "1px dashed var(--border-color)" }}>
+                  <span style={{ textTransform: "capitalize" }}>{status}</span>
+                  <strong>{count}</strong>
+                </div>
+              ))}
+            </div>
+            <div style={{ flex: 1, minWidth: "220px", padding: "1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)" }}>
+              <h3 style={{ margin: "0 0 1rem 0" }}>Pedidos por pagamento</h3>
+              {Object.entries(ordersByPayment).map(([method, count]) => (
+                <div key={method} style={{ display: "flex", justifyContent: "space-between", padding: "0.4rem 0", borderBottom: "1px dashed var(--border-color)" }}>
+                  <span style={{ textTransform: "capitalize" }}>{method}</span>
+                  <strong>{count}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : view === "produtos" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
           <div style={{ padding: "1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             <h3 style={{ margin: 0 }}>Novo Produto</h3>
