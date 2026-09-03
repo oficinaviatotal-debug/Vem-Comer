@@ -213,6 +213,32 @@ def get_admin_orders(company_id):
     except Exception as e:
         return jsonify({"error": "Erro ao buscar pedidos do painel", "details": str(e)}), 500
 
+@app.route('/api/orders/<uuid:order_id>/status', methods=['PUT'])
+def update_order_status(order_id):
+    try:
+        data = request.get_json()
+        new_status = data.get('status')
+        
+        if not new_status:
+            return jsonify({"error": "Status nao informado"}), 400
+            
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE orders SET status = %s WHERE id = %s;",
+            (new_status, str(order_id))
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"message": f"Status atualizado para {new_status} com sucesso"}), 200
+    except Exception as e:
+        if 'conn' in locals() and not conn.closed:
+            conn.rollback()
+            cur.close()
+            conn.close()
+        return jsonify({"error": "Erro ao atualizar status", "details": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
