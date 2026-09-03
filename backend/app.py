@@ -240,5 +240,58 @@ def update_order_status(order_id):
             conn.close()
         return jsonify({"error": "Erro ao atualizar status", "details": str(e)}), 500
 
+
+@app.route('/api/companies/<uuid:company_id>/admin/products', methods=['POST'])
+def admin_create_product(company_id):
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        description = data.get('description', '')
+        price = data.get('price')
+        menu_id = data.get('menu_id')
+
+        if not name or price is None:
+            return jsonify({"error": "Nome e preco sao obrigatorios"}), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            """
+            INSERT INTO products (company_id, menu_id, name, description, price)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id;
+            """,
+            (str(company_id), str(menu_id) if menu_id else None, name, description, float(price))
+        )
+        new_prod = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({"message": "Produto criado com sucesso", "product_id": new_prod['id']}), 201
+    except Exception as e:
+        if 'conn' in locals() and not conn.closed:
+            conn.rollback()
+            cur.close()
+            conn.close()
+        return jsonify({"error": "Erro ao criar produto", "details": str(e)}), 500
+
+@app.route('/api/admin/products/<uuid:product_id>', methods=['DELETE'])
+def admin_delete_product(product_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM products WHERE id = %s;", (str(product_id),))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Produto removido com sucesso"}), 200
+    except Exception as e:
+        if 'conn' in locals() and not conn.closed:
+            conn.rollback()
+            cur.close()
+            conn.close()
+        return jsonify({"error": "Erro ao deletar produto", "details": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
