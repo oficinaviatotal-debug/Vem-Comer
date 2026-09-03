@@ -37,9 +37,7 @@ export async function createOrder(
   companyId: string,
   customerName: string,
   totalPrice: number,
-  items: unknown[],
-  paymentMethod: string,
-  paymentChange: number
+  items: unknown[]
 ) {
   const response = await fetch(`${API_URL}/companies/${companyId}/orders`, {
     method: "POST",
@@ -50,8 +48,6 @@ export async function createOrder(
       customer_name: customerName,
       total_price: totalPrice,
       items,
-      payment_method: paymentMethod,
-      payment_change: paymentChange
     }),
   });
 
@@ -61,7 +57,6 @@ export async function createOrder(
 
   return response.json();
 }
-
 
 export async function createFeedback(
   companyId: string,
