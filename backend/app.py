@@ -1,9 +1,19 @@
+import os
+from functools import wraps
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from psycopg2.extras import RealDictCursor
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from werkzeug.security import check_password_hash
 from db import query_db, get_db_connection
 
 app = Flask(__name__)
+
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY nao definida. Adicione SECRET_KEY=<valor aleatorio> no .env")
+serializer = URLSafeTimedSerializer(SECRET_KEY)
+TOKEN_MAX_AGE_SECONDS = 60 * 60 * 8  # 8 horas
 
 CORS(app, resources={r"/*": {
     "origins": "*",
@@ -18,12 +28,68 @@ def add_cors_headers(response):
     response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
     return response
 
+def require_auth(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return jsonify({"error": "Nao autenticado"}), 401
+        token = auth_header[len('Bearer '):]
+        try:
+            data = serializer.loads(token, max_age=TOKEN_MAX_AGE_SECONDS)
+        except SignatureExpired:
+            return jsonify({"error": "Sessao expirada"}), 401
+        except BadSignature:
+            return jsonify({"error": "Token invalido"}), 401
+        request.user = data
+        return f(*args, **kwargs)
+    return wrapper
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({
         "status": "ok",
         "service": "vem-comer-api"
     }), 200
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    try:
+        data = request.get_json()
+        email = (data.get('email') or '').strip().lower()
+        password = data.get('password') or ''
+
+        if not email or not password:
+            return jsonify({"error": "Email e senha sao obrigatorios"}), 400
+
+        user = query_db(
+            "SELECT id, company_id, name, email, password_hash, role FROM users WHERE email = %s AND active = TRUE;",
+            (email,),
+            one=True
+        )
+
+        # Mensagem genérica em ambos os casos, pra não revelar se o email existe
+        if not user or not check_password_hash(user['password_hash'], password):
+            return jsonify({"error": "Email ou senha invalidos"}), 401
+
+        token = serializer.dumps({
+            "user_id": str(user['id']),
+            "company_id": str(user['company_id']),
+            "role": user['role']
+        })
+
+        return jsonify({
+            "token": token,
+            "user": {
+                "id": user['id'],
+                "name": user['name'],
+                "email": user['email'],
+                "role": user['role'],
+                "company_id": user['company_id']
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"error": "Erro interno ao autenticar", "details": str(e)}), 500
 
 @app.route('/api/companies/<uuid:company_id>', methods=['GET'])
 def get_company(company_id):
@@ -198,6 +264,7 @@ def get_order(order_id):
         }), 500
         
 @app.route('/api/companies/<uuid:company_id>/admin/orders', methods=['GET'])
+@require_auth
 def get_admin_orders(company_id):
     try:
         orders = query_db(
@@ -214,6 +281,7 @@ def get_admin_orders(company_id):
         return jsonify({"error": "Erro ao buscar pedidos do painel", "details": str(e)}), 500
 
 @app.route('/api/orders/<uuid:order_id>/status', methods=['PUT'])
+@require_auth
 def update_order_status(order_id):
     try:
         data = request.get_json()
@@ -242,6 +310,7 @@ def update_order_status(order_id):
 
 
 @app.route('/api/companies/<uuid:company_id>/admin/products', methods=['POST'])
+@require_auth
 def admin_create_product(company_id):
     try:
         data = request.get_json()
@@ -277,6 +346,7 @@ def admin_create_product(company_id):
         return jsonify({"error": "Erro ao criar produto", "details": str(e)}), 500
 
 @app.route('/api/admin/products/<uuid:product_id>', methods=['DELETE'])
+@require_auth
 def admin_delete_product(product_id):
     try:
         conn = get_db_connection()
@@ -294,6 +364,7 @@ def admin_delete_product(product_id):
         return jsonify({"error": "Erro ao deletar produto", "details": str(e)}), 500
 
 @app.route('/api/companies/<uuid:company_id>/admin/menus', methods=['POST'])
+@require_auth
 def admin_create_menu(company_id):
     try:
         data = request.get_json()
@@ -326,6 +397,7 @@ def admin_create_menu(company_id):
         return jsonify({"error": "Erro ao criar categoria", "details": str(e)}), 500
 
 @app.route('/api/admin/menus/<uuid:menu_id>', methods=['DELETE'])
+@require_auth
 def admin_delete_menu(menu_id):
     try:
         conn = get_db_connection()

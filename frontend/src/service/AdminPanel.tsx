@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchAdminOrders, updateOrderStatus, fetchProducts, fetchMenus, createProduct, deleteProduct, createMenu, deleteMenu } from "./api";
+import { fetchAdminOrders, updateOrderStatus, fetchProducts, fetchMenus, createProduct, deleteProduct, createMenu, deleteMenu, login, logout, getToken } from "./api";
 
 type Order = {
   id: string;
@@ -30,6 +30,11 @@ type AdminPanelProps = {
 };
 
 export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
+  const [isAuthenticated, setIsAuthenticated] = useState(!!getToken());
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,10 +50,26 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
   }
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     loadOrders();
     const interval = setInterval(loadOrders, 5000);
     return () => clearInterval(interval);
-  }, [companyId]);
+  }, [companyId, isAuthenticated]);
+
+  async function handleLogin() {
+    setLoginError("");
+    try {
+      await login(loginEmail, loginPassword);
+      setIsAuthenticated(true);
+    } catch (err) {
+      setLoginError("Email ou senha inválidos");
+    }
+  }
+
+  function handleLogout() {
+    logout();
+    setIsAuthenticated(false);
+  }
 
   async function handleStatusChange(orderId: string, newStatus: string) {
     try {
@@ -125,6 +146,23 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     }
   }
 
+  if (!isAuthenticated) {
+    return (
+      <div style={{ maxWidth: "360px", margin: "4rem auto", padding: "2rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+        <h2 style={{ margin: "0 0 0.5rem 0", textAlign: "center" }}>Painel de Controle</h2>
+        <input placeholder="Email" type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} style={{ padding: "0.6rem", borderRadius: "8px", border: "1px solid var(--border-color)" }} />
+        <input placeholder="Senha" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} style={{ padding: "0.6rem", borderRadius: "8px", border: "1px solid var(--border-color)" }} />
+        {loginError && <p style={{ color: "#ef4444", fontSize: "0.85rem", margin: 0 }}>{loginError}</p>}
+        <button className="button-action" onClick={handleLogin} style={{ backgroundColor: "var(--color-accent)", color: "#fff" }}>
+          Entrar
+        </button>
+        <button className="button-action" onClick={onBack} style={{ backgroundColor: "transparent", color: "var(--text-muted)" }}>
+          Voltar para o Cardápio
+        </button>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div style={{ textAlign: "center", padding: "3rem", color: "var(--text-muted)" }}>
@@ -162,6 +200,9 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
           </button>
           <button className="button-action" onClick={() => setView("dashboard")} style={{ backgroundColor: view === "dashboard" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "dashboard" ? "#fff" : "var(--text-main)" }}>
             Dashboard
+          </button>
+          <button className="button-action" onClick={handleLogout} style={{ backgroundColor: "#ef4444", color: "#fff" }}>
+            Sair
           </button>
           <button className="button-action" onClick={onBack} style={{ backgroundColor: "var(--text-main)", color: "#fff" }}>
             Voltar para o Cardápio

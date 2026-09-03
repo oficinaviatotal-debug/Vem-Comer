@@ -2,6 +2,38 @@ const currentHost = window.location.hostname;
 const apiHost = currentHost.replace("-5174.", "-5000.");
 export const API_URL = `https://${apiHost}/api`;
 
+const TOKEN_KEY = "vc_token";
+
+export function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function setToken(token: string) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function logout() {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export async function login(email: string, password: string) {
+  const response = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!response.ok) throw new Error("Email ou senha inválidos");
+  const data = await response.json();
+  setToken(data.token);
+  return data.user;
+}
+
+
 export async function fetchCompany(companyId: string) {
   const response = await fetch(`${API_URL}/companies/${companyId}`);
   if (!response.ok) throw new Error("Falha ao buscar estabelecimento");
@@ -68,7 +100,9 @@ export async function fetchOrder(orderId: string) {
 }
 
 export async function fetchAdminOrders(companyId: string) {
-  const response = await fetch(`${API_URL}/companies/${companyId}/admin/orders`);
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/orders`, {
+    headers: authHeaders(),
+  });
   if (!response.ok) throw new Error("Falha ao buscar pedidos do paines");
   return response.json();
 }
@@ -78,6 +112,7 @@ export async function updateOrderStatus(orderId: string, status: string) {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
+      ...authHeaders(),
     },
     body: JSON.stringify({ status }),
   });
@@ -94,7 +129,7 @@ export async function createProduct(
 ) {
   const response = await fetch(`${API_URL}/companies/${companyId}/admin/products`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ name, description, price, menu_id: menuId }),
   });
   if (!response.ok) throw new Error("Falha ao criar produto");
@@ -104,6 +139,7 @@ export async function createProduct(
 export async function deleteProduct(productId: string) {
   const response = await fetch(`${API_URL}/admin/products/${productId}`, {
     method: "DELETE",
+    headers: authHeaders(),
   });
   if (!response.ok) throw new Error("Falha ao remover produto");
   return response.json();
@@ -112,7 +148,7 @@ export async function deleteProduct(productId: string) {
 export async function createMenu(companyId: string, name: string) {
   const response = await fetch(`${API_URL}/companies/${companyId}/admin/menus`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ name }),
   });
   if (!response.ok) throw new Error("Falha ao criar categoria");
@@ -122,6 +158,7 @@ export async function createMenu(companyId: string, name: string) {
 export async function deleteMenu(menuId: string) {
   const response = await fetch(`${API_URL}/admin/menus/${menuId}`, {
     method: "DELETE",
+    headers: authHeaders(),
   });
   if (!response.ok) throw new Error("Falha ao remover categoria");
   return response.json();
