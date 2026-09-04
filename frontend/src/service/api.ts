@@ -34,7 +34,10 @@ export async function login(email: string, password: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-  if (!response.ok) throw new Error("Email ou senha inválidos");
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || "Email ou senha inválidos");
+  }
   const data = await response.json();
   setToken(data.token);
   localStorage.setItem(USER_KEY, JSON.stringify(data.user));

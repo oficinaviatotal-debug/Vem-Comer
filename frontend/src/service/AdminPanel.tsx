@@ -72,7 +72,7 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
       setCurrentUser(getUser());
       setIsAuthenticated(true);
     } catch (err) {
-      setLoginError("Email ou senha inválidos");
+      setLoginError(err instanceof Error ? err.message : "Email ou senha inválidos");
     }
   }
 
