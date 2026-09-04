@@ -3,9 +3,15 @@ const apiHost = currentHost.replace("-5174.", "-5000.");
 export const API_URL = `https://${apiHost}/api`;
 
 const TOKEN_KEY = "vc_token";
+const USER_KEY = "vc_user";
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
+}
+
+export function getUser(): { id: string; name: string; email: string; role: string } | null {
+  const raw = localStorage.getItem(USER_KEY);
+  return raw ? JSON.parse(raw) : null;
 }
 
 function setToken(token: string) {
@@ -14,6 +20,7 @@ function setToken(token: string) {
 
 export function logout() {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
 }
 
 function authHeaders(): Record<string, string> {
@@ -30,6 +37,7 @@ export async function login(email: string, password: string) {
   if (!response.ok) throw new Error("Email ou senha inválidos");
   const data = await response.json();
   setToken(data.token);
+  localStorage.setItem(USER_KEY, JSON.stringify(data.user));
   return data.user;
 }
 
@@ -161,5 +169,47 @@ export async function deleteMenu(menuId: string) {
     headers: authHeaders(),
   });
   if (!response.ok) throw new Error("Falha ao remover categoria");
+  return response.json();
+}
+
+export async function fetchUsers(companyId: string) {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/users`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error("Falha ao buscar usuários");
+  return response.json();
+}
+
+export async function createUser(companyId: string, name: string, email: string, password: string, role: string) {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/users`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ name, email, password, role }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || "Falha ao criar usuário");
+  }
+  return response.json();
+}
+
+export async function deactivateUser(userId: string) {
+  const response = await fetch(`${API_URL}/admin/users/${userId}/deactivate`, {
+    method: "PUT",
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error("Falha ao desativar usuário");
+  return response.json();
+}
+
+export async function deleteUser(userId: string) {
+  const response = await fetch(`${API_URL}/admin/users/${userId}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || "Falha ao apagar usuário");
+  }
   return response.json();
 }

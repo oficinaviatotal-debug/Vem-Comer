@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchAdminOrders, updateOrderStatus, fetchProducts, fetchMenus, createProduct, deleteProduct, createMenu, deleteMenu, login, logout, getToken } from "./api";
+import { fetchAdminOrders, updateOrderStatus, fetchProducts, fetchMenus, createProduct, deleteProduct, createMenu, deleteMenu, login, logout, getToken, getUser, fetchUsers, createUser, deactivateUser, deleteUser } from "./api";
 
 type Order = {
   id: string;
@@ -24,6 +24,14 @@ type Menu = {
   name: string;
 };
 
+type StaffUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  active: boolean;
+};
+
 type AdminPanelProps = {
   companyId: string;
   onBack: () => void;
@@ -31,6 +39,7 @@ type AdminPanelProps = {
 
 export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(!!getToken());
+  const [currentUser, setCurrentUser] = useState(getUser());
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -60,6 +69,7 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     setLoginError("");
     try {
       await login(loginEmail, loginPassword);
+      setCurrentUser(getUser());
       setIsAuthenticated(true);
     } catch (err) {
       setLoginError("Email ou senha inválidos");
@@ -68,7 +78,9 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
 
   function handleLogout() {
     logout();
+    setCurrentUser(null);
     setIsAuthenticated(false);
+    setView("pedidos");
   }
 
   async function handleStatusChange(orderId: string, newStatus: string) {
@@ -80,14 +92,20 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     }
   }
 
-  const [view, setView] = useState<"pedidos" | "produtos" | "categorias" | "dashboard">("pedidos");
+  const [view, setView] = useState<"pedidos" | "produtos" | "categorias" | "dashboard" | "usuarios">("pedidos");
   const [products, setProducts] = useState<Product[]>([]);
   const [menus, setMenus] = useState<Menu[]>([]);
+  const [users, setUsers] = useState<StaffUser[]>([]);
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newPrice, setNewPrice] = useState("");
   const [newMenuId, setNewMenuId] = useState("");
   const [newMenuName, setNewMenuName] = useState("");
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserRole, setNewUserRole] = useState("WAITER");
+  const [userError, setUserError] = useState("");
 
   async function loadProducts() {
     try {
@@ -99,8 +117,18 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     }
   }
 
+  async function loadUsers() {
+    try {
+      const data = await fetchUsers(companyId);
+      setUsers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   useEffect(() => {
     if (view === "produtos" || view === "categorias") loadProducts();
+    if (view === "usuarios") loadUsers();
   }, [view, companyId]);
 
   async function handleCreateProduct() {
@@ -141,6 +169,39 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     try {
       await deleteMenu(menuId);
       loadProducts();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleCreateUser() {
+    setUserError("");
+    if (!newUserName || !newUserEmail || !newUserPassword) return;
+    try {
+      await createUser(companyId, newUserName, newUserEmail, newUserPassword, newUserRole);
+      setNewUserName("");
+      setNewUserEmail("");
+      setNewUserPassword("");
+      setNewUserRole("WAITER");
+      loadUsers();
+    } catch (err) {
+      setUserError(err instanceof Error ? err.message : "Erro ao criar usuário");
+    }
+  }
+
+  async function handleDeactivateUser(userId: string) {
+    try {
+      await deactivateUser(userId);
+      loadUsers();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleDeleteUser(userId: string) {
+    try {
+      await deleteUser(userId);
+      loadUsers();
     } catch (err) {
       console.error(err);
     }
@@ -201,6 +262,11 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
           <button className="button-action" onClick={() => setView("dashboard")} style={{ backgroundColor: view === "dashboard" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "dashboard" ? "#fff" : "var(--text-main)" }}>
             Dashboard
           </button>
+          {currentUser?.role === "OWNER" && (
+            <button className="button-action" onClick={() => setView("usuarios")} style={{ backgroundColor: view === "usuarios" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "usuarios" ? "#fff" : "var(--text-main)" }}>
+              Usuários
+            </button>
+          )}
           <button className="button-action" onClick={handleLogout} style={{ backgroundColor: "#ef4444", color: "#fff" }}>
             Sair
           </button>
@@ -247,6 +313,54 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
               ))}
             </div>
           </div>
+        </div>
+      ) : view === "usuarios" && currentUser?.role === "OWNER" ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div style={{ padding: "1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <h3 style={{ margin: 0 }}>Novo Usuário</h3>
+            <input placeholder="Nome" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} style={{ padding: "0.5rem", borderRadius: "8px", border: "1px solid var(--border-color)" }} />
+            <input placeholder="Email" type="email" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} style={{ padding: "0.5rem", borderRadius: "8px", border: "1px solid var(--border-color)" }} />
+            <input placeholder="Senha (mín. 8 caracteres)" type="password" value={newUserPassword} onChange={(e) => setNewUserPassword(e.target.value)} style={{ padding: "0.5rem", borderRadius: "8px", border: "1px solid var(--border-color)" }} />
+            <select value={newUserRole} onChange={(e) => setNewUserRole(e.target.value)} style={{ padding: "0.5rem", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+              <option value="MANAGER">Gerente</option>
+              <option value="WAITER">Garçom</option>
+              <option value="CASHIER">Caixa</option>
+              <option value="KITCHEN">Cozinha</option>
+              <option value="COURIER">Entregador</option>
+            </select>
+            {userError && <p style={{ color: "#ef4444", fontSize: "0.85rem", margin: 0 }}>{userError}</p>}
+            <button className="button-action" onClick={handleCreateUser} style={{ backgroundColor: "#22c55e", color: "#fff" }}>
+              Adicionar Usuário
+            </button>
+          </div>
+
+          {users.length === 0 ? (
+            <p style={{ color: "var(--text-muted)", textAlign: "center" }}>Nenhum usuário cadastrado.</p>
+          ) : (
+            users.map((user) => (
+              <div key={user.id} style={{ padding: "1rem 1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: user.active ? 1 : 0.5 }}>
+                <div>
+                  <strong>{user.name}</strong> — {user.email}
+                  <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{user.role}{!user.active && " · Desativado"}</div>
+                </div>
+                {user.active && user.role !== "OWNER" && (
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem" }} onClick={() => handleDeactivateUser(user.id)}>
+                      Desativar
+                    </button>
+                    <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem", backgroundColor: "#ef4444", color: "#fff" }} onClick={() => handleDeleteUser(user.id)}>
+                      Apagar
+                    </button>
+                  </div>
+                )}
+                {!user.active && (
+                  <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem", backgroundColor: "#ef4444", color: "#fff" }} onClick={() => handleDeleteUser(user.id)}>
+                    Apagar
+                  </button>
+                )}
+              </div>
+            ))
+          )}
         </div>
       ) : view === "produtos" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>

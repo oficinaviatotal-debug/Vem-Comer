@@ -2,9 +2,10 @@ import os
 from functools import wraps
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+import psycopg2
 from psycopg2.extras import RealDictCursor
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 from db import query_db, get_db_connection
 
 app = Flask(__name__)
@@ -15,18 +16,21 @@ if not SECRET_KEY:
 serializer = URLSafeTimedSerializer(SECRET_KEY)
 TOKEN_MAX_AGE_SECONDS = 60 * 60 * 8  # 8 horas
 
+CORS_ORIGIN_REGEX = os.getenv('CORS_ORIGIN_REGEX', r"https://.*\.app\.github\.dev")
+
 CORS(app, resources={r"/*": {
-    "origins": "*",
+    "origins": [CORS_ORIGIN_REGEX],
     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     "allow_headers": ["Content-Type", "Authorization"]
 }})
 
-@app.after_request
-def add_cors_headers(response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
-    response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
-    return response
+FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
+
+def error_response(public_message, exception=None, status=500):
+    body = {"error": public_message}
+    if FLASK_DEBUG and exception is not None:
+        body["details"] = str(exception)
+    return jsonify(body), status
 
 def require_auth(f):
     @wraps(f)
@@ -44,6 +48,17 @@ def require_auth(f):
         request.user = data
         return f(*args, **kwargs)
     return wrapper
+
+def require_roles(*allowed_roles):
+    def decorator(f):
+        @wraps(f)
+        @require_auth
+        def wrapper(*args, **kwargs):
+            if request.user.get('role') not in allowed_roles:
+                return jsonify({"error": "Acesso negado para este cargo"}), 403
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -310,7 +325,7 @@ def update_order_status(order_id):
 
 
 @app.route('/api/companies/<uuid:company_id>/admin/products', methods=['POST'])
-@require_auth
+@require_roles('OWNER', 'MANAGER')
 def admin_create_product(company_id):
     try:
         data = request.get_json()
@@ -346,7 +361,7 @@ def admin_create_product(company_id):
         return jsonify({"error": "Erro ao criar produto", "details": str(e)}), 500
 
 @app.route('/api/admin/products/<uuid:product_id>', methods=['DELETE'])
-@require_auth
+@require_roles('OWNER', 'MANAGER')
 def admin_delete_product(product_id):
     try:
         conn = get_db_connection()
@@ -364,7 +379,7 @@ def admin_delete_product(product_id):
         return jsonify({"error": "Erro ao deletar produto", "details": str(e)}), 500
 
 @app.route('/api/companies/<uuid:company_id>/admin/menus', methods=['POST'])
-@require_auth
+@require_roles('OWNER', 'MANAGER')
 def admin_create_menu(company_id):
     try:
         data = request.get_json()
@@ -397,7 +412,7 @@ def admin_create_menu(company_id):
         return jsonify({"error": "Erro ao criar categoria", "details": str(e)}), 500
 
 @app.route('/api/admin/menus/<uuid:menu_id>', methods=['DELETE'])
-@require_auth
+@require_roles('OWNER', 'MANAGER')
 def admin_delete_menu(menu_id):
     try:
         conn = get_db_connection()
@@ -413,6 +428,118 @@ def admin_delete_menu(menu_id):
             cur.close()
             conn.close()
         return jsonify({"error": "Erro ao deletar categoria", "details": str(e)}), 500
+
+VALID_ROLES = ('OWNER', 'MANAGER', 'WAITER', 'CASHIER', 'KITCHEN', 'COURIER')
+
+@app.route('/api/companies/<uuid:company_id>/admin/users', methods=['GET'])
+@require_roles('OWNER', 'MANAGER')
+def admin_list_users(company_id):
+    try:
+        users = query_db(
+            "SELECT id, name, email, role, active, created_at FROM users WHERE company_id = %s ORDER BY created_at DESC;",
+            (str(company_id),)
+        )
+        return jsonify(users), 200
+    except Exception as e:
+        return error_response("Erro ao buscar usuarios", e)
+
+@app.route('/api/companies/<uuid:company_id>/admin/users', methods=['POST'])
+@require_roles('OWNER')
+def admin_create_user(company_id):
+    try:
+        data = request.get_json()
+        name = (data.get('name') or '').strip()
+        email = (data.get('email') or '').strip().lower()
+        password = data.get('password') or ''
+        role = data.get('role') or ''
+
+        if not name or not email or not password or role not in VALID_ROLES:
+            return jsonify({"error": "Nome, email, senha e cargo valido sao obrigatorios"}), 400
+        if len(password) < 8:
+            return jsonify({"error": "Senha deve ter pelo menos 8 caracteres"}), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        try:
+            cur.execute(
+                """
+                INSERT INTO users (company_id, name, email, password_hash, role)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id;
+                """,
+                (str(company_id), name, email, generate_password_hash(password), role)
+            )
+        except psycopg2.errors.UniqueViolation:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Ja existe um usuario com este email"}), 409
+
+        new_user = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Usuario criado com sucesso", "user_id": new_user['id']}), 201
+    except Exception as e:
+        if 'conn' in locals() and not conn.closed:
+            conn.rollback()
+            cur.close()
+            conn.close()
+        return error_response("Erro ao criar usuario", e)
+
+@app.route('/api/admin/users/<uuid:user_id>/deactivate', methods=['PUT'])
+@require_roles('OWNER')
+def admin_deactivate_user(user_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET active = FALSE WHERE id = %s;", (str(user_id),))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Usuario desativado com sucesso"}), 200
+    except Exception as e:
+        if 'conn' in locals() and not conn.closed:
+            conn.rollback()
+            cur.close()
+            conn.close()
+        return error_response("Erro ao desativar usuario", e)
+
+@app.route('/api/admin/users/<uuid:user_id>', methods=['DELETE'])
+@require_roles('OWNER')
+def admin_delete_user(user_id):
+    try:
+        if str(user_id) == request.user.get('user_id'):
+            return jsonify({"error": "Voce nao pode apagar seu proprio usuario"}), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT role FROM users WHERE id = %s;", (str(user_id),))
+        target = cur.fetchone()
+        if not target:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Usuario nao encontrado"}), 404
+
+        if target['role'] == 'OWNER':
+            cur.execute("SELECT COUNT(*) AS total FROM users WHERE company_id = %s AND role = 'OWNER' AND active = TRUE;", (request.user.get('company_id'),))
+            owner_count = cur.fetchone()['total']
+            if owner_count <= 1:
+                cur.close()
+                conn.close()
+                return jsonify({"error": "Nao e possivel apagar o unico OWNER do estabelecimento"}), 400
+
+        cur.execute("DELETE FROM users WHERE id = %s;", (str(user_id),))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Usuario apagado com sucesso"}), 200
+    except Exception as e:
+        if 'conn' in locals() and not conn.closed:
+            conn.rollback()
+            cur.close()
+            conn.close()
+        return error_response("Erro ao apagar usuario", e)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
