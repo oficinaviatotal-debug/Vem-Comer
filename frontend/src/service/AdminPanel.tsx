@@ -338,20 +338,15 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
             <p style={{ color: "var(--text-muted)", textAlign: "center" }}>Nenhum usuário cadastrado.</p>
           ) : (
             users.map((user) => (
-              <div key={user.id} style={{ padding: "1rem 1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: user.active ? 1 : 0.5 }}>
-                <div>
+              <div key={user.id} style={{ padding: "1rem 1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ opacity: user.active ? 1 : 0.5 }}>
                   <strong>{user.name}</strong> — {user.email}
                   <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{user.role}{!user.active && " · Desativado"}</div>
                 </div>
                 {user.active && user.role !== "OWNER" && (
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem" }} onClick={() => handleDeactivateUser(user.id)}>
-                      Desativar
-                    </button>
-                    <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem", backgroundColor: "#ef4444", color: "#fff" }} onClick={() => handleDeleteUser(user.id)}>
-                      Apagar
-                    </button>
-                  </div>
+                  <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem" }} onClick={() => handleDeactivateUser(user.id)}>
+                    Desativar
+                  </button>
                 )}
                 {!user.active && (
                   <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem", backgroundColor: "#ef4444", color: "#fff" }} onClick={() => handleDeleteUser(user.id)}>

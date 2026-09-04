@@ -1,4 +1,6 @@
 import os
+import time
+import threading
 from functools import wraps
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -67,6 +69,29 @@ def health_check():
         "service": "vem-comer-api"
     }), 200
 
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_WINDOW_SECONDS = 15 * 60
+_failed_login_attempts = {}
+_login_lock = threading.Lock()
+
+def register_failed_login(email):
+    now = time.time()
+    with _login_lock:
+        attempts = [t for t in _failed_login_attempts.get(email, []) if now - t < LOGIN_WINDOW_SECONDS]
+        attempts.append(now)
+        _failed_login_attempts[email] = attempts
+
+def is_login_blocked(email):
+    now = time.time()
+    with _login_lock:
+        attempts = [t for t in _failed_login_attempts.get(email, []) if now - t < LOGIN_WINDOW_SECONDS]
+        _failed_login_attempts[email] = attempts
+        return len(attempts) >= LOGIN_MAX_ATTEMPTS
+
+def clear_failed_logins(email):
+    with _login_lock:
+        _failed_login_attempts.pop(email, None)
+
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     try:
@@ -77,6 +102,9 @@ def login():
         if not email or not password:
             return jsonify({"error": "Email e senha sao obrigatorios"}), 400
 
+        if is_login_blocked(email):
+            return jsonify({"error": "Muitas tentativas. Tente novamente em alguns minutos."}), 429
+
         user = query_db(
             "SELECT id, company_id, name, email, password_hash, role FROM users WHERE email = %s AND active = TRUE;",
             (email,),
@@ -85,7 +113,10 @@ def login():
 
         # Mensagem genérica em ambos os casos, pra não revelar se o email existe
         if not user or not check_password_hash(user['password_hash'], password):
+            register_failed_login(email)
             return jsonify({"error": "Email ou senha invalidos"}), 401
+
+        clear_failed_logins(email)
 
         token = serializer.dumps({
             "user_id": str(user['id']),
@@ -514,12 +545,17 @@ def admin_delete_user(user_id):
 
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT role FROM users WHERE id = %s;", (str(user_id),))
+        cur.execute("SELECT role, active FROM users WHERE id = %s;", (str(user_id),))
         target = cur.fetchone()
         if not target:
             cur.close()
             conn.close()
             return jsonify({"error": "Usuario nao encontrado"}), 404
+
+        if target['active']:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Desative o usuario antes de apaga-lo"}), 400
 
         if target['role'] == 'OWNER':
             cur.execute("SELECT COUNT(*) AS total FROM users WHERE company_id = %s AND role = 'OWNER' AND active = TRUE;", (request.user.get('company_id'),))
