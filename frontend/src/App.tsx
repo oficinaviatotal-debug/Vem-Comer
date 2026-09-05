@@ -8,8 +8,10 @@ import {
   fetchMenus,
   fetchProducts,
   fetchOrder,
+  getUser,
   fetchTable,
 } from "./service/api";
+
 import AdminPanel from "./service/AdminPanel";
 
 type Company = {
@@ -83,9 +85,10 @@ export default function App() {
   useEffect(() => {
     if (!tableId) return;
     fetchTable(tableId)
-      .then((data) => setTableNumber(data.number))
+      .then((data: any) => setTableNumber(data.number))
       .catch(() => setTableNumber(null));
   }, [tableId]);
+
 
   useEffect(() => {
     async function loadData() {
@@ -207,13 +210,12 @@ export default function App() {
 
   return (
     <>
-            <header className="main-header">
+      <header className="main-header">
         <div className="main-header__container">
           <a className="main-header__logo" href="/">
             {company.name}
           </a>
 
-          {/* Botão de 3 Tracinhos (Hambúrguer) — Visível apenas no Celular */}
           <button 
             type="button"
             className="menu-hamburger-btn"
@@ -225,26 +227,55 @@ export default function App() {
             <span className={`hamburger-bar ${menuOpen ? 'bar-bot-open' : ''}`}></span>
           </button>
 
-          {/* Menu de Navegação Adaptável */}
           <nav className={`main-header__nav ${menuOpen ? 'nav-menu-open' : ''}`} aria-label="Navegação principal">
-            <a href="#cardapio" onClick={() => setMenuOpen(false)}>Cardápio</a>
-            <a href="#pedido" onClick={() => setMenuOpen(false)}>
-              Meu pedido ({cart.reduce((sum, item) => sum + item.quantity, 0)})
-            </a>
-            <a href="#feedback" onClick={() => setMenuOpen(false)}>Avaliar</a>
-            <button 
-              type="button"
-              onClick={() => {
-                setIsAdminMode(true);
-                setMenuOpen(false);
-              }}
-              style={{ background: "none", border: "none", color: "var(--text-muted)", fontWeight: "600", fontSize: "0.95rem", cursor: "pointer" }}
-            >
-              Painel Admin
-            </button>
+            {isAdminMode && localStorage.getItem("token") ? (
+              <>
+                <span style={{ fontSize: "0.8rem", textTransform: "uppercase", color: "var(--color-accent)", fontWeight: "700", display: "block", marginBottom: "-0.5rem" }} className="admin-menu-label">Painel Admin</span>
+                <a href="#pedidos" onClick={() => { const el = document.getElementById("admin-tab-pedidos"); el?.click(); setMenuOpen(false); }}>Pedidos</a>
+                <a href="#produtos" onClick={() => { const el = document.getElementById("admin-tab-produtos"); el?.click(); setMenuOpen(false); }}>Produtos</a>
+                <a href="#categorias" onClick={() => { const el = document.getElementById("admin-tab-categorias"); el?.click(); setMenuOpen(false); }}>Categorias</a>
+                <a href="#mesas" onClick={() => { const el = document.getElementById("admin-tab-mesas"); el?.click(); setMenuOpen(false); }}>Mesas</a>
+                <a href="#dashboard" onClick={() => { const el = document.getElementById("admin-tab-dashboard"); el?.click(); setMenuOpen(false); }}>Dashboard</a>
+                {getUser()?.role === "OWNER" && (
+                  <a href="#usuarios" onClick={() => { const el = document.getElementById("admin-tab-usuarios"); el?.click(); setMenuOpen(false); }}>Usuários</a>
+                )}
+                <button 
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById("admin-btn-logout");
+                    el?.click();
+                    setIsAdminMode(false);
+                    setMenuOpen(false);
+                  }}
+                  style={{ background: "none", border: "none", color: "var(--color-danger)", fontWeight: "600", fontSize: "0.95rem", cursor: "pointer", textAlign: "left" }}
+                >
+                  Sair do Painel
+                </button>
+              </>
+            ) : (
+              <>
+                <a href="#cardapio" onClick={() => { setIsAdminMode(false); setMenuOpen(false); }}>Cardápio</a>
+                <a href="#pedido" onClick={() => { setIsAdminMode(false); setMenuOpen(false); }}>
+                  Meu pedido ({cart.reduce((sum, item) => sum + item.quantity, 0)})
+                </a>
+                <a href="#feedback" onClick={() => { setIsAdminMode(false); setMenuOpen(false); }}>Avaliar</a>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setIsAdminMode(true);
+                    setMenuOpen(false);
+                  }}
+                  style={{ background: "none", border: "none", color: "var(--text-muted)", fontWeight: "600", fontSize: "0.95rem", cursor: "pointer" }}
+                >
+                  Painel Admin
+                </button>
+              </>
+            )}
           </nav>
         </div>
       </header>
+
+
 
 
       <main className="main-content">

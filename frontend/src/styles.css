@@ -664,3 +664,37 @@ body {
     display: none;
   }
 }
+/* ==========================================================================
+   ⚙️ CORREÇÃO DE ABAS DO ADMIN SQUASH NO CELULAR
+   ========================================================================== */
+
+@media (max-width: 767px) {
+  /* Altera o contêiner de botões para permitir arrastar para o lado de forma fluida */
+  .main-content div[style*="display: flex"][style*="gap: 0.5rem"] {
+    display: flex !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100vw !important;
+    margin-left: -1rem !important; /* Compensa o padding da página */
+    padding: 0.5rem 1rem !important;
+    gap: 0.5rem !important;
+    scrollbar-width: none !important; /* Oculta a barra no Firefox */
+  }
+
+  .main-content div[style*="display: flex"][style*="gap: 0.5rem"]::-webkit-scrollbar {
+    display: none !important; /* Oculta a barra no Chrome/Safari */
+  }
+
+  /* Impede os botões do admin de encolherem ou quebrarem linha */
+  .main-content div[style*="display: flex"][style*="gap: 0.5rem"] .button-action {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+  
+  /* Alinha o título "Painel de Controle" e os botões verticalmente no mobile */
+  .main-content div[style*="display: flex"][style*="justify-content: space-between"] {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+  }
+}
