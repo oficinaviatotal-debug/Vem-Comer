@@ -52,6 +52,9 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastOrderCount, setLastOrderCount] = useState<number | null>(null);
+  const [showNewOrderAlert, setShowNewOrderAlert] = useState<boolean>(false);
+
 
   async function loadOrders() {
     try {
@@ -64,23 +67,29 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     }
   }
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
+    useEffect(() => {
+    async function loadOrders() {
+      try {
+        const data = await fetchAdminOrders(companyId);
+        const currentOrders = Array.isArray(data) ? data : [];
+        setOrders(currentOrders);
+
+        if (lastOrderCount !== null && currentOrders.length > lastOrderCount) {
+          setShowNewOrderAlert(true);
+        }
+        setLastOrderCount(currentOrders.length);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     loadOrders();
     const interval = setInterval(loadOrders, 5000);
     return () => clearInterval(interval);
-  }, [companyId, isAuthenticated]);
+  }, [companyId, lastOrderCount]);
 
-  async function handleLogin() {
-    setLoginError("");
-    try {
-      await login(loginEmail, loginPassword);
-      setCurrentUser(getUser());
-      setIsAuthenticated(true);
-    } catch (err) {
-      setLoginError(err instanceof Error ? err.message : "Email ou senha inválidos");
-    }
-  }
 
   function handleLogout() {
     logout();
