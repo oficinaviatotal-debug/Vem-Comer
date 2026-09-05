@@ -51,6 +51,12 @@ export async function fetchCompany(companyId: string) {
   return response.json();
 }
 
+export async function fetchTable(tableId: string) {
+  const response = await fetch(`${API_URL}/tables/${tableId}`);
+  if (!response.ok) throw new Error("Falha ao buscar mesa");
+  return response.json();
+}
+
 export async function fetchProducts(companyId: string) {
   const response = await fetch(`${API_URL}/companies/${companyId}/products`);
   if (!response.ok) throw new Error("Falha ao buscar produtos");
@@ -69,7 +75,8 @@ export async function createOrder(
   totalPrice: number,
   items: unknown[],
   paymentMethod: string,
-  paymentChange: number
+  paymentChange: number,
+  tableId?: string | null
 ) {
   const response = await fetch(`${API_URL}/companies/${companyId}/orders`, {
     method: "POST",
@@ -81,7 +88,8 @@ export async function createOrder(
       total_price: totalPrice,
       items,
       payment_method: paymentMethod,
-      payment_change: paymentChange
+      payment_change: paymentChange,
+      table_id: tableId || null
     }),
   });
   if (!response.ok) throw new Error("Falha ao criar pedido");
@@ -214,5 +222,35 @@ export async function deleteUser(userId: string) {
     const err = await response.json().catch(() => ({}));
     throw new Error(err.error || "Falha ao apagar usuário");
   }
+  return response.json();
+}
+
+export async function fetchTables(companyId: string) {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/tables`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error("Falha ao buscar mesas");
+  return response.json();
+}
+
+export async function createTable(companyId: string, number: string) {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/tables`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ number }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || "Falha ao criar mesa");
+  }
+  return response.json();
+}
+
+export async function deleteTable(tableId: string) {
+  const response = await fetch(`${API_URL}/admin/tables/${tableId}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error("Falha ao remover mesa");
   return response.json();
 }

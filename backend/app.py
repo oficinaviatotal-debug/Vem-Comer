@@ -151,6 +151,20 @@ def get_company(company_id):
     except Exception as e:
         return jsonify({"error": "Erro interno no servidor", "details": str(e)}), 500
 
+@app.route('/api/tables/<uuid:table_id>', methods=['GET'])
+def get_table(table_id):
+    try:
+        table = query_db(
+            "SELECT id, number FROM tables WHERE id = %s;",
+            (str(table_id),),
+            one=True
+        )
+        if not table:
+            return jsonify({"error": "Mesa nao encontrada"}), 404
+        return jsonify(table), 200
+    except Exception as e:
+        return error_response("Erro ao buscar mesa", e)
+
 @app.route('/api/companies/<uuid:company_id>/users', methods=['GET'])
 def get_company_users(company_id):
     try:
@@ -208,7 +222,8 @@ def create_company_order(company_id):
         customer_name = data.get('customer_name', 'Cliente Balcão')
         cart_items = data.get('items', [])
         total_price = data.get('total_price', 0)
-        
+        table_id = data.get('table_id')
+
         # Captura os dados de checkout enviados pelo React
         payment_method = data.get('payment_method', 'pix')
         payment_change = data.get('payment_change', 0)
@@ -218,15 +233,23 @@ def create_company_order(company_id):
             
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        
+
+        # Valida que a mesa pertence a este estabelecimento antes de vincular
+        if table_id:
+            cur.execute("SELECT id FROM tables WHERE id = %s AND company_id = %s;", (str(table_id), str(company_id)))
+            if not cur.fetchone():
+                cur.close()
+                conn.close()
+                return jsonify({"error": "Mesa invalida"}), 400
+
         # Alimenta as novas colunas com os parâmetros dinâmicos
         cur.execute(
             """
-            INSERT INTO orders (company_id, customer_name, customer, total_price, total, payment_method, payment_change) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s) 
+            INSERT INTO orders (company_id, customer_name, customer, total_price, total, payment_method, payment_change, table_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id;
             """,
-            (str(company_id), customer_name, customer_name, total_price, total_price, payment_method, float(payment_change or 0))
+            (str(company_id), customer_name, customer_name, total_price, total_price, payment_method, float(payment_change or 0), str(table_id) if table_id else None)
         )
         order_row = cur.fetchone()
         order_id = order_row['id']
@@ -245,7 +268,10 @@ def create_company_order(company_id):
                 "INSERT INTO order_items (order_id, product_id, quantity, unit_price, total, price, value) VALUES (%s, %s, %s, %s, %s, %s, %s);",
                 (str(order_id), str(product_id), quantity, item_price, item_total, item_price, item_price)
             )
-            
+
+        if table_id:
+            cur.execute("UPDATE tables SET status = 'ocupada' WHERE id = %s;", (str(table_id),))
+
         conn.commit()
         cur.close()
         conn.close()
@@ -342,6 +368,17 @@ def update_order_status(order_id):
             "UPDATE orders SET status = %s WHERE id = %s;",
             (new_status, str(order_id))
         )
+
+        # Libera a mesa automaticamente quando o pedido é concluído
+        if new_status == 'concluido':
+            cur.execute(
+                """
+                UPDATE tables SET status = 'livre'
+                WHERE id = (SELECT table_id FROM orders WHERE id = %s);
+                """,
+                (str(order_id),)
+            )
+
         conn.commit()
         cur.close()
         conn.close()
@@ -576,6 +613,82 @@ def admin_delete_user(user_id):
             cur.close()
             conn.close()
         return error_response("Erro ao apagar usuario", e)
+
+@app.route('/api/companies/<uuid:company_id>/admin/tables', methods=['GET'])
+@require_auth
+def admin_get_tables(company_id):
+    try:
+        tables = query_db(
+            """
+            SELECT id, number, status 
+            FROM tables 
+            WHERE company_id = %s 
+            ORDER BY number ASC;
+            """,
+            (str(company_id),)
+        )
+        return jsonify(tables), 200
+    except Exception as e:
+        return error_response("Erro ao buscar mesas", e)
+
+@app.route('/api/companies/<uuid:company_id>/admin/tables', methods=['POST'])
+@require_roles('OWNER', 'MANAGER')
+def admin_create_table(company_id):
+    try:
+        data = request.get_json()
+        number = data.get('number')
+
+        if not number:
+            return jsonify({"error": "O numero da mesa eh obrigatorio"}), 400
+
+        # Valida se ja existe uma mesa com esse numero para evitar duplicados
+        existing = query_db(
+            "SELECT id FROM tables WHERE company_id = %s AND number = %s;",
+            (str(company_id), int(number))
+        )
+        if existing:
+            return jsonify({"error": "Ja existe uma mesa com este numero"}), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            """
+            INSERT INTO tables (company_id, number, status)
+            VALUES (%s, %s, 'livre')
+            RETURNING id;
+            """,
+            (str(company_id), int(number))
+        )
+        new_table = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({"message": "Mesa criada com sucesso", "table_id": new_table['id']}), 201
+    except Exception as e:
+        if 'conn' in locals() and not conn.closed:
+            conn.rollback()
+            cur.close()
+            conn.close()
+        return error_response("Erro ao criar mesa", e)
+
+@app.route('/api/admin/tables/<uuid:table_id>', methods=['DELETE'])
+@require_roles('OWNER', 'MANAGER')
+def admin_delete_table(table_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM tables WHERE id = %s;", (str(table_id),))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Mesa removida com sucesso"}), 200
+    except Exception as e:
+        if 'conn' in locals() and not conn.closed:
+            conn.rollback()
+            cur.close()
+            conn.close()
+        return error_response("Erro ao deletar mesa", e)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

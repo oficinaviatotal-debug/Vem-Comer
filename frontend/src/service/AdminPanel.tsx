@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchAdminOrders, updateOrderStatus, fetchProducts, fetchMenus, createProduct, deleteProduct, createMenu, deleteMenu, login, logout, getToken, getUser, fetchUsers, createUser, deactivateUser, deleteUser } from "./api";
+import { fetchAdminOrders, updateOrderStatus, fetchProducts, fetchMenus, createProduct, deleteProduct, createMenu, deleteMenu, login, logout, getToken, getUser, fetchUsers, createUser, deactivateUser, deleteUser, fetchTables, createTable, deleteTable } from "./api";
 
 type Order = {
   id: string;
@@ -30,6 +30,12 @@ type StaffUser = {
   email: string;
   role: string;
   active: boolean;
+};
+
+type TableRow = {
+  id: string;
+  number: number;
+  status: string;
 };
 
 type AdminPanelProps = {
@@ -92,7 +98,7 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     }
   }
 
-  const [view, setView] = useState<"pedidos" | "produtos" | "categorias" | "dashboard" | "usuarios">("pedidos");
+  const [view, setView] = useState<"pedidos" | "produtos" | "categorias" | "dashboard" | "usuarios" | "mesas">("pedidos");
   const [products, setProducts] = useState<Product[]>([]);
   const [menus, setMenus] = useState<Menu[]>([]);
   const [users, setUsers] = useState<StaffUser[]>([]);
@@ -106,6 +112,9 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserRole, setNewUserRole] = useState("WAITER");
   const [userError, setUserError] = useState("");
+  const [tables, setTables] = useState<TableRow[]>([]);
+  const [newTableNumber, setNewTableNumber] = useState("");
+  const [tableError, setTableError] = useState("");
 
   async function loadProducts() {
     try {
@@ -129,6 +138,7 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
   useEffect(() => {
     if (view === "produtos" || view === "categorias") loadProducts();
     if (view === "usuarios") loadUsers();
+    if (view === "mesas") loadTables();
   }, [view, companyId]);
 
   async function handleCreateProduct() {
@@ -207,6 +217,44 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     }
   }
 
+  async function loadTables() {
+    try {
+      const data = await fetchTables(companyId);
+      setTables(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleCreateTable() {
+    setTableError("");
+    if (!newTableNumber) return;
+    try {
+      await createTable(companyId, newTableNumber);
+      setNewTableNumber("");
+      loadTables();
+    } catch (err) {
+      setTableError(err instanceof Error ? err.message : "Erro ao criar mesa");
+    }
+  }
+
+  async function handleDeleteTable(tableId: string) {
+    try {
+      await deleteTable(tableId);
+      loadTables();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function tableOrderUrl(tableId: string) {
+    return `${window.location.origin}${window.location.pathname}?mesa=${tableId}`;
+  }
+
+  function tableQrCodeUrl(tableId: string) {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(tableOrderUrl(tableId))}`;
+  }
+
   if (!isAuthenticated) {
     return (
       <div style={{ maxWidth: "360px", margin: "4rem auto", padding: "2rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -258,6 +306,9 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
           </button>
           <button className="button-action" onClick={() => setView("categorias")} style={{ backgroundColor: view === "categorias" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "categorias" ? "#fff" : "var(--text-main)" }}>
             Categorias
+          </button>
+          <button className="button-action" onClick={() => setView("mesas")} style={{ backgroundColor: view === "mesas" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "mesas" ? "#fff" : "var(--text-main)" }}>
+            Mesas
           </button>
           <button className="button-action" onClick={() => setView("dashboard")} style={{ backgroundColor: view === "dashboard" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "dashboard" ? "#fff" : "var(--text-main)" }}>
             Dashboard
@@ -412,6 +463,36 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
                 </button>
               </div>
             ))
+          )}
+        </div>
+      ) : view === "mesas" ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div style={{ padding: "1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <h3 style={{ margin: 0 }}>Nova Mesa</h3>
+            <input placeholder="Número da mesa (ex: 1)" type="number" value={newTableNumber} onChange={(e) => setNewTableNumber(e.target.value)} style={{ padding: "0.5rem", borderRadius: "8px", border: "1px solid var(--border-color)" }} />
+            {tableError && <p style={{ color: "#ef4444", fontSize: "0.85rem", margin: 0 }}>{tableError}</p>}
+            <button className="button-action" onClick={handleCreateTable} style={{ backgroundColor: "#22c55e", color: "#fff" }}>
+              Adicionar Mesa
+            </button>
+          </div>
+
+          {tables.length === 0 ? (
+            <p style={{ color: "var(--text-muted)", textAlign: "center" }}>Nenhuma mesa cadastrada.</p>
+          ) : (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
+              {tables.map((table) => (
+                <div key={table.id} style={{ width: "200px", padding: "1rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+                  <strong>Mesa {table.number}</strong>
+                  <span style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem", borderRadius: "999px", backgroundColor: table.status === "livre" ? "#22c55e" : "#ef4444", color: "#fff" }}>
+                    {table.status === "livre" ? "Livre" : "Ocupada"}
+                  </span>
+                  <img src={tableQrCodeUrl(table.id)} alt={`QR code da Mesa ${table.number}`} width={140} height={140} style={{ borderRadius: "8px" }} />
+                  <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.4rem 0.8rem", width: "100%", backgroundColor: "#ef4444", color: "#fff" }} onClick={() => handleDeleteTable(table.id)}>
+                    Remover
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       ) : orders.length === 0 ? (

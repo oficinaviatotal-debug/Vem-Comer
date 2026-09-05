@@ -8,6 +8,7 @@ import {
   fetchMenus,
   fetchProducts,
   fetchOrder,
+  fetchTable,
 } from "./service/api";
 import AdminPanel from "./service/AdminPanel";
 
@@ -75,6 +76,15 @@ export default function App() {
   const [paymentMethod, setPaymentMethod] = useState<string>("pix");
   const [paymentChange, setPaymentChange] = useState<string>("");
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
+  const [tableId] = useState<string | null>(() => new URLSearchParams(window.location.search).get("mesa"));
+  const [tableNumber, setTableNumber] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!tableId) return;
+    fetchTable(tableId)
+      .then((data) => setTableNumber(data.number))
+      .catch(() => setTableNumber(null));
+  }, [tableId]);
 
   useEffect(() => {
     async function loadData() {
@@ -148,7 +158,8 @@ export default function App() {
         cartTotal,
         cart,
         paymentMethod,
-        Number(paymentChange) || 0
+        Number(paymentChange) || 0,
+        tableId
       );
 
       if (!response || !response.order_id) {
@@ -264,6 +275,11 @@ export default function App() {
               <p className="hero-section__subtitle">
                 Consulte o cardápio, escolha seus produtos e faça seu pedido de forma rápida.
               </p>
+              {tableId && (
+                <p style={{ display: "inline-block", padding: "0.4rem 1rem", borderRadius: "999px", backgroundColor: "var(--color-accent)", color: "#fff", fontWeight: "700", marginTop: "0.5rem" }}>
+                  {tableNumber ? `Pedido para a Mesa ${tableNumber}` : "Carregando mesa..."}
+                </p>
+              )}
               <form className="search-form">
                 <label className="sr-only" htmlFor="menu-search">Buscar no cardápio</label>
                 <input
