@@ -78,6 +78,7 @@ export default function App() {
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [tableId] = useState<string | null>(() => new URLSearchParams(window.location.search).get("mesa"));
   const [tableNumber, setTableNumber] = useState<number | null>(null);
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (!tableId) return;
@@ -206,28 +207,45 @@ export default function App() {
 
   return (
     <>
-      <header className="main-header">
+            <header className="main-header">
         <div className="main-header__container">
           <a className="main-header__logo" href="/">
             {company.name}
           </a>
 
-          <nav className="main-header__nav" aria-label="Navegação principal">
-            <a href="#cardapio">Cardápio</a>
-            <a href="#pedido">
+          {/* Botão de 3 Tracinhos (Hambúrguer) — Visível apenas no Celular */}
+          <button 
+            type="button"
+            className="menu-hamburger-btn"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Abrir menu de navegação"
+          >
+            <span className={`hamburger-bar ${menuOpen ? 'bar-top-open' : ''}`}></span>
+            <span className={`hamburger-bar ${menuOpen ? 'bar-mid-open' : ''}`}></span>
+            <span className={`hamburger-bar ${menuOpen ? 'bar-bot-open' : ''}`}></span>
+          </button>
+
+          {/* Menu de Navegação Adaptável */}
+          <nav className={`main-header__nav ${menuOpen ? 'nav-menu-open' : ''}`} aria-label="Navegação principal">
+            <a href="#cardapio" onClick={() => setMenuOpen(false)}>Cardápio</a>
+            <a href="#pedido" onClick={() => setMenuOpen(false)}>
               Meu pedido ({cart.reduce((sum, item) => sum + item.quantity, 0)})
             </a>
-            <a href="#feedback">Avaliar</a>
+            <a href="#feedback" onClick={() => setMenuOpen(false)}>Avaliar</a>
             <button 
               type="button"
-              onClick={() => setIsAdminMode(true)}
-              style={{ background: "none", border: "none", color: "var(--text-muted)", fontWeight: "600", fontSize: "0.95rem", cursor: "pointer", marginLeft: "1.5rem" }}
+              onClick={() => {
+                setIsAdminMode(true);
+                setMenuOpen(false);
+              }}
+              style={{ background: "none", border: "none", color: "var(--text-muted)", fontWeight: "600", fontSize: "0.95rem", cursor: "pointer" }}
             >
               Painel Admin
             </button>
           </nav>
         </div>
       </header>
+
 
       <main className="main-content">
         {isAdminMode ? (
