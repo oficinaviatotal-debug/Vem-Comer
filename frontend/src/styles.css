@@ -561,3 +561,101 @@ body {
     gap: 1.5rem;
   }
 }
+/* ==========================================================================
+   🍔 MENU HAMBÚRGUER RESPONSIVO (CSS ADICIONAL)
+   ========================================================================== */
+
+/* Botão do Hambúrguer (Escondido por padrão no PC/Tablet) */
+.menu-hamburger-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 110;
+}
+
+/* Os 3 traços do menu */
+.hamburger-bar {
+  width: 24px;
+  height: 2px;
+  background-color: var(--text-main);
+  border-radius: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: 1px;
+}
+
+/* Animações de transformação para virar o "X" quando abrir */
+.bar-top-open {
+  transform: rotate(45deg);
+}
+
+.bar-mid-open {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.bar-bot-open {
+  transform: rotate(-45deg);
+}
+
+/* Ajustes específicos para telas menores (Celulares) */
+@media (max-width: 767px) {
+  .main-header__container {
+    flex-direction: row !important;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0;
+  }
+
+  .main-header__logo {
+    text-align: left;
+  }
+
+  /* Transforma a navegação comum em uma gaveta móvel fluida */
+  .main-header__nav {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: 260px;
+    background-color: var(--bg-primary);
+    border-left: 1px solid var(--border-color);
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.05);
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 5rem 2rem 2rem 2rem;
+    gap: 2rem;
+    z-index: 105;
+    
+    /* Efeito de esconder empurrando para a direita */
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Quando o estado do React 'menuOpen' for TRUE, injeta esta classe */
+  .nav-menu-open {
+    transform: translateX(0);
+  }
+
+  .main-header__nav a,
+  .main-header__nav button {
+    font-size: 1.1rem !important;
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed var(--border-color);
+  }
+}
+
+/* Garante que o botão dos 3 traços suma completamente nas telas maiores */
+@media (min-width: 768px) {
+  .menu-hamburger-btn {
+    display: none;
+  }
+}
