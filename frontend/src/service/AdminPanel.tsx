@@ -55,7 +55,6 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
   const [lastOrderCount, setLastOrderCount] = useState<number | null>(null);
   const [showNewOrderAlert, setShowNewOrderAlert] = useState<boolean>(false);
 
-
   async function loadOrders() {
     try {
       const data = await fetchAdminOrders(companyId);
@@ -67,8 +66,20 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
     }
   }
 
-    useEffect(() => {
-    async function loadOrders() {
+  async function handleLogin() {
+    setLoginError("");
+    if (!loginEmail || !loginPassword) return;
+    try {
+      await login(loginEmail, loginPassword);
+      setIsAuthenticated(true);
+      setCurrentUser(getUser());
+    } catch (err) {
+      setLoginError(err instanceof Error ? err.message : "Email ou senha inválidos");
+    }
+  }
+
+  useEffect(() => {
+    async function pollOrders() {
       try {
         const data = await fetchAdminOrders(companyId);
         const currentOrders = Array.isArray(data) ? data : [];
@@ -85,11 +96,10 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
       }
     }
 
-    loadOrders();
-    const interval = setInterval(loadOrders, 5000);
+    pollOrders();
+    const interval = setInterval(pollOrders, 5000);
     return () => clearInterval(interval);
   }, [companyId, lastOrderCount]);
-
 
   function handleLogout() {
     logout();
@@ -101,7 +111,8 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
   async function handleStatusChange(orderId: string, newStatus: string) {
     try {
       await updateOrderStatus(orderId, newStatus);
-      loadOrders();
+      const data = await fetchAdminOrders(companyId);
+      setOrders(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
     }
@@ -304,6 +315,19 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
 
   return (
     <div style={{ padding: "1rem" }}>
+      {showNewOrderAlert && (
+        <div style={{ padding: "1rem 1.5rem", backgroundColor: "#fef3c7", border: "1px solid #f59e0b", borderRadius: "8px", color: "#b45309", marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontWeight: "700" }}>🔔 Atenção: Um novo pedido de mesa acabou de chegar!</span>
+          <button 
+            type="button" 
+            onClick={() => setShowNewOrderAlert(false)}
+            style={{ background: "none", border: "none", color: "#b45309", fontWeight: "700", cursor: "pointer", fontSize: "1rem" }}
+          >
+            Dispensar
+          </button>
+        </div>
+      )}
+
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "1rem" }}>
         <h2 style={{ margin: 0, fontWeight: "800" }}>Painel de Controle</h2>
         <div style={{ display: "flex", gap: "0.5rem" }}>
