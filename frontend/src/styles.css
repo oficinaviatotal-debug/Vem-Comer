@@ -13,6 +13,11 @@
   --color-danger: #dc2626;
   --shadow-sm: 0 4px 14px rgba(43, 41, 39, 0.04);
 }
+html, body {
+  overflow-x: hidden;
+  position: relative;
+  max-width: 100%;
+}
 
 body {
   margin: 0;
