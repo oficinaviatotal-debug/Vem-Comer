@@ -272,9 +272,8 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
   }
 
   function tableQrCodeUrl(tableId: string) {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(tableOrderUrl(tableId))}`;
+    return `https://qrserver.com{encodeURIComponent(tableOrderUrl(tableId))}`;
   }
-
   if (!isAuthenticated) {
     return (
       <div style={{ maxWidth: "360px", margin: "4rem auto", padding: "2rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -299,7 +298,6 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
       </div>
     );
   }
-
   const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total_price), 0);
   const totalOrders = orders.length;
   const avgTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
@@ -331,27 +329,27 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "1rem" }}>
         <h2 style={{ margin: 0, fontWeight: "800" }}>Painel de Controle</h2>
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button className="button-action" onClick={() => setView("pedidos")} style={{ backgroundColor: view === "pedidos" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "pedidos" ? "#fff" : "var(--text-main)" }}>
+          <button id="admin-tab-pedidos" className="button-action" onClick={() => setView("pedidos")} style={{ backgroundColor: view === "pedidos" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "pedidos" ? "#fff" : "var(--text-main)" }}>
             Pedidos
           </button>
-          <button className="button-action" onClick={() => setView("produtos")} style={{ backgroundColor: view === "produtos" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "produtos" ? "#fff" : "var(--text-main)" }}>
+          <button id="admin-tab-produtos" className="button-action" onClick={() => setView("produtos")} style={{ backgroundColor: view === "produtos" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "produtos" ? "#fff" : "var(--text-main)" }}>
             Produtos
           </button>
-          <button className="button-action" onClick={() => setView("categorias")} style={{ backgroundColor: view === "categorias" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "categorias" ? "#fff" : "var(--text-main)" }}>
+          <button id="admin-tab-categorias" className="button-action" onClick={() => setView("categorias")} style={{ backgroundColor: view === "categorias" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "categorias" ? "#fff" : "var(--text-main)" }}>
             Categorias
           </button>
-          <button className="button-action" onClick={() => setView("mesas")} style={{ backgroundColor: view === "mesas" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "mesas" ? "#fff" : "var(--text-main)" }}>
+          <button id="admin-tab-mesas" className="button-action" onClick={() => setView("mesas")} style={{ backgroundColor: view === "mesas" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "mesas" ? "#fff" : "var(--text-main)" }}>
             Mesas
           </button>
-          <button className="button-action" onClick={() => setView("dashboard")} style={{ backgroundColor: view === "dashboard" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "dashboard" ? "#fff" : "var(--text-main)" }}>
+          <button id="admin-tab-dashboard" className="button-action" onClick={() => setView("dashboard")} style={{ backgroundColor: view === "dashboard" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "dashboard" ? "#fff" : "var(--text-main)" }}>
             Dashboard
           </button>
           {currentUser?.role === "OWNER" && (
-            <button className="button-action" onClick={() => setView("usuarios")} style={{ backgroundColor: view === "usuarios" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "usuarios" ? "#fff" : "var(--text-main)" }}>
+            <button id="admin-tab-usuarios" className="button-action" onClick={() => setView("usuarios")} style={{ backgroundColor: view === "usuarios" ? "var(--color-accent)" : "var(--bg-tertiary)", color: view === "usuarios" ? "#fff" : "var(--text-main)" }}>
               Usuários
             </button>
           )}
-          <button className="button-action" onClick={handleLogout} style={{ backgroundColor: "#ef4444", color: "#fff" }}>
+          <button id="admin-btn-logout" className="button-action" onClick={handleLogout} style={{ backgroundColor: "#ef4444", color: "#fff" }}>
             Sair
           </button>
           <button className="button-action" onClick={onBack} style={{ backgroundColor: "var(--text-main)", color: "#fff" }}>
@@ -359,7 +357,6 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
           </button>
         </div>
       </div>
-
       {view === "dashboard" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
@@ -491,7 +488,11 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
             menus.map((menu) => (
               <div key={menu.id} style={{ padding: "1rem 1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <strong>{menu.name}</strong>
-                <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem", backgroundColor: "#ef4444", color: "#fff" }} onClick={() => handleDeleteMenu(menu.id)}>
+                <button
+                  className="button-action"
+                  style={{ fontSize: "0.85rem", padding: "0.5rem 1rem", backgroundColor: "#ef4444", color: "#fff" }}
+                  onClick={() => handleDeleteMenu(menu.id)}
+                >
                   Remover
                 </button>
               </div>
@@ -514,13 +515,26 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
               {tables.map((table) => (
-                <div key={table.id} style={{ width: "200px", padding: "1rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-                  <strong>Mesa {table.number}</strong>
+                <div
+                  key={table.id}
+                  style={{ width: "200px", padding: "1rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}
+                >
+                  Mesa {table.number}
                   <span style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem", borderRadius: "999px", backgroundColor: table.status === "livre" ? "#22c55e" : "#ef4444", color: "#fff" }}>
                     {table.status === "livre" ? "Livre" : "Ocupada"}
                   </span>
-                  <img src={tableQrCodeUrl(table.id)} alt={`QR code da Mesa ${table.number}`} width={140} height={140} style={{ borderRadius: "8px" }} />
-                  <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.4rem 0.8rem", width: "100%", backgroundColor: "#ef4444", color: "#fff" }} onClick={() => handleDeleteTable(table.id)}>
+                  <img
+                    src={tableQrCodeUrl(table.id)}
+                    alt={`QR code da Mesa ${table.number}`}
+                    width={140}
+                    height={140}
+                    style={{ borderRadius: "8px" }}
+                  />
+                  <button
+                    className="button-action"
+                    style={{ fontSize: "0.85rem", padding: "0.4rem 0.8rem", width: "100%", backgroundColor: "#ef4444", color: "#fff" }}
+                    onClick={() => handleDeleteTable(table.id)}
+                  >
                     Remover
                   </button>
                 </div>
@@ -533,34 +547,41 @@ export default function AdminPanel({ companyId, onBack }: AdminPanelProps) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
           {orders.map((order) => (
-            <div key={order.id} style={{ padding: "1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div
+              key={order.id}
+              style={{ padding: "1.5rem", borderRadius: "12px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "1rem" }}
+            >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
-                <div>
-                  <h3 style={{ margin: "0 0 0.25rem 0", fontSize: "1.2rem" }}>{order.customer_name}</h3>
-                  <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>ID: {order.id}</span>
-                </div>
+                <h3 style={{ margin: "0 0 0.25rem 0", fontSize: "1.2rem" }}>{order.customer_name}</h3>
+                <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>ID: {order.id}</span>
                 <span style={{ padding: "0.4rem 0.8rem", borderRadius: "20px", fontSize: "0.85rem", fontWeight: "700", textTransform: "uppercase", backgroundColor: "var(--bg-tertiary)", color: "var(--color-accent)" }}>
                   {order.status}
                 </span>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px dashed var(--border-color)", borderBottom: "1px dashed var(--border-color)", padding: "0.75rem 0", fontSize: "0.95rem" }}>
-                <div>
+                <span>
                   Pagamento: <strong style={{ textTransform: "capitalize" }}>{order.payment_method}</strong>
                   {order.payment_method === "dinheiro" && order.payment_change > 0 && (
-                    <span> (Troco para R$ {Number(order.payment_change).toFixed(2)})</span>
+                    <span>(Troco para R$ {Number(order.payment_change).toFixed(2)})</span>
                   )}
-                </div>
-                <div>
-                  Total: <strong>R$ {Number(order.total_price).toFixed(2)}</strong>
-                </div>
+                </span>
+                <strong>Total: R$ {Number(order.total_price).toFixed(2)}</strong>
               </div>
 
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem" }} onClick={() => handleStatusChange(order.id, "em preparo")}>
+                <button
+                  className="button-action"
+                  style={{ fontSize: "0.85rem", padding: "0.5rem 1rem" }}
+                  onClick={() => handleStatusChange(order.id, "em preparo")}
+                >
                   Aceitar / Em Preparo
                 </button>
-                <button className="button-action" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem", backgroundColor: "#22c55e", color: "#fff" }} onClick={() => handleStatusChange(order.id, "concluido")}>
+                <button
+                  className="button-action"
+                  style={{ fontSize: "0.85rem", padding: "0.5rem 1rem", backgroundColor: "#22c55e", color: "#fff" }}
+                  onClick={() => handleStatusChange(order.id, "concluido")}
+                >
                   Pronto para Entrega
                 </button>
               </div>
