@@ -51,6 +51,16 @@ export async function fetchCompany(companyId: string) {
   return response.json();
 }
 
+export async function fetchCompanyBySlug(slug: string) {
+  const response = await fetch(`${API_URL}/companies/by-slug/${encodeURIComponent(slug)}`);
+
+  if (!response.ok) {
+    throw new Error("Estabelecimento não encontrado");
+  }
+
+  return response.json();
+}
+
 export async function fetchTable(tableId: string) {
   const response = await fetch(`${API_URL}/tables/${tableId}`);
   if (!response.ok) throw new Error("Falha ao buscar mesa");

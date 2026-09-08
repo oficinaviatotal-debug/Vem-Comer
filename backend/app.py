@@ -92,6 +92,11 @@ def clear_failed_logins(email):
     with _login_lock:
         _failed_login_attempts.pop(email, None)
 
+def require_company_access(company_id):
+    if str(request.user.get("company_id")) != str(company_id):
+        return jsonify({"error": "Acesso negado a este estabelecimento"}), 403
+    return None
+
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     try:
@@ -671,6 +676,23 @@ def admin_create_table(company_id):
             cur.close()
             conn.close()
         return error_response("Erro ao criar mesa", e)
+
+@app.route('/api/companies/by-slug/<slug>', methods=['GET'])
+def get_company_by_slug(slug):
+    try:
+        company = query_db(
+            "SELECT id, name, slug FROM companies WHERE slug = %s;",
+            (slug,),
+            one=True
+        )
+
+        if not company:
+            return jsonify({"error": "Estabelecimento não encontrado"}), 404
+
+        return jsonify(company), 200
+
+    except Exception as e:
+        return error_response("Erro ao buscar estabelecimento", e)
 
 @app.route('/api/admin/tables/<uuid:table_id>', methods=['DELETE'])
 @require_roles('OWNER', 'MANAGER')
