@@ -13,7 +13,9 @@
   --color-danger: #dc2626;
   --shadow-sm: 0 4px 14px rgba(43, 41, 39, 0.04);
 }
-html, body {
+
+html,
+body {
   overflow-x: hidden;
   position: relative;
   max-width: 100%;
@@ -25,6 +27,10 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 .main-header {
@@ -62,7 +68,7 @@ body {
   gap: 0.75rem 1.25rem;
 }
 
-.main-header__nav a, 
+.main-header__nav a,
 .main-header__nav button {
   text-decoration: none;
   color: var(--text-muted);
@@ -76,7 +82,7 @@ body {
   margin: 0 !important;
 }
 
-.main-header__nav a:hover, 
+.main-header__nav a:hover,
 .main-header__nav button:hover {
   color: var(--text-main);
 }
@@ -141,6 +147,7 @@ body {
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  max-width: 100%;
 }
 
 .button-action:hover {
@@ -197,6 +204,7 @@ body {
   grid-template-columns: 1fr;
   gap: 1rem;
 }
+
 .product-card {
   display: flex;
   flex-direction: column;
@@ -423,6 +431,252 @@ body {
   margin-bottom: 2.5rem;
   box-shadow: 0 10px 25px rgba(43, 41, 39, 0.03);
 }
+.admin-panel {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.admin-header h2 {
+  margin: 0;
+  font-weight: 800;
+}
+
+.admin-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-alert {
+  padding: 1rem 1.5rem;
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  color: #b45309;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.admin-alert button {
+  background: none;
+  border: none;
+  color: #b45309;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.admin-stat-card {
+  flex: 1;
+  min-width: 180px;
+  padding: 1.5rem;
+  border-radius: 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.admin-stat-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.admin-stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+.admin-dashboard-card {
+  flex: 1;
+  min-width: 220px;
+  padding: 1.5rem;
+  border-radius: 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  min-width: 0;
+}
+
+.admin-dashboard-card h3 {
+  margin: 0 0 1rem 0;
+}
+
+.admin-dashboard-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.admin-form-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-form-card h3 {
+  margin: 0;
+}
+
+.admin-form-card input,
+.admin-form-card select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  min-width: 0;
+}
+
+.admin-list-card {
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.admin-list-card > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-muted {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.admin-error {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.admin-empty {
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.admin-tables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.admin-table-card {
+  width: 200px;
+  max-width: 100%;
+  padding: 1rem;
+  border-radius: 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-order-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.admin-order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.admin-order-header h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.2rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-order-id {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+.admin-order-status {
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background-color: var(--bg-tertiary);
+  color: var(--color-accent);
+}
+
+.admin-payment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  border-top: 1px dashed var(--border-color);
+  border-bottom: 1px dashed var(--border-color);
+  padding: 0.75rem 0;
+  font-size: 0.95rem;
+  min-width: 0;
+}
+
+.admin-payment-row > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.order-action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
+}
+
+.order-action-buttons .button-action {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
 
 .loading-state,
 .error-state {
@@ -493,15 +747,15 @@ body {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
-/* ==========================================================================
-   🧠 DIRETRIZES DE MEDIA QUERIES (RESPONSIVIDADE INTELIGENTE)
-   ========================================================================== */
-
-/* 📱 DISPOSITIVOS MÉDIOS (Tablets - a partir de 768px) */
 @media (min-width: 768px) {
   .main-header {
     padding: 1.25rem 2rem;
@@ -557,20 +811,20 @@ body {
   .cart-panel__remove {
     width: auto;
   }
+
+  .admin-header-actions {
+    width: auto;
+    justify-content: flex-end;
+  }
 }
 
-/* 💻 TELAS GRANDES (Computadores/Notebooks - a partir de 1024px) */
 @media (min-width: 1024px) {
   .menu-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
   }
 }
-/* ==========================================================================
-   🍔 MENU HAMBÚRGUER RESPONSIVO (CSS ADICIONAL)
-   ========================================================================== */
 
-/* Botão do Hambúrguer (Escondido por padrão no PC/Tablet) */
 .menu-hamburger-btn {
   display: flex;
   flex-direction: column;
@@ -584,7 +838,6 @@ body {
   z-index: 110;
 }
 
-/* Os 3 traços do menu */
 .hamburger-bar {
   width: 24px;
   height: 2px;
@@ -594,7 +847,6 @@ body {
   transform-origin: 1px;
 }
 
-/* Animações de transformação para virar o "X" quando abrir */
 .bar-top-open {
   transform: rotate(45deg);
 }
@@ -608,7 +860,6 @@ body {
   transform: rotate(-45deg);
 }
 
-/* Ajustes específicos para telas menores (Celulares) */
 @media (max-width: 767px) {
   .main-header__container {
     flex-direction: row !important;
@@ -621,7 +872,6 @@ body {
     text-align: left;
   }
 
-  /* Transforma a navegação comum em uma gaveta móvel fluida */
   .main-header__nav {
     position: fixed;
     top: 0;
@@ -637,13 +887,11 @@ body {
     padding: 5rem 2rem 2rem 2rem;
     gap: 2rem;
     z-index: 105;
-    
-    /* Efeito de esconder empurrando para a direita */
     transform: translateX(100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.3s
+      cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Quando o estado do React 'menuOpen' for TRUE, injeta esta classe */
   .nav-menu-open {
     transform: translateX(0);
   }
@@ -656,45 +904,109 @@ body {
     padding: 0.5rem 0;
     border-bottom: 1px dashed var(--border-color);
   }
+
+  .admin-panel {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .admin-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .admin-header-actions {
+    display: grid;
+    grid-template-columns: repeat(
+      2,
+      minmax(0, 1fr)
+    );
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .admin-header-actions .button-action {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    padding: 0.6rem 0.4rem;
+    font-size: 0.8rem;
+    line-height: 1.2;
+  }
+
+  .admin-alert {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-alert button {
+    width: 100%;
+  }
+
+  .admin-list-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-list-card .button-action {
+    width: 100%;
+  }
+
+  .admin-stat-card {
+    min-width: 100%;
+  }
+
+  .admin-dashboard-card {
+    min-width: 100%;
+  }
+
+  .admin-table-card {
+    width: 100%;
+  }
+
+  .admin-payment-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .order-action-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .order-action-buttons .button-action {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    padding: 0.65rem 0.5rem;
+    line-height: 1.2;
+  }
+
+  .admin-order-card {
+    padding: 1rem;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .admin-order-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
-/* Garante que o botão dos 3 traços suma completamente nas telas maiores */
 @media (min-width: 768px) {
   .menu-hamburger-btn {
     display: none;
-  }
-}
-/* ==========================================================================
-   ⚙️ CORREÇÃO DE ABAS DO ADMIN SQUASH NO CELULAR
-   ========================================================================== */
-
-@media (max-width: 767px) {
-  /* Altera o contêiner de botões para permitir arrastar para o lado de forma fluida */
-  .main-content div[style*="display: flex"][style*="gap: 0.5rem"] {
-    display: flex !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    width: 100vw !important;
-    margin-left: -1rem !important; /* Compensa o padding da página */
-    padding: 0.5rem 1rem !important;
-    gap: 0.5rem !important;
-    scrollbar-width: none !important; /* Oculta a barra no Firefox */
-  }
-
-  .main-content div[style*="display: flex"][style*="gap: 0.5rem"]::-webkit-scrollbar {
-    display: none !important; /* Oculta a barra no Chrome/Safari */
-  }
-
-  /* Impede os botões do admin de encolherem ou quebrarem linha */
-  .main-content div[style*="display: flex"][style*="gap: 0.5rem"] .button-action {
-    flex-shrink: 0 !important;
-    white-space: nowrap !important;
-  }
-  
-  /* Alinha o título "Painel de Controle" e os botões verticalmente no mobile */
-  .main-content div[style*="display: flex"][style*="justify-content: space-between"] {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 1rem !important;
   }
 }
