@@ -2,16 +2,22 @@
 
 :root {
   --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --bg-primary: #fbfbf8;
-  --bg-secondary: #f4f3eb;
-  --bg-tertiary: #eae8dc;
-  --text-main: #2b2927;
-  --text-muted: #7c776e;
-  --border-color: #e3e0cf;
-  --color-accent: #d97706;
-  --color-accent-hover: #b45309;
+
+  --bg-primary: #ffffff;
+  --bg-secondary: #FAE9D2;
+  --bg-tertiary: #f3dfbd;
+
+  --text-main: #1B4332;
+  --text-muted: #2E7032;
+
+  --border-color: #2E7032;
+
+  --color-accent: #FF6F00;
+  --color-accent-hover: #2E7032;
+
   --color-danger: #dc2626;
-  --shadow-sm: 0 4px 14px rgba(43, 41, 39, 0.04);
+
+  --shadow-sm: 0 4px 14px rgba(27, 67, 50, 0.08);
 }
 
 html,
