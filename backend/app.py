@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+from decimal import Decimal, InvalidOperation
 from functools import wraps
 
 from flask import Flask, jsonify, request
@@ -31,7 +32,7 @@ TOKEN_MAX_AGE_SECONDS = 60 * 60 * 8  # 8 horas
 
 CORS_ORIGIN_REGEX = os.getenv(
     'CORS_ORIGIN_REGEX',
-    r"https://.*\.app\.github\.dev"
+    r"https://.*\.app\.github\.dev|http://localhost:5174"
 )
 
 CORS(app, resources={r"/*": {
@@ -272,16 +273,17 @@ def get_company_by_slug(slug):
         )
 
 
-@app.route('/api/tables/<uuid:table_id>', methods=['GET'])
-def get_table(table_id):
+@app.route('/api/companies/<uuid:company_id>/tables/<uuid:table_id>', methods=['GET'])
+def get_table(company_id, table_id):
     try:
         table = query_db(
             """
             SELECT id, number
             FROM tables
-            WHERE id = %s;
+            WHERE id = %s
+            AND company_id = %s;
             """,
-            (str(table_id),),
+            (str(table_id), str(company_id)),
             one=True
         )
 
@@ -300,7 +302,13 @@ def get_table(table_id):
 
 
 @app.route('/api/companies/<uuid:company_id>/users', methods=['GET'])
+@require_roles('OWNER', 'MANAGER')
 def get_company_users(company_id):
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
     try:
         users = query_db(
             """
@@ -327,7 +335,8 @@ def get_company_products(company_id):
             """
             SELECT id, company_id, menu_id, name, description, price
             FROM products
-            WHERE company_id = %s;
+            WHERE company_id = %s
+            AND active = TRUE;
             """,
             (str(company_id),)
         )
@@ -415,35 +424,39 @@ def create_company_order(company_id):
     try:
         data = request.get_json() or {}
 
-        customer_name = data.get(
-            'customer_name',
-            'Cliente Balcão'
-        )
-
-        cart_items = data.get('items', [])
-        total_price = data.get('total_price', 0)
+        customer_name = (data.get('customer_name') or 'Cliente Balcão').strip()
+        cart_items = data.get('items')
         table_id = data.get('table_id')
 
-        payment_method = data.get(
-            'payment_method',
-            'pix'
-        )
+        payment_method = (data.get('payment_method') or '').lower()
+        payment_change = data.get('payment_change', 0)
 
-        payment_change = data.get(
-            'payment_change',
-            0
-        )
-
-        if not cart_items:
+        if not customer_name or not isinstance(cart_items, list) or not cart_items:
             return jsonify({
-                "error": "O carrinho esta vazio"
+                "error": "Cliente e itens do pedido sao obrigatorios"
             }), 400
+
+        payment_methods = {'pix': 'PIX', 'cartao': 'CARD', 'dinheiro': 'CASH'}
+        if payment_method not in payment_methods:
+            return jsonify({"error": "Forma de pagamento invalida"}), 400
+
+        try:
+            payment_change = Decimal(str(payment_change))
+        except (InvalidOperation, TypeError, ValueError):
+            return jsonify({"error": "Valor de troco invalido"}), 400
+
+        if payment_change < 0:
+            return jsonify({"error": "Valor de troco invalido"}), 400
 
         conn = get_db_connection()
 
-        cur = conn.cursor(
-            cursor_factory=RealDictCursor
-        )
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        def invalid_order(message):
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return jsonify({"error": message}), 400
 
         if table_id:
             cur.execute(
@@ -460,103 +473,74 @@ def create_company_order(company_id):
             )
 
             if not cur.fetchone():
-                return jsonify({
-                    "error": "Mesa invalida"
-                }), 400
+                return invalid_order("Mesa invalida")
 
-        cur.execute(
-            """
-            INSERT INTO orders (
-                company_id,
-                customer_name,
-                customer,
-                total_price,
-                total,
-                payment_method,
-                payment_change,
-                table_id
-            )
-            VALUES (
-                %s, %s, %s, %s,
-                %s, %s, %s, %s
-            )
-            RETURNING id;
-            """,
-            (
-                str(company_id),
-                customer_name,
-                customer_name,
-                total_price,
-                total_price,
-                payment_method,
-                float(payment_change or 0),
-                str(table_id) if table_id else None
-            )
-        )
-
-        order_row = cur.fetchone()
-        order_id = order_row['id']
-
+        order_items = []
+        total = Decimal('0')
         for item in cart_items:
+            if not isinstance(item, dict):
+                return invalid_order("Item invalido")
             product_id = item.get('id')
-            quantity = int(
-                item.get('quantity', 1)
-            )
-
-            price = item.get('price')
-
-            if price is None:
-                cur.execute(
-                    """
-                    SELECT price
-                    FROM products
-                    WHERE id = %s
-                    AND company_id = %s;
-                    """,
-                    (
-                        str(product_id),
-                        str(company_id)
-                    )
-                )
-
-                prod_row = cur.fetchone()
-
-                if not prod_row:
-                    raise ValueError(
-                        "Produto não pertence ao estabelecimento"
-                    )
-
-                price = prod_row['price']
-
-            item_price = float(price)
-            item_total = item_price * quantity
+            quantity = item.get('quantity')
+            if not product_id or not isinstance(quantity, int) or isinstance(quantity, bool) or not 1 <= quantity <= 100:
+                return invalid_order("Produto ou quantidade invalida")
 
             cur.execute(
                 """
-                INSERT INTO order_items (
-                    order_id,
-                    product_id,
-                    quantity,
-                    unit_price,
-                    total,
-                    price,
-                    value
-                )
-                VALUES (
-                    %s, %s, %s, %s,
-                    %s, %s, %s
-                );
+                SELECT id, price
+                FROM products
+                WHERE id = %s AND company_id = %s AND active = TRUE
+                FOR SHARE;
                 """,
-                (
-                    str(order_id),
-                    str(product_id),
-                    quantity,
-                    item_price,
-                    item_total,
-                    item_price,
-                    item_price
-                )
+                (str(product_id), str(company_id))
             )
+            product = cur.fetchone()
+            if not product:
+                return invalid_order("Produto indisponivel")
+            item_total = product['price'] * quantity
+            total += item_total
+            order_items.append((product['id'], quantity, product['price'], item_total))
+
+        if payment_method == 'dinheiro' and payment_change < total:
+            return invalid_order("Troco deve ser informado com o valor entregue")
+        if payment_method != 'dinheiro' and payment_change != 0:
+            return invalid_order("Troco so pode ser informado para pagamento em dinheiro")
+
+        cur.execute(
+            """
+            INSERT INTO orders (company_id, customer_name, total_price, status, payment_method, payment_change, table_id)
+            VALUES (%s, %s, %s, 'PENDING_PAYMENT', %s, %s, %s)
+            RETURNING id;
+            """,
+            (str(company_id), customer_name, total, payment_method, payment_change,
+             str(table_id) if table_id else None)
+        )
+        order_id = cur.fetchone()['id']
+
+        for product_id, quantity, unit_price, item_total in order_items:
+
+            cur.execute(
+                """
+                INSERT INTO order_items (order_id, product_id, quantity, unit_price, total)
+                VALUES (%s, %s, %s, %s, %s);
+                """,
+                (str(order_id), str(product_id), quantity, unit_price, item_total)
+            )
+
+        cur.execute(
+            """
+            INSERT INTO payments (order_id, method, status, amount)
+            VALUES (%s, %s, 'PENDING', %s);
+            """,
+            (str(order_id), payment_methods[payment_method], total)
+        )
+        cur.execute(
+            """
+            INSERT INTO order_events (order_id, event_type)
+            VALUES (%s, 'ORDER_CREATED');
+            """,
+            (str(order_id),)
+        )
 
         if table_id:
             cur.execute(
@@ -577,9 +561,15 @@ def create_company_order(company_id):
         cur.close()
         conn.close()
 
+        tracking_token = serializer.dumps({
+            'purpose': 'order_tracking',
+            'order_id': str(order_id),
+            'company_id': str(company_id)
+        })
         return jsonify({
             "message": "Pedido realizado com sucesso",
-            "order_id": str(order_id)
+            "order_id": str(order_id),
+            "tracking_token": tracking_token
         }), 201
 
     except Exception as e:
@@ -603,6 +593,16 @@ def get_order(order_id):
     cur = None
 
     try:
+        tracking_token = request.args.get('tracking_token', '')
+        try:
+            tracking = serializer.loads(tracking_token, max_age=60 * 60 * 24 * 7)
+        except (SignatureExpired, BadSignature):
+            return jsonify({"error": "Acesso de acompanhamento invalido"}), 401
+
+        if (tracking.get('purpose') != 'order_tracking' or
+                tracking.get('order_id') != str(order_id)):
+            return jsonify({"error": "Acesso de acompanhamento invalido"}), 401
+
         conn = get_db_connection()
 
         cur = conn.cursor(
@@ -632,6 +632,11 @@ def get_order(order_id):
             return jsonify({
                 "error": "Pedido não encontrado"
             }), 404
+
+        if tracking.get('company_id') != str(order['company_id']):
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Acesso de acompanhamento invalido"}), 401
 
         cur.execute(
             """
@@ -728,6 +733,9 @@ def update_order_status(order_id):
                 "error": "Status nao informado"
             }), 400
 
+        if new_status not in ('PENDING_PAYMENT', 'em preparo', 'concluido'):
+            return jsonify({"error": "Status invalido"}), 400
+
         company_id = request.user.get('company_id')
 
         conn = get_db_connection()
@@ -775,6 +783,14 @@ def update_order_status(order_id):
                     str(company_id)
                 )
             )
+
+        cur.execute(
+            """
+            INSERT INTO order_events (order_id, event_type)
+            VALUES (%s, %s);
+            """,
+            (str(order_id), 'STATUS_' + new_status.upper().replace(' ', '_'))
+        )
 
         conn.commit()
 

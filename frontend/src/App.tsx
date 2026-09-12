@@ -74,6 +74,7 @@ export default function App() {
   const [orderMessage, setOrderMessage] = useState("");
 
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  const [trackingToken, setTrackingToken] = useState<string | null>(null);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>("pix");
   const [paymentChange, setPaymentChange] = useState<string>("");
@@ -85,12 +86,12 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!tableId) return;
+    if (!tableId || !companyId) return;
 
-    fetchTable(tableId)
+    fetchTable(companyId, tableId)
       .then((data: any) => setTableNumber(data.number))
       .catch(() => setTableNumber(null));
-  }, [tableId]);
+  }, [companyId, tableId]);
 
   useEffect(() => {
     async function loadData() {
@@ -122,13 +123,13 @@ export default function App() {
   }, [companySlug]);
 
   useEffect(() => {
-    if (!activeOrderId) return;
+    if (!activeOrderId || !trackingToken) return;
+    const orderId = activeOrderId;
+    const token = trackingToken;
 
     async function pollOrder() {
-      if (!activeOrderId) return;
-
       try {
-        const orderData = await fetchOrder(activeOrderId);
+        const orderData = await fetchOrder(orderId, token);
         setActiveOrder(orderData);
       } catch (err) {
         console.error("Erro ao atualizar status do pedido:", err);
@@ -140,7 +141,7 @@ export default function App() {
     const interval = setInterval(pollOrder, 5000);
 
     return () => clearInterval(interval);
-  }, [activeOrderId]);
+  }, [activeOrderId, trackingToken]);
 
   function addToCart(product: Product) {
     setOrderMessage("");
@@ -182,20 +183,20 @@ export default function App() {
       const response = await createOrder(
         companyId,
         "Cliente Balcão",
-        cartTotal,
         cart,
         paymentMethod,
         Number(paymentChange) || 0,
         tableId
       );
 
-      if (!response || !response.order_id) {
+      if (!response || !response.order_id || !response.tracking_token) {
         throw new Error();
       }
 
       setOrderMessage("Pedido realizado com sucesso!");
       setCart([]);
       setActiveOrderId(response.order_id);
+      setTrackingToken(response.tracking_token);
     } catch {
       setOrderMessage("Erro ao fechar o pedido. Tente novamente.");
     }
@@ -461,6 +462,7 @@ export default function App() {
         {isAdminMode ? (
           <AdminPanel
             companyId={companyId}
+            companySlug={company?.slug || ""}
             onBack={() => setIsAdminMode(false)}
           />
         ) : activeOrder ? (

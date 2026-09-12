@@ -41,7 +41,7 @@ CREATE TABLE users (
     UNIQUE (company_id, email)
 );
 
-CREATE TABLE categories (
+CREATE TABLE menus (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE categories (
 CREATE TABLE products (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-    category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+    menu_id UUID REFERENCES menus(id) ON DELETE SET NULL,
     name VARCHAR(150) NOT NULL,
     description TEXT,
     price NUMERIC(10,2) NOT NULL CHECK (price >= 0),
@@ -59,12 +59,23 @@ CREATE TABLE products (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE tables (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    number INTEGER NOT NULL CHECK (number > 0),
+    status VARCHAR(20) NOT NULL DEFAULT 'livre' CHECK (status IN ('livre', 'ocupada')),
+    UNIQUE (company_id, number)
+);
+
 CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id UUID NOT NULL REFERENCES companies(id),
-    user_id UUID REFERENCES users(id),
+    table_id UUID REFERENCES tables(id) ON DELETE SET NULL,
+    customer_name VARCHAR(150) NOT NULL,
     status VARCHAR(30) NOT NULL DEFAULT 'PENDING_PAYMENT',
-    total NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (total >= 0),
+    total_price NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (total_price >= 0),
+    payment_method VARCHAR(30) NOT NULL CHECK (payment_method IN ('pix', 'cartao', 'dinheiro')),
+    payment_change NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (payment_change >= 0),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -96,13 +107,12 @@ CREATE TABLE order_events (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE feedback (
+CREATE TABLE feedbacks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id UUID NOT NULL REFERENCES companies(id),
-    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
-    food VARCHAR(30),
-    service VARCHAR(30),
-    delivery VARCHAR(30),
+    food_rating VARCHAR(30),
+    service_rating VARCHAR(30),
+    delivery_rating VARCHAR(30),
     comment VARCHAR(500),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -112,4 +122,3 @@ CREATE INDEX idx_products_company ON products(company_id);
 CREATE INDEX idx_orders_company ON orders(company_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_order_events_order ON order_events(order_id);
-CREATE INDEX idx_feedback_company ON feedback(company_id);

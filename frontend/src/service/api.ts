@@ -1,6 +1,9 @@
 const currentHost = window.location.hostname;
 const apiHost = currentHost.replace("-5174.", "-5000.");
-export const API_URL = `https://${apiHost}/api`;
+export const API_URL =
+  currentHost === "localhost" || currentHost === "127.0.0.1"
+    ? "http://localhost:5000/api"
+    : `https://${apiHost}/api`;
 
 const TOKEN_KEY = "vc_token";
 const USER_KEY = "vc_user";
@@ -61,8 +64,8 @@ export async function fetchCompanyBySlug(slug: string) {
   return response.json();
 }
 
-export async function fetchTable(tableId: string) {
-  const response = await fetch(`${API_URL}/tables/${tableId}`);
+export async function fetchTable(companyId: string, tableId: string) {
+  const response = await fetch(`${API_URL}/companies/${companyId}/tables/${tableId}`);
   if (!response.ok) throw new Error("Falha ao buscar mesa");
   return response.json();
 }
@@ -82,7 +85,6 @@ export async function fetchMenus(companyId: string) {
 export async function createOrder(
   companyId: string,
   customerName: string,
-  totalPrice: number,
   items: unknown[],
   paymentMethod: string,
   paymentChange: number,
@@ -95,7 +97,6 @@ export async function createOrder(
     },
     body: JSON.stringify({
       customer_name: customerName,
-      total_price: totalPrice,
       items,
       payment_method: paymentMethod,
       payment_change: paymentChange,
@@ -122,8 +123,8 @@ export async function createFeedback(
   return response.json();
 }
 
-export async function fetchOrder(orderId: string) {
-  const response = await fetch(`${API_URL}/orders/${orderId}`);
+export async function fetchOrder(orderId: string, trackingToken: string) {
+  const response = await fetch(`${API_URL}/orders/${orderId}?tracking_token=${encodeURIComponent(trackingToken)}`);
   if (!response.ok) throw new Error("Falha ao buscar pedido");
   return response.json();
 }

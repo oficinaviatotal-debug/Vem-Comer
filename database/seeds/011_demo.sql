@@ -14,20 +14,20 @@ VALUES (
 )
 ON CONFLICT (slug) DO NOTHING;
 
-INSERT INTO categories (company_id, name)
+INSERT INTO menus (company_id, name)
 SELECT id, 'Lanches'
 FROM companies
 WHERE slug = 'restaurante-exemplo'
 AND NOT EXISTS (
     SELECT 1
-    FROM categories
+    FROM menus
     WHERE company_id = companies.id
     AND name = 'Lanches'
 );
 
 INSERT INTO products (
     company_id,
-    category_id,
+    menu_id,
     name,
     description,
     price
@@ -39,7 +39,7 @@ SELECT
     'Hambúrguer artesanal',
     25.00
 FROM companies c
-JOIN categories cat ON cat.company_id = c.id
+JOIN menus cat ON cat.company_id = c.id
 WHERE c.slug = 'restaurante-exemplo'
 AND cat.name = 'Lanches'
 AND NOT EXISTS (

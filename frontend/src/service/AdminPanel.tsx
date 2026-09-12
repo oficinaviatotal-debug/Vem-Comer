@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   fetchAdminOrders,
   updateOrderStatus,
@@ -60,11 +60,13 @@ type TableRow = {
 
 type AdminPanelProps = {
   companyId: string;
+  companySlug: string;
   onBack: () => void;
 };
 
 export default function AdminPanel({
   companyId,
+  companySlug,
   onBack,
 }: AdminPanelProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(!!getToken());
@@ -76,7 +78,7 @@ export default function AdminPanel({
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [lastOrderCount, setLastOrderCount] = useState<number | null>(null);
+  const lastOrderCountRef = useRef<number | null>(null);
   const [showNewOrderAlert, setShowNewOrderAlert] = useState(false);
 
   const [view, setView] = useState<
@@ -140,13 +142,13 @@ export default function AdminPanel({
         setOrders(currentOrders);
 
         if (
-          lastOrderCount !== null &&
-          currentOrders.length > lastOrderCount
+          lastOrderCountRef.current !== null &&
+          currentOrders.length > lastOrderCountRef.current
         ) {
           setShowNewOrderAlert(true);
         }
 
-        setLastOrderCount(currentOrders.length);
+        lastOrderCountRef.current = currentOrders.length;
       } catch (err) {
         console.error(err);
       } finally {
@@ -159,7 +161,7 @@ export default function AdminPanel({
     const interval = setInterval(pollOrders, 5000);
 
     return () => clearInterval(interval);
-  }, [companyId, lastOrderCount]);
+  }, [companyId]);
 
   function handleLogout() {
     logout();
@@ -380,11 +382,14 @@ export default function AdminPanel({
   }
 
   function tableOrderUrl(tableId: string) {
-    return `${window.location.origin}${window.location.pathname}?mesa=${tableId}`;
+    const url = new URL(window.location.href);
+    url.searchParams.set("empresa", companySlug);
+    url.searchParams.set("mesa", tableId);
+    return url.toString();
   }
 
   function tableQrCodeUrl(tableId: string) {
-    return `https://qrserver.com{encodeURIComponent(tableOrderUrl(tableId))}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(tableOrderUrl(tableId))}`;
   }
 
   if (!isAuthenticated) {

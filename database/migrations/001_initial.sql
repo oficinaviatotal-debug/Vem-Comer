@@ -1,1 +1,1 @@
-\i ../schema.sql
+\ir ../schema.sql
