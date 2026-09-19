@@ -1,2 +1,6 @@
 Flask
 Flask-Cors
+psycopg2-binary
+python-dotenv
+itsdangerous
+gunicorn
