@@ -1,9 +1,5 @@
-const currentHost = window.location.hostname;
-const apiHost = currentHost.replace("-5174.", "-5000.");
 export const API_URL =
-  currentHost === "localhost" || currentHost === "127.0.0.1"
-    ? "http://localhost:5000/api"
-    : `https://${apiHost}/api`;
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const TOKEN_KEY = "vc_token";
 const USER_KEY = "vc_user";
