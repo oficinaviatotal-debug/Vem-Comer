@@ -154,6 +154,85 @@ def clear_failed_logins(email):
     with _login_lock:
         _failed_login_attempts.pop(email, None)
 
+@app.route('/api/auth/register-company', methods=['POST'])
+def register_company():
+    try:
+        data = request.get_json() or {}
+
+        company_name = (data.get('company_name') or '').strip()
+        slug = (data.get('slug') or '').strip().lower()
+        name = (data.get('name') or '').strip()
+        email = (data.get('email') or '').strip().lower()
+        password = data.get('password') or ''
+
+        if not company_name or not slug or not name or not email or not password:
+            return jsonify({
+                "error": "Empresa, slug, nome, email e senha sao obrigatorios"
+            }), 400
+
+        if len(password) < 8:
+            return jsonify({
+                "error": "Senha deve ter pelo menos 8 caracteres"
+            }), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        try:
+            cur.execute(
+                """
+                INSERT INTO companies (name, slug)
+                VALUES (%s, %s)
+                RETURNING id, name, slug;
+                """,
+                (company_name, slug)
+            )
+
+            company = cur.fetchone()
+
+            cur.execute(
+                """
+                INSERT INTO users (
+                    company_id,
+                    name,
+                    email,
+                    password_hash,
+                    role
+                )
+                VALUES (%s, %s, %s, %s, 'OWNER')
+                RETURNING id, name, email, role;
+                """,
+                (
+                    company['id'],
+                    name,
+                    email,
+                    generate_password_hash(password)
+                )
+            )
+
+            user = cur.fetchone()
+            conn.commit()
+
+            return jsonify({
+                "company": company,
+                "user": user
+            }), 201
+
+        except psycopg2.errors.UniqueViolation:
+            conn.rollback()
+            return jsonify({
+                "error": "Slug ou email ja cadastrado"
+            }), 409
+
+        finally:
+            cur.close()
+            conn.close()
+
+    except Exception as e:
+        return error_response(
+            "Erro interno ao cadastrar estabelecimento",
+            e
+        )
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
@@ -1607,5 +1686,5 @@ if __name__ == '__main__':
     app.run(
         host='0.0.0.0',
         port=5000,
-        debug=True
+        debug=FLASK_DEBUG
     )
