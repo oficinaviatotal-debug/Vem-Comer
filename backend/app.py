@@ -154,6 +154,7 @@ def clear_failed_logins(email):
     with _login_lock:
         _failed_login_attempts.pop(email, None)
 
+
 @app.route('/api/auth/register-company', methods=['POST'])
 def register_company():
     try:
@@ -211,6 +212,7 @@ def register_company():
             )
 
             user = cur.fetchone()
+
             conn.commit()
 
             return jsonify({
@@ -220,6 +222,7 @@ def register_company():
 
         except psycopg2.errors.UniqueViolation:
             conn.rollback()
+
             return jsonify({
                 "error": "Slug ou email ja cadastrado"
             }), 409
@@ -233,6 +236,7 @@ def register_company():
             "Erro interno ao cadastrar estabelecimento",
             e
         )
+
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
@@ -414,8 +418,7 @@ def get_company_products(company_id):
             """
             SELECT id, company_id, menu_id, name, description, price
             FROM products
-            WHERE company_id = %s
-            AND active = TRUE;
+            WHERE company_id = %s;
             """,
             (str(company_id),)
         )
@@ -515,17 +518,28 @@ def create_company_order(company_id):
                 "error": "Cliente e itens do pedido sao obrigatorios"
             }), 400
 
-        payment_methods = {'pix': 'PIX', 'cartao': 'CARD', 'dinheiro': 'CASH'}
+        payment_methods = {
+            'pix': 'PIX',
+            'cartao': 'CARD',
+            'dinheiro': 'CASH'
+        }
+
         if payment_method not in payment_methods:
-            return jsonify({"error": "Forma de pagamento invalida"}), 400
+            return jsonify({
+                "error": "Forma de pagamento invalida"
+            }), 400
 
         try:
             payment_change = Decimal(str(payment_change))
         except (InvalidOperation, TypeError, ValueError):
-            return jsonify({"error": "Valor de troco invalido"}), 400
+            return jsonify({
+                "error": "Valor de troco invalido"
+            }), 400
 
         if payment_change < 0:
-            return jsonify({"error": "Valor de troco invalido"}), 400
+            return jsonify({
+                "error": "Valor de troco invalido"
+            }), 400
 
         conn = get_db_connection()
 
@@ -535,7 +549,9 @@ def create_company_order(company_id):
             conn.rollback()
             cur.close()
             conn.close()
-            return jsonify({"error": message}), 400
+            return jsonify({
+                "error": message
+            }), 400
 
         if table_id:
             cur.execute(
@@ -556,66 +572,133 @@ def create_company_order(company_id):
 
         order_items = []
         total = Decimal('0')
+
         for item in cart_items:
             if not isinstance(item, dict):
                 return invalid_order("Item invalido")
+
             product_id = item.get('id')
             quantity = item.get('quantity')
-            if not product_id or not isinstance(quantity, int) or isinstance(quantity, bool) or not 1 <= quantity <= 100:
+
+            if (
+                not product_id
+                or not isinstance(quantity, int)
+                or isinstance(quantity, bool)
+                or not 1 <= quantity <= 100
+            ):
                 return invalid_order("Produto ou quantidade invalida")
 
             cur.execute(
                 """
                 SELECT id, price
                 FROM products
-                WHERE id = %s AND company_id = %s AND active = TRUE
+                WHERE id = %s
+                AND company_id = %s
                 FOR SHARE;
                 """,
-                (str(product_id), str(company_id))
+                (
+                    str(product_id),
+                    str(company_id)
+                )
             )
+
             product = cur.fetchone()
+
             if not product:
                 return invalid_order("Produto indisponivel")
+
             item_total = product['price'] * quantity
             total += item_total
-            order_items.append((product['id'], quantity, product['price'], item_total))
+
+            order_items.append(
+                (
+                    product['id'],
+                    quantity,
+                    product['price'],
+                    item_total
+                )
+            )
 
         if payment_method == 'dinheiro' and payment_change < total:
-            return invalid_order("Troco deve ser informado com o valor entregue")
+            return invalid_order(
+                "Troco deve ser informado com o valor entregue"
+            )
+
         if payment_method != 'dinheiro' and payment_change != 0:
-            return invalid_order("Troco so pode ser informado para pagamento em dinheiro")
+            return invalid_order(
+                "Troco so pode ser informado para pagamento em dinheiro"
+            )
 
         cur.execute(
             """
-            INSERT INTO orders (company_id, customer_name, total_price, status, payment_method, payment_change, table_id)
+            INSERT INTO orders (
+                company_id,
+                customer_name,
+                total_price,
+                status,
+                payment_method,
+                payment_change,
+                table_id
+            )
             VALUES (%s, %s, %s, 'PENDING_PAYMENT', %s, %s, %s)
             RETURNING id;
             """,
-            (str(company_id), customer_name, total, payment_method, payment_change,
-             str(table_id) if table_id else None)
+            (
+                str(company_id),
+                customer_name,
+                total,
+                payment_method,
+                payment_change,
+                str(table_id) if table_id else None
+            )
         )
+
         order_id = cur.fetchone()['id']
 
         for product_id, quantity, unit_price, item_total in order_items:
-
             cur.execute(
                 """
-                INSERT INTO order_items (order_id, product_id, quantity, unit_price, total)
+                INSERT INTO order_items (
+                    order_id,
+                    product_id,
+                    quantity,
+                    unit_price,
+                    total
+                )
                 VALUES (%s, %s, %s, %s, %s);
                 """,
-                (str(order_id), str(product_id), quantity, unit_price, item_total)
+                (
+                    str(order_id),
+                    str(product_id),
+                    quantity,
+                    unit_price,
+                    item_total
+                )
             )
 
         cur.execute(
             """
-            INSERT INTO payments (order_id, method, status, amount)
+            INSERT INTO payments (
+                order_id,
+                method,
+                status,
+                amount
+            )
             VALUES (%s, %s, 'PENDING', %s);
             """,
-            (str(order_id), payment_methods[payment_method], total)
+            (
+                str(order_id),
+                payment_methods[payment_method],
+                total
+            )
         )
+
         cur.execute(
             """
-            INSERT INTO order_events (order_id, event_type)
+            INSERT INTO order_events (
+                order_id,
+                event_type
+            )
             VALUES (%s, 'ORDER_CREATED');
             """,
             (str(order_id),)
@@ -645,6 +728,7 @@ def create_company_order(company_id):
             'order_id': str(order_id),
             'company_id': str(company_id)
         })
+
         return jsonify({
             "message": "Pedido realizado com sucesso",
             "order_id": str(order_id),
@@ -673,14 +757,24 @@ def get_order(order_id):
 
     try:
         tracking_token = request.args.get('tracking_token', '')
-        try:
-            tracking = serializer.loads(tracking_token, max_age=60 * 60 * 24 * 7)
-        except (SignatureExpired, BadSignature):
-            return jsonify({"error": "Acesso de acompanhamento invalido"}), 401
 
-        if (tracking.get('purpose') != 'order_tracking' or
-                tracking.get('order_id') != str(order_id)):
-            return jsonify({"error": "Acesso de acompanhamento invalido"}), 401
+        try:
+            tracking = serializer.loads(
+                tracking_token,
+                max_age=60 * 60 * 24 * 7
+            )
+        except (SignatureExpired, BadSignature):
+            return jsonify({
+                "error": "Acesso de acompanhamento invalido"
+            }), 401
+
+        if (
+            tracking.get('purpose') != 'order_tracking'
+            or tracking.get('order_id') != str(order_id)
+        ):
+            return jsonify({
+                "error": "Acesso de acompanhamento invalido"
+            }), 401
 
         conn = get_db_connection()
 
@@ -715,7 +809,10 @@ def get_order(order_id):
         if tracking.get('company_id') != str(order['company_id']):
             cur.close()
             conn.close()
-            return jsonify({"error": "Acesso de acompanhamento invalido"}), 401
+
+            return jsonify({
+                "error": "Acesso de acompanhamento invalido"
+            }), 401
 
         cur.execute(
             """
@@ -812,12 +909,19 @@ def update_order_status(order_id):
                 "error": "Status nao informado"
             }), 400
 
-        if new_status not in ('PENDING_PAYMENT', 'em preparo', 'concluido'):
-            return jsonify({"error": "Status invalido"}), 400
+        if new_status not in (
+            'PENDING_PAYMENT',
+            'em preparo',
+            'concluido'
+        ):
+            return jsonify({
+                "error": "Status invalido"
+            }), 400
 
         company_id = request.user.get('company_id')
 
         conn = get_db_connection()
+
         cur = conn.cursor()
 
         cur.execute(
@@ -865,10 +969,16 @@ def update_order_status(order_id):
 
         cur.execute(
             """
-            INSERT INTO order_events (order_id, event_type)
+            INSERT INTO order_events (
+                order_id,
+                event_type
+            )
             VALUES (%s, %s);
             """,
-            (str(order_id), 'STATUS_' + new_status.upper().replace(' ', '_'))
+            (
+                str(order_id),
+                'STATUS_' + new_status.upper().replace(' ', '_')
+            )
         )
 
         conn.commit()
