@@ -52,47 +52,46 @@ type Order = {
 };
 
 const categories = [
-  {
-    name: "Pizzas",
-    image: "/images/pizza.png",
-    emoji: "🍕",
-  },
-  {
-    name: "Hambúrguer",
-    image: "/images/hero-burguer.png",
-    emoji: "🍔",
-  },
-  {
-    name: "Sushi",
-    image: null,
-    emoji: "🍣",
-  },
-  {
-    name: "Massas",
-    image: null,
-    emoji: "🍝",
-  },
-  {
-    name: "Self Service",
-    image: "/images/self-service.png",
-    emoji: "🍛",
-  },
-  {
-    name: "Saudável",
-    image: null,
-    emoji: "🥗",
-  },
-  {
-    name: "Doces",
-    image: null,
-    emoji: "🍰",
-  },
-  {
-    name: "Bebidas",
-    image: "/images/bebidas.png",
-    emoji: "🥤",
-  },
+  { name: "Pizzas", image: "/images/pizza.png" },
+  { name: "Hambúrguer", image: "/images/hero-burguer.png" },
+  { name: "Sushi", image: null },
+  { name: "Massas", image: null },
+  { name: "Self Service", image: "/images/self-service.png" },
+  { name: "Saudável", image: null },
+  { name: "Doces", image: null },
+  { name: "Bebidas", image: "/images/bebidas.png" },
 ];
+
+function getCategoryImage(name?: string | null) {
+  const value = (name || "").toLowerCase();
+
+  if (value.includes("pizza")) {
+    return "/images/pizza.png";
+  }
+
+  if (
+    value.includes("hamb") ||
+    value.includes("burger")
+  ) {
+    return "/images/hero-burguer.png";
+  }
+
+  if (
+    value.includes("self") ||
+    value.includes("executivo")
+  ) {
+    return "/images/self-service.png";
+  }
+
+  if (
+    value.includes("bebida") ||
+    value.includes("drink")
+  ) {
+    return "/images/bebidas.png";
+  }
+
+  return null;
+}
 
 export default function App() {
   const slug = new URLSearchParams(location.search).get("empresa");
@@ -164,7 +163,7 @@ export default function App() {
     const poll = async () => {
       try {
         setActiveOrder(await fetchOrder(orderId, token));
-      } catch {}
+      } catch { }
     };
 
     poll();
@@ -179,10 +178,10 @@ export default function App() {
 
     return q
       ? products.filter(
-          (p) =>
-            p.name.toLowerCase().includes(q) ||
-            (p.description || "").toLowerCase().includes(q)
-        )
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          (p.description || "").toLowerCase().includes(q)
+      )
       : products;
   }, [products, search]);
 
@@ -202,20 +201,20 @@ export default function App() {
 
       return x
         ? c.map((i) =>
-            i.id === p.id
-              ? {
-                  ...i,
-                  quantity: i.quantity + 1,
-                }
-              : i
-          )
+          i.id === p.id
+            ? {
+              ...i,
+              quantity: i.quantity + 1,
+            }
+            : i
+        )
         : [
-            ...c,
-            {
-              ...p,
-              quantity: 1,
-            },
-          ];
+          ...c,
+          {
+            ...p,
+            quantity: 1,
+          },
+        ];
     });
 
   const remove = (id: string) =>
@@ -224,9 +223,9 @@ export default function App() {
         .map((i) =>
           i.id === id
             ? {
-                ...i,
-                quantity: i.quantity - 1,
-              }
+              ...i,
+              quantity: i.quantity - 1,
+            }
             : i
         )
         .filter((i) => i.quantity > 0)
@@ -304,17 +303,17 @@ export default function App() {
 
   const groups = menus.length
     ? menus.map((m) => ({
-        menu: m,
-        items: filtered.filter(
-          (p) => p.menu_id === m.id
-        ),
-      }))
+      menu: m,
+      items: filtered.filter(
+        (p) => p.menu_id === m.id
+      ),
+    }))
     : [
-        {
-          menu: null,
-          items: filtered,
-        },
-      ];
+      {
+        menu: null,
+        items: filtered,
+      },
+    ];
 
   return (
     <>
@@ -507,11 +506,12 @@ export default function App() {
                   {category.image ? (
                     <img
                       src={category.image}
-                      alt={category.name}
+                      alt=""
+                      aria-hidden="true"
                     />
                   ) : (
-                    <span>
-                      {category.emoji}
+                    <span className="category-placeholder">
+                      {category.name.charAt(0)}
                     </span>
                   )}
 
@@ -631,7 +631,17 @@ export default function App() {
                         key={p.id}
                       >
                         <div className="product-image">
-                          <span>🍽️</span>
+                          {getCategoryImage(g.menu?.name) ? (
+                            <img
+                              src={getCategoryImage(g.menu?.name)!}
+                              alt=""
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <span className="product-placeholder">
+                              {p.name.charAt(0).toUpperCase()}
+                            </span>
+                          )}
                         </div>
 
                         <div className="product-body">
@@ -917,22 +927,22 @@ export default function App() {
       </main>
 
       <footer id="contato">
-  <div className="brand">
-    <img
-      src="/logo-vem-comer.png"
-      alt="Vem Comer"
-      className="brand-logo"
-    />
-  </div>
+        <div className="brand">
+          <img
+            src="/logo-vem-comer.png"
+            alt="Vem Comer"
+            className="brand-logo"
+          />
+        </div>
 
-  <p>
-    Mais que comida, são momentos que importam.
-  </p>
+        <p>
+          Mais que comida, são momentos que importam.
+        </p>
 
-  <span className="footer-copy">
-    © {new Date().getFullYear()} Vem Comer • Natal - RN
-  </span>
-</footer>
+        <span className="footer-copy">
+          © {new Date().getFullYear()} Vem Comer • Natal - RN
+        </span>
+      </footer>
     </>
   );
 }
