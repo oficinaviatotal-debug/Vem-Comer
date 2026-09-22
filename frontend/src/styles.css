@@ -748,3 +748,22 @@ footer small {
     width: 100%
   }
 }
+
+.brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.brand-logo {
+  width: 150px;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+@media (max-width: 768px) {
+  .brand-logo {
+    width: 125px;
+  }
+}

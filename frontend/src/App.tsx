@@ -32,12 +32,44 @@ export default function App() {
   if (error || !company || !companyId) return <main className="error-state">{error || "Estabelecimento não encontrado."}</main>;
   const groups = menus.length ? menus.map(m => ({ menu: m, items: filtered.filter(p => p.menu_id === m.id) })) : [{ menu: null, items: filtered }];
   return <>
-    <header className="main-header"><div className="header-inner">
-      <a className="brand" href="/"><span className="brand-mark">🍽</span><span><b>Vem</b> Comer</span></a><span className="location">📍 Natal - RN</span>
-      <button className="hamb" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu">☰</button>
-      <nav className={menuOpen ? "nav open" : "nav"}><a href="#inicio">Início</a><a href="#cardapio">Restaurante</a><a href="#pedido">Meu pedido ({count})</a><a href="#feedback">Avaliar</a><button onClick={() => setAdmin(true)}>Painel Admin</button></nav>
-      <div className="header-actions"><a href="#pedido">Entrar</a><a className="header-cta" href="#cardapio">Pedir agora</a></div>
-    </div></header>
+    <header className="main-header">
+      <div className="header-inner">
+
+        <a className="brand" href="/" aria-label="Vem Comer">
+          <img
+            src="/logo-vem-comer.png"
+            alt="Vem Comer"
+            className="brand-logo"
+          />
+        </a>
+
+        <span className="location">📍 Natal - RN</span>
+
+        <button
+          className="hamb"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Abrir menu"
+        >
+          ☰
+        </button>
+
+        <nav className={menuOpen ? "nav open" : "nav"}>
+          <a href="#inicio">Início</a>
+          <a href="#cardapio">Restaurantes</a>
+          <a href="#pedido">Meu pedido ({count})</a>
+          <a href="#feedback">Avaliar</a>
+          <button onClick={() => setAdmin(true)}>Painel Admin</button>
+        </nav>
+
+        <div className="header-actions">
+          <a href="#pedido">Entrar</a>
+          <a className="header-cta" href="#cardapio">
+            Pedir agora
+          </a>
+        </div>
+
+      </div>
+    </header>
     <main className="main-content">
       {admin ? <AdminPanel companyId={companyId} companySlug={company.slug} onBack={() => setAdmin(false)} /> : activeOrder ? <section className="tracking"><span className="kicker">PEDIDO ENVIADO</span><h2>Acompanhe seu pedido</h2><p>ID: {activeOrder.id}</p><div className="status"><small>Status atual</small><strong>{activeOrder.status}</strong></div>{activeOrder.items?.map((i, n) => <div className="order-line" key={n}><span>{i.quantity}x {i.name}</span><b>R$ {Number(i.total).toFixed(2)}</b></div>)}<div className="order-total"><b>Total</b><b>R$ {Number(activeOrder.total_price).toFixed(2)}</b></div><button className="button-action" onClick={() => { setActiveOrder(null); setOrderId(null); setToken(null) }}>Fazer novo pedido</button></section> : <>
         <section className="hero" id="inicio"><div><span className="kicker">PEDIDO FÁCIL, COMIDA QUE CHEGA.</span><h1>Comida boa,<br /><span>mais perto de você!</span></h1><p>Descubra o cardápio de <b>{company.name}</b> e faça seu pedido de forma rápida.</p>{tableId && <span className="table-badge">{tableNumber ? `Pedido para a Mesa ${tableNumber}` : "Carregando mesa..."}</span>}<form className="search" onSubmit={e => e.preventDefault()}><span>⌕</span><input value={search} onChange={e => setSearch(e.target.value)} placeholder="O que você está com vontade de comer?" /><button>Buscar</button></form></div><div className="hero-food"><div>🍔<small>🍟</small><em>Qualidade em cada mordida!</em></div></div></section>
