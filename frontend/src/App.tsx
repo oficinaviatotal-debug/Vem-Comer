@@ -7,7 +7,6 @@ import {
   fetchMenus,
   fetchProducts,
   fetchOrder,
-  getUser,
   fetchTable,
 } from "./service/api";
 import AdminPanel from "./service/AdminPanel";
@@ -52,15 +51,47 @@ type Order = {
   }[];
 };
 
-const icons = [
-  "🍕",
-  "🍔",
-  "🍣",
-  "🍝",
-  "🍛",
-  "🥗",
-  "🍰",
-  "🥤",
+const categories = [
+  {
+    name: "Pizzas",
+    image: "/images/pizza.png",
+    emoji: "🍕",
+  },
+  {
+    name: "Hambúrguer",
+    image: "/images/hero-burguer.png",
+    emoji: "🍔",
+  },
+  {
+    name: "Sushi",
+    image: null,
+    emoji: "🍣",
+  },
+  {
+    name: "Massas",
+    image: null,
+    emoji: "🍝",
+  },
+  {
+    name: "Self Service",
+    image: "/images/self-service.png",
+    emoji: "🍛",
+  },
+  {
+    name: "Saudável",
+    image: null,
+    emoji: "🥗",
+  },
+  {
+    name: "Doces",
+    image: null,
+    emoji: "🍰",
+  },
+  {
+    name: "Bebidas",
+    image: "/images/bebidas.png",
+    emoji: "🥤",
+  },
 ];
 
 export default function App() {
@@ -160,7 +191,10 @@ export default function App() {
     0
   );
 
-  const count = cart.reduce((s, p) => s + p.quantity, 0);
+  const count = cart.reduce(
+    (s, p) => s + p.quantity,
+    0
+  );
 
   const add = (p: Product) =>
     setCart((c) => {
@@ -169,10 +203,19 @@ export default function App() {
       return x
         ? c.map((i) =>
             i.id === p.id
-              ? { ...i, quantity: i.quantity + 1 }
+              ? {
+                  ...i,
+                  quantity: i.quantity + 1,
+                }
               : i
           )
-        : [...c, { ...p, quantity: 1 }];
+        : [
+            ...c,
+            {
+              ...p,
+              quantity: 1,
+            },
+          ];
     });
 
   const remove = (id: string) =>
@@ -180,7 +223,10 @@ export default function App() {
       c
         .map((i) =>
           i.id === id
-            ? { ...i, quantity: i.quantity - 1 }
+            ? {
+                ...i,
+                quantity: i.quantity - 1,
+              }
             : i
         )
         .filter((i) => i.quantity > 0)
@@ -199,7 +245,9 @@ export default function App() {
         tableId
       );
 
-      if (!r?.order_id || !r?.tracking_token) throw 0;
+      if (!r?.order_id || !r?.tracking_token) {
+        throw 0;
+      }
 
       setCart([]);
       setOrderId(r.order_id);
@@ -270,7 +318,6 @@ export default function App() {
 
   return (
     <>
-      {/* HEADER */}
       <header className="main-header">
         <div className="header-inner">
           <a
@@ -291,7 +338,9 @@ export default function App() {
 
           <button
             className="hamb"
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={() =>
+              setMenuOpen(!menuOpen)
+            }
             aria-label="Abrir menu"
           >
             ☰
@@ -332,7 +381,6 @@ export default function App() {
             onBack={() => setAdmin(false)}
           />
         ) : activeOrder ? (
-          /* PEDIDO EM ANDAMENTO */
           <section className="tracking">
             <span className="kicker">
               PEDIDO ENVIADO
@@ -344,7 +392,9 @@ export default function App() {
 
             <div className="status">
               <small>Status atual</small>
-              <strong>{activeOrder.status}</strong>
+              <strong>
+                {activeOrder.status}
+              </strong>
             </div>
 
             {activeOrder.items?.map((i, n) => (
@@ -386,12 +436,11 @@ export default function App() {
           </section>
         ) : (
           <>
-            {/* HERO */}
             <section
               className="hero"
               id="inicio"
             >
-              <div>
+              <div className="hero-content">
                 <span className="kicker">
                   VEM COMER • NATAL - RN
                 </span>
@@ -405,10 +454,8 @@ export default function App() {
                 </h1>
 
                 <p>
-                  Descubra restaurantes, encontre
-                  seus pratos favoritos e peça de
-                  forma simples, rápida e do seu
-                  jeito.
+                  Descubra os melhores
+                  restaurantes da sua região.
                 </p>
 
                 {tableId && (
@@ -432,7 +479,7 @@ export default function App() {
                     onChange={(e) =>
                       setSearch(e.target.value)
                     }
-                    placeholder="O que você está com vontade de comer?"
+                    placeholder="Buscar restaurantes, pratos..."
                   />
 
                   <button>Buscar</button>
@@ -440,50 +487,39 @@ export default function App() {
               </div>
 
               <div className="hero-food">
-                <div>
-                  🍔
-                  <small>🍟</small>
+                <img
+                  src="/images/hero-burguer.png"
+                  alt="Hambúrguer artesanal"
+                />
 
-                  <em>
-                    Qualidade em cada mordida!
-                  </em>
-                </div>
+                <em>
+                  Qualidade em cada mordida!
+                </em>
               </div>
             </section>
 
-            {/* CATEGORIAS */}
             <section className="categories">
-              {(menus.length
-                ? menus
-                : [
-                    "Pizzas",
-                    "Hambúrguer",
-                    "Sushi",
-                    "Massas",
-                    "Self Service",
-                    "Saudável",
-                    "Doces",
-                    "Bebidas",
-                  ]
-              ).map((m: any, i) => (
+              {categories.map((category) => (
                 <a
-                  key={m.id || m}
-                  href={
-                    menus.length
-                      ? `#cat-${m.id}`
-                      : "#cardapio"
-                  }
+                  key={category.name}
+                  href="#cardapio"
                 >
-                  <span>
-                    {icons[i % icons.length]}
-                  </span>
+                  {category.image ? (
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                    />
+                  ) : (
+                    <span>
+                      {category.emoji}
+                    </span>
+                  )}
 
-                  <b>{m.name || m}</b>
+                  <b>{category.name}</b>
                 </a>
               ))}
             </section>
 
-            {/* PROMOÇÃO */}
             <section
               className="promo"
               id="promocoes"
@@ -508,33 +544,52 @@ export default function App() {
               </a>
             </section>
 
-            {/* COMO FUNCIONA */}
             <section
               id="como-funciona"
-              className="promo"
+              className="how-it-works"
             >
-              <div>
-                <span className="kicker">
-                  COMO FUNCIONA
-                </span>
+              <div className="section-head">
+                <div>
+                  <span className="kicker">
+                    COMO FUNCIONA
+                  </span>
 
-                <h2>
-                  Escolha. Peça. Aproveite.
-                </h2>
-
-                <p>
-                  Encontre seu prato, monte seu
-                  pedido e acompanhe tudo de forma
-                  simples.
-                </p>
+                  <h2>
+                    Escolha. Peça. Aproveite.
+                  </h2>
+                </div>
               </div>
 
-              <a href="#cardapio">
-                Ver cardápio →
-              </a>
+              <div className="steps">
+                <article>
+                  <span>01</span>
+                  <h3>Escolha seu restaurante</h3>
+                  <p>
+                    Encontre opções próximas e
+                    escolha o que deseja comer.
+                  </p>
+                </article>
+
+                <article>
+                  <span>02</span>
+                  <h3>Monte seu pedido</h3>
+                  <p>
+                    Escolha seus pratos favoritos
+                    e adicione ao carrinho.
+                  </p>
+                </article>
+
+                <article>
+                  <span>03</span>
+                  <h3>Peça e aproveite</h3>
+                  <p>
+                    Finalize seu pedido e
+                    acompanhe tudo.
+                  </p>
+                </article>
+              </div>
             </section>
 
-            {/* CARDÁPIO */}
             <section
               id="cardapio"
               className="menu"
@@ -576,7 +631,7 @@ export default function App() {
                         key={p.id}
                       >
                         <div className="product-image">
-                          🍽️
+                          <span>🍽️</span>
                         </div>
 
                         <div className="product-body">
@@ -618,7 +673,6 @@ export default function App() {
               ))}
             </section>
 
-            {/* CARRINHO */}
             <section
               id="pedido"
               className="cart"
@@ -746,7 +800,6 @@ export default function App() {
               )}
             </section>
 
-            {/* AVALIAÇÃO */}
             <section
               id="feedback"
               className="feedback"
@@ -863,27 +916,23 @@ export default function App() {
         )}
       </main>
 
-      {/* FOOTER */}
       <footer id="contato">
-        <div className="brand">
-          <img
-            src="/logo-vem-comer.png"
-            alt="Vem Comer"
-            className="brand-logo"
-          />
-        </div>
+  <div className="brand">
+    <img
+      src="/logo-vem-comer.png"
+      alt="Vem Comer"
+      className="brand-logo"
+    />
+  </div>
 
-        <p>
-          Mais que comida, são momentos que
-          importam.
-        </p>
+  <p>
+    Mais que comida, são momentos que importam.
+  </p>
 
-        <small>
-          © {new Date().getFullYear()} Vem Comer
-          {" • "}
-          Natal - RN
-        </small>
-      </footer>
+  <span className="footer-copy">
+    © {new Date().getFullYear()} Vem Comer • Natal - RN
+  </span>
+</footer>
     </>
   );
 }
