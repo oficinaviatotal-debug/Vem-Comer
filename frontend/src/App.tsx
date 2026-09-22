@@ -53,10 +53,16 @@ type Order = {
 
 const categories = [
   { name: "Pizzas", image: "/images/pizza.png" },
-  { name: "Hambúrguer", image: "/images/hero-burguer.png" },
+  {
+    name: "Hambúrguer",
+    image: "/images/hero-burguer.png",
+  },
   { name: "Sushi", image: null },
   { name: "Massas", image: null },
-  { name: "Self Service", image: "/images/self-service.png" },
+  {
+    name: "Self Service",
+    image: "/images/self-service.png",
+  },
   { name: "Saudável", image: null },
   { name: "Doces", image: null },
   { name: "Bebidas", image: "/images/bebidas.png" },
@@ -94,63 +100,119 @@ function getCategoryImage(name?: string | null) {
 }
 
 export default function App() {
-  const slug = new URLSearchParams(location.search).get("empresa");
-  const tableId = new URLSearchParams(location.search).get("mesa");
+  const params = new URLSearchParams(location.search);
 
-  const [company, setCompany] = useState<Company | null>(null);
-  const [companyId, setCompanyId] = useState<string | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [menus, setMenus] = useState<Menu[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const slug = params.get("empresa");
+  const tableId = params.get("mesa");
 
-  const [search, setSearch] = useState("");
-  const [tableNumber, setTableNumber] = useState<number | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [admin, setAdmin] = useState(false);
+  const [company, setCompany] =
+    useState<Company | null>(null);
 
-  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [orderMsg, setOrderMsg] = useState("");
+  const [companyId, setCompanyId] =
+    useState<string | null>(null);
 
-  const [payment, setPayment] = useState("pix");
-  const [change, setChange] = useState("");
+  const [products, setProducts] =
+    useState<Product[]>([]);
 
-  const [food, setFood] = useState("boa");
-  const [service, setService] = useState("bom");
-  const [delivery, setDelivery] = useState("rapido");
-  const [comment, setComment] = useState("");
-  const [feedbackMsg, setFeedbackMsg] = useState("");
+  const [menus, setMenus] =
+    useState<Menu[]>([]);
+
+  const [cart, setCart] =
+    useState<CartItem[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  const [search, setSearch] =
+    useState("");
+
+  const [tableNumber, setTableNumber] =
+    useState<number | null>(null);
+
+  const [menuOpen, setMenuOpen] =
+    useState(false);
+
+  const [admin, setAdmin] =
+    useState(false);
+
+  const [activeOrder, setActiveOrder] =
+    useState<Order | null>(null);
+
+  const [orderId, setOrderId] =
+    useState<string | null>(null);
+
+  const [token, setToken] =
+    useState<string | null>(null);
+
+  const [orderMsg, setOrderMsg] =
+    useState("");
+
+  const [payment, setPayment] =
+    useState("pix");
+
+  const [change, setChange] =
+    useState("");
+
+  const [food, setFood] =
+    useState("boa");
+
+  const [service, setService] =
+    useState("bom");
+
+  const [delivery, setDelivery] =
+    useState("rapido");
+
+  const [comment, setComment] =
+    useState("");
+
+  const [feedbackMsg, setFeedbackMsg] =
+    useState("");
 
   useEffect(() => {
     if (!tableId || !companyId) return;
 
     fetchTable(companyId, tableId)
-      .then((x: any) => setTableNumber(x.number))
-      .catch(() => setTableNumber(null));
+      .then((x: any) =>
+        setTableNumber(x.number)
+      )
+      .catch(() =>
+        setTableNumber(null)
+      );
   }, [companyId, tableId]);
 
   useEffect(() => {
     (async () => {
       try {
-        if (!slug) throw 0;
+        if (!slug) {
+          throw new Error();
+        }
 
-        const c = await fetchCompanyBySlug(slug);
+        const c =
+          await fetchCompanyBySlug(slug);
 
         setCompany(c);
         setCompanyId(c.id);
 
-        const [p, m] = await Promise.all([
-          fetchProducts(c.id),
-          fetchMenus(c.id),
-        ]);
+        const [p, m] =
+          await Promise.all([
+            fetchProducts(c.id),
+            fetchMenus(c.id),
+          ]);
 
-        setProducts(Array.isArray(p) ? p : []);
-        setMenus(Array.isArray(m) ? m : []);
+        setProducts(
+          Array.isArray(p) ? p : []
+        );
+
+        setMenus(
+          Array.isArray(m) ? m : []
+        );
       } catch {
-        setError("Estabelecimento não encontrado.");
+        setError(
+          "Estabelecimento não encontrado."
+        );
       } finally {
         setLoading(false);
       }
@@ -162,96 +224,135 @@ export default function App() {
 
     const poll = async () => {
       try {
-        setActiveOrder(await fetchOrder(orderId, token));
-      } catch { }
+        const order =
+          await fetchOrder(
+            orderId,
+            token
+          );
+
+        setActiveOrder(order);
+      } catch {}
     };
 
     poll();
 
-    const i = setInterval(poll, 5000);
+    const interval =
+      setInterval(poll, 5000);
 
-    return () => clearInterval(i);
+    return () =>
+      clearInterval(interval);
   }, [orderId, token]);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q =
+      search.trim().toLowerCase();
 
-    return q
-      ? products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          (p.description || "").toLowerCase().includes(q)
-      )
-      : products;
+    if (!q) return products;
+
+    return products.filter(
+      (p) =>
+        p.name
+          .toLowerCase()
+          .includes(q) ||
+        (p.description || "")
+          .toLowerCase()
+          .includes(q)
+    );
   }, [products, search]);
 
   const total = cart.reduce(
-    (s, p) => s + Number(p.price) * p.quantity,
+    (sum, item) =>
+      sum +
+      Number(item.price) *
+        item.quantity,
     0
   );
 
   const count = cart.reduce(
-    (s, p) => s + p.quantity,
+    (sum, item) =>
+      sum + item.quantity,
     0
   );
 
-  const add = (p: Product) =>
-    setCart((c) => {
-      const x = c.find((i) => i.id === p.id);
+  const add = (product: Product) => {
+    setCart((current) => {
+      const existing =
+        current.find(
+          (item) =>
+            item.id === product.id
+        );
 
-      return x
-        ? c.map((i) =>
-          i.id === p.id
-            ? {
-              ...i,
-              quantity: i.quantity + 1,
-            }
-            : i
-        )
-        : [
-          ...c,
-          {
-            ...p,
-            quantity: 1,
-          },
-        ];
+      if (existing) {
+        return current.map(
+          (item) =>
+            item.id === product.id
+              ? {
+                  ...item,
+                  quantity:
+                    item.quantity + 1,
+                }
+              : item
+        );
+      }
+
+      return [
+        ...current,
+        {
+          ...product,
+          quantity: 1,
+        },
+      ];
     });
+  };
 
-  const remove = (id: string) =>
-    setCart((c) =>
-      c
-        .map((i) =>
-          i.id === id
+  const remove = (id: string) => {
+    setCart((current) =>
+      current
+        .map((item) =>
+          item.id === id
             ? {
-              ...i,
-              quantity: i.quantity - 1,
-            }
-            : i
+                ...item,
+                quantity:
+                  item.quantity - 1,
+              }
+            : item
         )
-        .filter((i) => i.quantity > 0)
+        .filter(
+          (item) => item.quantity > 0
+        )
     );
+  };
 
   async function checkout() {
-    if (!companyId || !cart.length) return;
+    if (!companyId || !cart.length) {
+      return;
+    }
 
     try {
-      const r = await createOrder(
-        companyId,
-        "Cliente Balcão",
-        cart,
-        payment,
-        Number(change) || 0,
-        tableId
-      );
+      const result =
+        await createOrder(
+          companyId,
+          "Cliente Balcão",
+          cart,
+          payment,
+          Number(change) || 0,
+          tableId
+        );
 
-      if (!r?.order_id || !r?.tracking_token) {
-        throw 0;
+      if (
+        !result?.order_id ||
+        !result?.tracking_token
+      ) {
+        throw new Error();
       }
 
       setCart([]);
-      setOrderId(r.order_id);
-      setToken(r.tracking_token);
-      setOrderMsg("Pedido realizado com sucesso!");
+      setOrderId(result.order_id);
+      setToken(result.tracking_token);
+
+      setOrderMsg(
+        "Pedido realizado com sucesso!"
+      );
     } catch {
       setOrderMsg(
         "Erro ao fechar o pedido. Tente novamente."
@@ -259,8 +360,10 @@ export default function App() {
     }
   }
 
-  async function feedback(e: React.FormEvent) {
-    e.preventDefault();
+  async function feedback(
+    event: React.FormEvent
+  ) {
+    event.preventDefault();
 
     if (!companyId) return;
 
@@ -293,27 +396,34 @@ export default function App() {
     );
   }
 
-  if (error || !company || !companyId) {
+  if (
+    error ||
+    !company ||
+    !companyId
+  ) {
     return (
       <main className="error-state">
-        {error || "Estabelecimento não encontrado."}
+        {error ||
+          "Estabelecimento não encontrado."}
       </main>
     );
   }
 
   const groups = menus.length
-    ? menus.map((m) => ({
-      menu: m,
-      items: filtered.filter(
-        (p) => p.menu_id === m.id
-      ),
-    }))
+    ? menus.map((menu) => ({
+        menu,
+        items: filtered.filter(
+          (product) =>
+            product.menu_id ===
+            menu.id
+        ),
+      }))
     : [
-      {
-        menu: null,
-        items: filtered,
-      },
-    ];
+        {
+          menu: null,
+          items: filtered,
+        },
+      ];
 
   return (
     <>
@@ -332,13 +442,15 @@ export default function App() {
           </a>
 
           <span className="location">
-            📍 Natal - RN
+            Natal - RN
           </span>
 
           <button
             className="hamb"
             onClick={() =>
-              setMenuOpen(!menuOpen)
+              setMenuOpen(
+                !menuOpen
+              )
             }
             aria-label="Abrir menu"
           >
@@ -347,20 +459,36 @@ export default function App() {
 
           <nav
             className={
-              menuOpen ? "nav open" : "nav"
+              menuOpen
+                ? "nav open"
+                : "nav"
             }
           >
-            <a href="#inicio">Início</a>
-            <a href="#cardapio">Restaurantes</a>
-            <a href="#promocoes">Promoções</a>
+            <a href="#inicio">
+              Início
+            </a>
+
+            <a href="#cardapio">
+              Restaurantes
+            </a>
+
+            <a href="#promocoes">
+              Promoções
+            </a>
+
             <a href="#como-funciona">
               Como funciona
             </a>
-            <a href="#contato">Contato</a>
+
+            <a href="#contato">
+              Contato
+            </a>
           </nav>
 
           <div className="header-actions">
-            <a href="#pedido">Entrar</a>
+            <a href="#pedido">
+              Entrar
+            </a>
 
             <a
               className="header-cta"
@@ -377,7 +505,9 @@ export default function App() {
           <AdminPanel
             companyId={companyId}
             companySlug={company.slug}
-            onBack={() => setAdmin(false)}
+            onBack={() =>
+              setAdmin(false)
+            }
           />
         ) : activeOrder ? (
           <section className="tracking">
@@ -385,31 +515,44 @@ export default function App() {
               PEDIDO ENVIADO
             </span>
 
-            <h2>Acompanhe seu pedido</h2>
+            <h2>
+              Acompanhe seu pedido
+            </h2>
 
-            <p>ID: {activeOrder.id}</p>
+            <p>
+              ID: {activeOrder.id}
+            </p>
 
             <div className="status">
-              <small>Status atual</small>
+              <small>
+                Status atual
+              </small>
+
               <strong>
                 {activeOrder.status}
               </strong>
             </div>
 
-            {activeOrder.items?.map((i, n) => (
-              <div
-                className="order-line"
-                key={n}
-              >
-                <span>
-                  {i.quantity}x {i.name}
-                </span>
+            {activeOrder.items?.map(
+              (item, index) => (
+                <div
+                  className="order-line"
+                  key={index}
+                >
+                  <span>
+                    {item.quantity}x{" "}
+                    {item.name}
+                  </span>
 
-                <b>
-                  R$ {Number(i.total).toFixed(2)}
-                </b>
-              </div>
-            ))}
+                  <b>
+                    R${" "}
+                    {Number(
+                      item.total
+                    ).toFixed(2)}
+                  </b>
+                </div>
+              )
+            )}
 
             <div className="order-total">
               <b>Total</b>
@@ -467,21 +610,30 @@ export default function App() {
 
                 <form
                   className="search"
-                  onSubmit={(e) =>
-                    e.preventDefault()
+                  onSubmit={(event) =>
+                    event.preventDefault()
                   }
                 >
-                  <span>⌕</span>
+                  <span
+                    aria-hidden="true"
+                    className="search-icon"
+                  >
+                    ⌕
+                  </span>
 
                   <input
                     value={search}
-                    onChange={(e) =>
-                      setSearch(e.target.value)
+                    onChange={(event) =>
+                      setSearch(
+                        event.target.value
+                      )
                     }
                     placeholder="Buscar restaurantes, pratos..."
                   />
 
-                  <button>Buscar</button>
+                  <button>
+                    Buscar
+                  </button>
                 </form>
               </div>
 
@@ -498,26 +650,32 @@ export default function App() {
             </section>
 
             <section className="categories">
-              {categories.map((category) => (
-                <a
-                  key={category.name}
-                  href="#cardapio"
-                >
-                  {category.image ? (
-                    <img
-                      src={category.image}
-                      alt=""
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <span className="category-placeholder">
-                      {category.name.charAt(0)}
-                    </span>
-                  )}
+              {categories.map(
+                (category) => (
+                  <a
+                    key={category.name}
+                    href="#cardapio"
+                  >
+                    {category.image ? (
+                      <img
+                        src={category.image}
+                        alt=""
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <span className="category-placeholder">
+                        {category.name.charAt(
+                          0
+                        )}
+                      </span>
+                    )}
 
-                  <b>{category.name}</b>
-                </a>
-              ))}
+                    <b>
+                      {category.name}
+                    </b>
+                  </a>
+                )
+              )}
             </section>
 
             <section
@@ -534,8 +692,9 @@ export default function App() {
                 </h2>
 
                 <p>
-                  Uma combinação deliciosa para
-                  deixar seu pedido ainda melhor.
+                  Uma combinação deliciosa
+                  para deixar seu pedido
+                  ainda melhor.
                 </p>
               </div>
 
@@ -563,25 +722,39 @@ export default function App() {
               <div className="steps">
                 <article>
                   <span>01</span>
-                  <h3>Escolha seu restaurante</h3>
+
+                  <h3>
+                    Escolha seu restaurante
+                  </h3>
+
                   <p>
-                    Encontre opções próximas e
-                    escolha o que deseja comer.
+                    Encontre opções próximas
+                    e escolha o que deseja
+                    comer.
                   </p>
                 </article>
 
                 <article>
                   <span>02</span>
-                  <h3>Monte seu pedido</h3>
+
+                  <h3>
+                    Monte seu pedido
+                  </h3>
+
                   <p>
-                    Escolha seus pratos favoritos
-                    e adicione ao carrinho.
+                    Escolha seus pratos
+                    favoritos e adicione ao
+                    carrinho.
                   </p>
                 </article>
 
                 <article>
                   <span>03</span>
-                  <h3>Peça e aproveite</h3>
+
+                  <h3>
+                    Peça e aproveite
+                  </h3>
+
                   <p>
                     Finalize seu pedido e
                     acompanhe tudo.
@@ -600,7 +773,9 @@ export default function App() {
                     CARDÁPIO
                   </span>
 
-                  <h2>{company.name}</h2>
+                  <h2>
+                    {company.name}
+                  </h2>
                 </div>
 
                 <span className="open-tag">
@@ -608,73 +783,112 @@ export default function App() {
                 </span>
               </div>
 
-              {groups.map((g) => (
+              {menus.length > 0 && (
+                <div className="menu-tabs">
+                  {menus.map(
+                    (menu) => (
+                      <a
+                        key={menu.id}
+                        href={`#cat-${menu.id}`}
+                      >
+                        {menu.name}
+                      </a>
+                    )
+                  )}
+                </div>
+              )}
+
+              {groups.map((group) => (
                 <div
                   className="group"
                   id={
-                    g.menu
-                      ? `cat-${g.menu.id}`
+                    group.menu
+                      ? `cat-${group.menu.id}`
                       : undefined
                   }
                   key={
-                    g.menu?.id || "all"
+                    group.menu?.id ||
+                    "all"
                   }
                 >
-                  {g.menu && (
-                    <h3>{g.menu.name}</h3>
+                  {group.menu && (
+                    <h3>
+                      {group.menu.name}
+                    </h3>
                   )}
 
                   <div className="grid">
-                    {g.items.map((p) => (
-                      <article
-                        className="product"
-                        key={p.id}
-                      >
-                        <div className="product-image">
-                          {getCategoryImage(g.menu?.name) ? (
-                            <img
-                              src={getCategoryImage(g.menu?.name)!}
-                              alt=""
-                              aria-hidden="true"
-                            />
-                          ) : (
-                            <span className="product-placeholder">
-                              {p.name.charAt(0).toUpperCase()}
-                            </span>
-                          )}
-                        </div>
+                    {group.items.map(
+                      (product) => {
+                        const image =
+                          getCategoryImage(
+                            group.menu
+                              ?.name
+                          );
 
-                        <div className="product-body">
-                          <h3>{p.name}</h3>
+                        return (
+                          <article
+                            className="product"
+                            key={
+                              product.id
+                            }
+                          >
+                            <div className="product-image">
+                              {image ? (
+                                <img
+                                  src={image}
+                                  alt=""
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <span className="product-placeholder">
+                                  {product.name.charAt(
+                                    0
+                                  )}
+                                </span>
+                              )}
+                            </div>
 
-                          <p>
-                            {p.description ||
-                              "Sem descrição cadastrada."}
-                          </p>
+                            <div className="product-body">
+                              <h3>
+                                {product.name}
+                              </h3>
 
-                          <div>
-                            <b>
-                              R${" "}
-                              {Number(
-                                p.price
-                              ).toFixed(2)}
-                            </b>
+                              <p>
+                                {product.description ||
+                                  "Produto disponível no cardápio."}
+                              </p>
 
-                            <button
-                              className="button-action"
-                              onClick={() =>
-                                add(p)
-                              }
-                            >
-                              + Adicionar
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    ))}
+                              <div className="product-footer">
+                                <strong>
+                                  R${" "}
+                                  {Number(
+                                    product.price
+                                  ).toFixed(
+                                    2
+                                  )}
+                                </strong>
+
+                                <button
+                                  className="add-product"
+                                  onClick={() =>
+                                    add(
+                                      product
+                                    )
+                                  }
+                                  aria-label={`Adicionar ${product.name}`}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </article>
+                        );
+                      }
+                    )}
                   </div>
 
-                  {!g.items.length && (
+                  {!group.items.length && (
                     <div className="empty">
                       Nenhum produto encontrado.
                     </div>
@@ -706,40 +920,49 @@ export default function App() {
               {!cart.length ? (
                 <div className="empty">
                   Seu carrinho está vazio.
-                  Adicione algo gostoso! 🍴
+                  Adicione um produto ao
+                  pedido.
                 </div>
               ) : (
                 <>
                   <div className="cart-items">
-                    {cart.map((i) => (
-                      <div
-                        className="cart-item"
-                        key={i.id}
-                      >
-                        <div>
-                          <b>
-                            {i.quantity}x{" "}
-                            {i.name}
-                          </b>
-
-                          <span>
-                            R${" "}
-                            {(
-                              Number(i.price) *
-                              i.quantity
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-
-                        <button
-                          onClick={() =>
-                            remove(i.id)
-                          }
+                    {cart.map(
+                      (item) => (
+                        <div
+                          className="cart-item"
+                          key={item.id}
                         >
-                          − Remover
-                        </button>
-                      </div>
-                    ))}
+                          <div>
+                            <b>
+                              {item.quantity}x{" "}
+                              {item.name}
+                            </b>
+
+                            <span>
+                              R${" "}
+                              {(
+                                Number(
+                                  item.price
+                                ) *
+                                item.quantity
+                              ).toFixed(
+                                2
+                              )}
+                            </span>
+                          </div>
+
+                          <button
+                            onClick={() =>
+                              remove(
+                                item.id
+                              )
+                            }
+                          >
+                            Remover
+                          </button>
+                        </div>
+                      )
+                    )}
                   </div>
 
                   <div className="checkout">
@@ -748,9 +971,10 @@ export default function App() {
 
                       <select
                         value={payment}
-                        onChange={(e) =>
+                        onChange={(event) =>
                           setPayment(
-                            e.target.value
+                            event.target
+                              .value
                           )
                         }
                       >
@@ -768,16 +992,20 @@ export default function App() {
                       </select>
                     </label>
 
-                    {payment === "dinheiro" && (
+                    {payment ===
+                      "dinheiro" && (
                       <label>
                         Troco para
 
                         <input
                           type="number"
                           value={change}
-                          onChange={(e) =>
+                          onChange={(
+                            event
+                          ) =>
                             setChange(
-                              e.target.value
+                              event.target
+                                .value
                             )
                           }
                           placeholder="Ex.: 50"
@@ -790,13 +1018,18 @@ export default function App() {
                     <span>Total</span>
 
                     <b>
-                      R$ {total.toFixed(2)}
+                      R${" "}
+                      {total.toFixed(
+                        2
+                      )}
                     </b>
                   </div>
 
                   <button
                     className="button-action full"
-                    onClick={checkout}
+                    onClick={
+                      checkout
+                    }
                   >
                     Finalizar pedido
                   </button>
@@ -827,26 +1060,35 @@ export default function App() {
                 estabelecimento a melhorar.
               </p>
 
-              <form onSubmit={feedback}>
+              <form
+                onSubmit={feedback}
+              >
                 <fieldset>
-                  <legend>Comida</legend>
+                  <legend>
+                    Comida
+                  </legend>
 
                   {[
                     "ótima",
                     "boa",
                     "regular",
                     "ruim",
-                  ].map((x) => (
-                    <label key={x}>
+                  ].map((value) => (
+                    <label key={value}>
                       <input
                         type="radio"
-                        checked={food === x}
+                        checked={
+                          food ===
+                          value
+                        }
                         onChange={() =>
-                          setFood(x)
+                          setFood(
+                            value
+                          )
                         }
                       />
 
-                      {x}
+                      {value}
                     </label>
                   ))}
                 </fieldset>
@@ -861,39 +1103,51 @@ export default function App() {
                     "bom",
                     "regular",
                     "ruim",
-                  ].map((x) => (
-                    <label key={x}>
+                  ].map((value) => (
+                    <label key={value}>
                       <input
                         type="radio"
-                        checked={service === x}
+                        checked={
+                          service ===
+                          value
+                        }
                         onChange={() =>
-                          setService(x)
+                          setService(
+                            value
+                          )
                         }
                       />
 
-                      {x}
+                      {value}
                     </label>
                   ))}
                 </fieldset>
 
                 <fieldset>
-                  <legend>Entrega</legend>
+                  <legend>
+                    Entrega
+                  </legend>
 
                   {[
                     "rápida",
                     "normal",
                     "demorada",
-                  ].map((x) => (
-                    <label key={x}>
+                  ].map((value) => (
+                    <label key={value}>
                       <input
                         type="radio"
-                        checked={delivery === x}
+                        checked={
+                          delivery ===
+                          value
+                        }
                         onChange={() =>
-                          setDelivery(x)
+                          setDelivery(
+                            value
+                          )
                         }
                       />
 
-                      {x}
+                      {value}
                     </label>
                   ))}
                 </fieldset>
@@ -904,8 +1158,11 @@ export default function App() {
                   <textarea
                     rows={4}
                     value={comment}
-                    onChange={(e) =>
-                      setComment(e.target.value)
+                    onChange={(event) =>
+                      setComment(
+                        event.target
+                          .value
+                      )
                     }
                     placeholder="Conte como foi..."
                   />
@@ -926,6 +1183,25 @@ export default function App() {
         )}
       </main>
 
+      {count > 0 && !admin && (
+        <a
+          href="#pedido"
+          className="mobile-cart"
+        >
+          <span className="mobile-cart-count">
+            {count}
+          </span>
+
+          <span>
+            Ver carrinho
+          </span>
+
+          <strong>
+            R$ {total.toFixed(2)}
+          </strong>
+        </a>
+      )}
+
       <footer id="contato">
         <div className="brand">
           <img
@@ -936,11 +1212,14 @@ export default function App() {
         </div>
 
         <p>
-          Mais que comida, são momentos que importam.
+          Mais que comida, são momentos
+          que importam.
         </p>
 
         <span className="footer-copy">
-          © {new Date().getFullYear()} Vem Comer • Natal - RN
+          ©{" "}
+          {new Date().getFullYear()}{" "}
+          Vem Comer • Natal - RN
         </span>
       </footer>
     </>
