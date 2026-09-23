@@ -256,7 +256,7 @@ img {
   position: relative;
 }
 
-.hero-food > div {
+.hero-food>div {
   width: min(350px, 90%);
   aspect-ratio: 1;
   border-radius: 50%;
@@ -384,7 +384,7 @@ img {
   margin-bottom: 38px;
 }
 
-.group > h3 {
+.group>h3 {
   font-size: 1.3rem;
 }
 
@@ -435,14 +435,14 @@ img {
   line-height: 1.5;
 }
 
-.product-body > div {
+.product-body>div {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
 
-.product-body > div > b {
+.product-body>div>b {
   color: var(--orange);
 }
 
@@ -556,7 +556,7 @@ img {
 
 /* FEEDBACK */
 
-.feedback > p {
+.feedback>p {
   color: var(--muted);
 }
 
@@ -594,7 +594,7 @@ img {
   font-weight: 700;
 }
 
-.feedback form > .button-action {
+.feedback form>.button-action {
   grid-column: 1 / -1;
 }
 
@@ -609,7 +609,7 @@ img {
   box-shadow: var(--shadow);
 }
 
-.tracking > p {
+.tracking>p {
   color: var(--muted);
 }
 
@@ -715,6 +715,7 @@ footer small {
 /* CELULAR */
 
 @media (max-width: 767px) {
+
   html,
   body,
   #root {
@@ -814,7 +815,7 @@ footer small {
     max-width: 100%;
   }
 
-  .hero-food > div {
+  .hero-food>div {
     width: 240px;
     max-width: 80vw;
     font-size: 6rem;
@@ -877,7 +878,7 @@ footer small {
   }
 
   .comment,
-  .feedback form > .button-action {
+  .feedback form>.button-action {
     grid-column: auto;
   }
 
@@ -901,5 +902,41 @@ footer small {
     width: 100%;
     max-width: 100%;
     overflow: hidden;
+  }
+}
+
+.categories a {
+  flex-shrink: 0;
+}
+
+.categories a img {
+  display: block;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 8px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.hero-food>img {
+  display: block;
+  width: 100%;
+  max-width: 585px;
+  height: 330px;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+@media (max-width: 767px) {
+  .categories a img {
+    width: 55px;
+    height: 55px;
+  }
+
+  .hero-food>img {
+    width: 100%;
+    max-width: 100%;
+    height: 330px;
+    object-fit: cover;
   }
 }
