@@ -156,11 +156,11 @@ def is_login_blocked(email):
     with _login_lock:
         attempts = [
             t
-            for t in _failed_login_attempts.get(email, [])
+            for t in _failed_login_attempts.get(key, [])
             if now - t < LOGIN_WINDOW_SECONDS
         ]
 
-        _failed_login_attempts[email] = attempts
+        _failed_login_attempts[key] = attempts
 
         return len(attempts) >= LOGIN_MAX_ATTEMPTS
 
