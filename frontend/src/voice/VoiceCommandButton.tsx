@@ -23,7 +23,7 @@ export default function VoiceCommandButton({ onCommand }: Props) {
 
   useEffect(() => {
     onCommandRef.current = onCommand;
-  }, []);
+  }, [onCommand]);
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(true);
   const [transcript, setTranscript] = useState("");
@@ -59,7 +59,7 @@ export default function VoiceCommandButton({ onCommand }: Props) {
       recognition.stop();
       recognitionRef.current = null;
     };
-  }, [onCommand]);
+  }, []);
 
   if (!supported) return null;
 
