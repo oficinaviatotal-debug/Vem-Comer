@@ -1253,3 +1253,43 @@ footer p {
     bottom: 10px;
   }
 }
+
+.voice-command {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.voice-command-button {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  background: #111;
+  color: #fff;
+  font-size: 20px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.14);
+}
+
+.voice-command-button.listening {
+  transform: scale(1.06);
+}
+
+.voice-command-text,
+.voice-hint {
+  font-size: 14px;
+  color: #555;
+}
+
+.voice-command-text {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voice-hint {
+  margin: 6px 0 0;
+}
