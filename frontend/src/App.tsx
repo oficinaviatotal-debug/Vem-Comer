@@ -10,6 +10,7 @@ import {
   fetchTable,
 } from "./service/api";
 import AdminPanel from "./service/AdminPanel";
+import VoiceCommandButton from "./voice/VoiceCommandButton";
 
 type Company = {
   id: string;
@@ -259,6 +260,37 @@ export default function App() {
           .includes(q)
     );
   }, [products, search]);
+
+  const handleVoiceCommand = (command: any) => {
+    if (command.intent === "search_products") {
+      setSearch(String(command.fields?.rawText || "").replace(/^(buscar|procurar|encontrar)\\s*/i, ""));
+      setVoiceHint("Busca preenchida por voz.");
+      return;
+    }
+
+    if (command.intent === "create_order") {
+      setVoiceHint("Comando de pedido reconhecido. Revise o carrinho antes de confirmar.");
+      return;
+    }
+
+    if (command.intent === "add_stock") {
+      setVoiceHint("Comando de estoque reconhecido. A operação exige acesso administrativo e confirmação.");
+      return;
+    }
+
+    if (command.intent === "create_menu_item") {
+      setVoiceHint("Comando de novo item reconhecido. A operação exige acesso administrativo e confirmação.");
+      return;
+    }
+
+    if (command.intent === "open_admin") {
+      setAdmin(true);
+      setVoiceHint("Painel administrativo aberto.");
+      return;
+    }
+
+    setVoiceHint("Não reconheci o comando. Tente falar novamente.");
+  };
 
   const total = cart.reduce(
     (sum, item) =>
@@ -583,6 +615,11 @@ export default function App() {
               id="inicio"
             >
               <div className="hero-content">
+                <VoiceCommandButton onCommand={handleVoiceCommand} />
+                {voiceHint && (
+                  <p className="voice-hint" role="status">{voiceHint}</p>
+                )}
+
                 <span className="kicker">
                   VEM COMER • NATAL - RN
                 </span>
