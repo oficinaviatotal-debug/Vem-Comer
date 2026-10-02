@@ -19,6 +19,11 @@ type Recognition = {
 
 export default function VoiceCommandButton({ onCommand }: Props) {
   const recognitionRef = useRef<Recognition | null>(null);
+  const onCommandRef = useRef(onCommand);
+
+  useEffect(() => {
+    onCommandRef.current = onCommand;
+  }, []);
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(true);
   const [transcript, setTranscript] = useState("");
@@ -45,7 +50,7 @@ export default function VoiceCommandButton({ onCommand }: Props) {
       const text = event.results?.[0]?.[0]?.transcript || "";
       setTranscript(text);
       const command = interpretVoiceCommand(text);
-      onCommand?.(command);
+      onCommandRef.current?.(command);
     };
 
     recognitionRef.current = recognition;
