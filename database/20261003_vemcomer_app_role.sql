@@ -1,13 +1,13 @@
 -- Provisionamento do papel dedicado do backend Vem Comer.
 -- A senha NAO deve ser armazenada neste arquivo ou no Git.
--- Defina a senha diretamente no Supabase antes do uso pelo backend.
+-- O papel permanece NOLOGIN ate a definicao da senha no Supabase.
 
 DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM pg_roles WHERE rolname = 'vemcomer_app'
     ) THEN
-        CREATE ROLE vemcomer_app LOGIN;
+        CREATE ROLE vemcomer_app NOLOGIN;
     END IF;
 END
 $$;
@@ -45,7 +45,7 @@ CREATE POLICY vemcomer_app_all ON vemcomer.payments FOR ALL TO vemcomer_app USIN
 CREATE POLICY vemcomer_app_all ON vemcomer.order_events FOR ALL TO vemcomer_app USING (true) WITH CHECK (true);
 CREATE POLICY vemcomer_app_all ON vemcomer.feedbacks FOR ALL TO vemcomer_app USING (true) WITH CHECK (true);
 
--- Prova de privilégios:
+-- Prova de privilegios:
 SELECT
     has_schema_privilege('vemcomer_app', 'vemcomer', 'USAGE') AS vemcomer_usage,
     has_table_privilege('vemcomer_app', 'vemcomer.companies', 'SELECT') AS companies_select,
