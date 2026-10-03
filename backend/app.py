@@ -356,6 +356,9 @@ def get_company_by_slug(slug):
 @app.route('/api/companies/<uuid:company_id>', methods=['DELETE'])
 @require_roles('OWNER')
 def delete_company(company_id):
+    if os.getenv('ENABLE_TEST_CLEANUP') != '1':
+        return jsonify({"error": "Rota de teste desabilitada"}), 404
+
     access_error = require_company_access(company_id)
 
     if access_error:
