@@ -185,7 +185,7 @@ def register_company():
                 INSERT INTO vemcomer.companies (name, slug)
                 VALUES (%s, %s)
                 RETURNING id, name, slug;
-            """,
+                """,
                 (company_name, slug)
             )
 
@@ -202,7 +202,7 @@ def register_company():
                 )
                 VALUES (%s, %s, %s, %s, 'OWNER')
                 RETURNING id, name, email, role;
-            """,
+                """,
                 (
                     company['id'],
                     name,
@@ -560,7 +560,7 @@ def create_company_order(company_id):
                 FROM vemcomer.tables
                 WHERE id = %s
                 AND company_id = %s;
-            """,
+                """,
                 (
                     str(table_id),
                     str(company_id)
@@ -595,7 +595,7 @@ def create_company_order(company_id):
                 WHERE id = %s
                 AND company_id = %s
                 FOR SHARE;
-            """,
+                """,
                 (
                     str(product_id),
                     str(company_id)
@@ -666,7 +666,7 @@ def create_company_order(company_id):
                     total
                 )
                 VALUES (%s, %s, %s, %s, %s);
-            """,
+                """,
                 (
                     str(order_id),
                     str(product_id),
@@ -711,7 +711,7 @@ def create_company_order(company_id):
                 SET status = 'ocupada'
                 WHERE id = %s
                 AND company_id = %s;
-            """,
+                """,
                 (
                     str(table_id),
                     str(company_id)
@@ -959,7 +959,7 @@ def update_order_status(order_id):
                     AND company_id = %s
                 )
                 AND company_id = %s;
-            """,
+                """,
                 (
                     str(order_id),
                     str(company_id),
@@ -1045,7 +1045,7 @@ def admin_create_product(company_id):
                 FROM vemcomer.menus
                 WHERE id = %s
                 AND company_id = %s;
-            """,
+                """,
                 (
                     str(menu_id),
                     str(company_id)
@@ -1389,7 +1389,7 @@ def admin_create_user(company_id):
                 )
                 VALUES (%s, %s, %s, %s, %s)
                 RETURNING id;
-            """,
+                """,
                 (
                     str(company_id),
                     name,
@@ -1555,7 +1555,7 @@ def admin_delete_user(user_id):
                 WHERE company_id = %s
                 AND role = 'OWNER'
                 AND active = TRUE;
-            """,
+                """,
                 (str(company_id),)
             )
 
