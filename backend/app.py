@@ -182,10 +182,10 @@ def register_company():
         try:
             cur.execute(
                 """
-                INSERT INTO companies (name, slug)
+                INSERT INTO vemcomer.companies (name, slug)
                 VALUES (%s, %s)
                 RETURNING id, name, slug;
-                """,
+            """,
                 (company_name, slug)
             )
 
@@ -193,7 +193,7 @@ def register_company():
 
             cur.execute(
                 """
-                INSERT INTO users (
+                INSERT INTO vemcomer.users (
                     company_id,
                     name,
                     email,
@@ -202,7 +202,7 @@ def register_company():
                 )
                 VALUES (%s, %s, %s, %s, 'OWNER')
                 RETURNING id, name, email, role;
-                """,
+            """,
                 (
                     company['id'],
                     name,
@@ -259,7 +259,7 @@ def login():
         user = query_db(
             """
             SELECT id, company_id, name, email, password_hash, role
-            FROM users
+            FROM vemcomer.users
             WHERE email = %s AND active = TRUE;
             """,
             (email,),
@@ -308,7 +308,7 @@ def get_company(company_id):
         company = query_db(
             """
             SELECT id, name, slug
-            FROM companies
+            FROM vemcomer.companies
             WHERE id = %s;
             """,
             (str(company_id),),
@@ -335,7 +335,7 @@ def get_company_by_slug(slug):
         company = query_db(
             """
             SELECT id, name, slug
-            FROM companies
+            FROM vemcomer.companies
             WHERE slug = %s;
             """,
             (slug,),
@@ -362,7 +362,7 @@ def get_table(company_id, table_id):
         table = query_db(
             """
             SELECT id, number
-            FROM tables
+            FROM vemcomer.tables
             WHERE id = %s
             AND company_id = %s;
             """,
@@ -396,7 +396,7 @@ def get_company_users(company_id):
         users = query_db(
             """
             SELECT id, company_id, name, email, role
-            FROM users
+            FROM vemcomer.users
             WHERE company_id = %s;
             """,
             (str(company_id),)
@@ -417,7 +417,7 @@ def get_company_products(company_id):
         products = query_db(
             """
             SELECT id, company_id, menu_id, name, description, price
-            FROM products
+            FROM vemcomer.products
             WHERE company_id = %s;
             """,
             (str(company_id),)
@@ -442,7 +442,7 @@ def create_feedback(company_id):
 
         cur.execute(
             """
-            INSERT INTO feedbacks (
+            INSERT INTO vemcomer.feedbacks (
                 company_id,
                 food_rating,
                 service_rating,
@@ -482,7 +482,7 @@ def get_company_menus(company_id):
         menus = query_db(
             """
             SELECT id, company_id, name, active
-            FROM menus
+            FROM vemcomer.menus
             WHERE company_id = %s
             AND active = TRUE;
             """,
@@ -557,10 +557,10 @@ def create_company_order(company_id):
             cur.execute(
                 """
                 SELECT id
-                FROM tables
+                FROM vemcomer.tables
                 WHERE id = %s
                 AND company_id = %s;
-                """,
+            """,
                 (
                     str(table_id),
                     str(company_id)
@@ -591,11 +591,11 @@ def create_company_order(company_id):
             cur.execute(
                 """
                 SELECT id, price
-                FROM products
+                FROM vemcomer.products
                 WHERE id = %s
                 AND company_id = %s
                 FOR SHARE;
-                """,
+            """,
                 (
                     str(product_id),
                     str(company_id)
@@ -631,7 +631,7 @@ def create_company_order(company_id):
 
         cur.execute(
             """
-            INSERT INTO orders (
+            INSERT INTO vemcomer.orders (
                 company_id,
                 customer_name,
                 total_price,
@@ -658,7 +658,7 @@ def create_company_order(company_id):
         for product_id, quantity, unit_price, item_total in order_items:
             cur.execute(
                 """
-                INSERT INTO order_items (
+                INSERT INTO vemcomer.order_items (
                     order_id,
                     product_id,
                     quantity,
@@ -666,7 +666,7 @@ def create_company_order(company_id):
                     total
                 )
                 VALUES (%s, %s, %s, %s, %s);
-                """,
+            """,
                 (
                     str(order_id),
                     str(product_id),
@@ -678,7 +678,7 @@ def create_company_order(company_id):
 
         cur.execute(
             """
-            INSERT INTO payments (
+            INSERT INTO vemcomer.payments (
                 order_id,
                 method,
                 status,
@@ -695,7 +695,7 @@ def create_company_order(company_id):
 
         cur.execute(
             """
-            INSERT INTO order_events (
+            INSERT INTO vemcomer.order_events (
                 order_id,
                 event_type
             )
@@ -707,11 +707,11 @@ def create_company_order(company_id):
         if table_id:
             cur.execute(
                 """
-                UPDATE tables
+                UPDATE vemcomer.tables
                 SET status = 'ocupada'
                 WHERE id = %s
                 AND company_id = %s;
-                """,
+            """,
                 (
                     str(table_id),
                     str(company_id)
@@ -790,7 +790,7 @@ def get_order(order_id):
                 customer_name,
                 total_price,
                 status
-            FROM orders
+            FROM vemcomer.orders
             WHERE id = %s;
             """,
             (str(order_id),)
@@ -822,8 +822,8 @@ def get_order(order_id):
                 oi.unit_price,
                 oi.total,
                 p.name
-            FROM order_items oi
-            JOIN products p
+            FROM vemcomer.order_items oi
+            JOIN vemcomer.products p
                 ON p.id = oi.product_id
             WHERE oi.order_id = %s
             AND p.company_id = %s;
@@ -878,7 +878,7 @@ def get_admin_orders(company_id):
                 payment_method,
                 payment_change,
                 created_at
-            FROM orders
+            FROM vemcomer.orders
             WHERE company_id = %s
             ORDER BY created_at DESC;
             """,
@@ -926,7 +926,7 @@ def update_order_status(order_id):
 
         cur.execute(
             """
-            UPDATE orders
+            UPDATE vemcomer.orders
             SET status = %s
             WHERE id = %s
             AND company_id = %s;
@@ -950,16 +950,16 @@ def update_order_status(order_id):
         if new_status == 'concluido':
             cur.execute(
                 """
-                UPDATE tables
+                UPDATE vemcomer.tables
                 SET status = 'livre'
                 WHERE id = (
                     SELECT table_id
-                    FROM orders
+                    FROM vemcomer.orders
                     WHERE id = %s
                     AND company_id = %s
                 )
                 AND company_id = %s;
-                """,
+            """,
                 (
                     str(order_id),
                     str(company_id),
@@ -969,7 +969,7 @@ def update_order_status(order_id):
 
         cur.execute(
             """
-            INSERT INTO order_events (
+            INSERT INTO vemcomer.order_events (
                 order_id,
                 event_type
             )
@@ -1042,10 +1042,10 @@ def admin_create_product(company_id):
             cur.execute(
                 """
                 SELECT id
-                FROM menus
+                FROM vemcomer.menus
                 WHERE id = %s
                 AND company_id = %s;
-                """,
+            """,
                 (
                     str(menu_id),
                     str(company_id)
@@ -1059,7 +1059,7 @@ def admin_create_product(company_id):
 
         cur.execute(
             """
-            INSERT INTO products (
+            INSERT INTO vemcomer.products (
                 company_id,
                 menu_id,
                 name,
@@ -1119,7 +1119,7 @@ def admin_delete_product(product_id):
 
         cur.execute(
             """
-            DELETE FROM products
+            DELETE FROM vemcomer.products
             WHERE id = %s
             AND company_id = %s;
             """,
@@ -1193,7 +1193,7 @@ def admin_create_menu(company_id):
 
         cur.execute(
             """
-            INSERT INTO menus (company_id, name)
+            INSERT INTO vemcomer.menus (company_id, name)
             VALUES (%s, %s)
             RETURNING id;
             """,
@@ -1244,7 +1244,7 @@ def admin_delete_menu(menu_id):
 
         cur.execute(
             """
-            DELETE FROM menus
+            DELETE FROM vemcomer.menus
             WHERE id = %s
             AND company_id = %s;
             """,
@@ -1318,7 +1318,7 @@ def admin_list_users(company_id):
                 role,
                 active,
                 created_at
-            FROM users
+            FROM vemcomer.users
             WHERE company_id = %s
             ORDER BY created_at DESC;
             """,
@@ -1380,7 +1380,7 @@ def admin_create_user(company_id):
         try:
             cur.execute(
                 """
-                INSERT INTO users (
+                INSERT INTO vemcomer.users (
                     company_id,
                     name,
                     email,
@@ -1389,7 +1389,7 @@ def admin_create_user(company_id):
                 )
                 VALUES (%s, %s, %s, %s, %s)
                 RETURNING id;
-                """,
+            """,
                 (
                     str(company_id),
                     name,
@@ -1452,7 +1452,7 @@ def admin_deactivate_user(user_id):
 
         cur.execute(
             """
-            UPDATE users
+            UPDATE vemcomer.users
             SET active = FALSE
             WHERE id = %s
             AND company_id = %s;
@@ -1519,7 +1519,7 @@ def admin_delete_user(user_id):
         cur.execute(
             """
             SELECT role, active
-            FROM users
+            FROM vemcomer.users
             WHERE id = %s
             AND company_id = %s;
             """,
@@ -1551,11 +1551,11 @@ def admin_delete_user(user_id):
             cur.execute(
                 """
                 SELECT COUNT(*) AS total
-                FROM users
+                FROM vemcomer.users
                 WHERE company_id = %s
                 AND role = 'OWNER'
                 AND active = TRUE;
-                """,
+            """,
                 (str(company_id),)
             )
 
@@ -1571,7 +1571,7 @@ def admin_delete_user(user_id):
 
         cur.execute(
             """
-            DELETE FROM users
+            DELETE FROM vemcomer.users
             WHERE id = %s
             AND company_id = %s;
             """,
@@ -1629,7 +1629,7 @@ def admin_get_tables(company_id):
         tables = query_db(
             """
             SELECT id, number, status
-            FROM tables
+            FROM vemcomer.tables
             WHERE company_id = %s
             ORDER BY number ASC;
             """,
@@ -1671,7 +1671,7 @@ def admin_create_table(company_id):
         existing = query_db(
             """
             SELECT id
-            FROM tables
+            FROM vemcomer.tables
             WHERE company_id = %s
             AND number = %s;
             """,
@@ -1694,7 +1694,7 @@ def admin_create_table(company_id):
 
         cur.execute(
             """
-            INSERT INTO tables (
+            INSERT INTO vemcomer.tables (
                 company_id,
                 number,
                 status
@@ -1749,7 +1749,7 @@ def admin_delete_table(table_id):
 
         cur.execute(
             """
-            DELETE FROM tables
+            DELETE FROM vemcomer.tables
             WHERE id = %s
             AND company_id = %s;
             """,
