@@ -108,10 +108,7 @@ def require_company_access(company_id):
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    return jsonify({
-        "status": "ok",
-        "service": "vem-comer-api"
-    }), 200
+    return jsonify({"ok": True}), 200
 
 
 LOGIN_MAX_ATTEMPTS = 5
