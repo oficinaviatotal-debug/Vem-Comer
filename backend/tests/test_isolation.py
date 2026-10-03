@@ -78,6 +78,17 @@ def isolation_data():
             VALUES (%s, %s, %s)
             RETURNING id
             """,
+            (company_a, "TEST A Product", 10.00),
+        )
+        product_a = cur.fetchone()[0]
+
+        cur.execute(
+            """
+            INSERT INTO vemcomer.products
+                (company_id, name, price)
+            VALUES (%s, %s, %s)
+            RETURNING id
+            """,
             (company_b, "TEST B Product", 10.00),
         )
         product_b = cur.fetchone()[0]
@@ -103,6 +114,7 @@ def isolation_data():
             "password": test_password,
             "user_a": str(user_a),
             "user_b": str(user_b),
+            "product_a": str(product_a),
             "product_b": str(product_b),
             "order_b": str(order_b),
         }
@@ -240,11 +252,23 @@ def test_06_b_cannot_access_a_users(isolation_data):
         assert response.status_code == 403
 
 
-def test_07_b_cannot_delete_a_nonexistent_company_product(isolation_data):
+def test_07_b_cannot_delete_a_product(isolation_data):
     with app.test_client() as client:
         token_b = login(client, isolation_data["email_b"], isolation_data["password"])
         response = client.delete(
-            "/api/admin/products/00000000-0000-0000-0000-000000000000",
+            f"/api/admin/products/{isolation_data['product_a']}",
             headers=auth(token_b),
         )
         assert response.status_code == 404
+
+        conn = psycopg2.connect(os.environ["DATABASE_URL"])
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                "SELECT company_id FROM vemcomer.products WHERE id = %s",
+                (isolation_data["product_a"],),
+            )
+            assert str(cur.fetchone()[0]) == isolation_data["company_a"]
+        finally:
+            cur.close()
+            conn.close()
