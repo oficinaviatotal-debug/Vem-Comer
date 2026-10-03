@@ -356,6 +356,64 @@ def get_company_by_slug(slug):
         )
 
 
+@app.route('/api/companies/<uuid:company_id>', methods=['DELETE'])
+@require_roles('OWNER')
+def delete_company(company_id):
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    conn = None
+    cur = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            DELETE FROM vemcomer.feedbacks
+            WHERE company_id = %s;
+            """,
+            (str(company_id),)
+        )
+
+        cur.execute(
+            """
+            DELETE FROM vemcomer.orders
+            WHERE company_id = %s;
+            """,
+            (str(company_id),)
+        )
+
+        cur.execute(
+            """
+            DELETE FROM vemcomer.companies
+            WHERE id = %s;
+            """,
+            (str(company_id),)
+        )
+
+        if cur.rowcount == 0:
+            conn.rollback()
+            return jsonify({"error": "Estabelecimento nao encontrado"}), 404
+
+        conn.commit()
+        return jsonify({"message": "Estabelecimento removido com sucesso"}), 200
+
+    except Exception as e:
+        if conn is not None and not conn.closed:
+            conn.rollback()
+        return error_response("Erro ao remover estabelecimento", e)
+
+    finally:
+        if cur is not None:
+            cur.close()
+        if conn is not None and not conn.closed:
+            conn.close()
+
+
 @app.route('/api/companies/<uuid:company_id>/tables/<uuid:table_id>', methods=['GET'])
 def get_table(company_id, table_id):
     try:
