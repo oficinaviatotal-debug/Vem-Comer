@@ -1,6 +1,6 @@
 -- Provisionamento do papel dedicado do backend Vem Comer.
 -- A senha NAO deve ser armazenada neste arquivo ou no Git.
--- Defina a senha forte fora do repositorio antes de executar o CREATE ROLE.
+-- Defina a senha diretamente no Supabase antes do uso pelo backend.
 
 DO $$
 BEGIN
@@ -34,7 +34,18 @@ TO vemcomer_app;
 
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA vemcomer TO vemcomer_app;
 
--- Prova efetiva de privilégios:
+CREATE POLICY vemcomer_app_all ON vemcomer.companies FOR ALL TO vemcomer_app USING (true) WITH CHECK (true);
+CREATE POLICY vemcomer_app_all ON vemcomer.users FOR ALL TO vemcomer_app USING (true) WITH CHECK (true);
+CREATE POLICY vemcomer_app_all ON vemcomer.menus FOR ALL TO vemcomer_app USING (true) WITH CHECK (true);
+CREATE POLICY vemcomer_app_all ON vemcomer.products FOR ALL TO vemcomer_app USING (true) WITH CHECK (true);
+CREATE POLICY vemcomer_app_all ON vemcomer.tables FOR ALL TO vemcomer_app USING (true) WITH CHECK (true);
+CREATE POLICY vemcomer_app_all ON vemcomer.orders FOR ALL TO vemcomer_app USING (true) WITH CHECK (true);
+CREATE POLICY vemcomer_app_all ON vemcomer.order_items FOR ALL TO vemcomer_app USING (true) WITH CHECK (true);
+CREATE POLICY vemcomer_app_all ON vemcomer.payments FOR ALL TO vemcomer_app USING (true) WITH CHECK (true);
+CREATE POLICY vemcomer_app_all ON vemcomer.order_events FOR ALL TO vemcomer_app USING (true) WITH CHECK (true);
+CREATE POLICY vemcomer_app_all ON vemcomer.feedbacks FOR ALL TO vemcomer_app USING (true) WITH CHECK (true);
+
+-- Prova de privilégios:
 SELECT
     has_schema_privilege('vemcomer_app', 'vemcomer', 'USAGE') AS vemcomer_usage,
     has_table_privilege('vemcomer_app', 'vemcomer.companies', 'SELECT') AS companies_select,
@@ -45,8 +56,3 @@ SELECT
     has_table_privilege('vemcomer_app', 'public.orders', 'INSERT') AS public_orders_insert,
     has_table_privilege('vemcomer_app', 'public.orders', 'UPDATE') AS public_orders_update,
     has_table_privilege('vemcomer_app', 'public.orders', 'DELETE') AS public_orders_delete;
-
--- Esperado:
--- vemcomer_usage = true
--- companies_* = true
--- public.orders_* = false
