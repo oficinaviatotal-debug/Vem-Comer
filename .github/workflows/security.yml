@@ -1,0 +1,38 @@
+name: Vem Comer Security
+
+on:
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "tests/security/**"
+      - ".github/workflows/security.yml"
+  push:
+    branches:
+      - main
+      - "security/**"
+
+jobs:
+  frontend-security:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Install isolated DOM test dependency
+        working-directory: .
+        run: npm install --no-save happy-dom@20.14.5
+
+      - name: Run frontend security tests
+        working-directory: .
+        run: node tests/security/frontend-xss.test.mjs
