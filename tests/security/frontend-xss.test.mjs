@@ -73,7 +73,7 @@ if (safeHost.textContent !== attackerPayload) {
 }
 
 const index = await readFile(path.join(frontendRoot, "index.html"), "utf8");
-const csp = index.match(/http-equiv=["']Content-Security-Policy["'][^>]*content=["']([^"']+)["']/i)?.[1] ?? "";
+const csp = index.match(/http-equiv="Content-Security-Policy"[^>]*content="([^"]+)"/i)?.[1] ?? "";
 
 for (const directive of [
   "default-src 'self'",
