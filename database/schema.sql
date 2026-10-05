@@ -7,6 +7,10 @@ CREATE TABLE companies (
     segment VARCHAR(100),
     subsegment VARCHAR(100),
     is_online BOOLEAN NOT NULL DEFAULT TRUE,
+    pix_key_type VARCHAR(10) CHECK (pix_key_type IN ('cpf', 'cnpj', 'phone', 'email', 'random')),
+    pix_key VARCHAR(77),
+    pix_receiver_name VARCHAR(25),
+    pix_city VARCHAR(15),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

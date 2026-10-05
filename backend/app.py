@@ -14,6 +14,7 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import query_db, get_db_connection
+import pix
 from table_qr import qr_png_for_url
 
 from dotenv import load_dotenv
@@ -807,7 +808,15 @@ def get_order(order_id):
                 company_id,
                 customer_name,
                 total_price,
-                status
+                status,
+                payment_method,
+                (
+                    SELECT pay.status
+                    FROM payments pay
+                    WHERE pay.order_id = orders.id
+                    ORDER BY pay.created_at DESC
+                    LIMIT 1
+                ) AS payment_status
             FROM orders
             WHERE id = %s;
             """,
@@ -899,6 +908,13 @@ def get_admin_orders(company_id):
                 o.payment_change,
                 o.created_at,
                 t.number AS table_number,
+                (
+                    SELECT pay.status
+                    FROM payments pay
+                    WHERE pay.order_id = o.id
+                    ORDER BY pay.created_at DESC
+                    LIMIT 1
+                ) AS payment_status,
                 COALESCE(
                     (
                         SELECT json_agg(
@@ -1908,6 +1924,461 @@ def admin_delete_table(table_id):
 
         return error_response(
             "Erro ao deletar mesa",
+            e
+        )
+
+
+# ---------------------------------------------------------------------------
+# Pix do restaurante (Pix estatico: o dinheiro vai direto para a conta do
+# restaurante; quem confirma o recebimento e uma pessoa do restaurante)
+# ---------------------------------------------------------------------------
+
+PIX_PREVIEW_AMOUNT = Decimal('1.00')
+PIX_PREVIEW_REFERENCE = 'TESTE'
+
+
+def pix_qr_data_url(payload):
+    png = qr_png_for_url(payload)
+
+    return "data:image/png;base64," + base64.b64encode(png).decode('ascii')
+
+
+def load_company_pix(company_id):
+    return query_db(
+        """
+        SELECT pix_key_type, pix_key, pix_receiver_name, pix_city
+        FROM companies
+        WHERE id = %s;
+        """,
+        (str(company_id),),
+        one=True
+    )
+
+
+def company_pix_is_configured(row):
+    return bool(
+        row
+        and row.get('pix_key')
+        and row.get('pix_receiver_name')
+        and row.get('pix_city')
+    )
+
+
+def build_company_pix_payload(row, amount, reference):
+    name, city = pix.clean_receiver(
+        row['pix_receiver_name'],
+        row['pix_city']
+    )
+
+    return pix.build_payload(
+        key=row['pix_key'],
+        receiver_name=name,
+        city=city,
+        amount=amount,
+        txid=reference
+    )
+
+
+def read_tracking_token(order_id):
+    """Valid tracking data for this order, or None."""
+    try:
+        tracking = serializer.loads(
+            request.args.get('tracking_token', ''),
+            max_age=60 * 60 * 24 * 7
+        )
+    except (SignatureExpired, BadSignature):
+        return None
+
+    if (
+        tracking.get('purpose') != 'order_tracking'
+        or tracking.get('order_id') != str(order_id)
+    ):
+        return None
+
+    return tracking
+
+
+@app.route(
+    '/api/companies/<uuid:company_id>/payment-options',
+    methods=['GET']
+)
+def get_payment_options(company_id):
+    try:
+        row = load_company_pix(company_id)
+
+        return jsonify({
+            "pix": company_pix_is_configured(row)
+        }), 200
+
+    except Exception as e:
+        return error_response(
+            "Erro ao buscar formas de pagamento",
+            e
+        )
+
+
+@app.route('/api/orders/<uuid:order_id>/pix', methods=['GET'])
+def get_order_pix(order_id):
+    tracking = read_tracking_token(order_id)
+
+    if tracking is None:
+        return jsonify({
+            "error": "Acesso de acompanhamento invalido"
+        }), 401
+
+    try:
+        order = query_db(
+            """
+            SELECT id, company_id, total_price, payment_method
+            FROM orders
+            WHERE id = %s;
+            """,
+            (str(order_id),),
+            one=True
+        )
+
+        if not order:
+            return jsonify({
+                "error": "Pedido nao encontrado"
+            }), 404
+
+        if tracking.get('company_id') != str(order['company_id']):
+            return jsonify({
+                "error": "Acesso de acompanhamento invalido"
+            }), 401
+
+        if (order['payment_method'] or '').lower() != 'pix':
+            return jsonify({
+                "error": "Este pedido nao e Pix"
+            }), 404
+
+        row = load_company_pix(order['company_id'])
+
+        if not company_pix_is_configured(row):
+            return jsonify({
+                "error": "Pix nao configurado neste restaurante"
+            }), 404
+
+        # The amount always comes from the order saved on the server.
+        payload = build_company_pix_payload(
+            row,
+            order['total_price'],
+            pix.txid_for_order(order['id'])
+        )
+
+        return jsonify({
+            "payload": payload,
+            "qr_data_url": pix_qr_data_url(payload),
+            "receiver_name": row['pix_receiver_name'],
+            "amount": pix.format_amount(order['total_price'])
+        }), 200
+
+    except pix.PixError:
+        return jsonify({
+            "error": "Pix nao configurado neste restaurante"
+        }), 404
+
+    except Exception as e:
+        return error_response(
+            "Erro ao gerar o Pix do pedido",
+            e
+        )
+
+
+def pix_settings_view(row):
+    if not company_pix_is_configured(row):
+        return {"configured": False}
+
+    return {
+        "configured": True,
+        "key_type": row['pix_key_type'],
+        "key_masked": pix.mask_key(row['pix_key_type'], row['pix_key']),
+        "receiver_name": row['pix_receiver_name'],
+        "city": row['pix_city']
+    }
+
+
+@app.route(
+    '/api/companies/<uuid:company_id>/admin/pix',
+    methods=['GET']
+)
+@require_roles('OWNER', 'MANAGER')
+def admin_get_pix(company_id):
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    try:
+        return jsonify(
+            pix_settings_view(load_company_pix(company_id))
+        ), 200
+
+    except Exception as e:
+        return error_response(
+            "Erro ao buscar o Pix do restaurante",
+            e
+        )
+
+
+@app.route(
+    '/api/companies/<uuid:company_id>/admin/pix',
+    methods=['PUT']
+)
+@require_roles('OWNER')
+def admin_save_pix(company_id):
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    conn = None
+    cur = None
+
+    try:
+        data = request.get_json() or {}
+        password = data.get('password') or ''
+
+        # Changing where the money goes needs the password again, so a
+        # stolen session alone cannot redirect the payments.
+        user = query_db(
+            """
+            SELECT email, password_hash
+            FROM users
+            WHERE id = %s
+            AND company_id = %s
+            AND active = TRUE;
+            """,
+            (
+                str(request.user.get('user_id')),
+                str(company_id)
+            ),
+            one=True
+        )
+
+        if not user:
+            return jsonify({
+                "error": "Usuario nao encontrado"
+            }), 403
+
+        if is_login_blocked(user['email']):
+            return jsonify({
+                "error": "Muitas tentativas. Tente novamente em alguns minutos."
+            }), 429
+
+        if not password or not check_password_hash(
+            user['password_hash'],
+            password
+        ):
+            register_failed_login(user['email'])
+
+            return jsonify({
+                "error": "Senha incorreta"
+            }), 403
+
+        clear_failed_logins(user['email'])
+
+        if data.get('remove') is True:
+            values = (None, None, None, None)
+        else:
+            try:
+                key = pix.normalize_key(
+                    data.get('key_type'),
+                    data.get('key')
+                )
+                name, city = pix.clean_receiver(
+                    data.get('receiver_name'),
+                    data.get('city')
+                )
+            except pix.PixError as error:
+                return jsonify({
+                    "error": str(error)
+                }), 400
+
+            values = (
+                str(data.get('key_type')).strip().lower(),
+                key,
+                name,
+                city
+            )
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute(
+            """
+            UPDATE companies
+            SET pix_key_type = %s,
+                pix_key = %s,
+                pix_receiver_name = %s,
+                pix_city = %s
+            WHERE id = %s;
+            """,
+            values + (str(company_id),)
+        )
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify(pix_settings_view({
+            "pix_key_type": values[0],
+            "pix_key": values[1],
+            "pix_receiver_name": values[2],
+            "pix_city": values[3]
+        })), 200
+
+    except Exception as e:
+        if conn is not None and not conn.closed:
+            conn.rollback()
+
+            if cur is not None:
+                cur.close()
+
+            conn.close()
+
+        return error_response(
+            "Erro ao salvar o Pix do restaurante",
+            e
+        )
+
+
+@app.route(
+    '/api/companies/<uuid:company_id>/admin/pix/preview',
+    methods=['GET']
+)
+@require_roles('OWNER', 'MANAGER')
+def admin_preview_pix(company_id):
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    try:
+        row = load_company_pix(company_id)
+
+        if not company_pix_is_configured(row):
+            return jsonify({
+                "error": "Pix nao configurado"
+            }), 404
+
+        payload = build_company_pix_payload(
+            row,
+            PIX_PREVIEW_AMOUNT,
+            PIX_PREVIEW_REFERENCE
+        )
+
+        return jsonify({
+            "payload": payload,
+            "qr_data_url": pix_qr_data_url(payload),
+            "receiver_name": row['pix_receiver_name'],
+            "amount": pix.format_amount(PIX_PREVIEW_AMOUNT)
+        }), 200
+
+    except pix.PixError as error:
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    except Exception as e:
+        return error_response(
+            "Erro ao gerar o codigo de teste",
+            e
+        )
+
+
+@app.route(
+    '/api/orders/<uuid:order_id>/payment/confirm',
+    methods=['POST']
+)
+@require_roles('OWNER', 'MANAGER', 'CASHIER')
+def confirm_order_payment(order_id):
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute(
+            """
+            SELECT pay.id, pay.status
+            FROM payments pay
+            JOIN orders o
+                ON o.id = pay.order_id
+            WHERE o.id = %s
+            AND o.company_id = %s
+            ORDER BY pay.created_at DESC
+            LIMIT 1;
+            """,
+            (str(order_id), str(company_id))
+        )
+
+        payment = cur.fetchone()
+
+        if not payment:
+            conn.rollback()
+            cur.close()
+            conn.close()
+
+            return jsonify({
+                "error": "Pedido nao encontrado"
+            }), 404
+
+        if payment['status'] == 'PAID':
+            conn.rollback()
+            cur.close()
+            conn.close()
+
+            return jsonify({
+                "message": "Pagamento ja estava confirmado",
+                "already_paid": True
+            }), 200
+
+        cur.execute(
+            """
+            UPDATE payments
+            SET status = 'PAID',
+                paid_at = NOW()
+            WHERE id = %s;
+            """,
+            (str(payment['id']),)
+        )
+
+        cur.execute(
+            """
+            INSERT INTO order_events (
+                order_id,
+                event_type
+            )
+            VALUES (%s, 'PAYMENT_CONFIRMED');
+            """,
+            (str(order_id),)
+        )
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "message": "Pagamento confirmado"
+        }), 200
+
+    except Exception as e:
+        if conn is not None and not conn.closed:
+            conn.rollback()
+
+            if cur is not None:
+                cur.close()
+
+            conn.close()
+
+        return error_response(
+            "Erro ao confirmar pagamento",
             e
         )
 

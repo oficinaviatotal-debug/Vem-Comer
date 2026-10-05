@@ -224,88 +224,6 @@
   list-style: none;
 }
 
-/* The shadow lives on the wrapper: a mask would clip it away. */
-.comanda-wrap {
-  filter: drop-shadow(0 1px 1px rgba(18, 59, 43, .12)) drop-shadow(0 6px 12px rgba(18, 59, 43, .08));
-}
-
-.comanda-wrap.is-done {
-  opacity: .62;
-}
-
-.comanda {
-  --dente: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s3);
-  padding: var(--s5) var(--s5) calc(var(--s5) + var(--dente) / 2);
-  border-radius: var(--r-md) var(--r-md) 0 0;
-  background: var(--comanda);
-  /* torn paper edge along the bottom */
-  -webkit-mask:
-    linear-gradient(#000 0 0) top / 100% calc(100% - var(--dente) / 2) no-repeat,
-    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--dente) calc(var(--dente) / 2) repeat-x;
-  mask:
-    linear-gradient(#000 0 0) top / 100% calc(100% - var(--dente) / 2) no-repeat,
-    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--dente) calc(var(--dente) / 2) repeat-x;
-}
-
-.comanda-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--s3);
-  padding-bottom: var(--s3);
-  border-bottom: 2px dashed var(--linha-forte);
-}
-
-.comanda-where {
-  margin: 0;
-  font: 700 var(--t-3xl) / 1 var(--font-display);
-}
-
-.comanda-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s1) var(--s3);
-  margin: var(--s2) 0 0;
-  color: var(--nevoa);
-  font-size: var(--t-sm);
-}
-
-.comanda-items {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--t-lg);
-}
-
-.comanda-qty {
-  font-weight: 700;
-}
-
-.comanda-total {
-  padding-top: var(--s3);
-  border-top: 2px dashed var(--linha-forte);
-  font-size: var(--t-lg);
-}
-
-.comanda-total .money {
-  font-size: var(--t-xl);
-}
-
-.comanda-pay {
-  margin: 0;
-  color: var(--nevoa);
-}
-
-.comanda-pay strong {
-  color: var(--folha);
-}
-
 /* ---------- Tables and QR codes ---------- */
 
 .adm-tables {
@@ -370,4 +288,56 @@
 .adm-subtitle {
   margin: var(--s3) 0 0;
   font: 700 var(--t-lg) / 1.2 var(--font-display);
+}
+
+/* ---------- Payment (Pix) ---------- */
+
+.adm-pix-state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  margin: var(--s3) 0 0;
+  padding: var(--s3) var(--s4);
+  border: 2px dashed var(--linha-forte);
+  border-radius: var(--r-sm);
+  color: var(--nevoa);
+}
+
+.adm-pix-state strong {
+  color: var(--folha);
+  font: 700 var(--t-xl) / 1.2 var(--font-display);
+}
+
+.adm-pix-state.is-on {
+  border: 2px solid var(--mata);
+}
+
+.adm-pix-state.is-on strong {
+  color: var(--mata);
+}
+
+.adm-pix-test {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s3);
+  margin-top: var(--s3);
+}
+
+.adm-pix-test img {
+  align-self: center;
+  width: 200px;
+  height: 200px;
+  padding: var(--s2);
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--r-sm);
+  background: #fff;
+  image-rendering: pixelated;
+}
+
+.adm-pix-test textarea {
+  padding: var(--s3);
+  font: 400 var(--t-sm) / 1.35 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  word-break: break-all;
+  resize: none;
 }

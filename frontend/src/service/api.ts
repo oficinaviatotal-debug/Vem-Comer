@@ -1,6 +1,16 @@
 export const API_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
+/** An API answer that was not OK; lets screens tell "gone" (404/401) from "offline". */
+export class HttpError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 const TOKEN_KEY = "vc_token";
 const USER_KEY = "vc_user";
 
@@ -99,7 +109,10 @@ export async function createOrder(
       table_id: tableId || null
     }),
   });
-  if (!response.ok) throw new Error("Falha ao criar pedido");
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new HttpError(err.error || "Falha ao criar pedido", response.status);
+  }
   return response.json();
 }
 
@@ -121,7 +134,7 @@ export async function createFeedback(
 
 export async function fetchOrder(orderId: string, trackingToken: string) {
   const response = await fetch(`${API_URL}/orders/${orderId}?tracking_token=${encodeURIComponent(trackingToken)}`);
-  if (!response.ok) throw new Error("Falha ao buscar pedido");
+  if (!response.ok) throw new HttpError("Falha ao buscar pedido", response.status);
   return response.json();
 }
 
@@ -273,5 +286,111 @@ export async function deleteTable(tableId: string) {
     headers: authHeaders(),
   });
   if (!response.ok) throw new Error("Falha ao remover mesa");
+  return response.json();
+}
+
+/** What a restaurant's Pix looks like to its owner. The key is always masked. */
+export type PixSettings = {
+  configured: boolean;
+  key_type?: string;
+  key_masked?: string;
+  receiver_name?: string;
+  city?: string;
+};
+
+/** A Pix "Copia e Cola" code with its QR image (a data: URL). */
+export type PixCode = {
+  payload: string;
+  qr_data_url: string;
+  receiver_name: string;
+  amount: string;
+};
+
+/** Which payment options the restaurant offers. Anything that fails means "no Pix". */
+export async function fetchPaymentOptions(companyId: string): Promise<{ pix: boolean }> {
+  try {
+    const response = await fetch(`${API_URL}/companies/${companyId}/payment-options`);
+    if (!response.ok) return { pix: false };
+    const data = await response.json();
+    return { pix: data?.pix === true };
+  } catch {
+    return { pix: false };
+  }
+}
+
+/** The Pix code for the customer's own order. The amount comes from the server. */
+export async function fetchOrderPix(orderId: string, trackingToken: string): Promise<PixCode> {
+  const response = await fetch(
+    `${API_URL}/orders/${orderId}/pix?tracking_token=${encodeURIComponent(trackingToken)}`
+  );
+  if (!response.ok) throw new HttpError("Falha ao buscar o Pix", response.status);
+  return response.json();
+}
+
+/** A person at the restaurant saw the money arrive. */
+export async function confirmPayment(orderId: string) {
+  const response = await fetch(`${API_URL}/orders/${orderId}/payment/confirm`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || "Falha ao confirmar o pagamento");
+  }
+  return response.json();
+}
+
+export async function fetchPixSettings(companyId: string): Promise<PixSettings> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/pix`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error("Falha ao buscar o Pix do restaurante");
+  return response.json();
+}
+
+export type PixSettingsInput = {
+  key_type: string;
+  key: string;
+  receiver_name: string;
+  city: string;
+  /** The owner's own password: changing where the money goes needs it again. */
+  password: string;
+};
+
+export async function savePixSettings(companyId: string, input: PixSettingsInput): Promise<PixSettings> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/pix`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || "Falha ao salvar o Pix");
+  }
+  return response.json();
+}
+
+export async function removePixSettings(companyId: string, password: string): Promise<PixSettings> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/pix`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ remove: true, password }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || "Falha ao remover o Pix");
+  }
+  return response.json();
+}
+
+/** A R$ 1,00 code with the saved key, so the owner can test it with a real payment. */
+export async function fetchPixPreview(companyId: string): Promise<PixCode> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/pix/preview`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || "Falha ao gerar o código de teste");
+  }
   return response.json();
 }
