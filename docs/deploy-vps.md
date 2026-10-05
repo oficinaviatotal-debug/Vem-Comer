@@ -22,7 +22,9 @@ O instalador **não mexe** em `/opt/vem-tecnologia` (runtime da ChatGPT), em
 1. **Endereço.** Para testar serve o nome que a Hostinger dá ao servidor
    (`srv2017596.hstgr.cloud`). Para valer, registre um domínio próprio e aponte-o para o IP do
    servidor. **Registre o domínio antes de imprimir os QR codes das mesas**: o QR carrega o
-   endereço.
+   endereço. Não apague nem troque o registro A depois de imprimir. Se o domínio tiver registro
+   **AAAA** (IPv6) apontando para outro lugar, apague-o: o site atende só por IPv4 e quem emite o
+   certificado tenta o IPv6 primeiro. O instalador avisa se achar um.
 2. **Firewall da Hostinger:** liberar as portas **80** e **443**. Sem isso o certificado HTTPS
    não sai.
 3. **Instantâneo novo** no painel da Hostinger (ponto de restauração do servidor inteiro).
@@ -41,7 +43,9 @@ Instalar ou atualizar (pode rodar de novo quantas vezes quiser):
 curl -fsSL https://raw.githubusercontent.com/oficinaviatotal-debug/Vem-Comer/main/deploy/vps/instalar.sh | VEM_DOMINIO=seu.endereco bash
 ```
 
-`VEM_RAMO=nome-do-ramo` instala um ramo do GitHub que ainda não foi mesclado (para testar antes).
+Os dois comandos acima buscam o script no ramo `main`: só funcionam depois que o pedido (PR) do
+kit for mesclado. Para testar um ramo ainda não mesclado, troque `main` pelo nome do ramo no
+endereço do `curl` **e** use também `VEM_RAMO=nome-do-ramo` antes do `bash`.
 O script mostra cada passo e, no fim, testa `https://seu.endereco/api/health` de fora.
 
 O instalador também cria o arquivo `/opt/vem-comer/.env` com senhas geradas ao acaso (permissão
@@ -88,7 +92,7 @@ $C start api web
 ```
 docker ps --filter name=vemcomer                 # estado
 docker logs vemcomer-api --tail 50               # erros do servidor
-docker logs vemcomer-web --tail 50               # HTTPS e acessos
+docker logs vemcomer-web --tail 50               # certificado HTTPS e avisos do porteiro
 systemctl list-timers vem-comer-backup.timer     # próximo backup
 ```
 
@@ -104,6 +108,12 @@ todas a cada atualização.
 - Banco e servidor não têm porta aberta para a internet. Só o porteiro (80/443).
 - Senhas e chave de sessão geradas ao acaso, fora do Git.
 - O servidor roda sem ser root dentro do contêiner.
+- O site conecta no banco com o usuário `vemcomer_app`, que só lê e grava dados (não cria tabela,
+  não é administrador). O administrador `vemcomer` só é usado pelo instalador e pelo backup.
+- Só IPv4 é publicado (`0.0.0.0:80` e `0.0.0.0:443`): pela porta IPv6 do Docker o servidor não
+  enxergaria o endereço real do visitante.
+- Não há registro de acessos: os endereços do sistema carregam `?tracking_token=…`, e isso não deve
+  ir para arquivo de log. Só ficam avisos e erros (`docker logs`).
 - O porteiro envia cabeçalhos de segurança, redireciona HTTP para HTTPS e fecha o cadastro público.
 - O limitador de tentativas de login guarda a contagem na memória, por isso o servidor roda com
   **1 processo e várias threads**. Atrás do porteiro o servidor lê o endereço real do visitante
@@ -117,6 +127,9 @@ todas a cada atualização.
   de verdade. O instalador para no primeiro erro e não toca no que já existe.
 - `srv2017596.hstgr.cloud` é um nome compartilhado com outros clientes da Hostinger: pode bater
   em limites do Let's Encrypt. Domínio próprio resolve.
-- O backup ainda não tem cópia fora do servidor.
+- O backup ainda não tem cópia fora do servidor, e nada avisa se o backup diário falhar. Confira de
+  tempos em tempos: `ls -lh /var/backups/vem-comer` e `systemctl status vem-comer-backup.service`.
+- O fechamento do cadastro público (404) e as variantes do endereço (barra no fim etc.) só se
+  confirmam no servidor de verdade; o instalador testa duas variantes no fim.
 - Pix com confirmação automática (provedor de pagamento) ainda não existe: hoje a confirmação é
   o botão "Pagamento recebido".

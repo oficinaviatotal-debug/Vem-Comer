@@ -8,7 +8,7 @@ set -Eeuo pipefail
 
 [ -t 0 ] || { echo "Rode direto no terminal: bash /opt/vem-comer/app/deploy/vps/criar-restaurante.sh"; exit 1; }
 
-docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' vemcomer-api 2>/dev/null | grep -q healthy \
+docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' vemcomer-api 2>/dev/null | grep -qx healthy \
   || { echo "O servidor do Vem Comer não está pronto. Rode antes o instalador."; exit 1; }
 
 dominio=$(sed -n 's/^SITE_ADDRESS=//p' /opt/vem-comer/.env 2>/dev/null | head -1)

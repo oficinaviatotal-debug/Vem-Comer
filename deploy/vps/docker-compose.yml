@@ -43,7 +43,8 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://vemcomer:${POSTGRES_PASSWORD}@db:5432/vemcomer
+      # usuário comum do banco (criado pelo instalador); o administrador "vemcomer" fica só para o banco e as migrações
+      DATABASE_URL: postgresql://vemcomer_app:${APP_DB_PASSWORD:?APP_DB_PASSWORD is missing in the .env file}@db:5432/vemcomer
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is missing in the .env file}
       FLASK_DEBUG: "false"
       TRUST_PROXY: "1"
@@ -76,8 +77,10 @@ services:
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:?SITE_ADDRESS is missing in the .env file}
     ports:
-      - "80:80"
-      - "443:443"
+      # Só IPv4, de propósito: assim o servidor enxerga o endereço real do visitante.
+      # Pela porta IPv6 do Docker todos pareceriam vir do mesmo endereço (atrapalha o limite de tentativas de login).
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
     volumes:
       - caddy_data:/data
       - caddy_config:/config

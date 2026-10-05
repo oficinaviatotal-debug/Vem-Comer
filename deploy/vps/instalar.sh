@@ -15,7 +15,7 @@
 # Variáveis opcionais:
 #   VEM_DOMINIO  endereço do site (guardado no .env; se faltar, usa o que já está lá)
 #   VEM_RAMO     ramo do GitHub a instalar (padrão: main)
-#   VEM_REPO     endereço do repositório (só para testes; padrão: o do GitHub)
+#   VEM_REPO     endereço do repositório, começando com https:// (só mude para testes)
 
 set -Eeuo pipefail
 
@@ -29,9 +29,13 @@ falhar() { printf '\n  PAROU: %s\n  Nada do runtime da ChatGPT foi tocado.\n' "$
 gerar_segredo() { head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n'; }
 
 dominio_valido() {
-  # letras minúsculas, números, pontos e hífens; precisa ter pelo menos um ponto
-  [[ "$1" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ ]] && [[ "$1" == *.* ]] && [[ "$1" != *..* ]]
+  # letras minúsculas, números, pontos e hífens; precisa ter pelo menos um ponto.
+  # Número de IP não serve: o HTTPS de verdade só sai para um nome.
+  [[ "$1" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ ]] && [[ "$1" == *.* ]] && [[ "$1" != *..* ]] \
+    && [[ ! "$1" =~ ^[0-9.]+$ ]] && [ "${#1}" -le 253 ]
 }
+
+segredo_valido() { [[ "$1" =~ ^[0-9a-f]{64}$ ]]; }
 
 esperar_saudavel() {
   local nome=$1 limite=$2 passado=0 estado=""
@@ -61,6 +65,9 @@ main() {
     *) falhar "Opção desconhecida: $1. Use --checar ou nenhuma." ;;
   esac
 
+  [[ "$RAMO" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]] || falhar "VEM_RAMO inválido: use só letras, números, ponto, barra, hífen e sublinhado."
+  [[ "$REPO" =~ ^(https://|file:///)[A-Za-z0-9._~:/@%+-]+$ ]] || falhar "VEM_REPO inválido: precisa começar com https:// (ou file:/// em testes)."
+
   trap 'printf "\n  PAROU no passo: %s (linha %s).\n  Nada do runtime da ChatGPT foi tocado. Tire um print desta tela.\n" "$PASSO_ATUAL" "$LINENO" >&2' ERR
 
   # ---------------------------------------------------------------- 1
@@ -80,13 +87,19 @@ main() {
 
   local raiz_docker livre_mb mem_mb
   raiz_docker=$(docker info -f '{{.DockerRootDir}}' 2>/dev/null || echo /var/lib/docker)
-  livre_mb=$(df -Pm "$raiz_docker" 2>/dev/null | awk 'NR==2 {print $4}')
-  [ "${livre_mb:-0}" -ge 6000 ] || falhar "Pouco espaço livre (${livre_mb:-0} MB). Preciso de pelo menos 6000 MB."
+  # df -Pk (quilobytes) existe em qualquer versão do df; -m não é garantido
+  livre_mb=$(df -Pk "$raiz_docker" 2>/dev/null | awk 'NR==2 {print int($4 / 1024)}' || true)
+  [[ "$livre_mb" =~ ^[0-9]+$ ]] || falhar "Não consegui medir o espaço livre em $raiz_docker (comando df)."
+  [ "$livre_mb" -ge 6000 ] || falhar "Pouco espaço livre (${livre_mb} MB). Preciso de pelo menos 6000 MB."
   ok "espaço livre: ${livre_mb} MB"
 
-  mem_mb=$(awk '/MemAvailable/ {print int($2 / 1024)}' /proc/meminfo)
-  if [ "${mem_mb:-0}" -lt 1500 ]; then
-    aviso "pouca memória livre (${mem_mb} MB); a montagem do site pode demorar ou falhar"
+  mem_mb=$(awk '/MemAvailable/ {print int($2 / 1024)}' /proc/meminfo 2>/dev/null || true)
+  [[ "$mem_mb" =~ ^[0-9]+$ ]] || falhar "Não consegui medir a memória livre (/proc/meminfo)."
+  if [ "$mem_mb" -lt 1000 ]; then
+    # a montagem do site roda ao lado do runtime da ChatGPT; sem folga o sistema poderia derrubá-lo
+    falhar "Memória livre baixa demais (${mem_mb} MB). Preciso de pelo menos 1000 MB para montar o site sem arriscar os outros serviços."
+  elif [ "$mem_mb" -lt 1500 ]; then
+    aviso "pouca memória livre (${mem_mb} MB); a montagem do site pode demorar"
   else
     ok "memória livre: ${mem_mb} MB"
   fi
@@ -100,24 +113,42 @@ main() {
     dominio=$(hostname -f 2>/dev/null || true)
   fi
   dominio=$(printf '%s' "$dominio" | tr 'A-Z' 'a-z')
+  local dns_ok=1
   if ! dominio_valido "$dominio"; then
     if [ -n "${VEM_DOMINIO:-}" ]; then
-      falhar "O endereço informado não é válido. Use só letras, números, pontos e hífens (ex.: meurestaurante.com.br)."
+      falhar "O endereço informado não é válido. Use um nome com letras, números, pontos e hífens (ex.: meurestaurante.com.br). Número de IP não serve."
+    elif [ "$SO_CHECAR" -eq 1 ]; then
+      aviso "ainda não sei qual endereço o site vai usar; sigo conferindo o resto. Na instalação, informe VEM_DOMINIO=seu.endereco"
+      dominio=""
+      dns_ok=0
+    else
+      falhar "Não sei qual endereço usar. Rode de novo com VEM_DOMINIO=seu.endereco"
     fi
-    falhar "Não sei qual endereço usar. Rode de novo com VEM_DOMINIO=seu.endereco"
+  else
+    ok "endereço do site: $dominio"
   fi
-  ok "endereço do site: $dominio"
 
   # DNS: o endereço precisa apontar para este servidor, senão o HTTPS não sai
-  local ip_local ip_dns
-  ip_local=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for (i = 1; i < NF; i++) if ($i == "src") {print $(i + 1); exit}}' || true)
-  ip_dns=$(getent ahostsv4 "$dominio" 2>/dev/null | awk 'NR==1 {print $1}' || true)
-  if [ -z "$ip_dns" ]; then
-    aviso "o endereço $dominio ainda não aponta para nenhum servidor (DNS)"
-  elif [ -n "$ip_local" ] && [ "$ip_dns" != "$ip_local" ]; then
-    aviso "o endereço $dominio aponta para $ip_dns, mas este servidor é $ip_local"
-  else
-    ok "o endereço aponta para este servidor ($ip_dns)"
+  if [ -n "$dominio" ]; then
+    local ip_local ip_dns ip6_dns
+    ip_local=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for (i = 1; i < NF; i++) if ($i == "src") {print $(i + 1); exit}}' || true)
+    ip_dns=$(getent ahostsv4 "$dominio" 2>/dev/null | awk 'NR==1 {print $1}' || true)
+    if [ -z "$ip_dns" ]; then
+      aviso "o endereço $dominio ainda não aponta para nenhum servidor (DNS)"
+      dns_ok=0
+    elif [ -n "$ip_local" ] && [ "$ip_dns" != "$ip_local" ]; then
+      aviso "o endereço $dominio aponta para $ip_dns, mas este servidor é $ip_local"
+      dns_ok=0
+    else
+      ok "o endereço aponta para este servidor ($ip_dns)"
+    fi
+
+    # Registro IPv6 (AAAA): quem valida o certificado tenta IPv6 primeiro. Este site atende só IPv4.
+    ip6_dns=$(getent ahostsv6 "$dominio" 2>/dev/null | awk '$1 !~ /^::ffff:/ {print $1; exit}' || true)
+    if [ -n "$ip6_dns" ]; then
+      aviso "o endereço $dominio também tem um registro IPv6 (AAAA: $ip6_dns). Este site atende só por IPv4: apague o registro AAAA na zona DNS, senão o certificado HTTPS pode não sair."
+      dns_ok=0
+    fi
   fi
 
   # Portas 80 e 443: precisam estar livres (ou já ser do próprio Vem Comer, numa atualização)
@@ -142,6 +173,8 @@ main() {
     return 0
   fi
 
+  printf '\n  Se a tela cair no meio, é só rodar o mesmo comando de novo: ele continua de onde parou.\n'
+
   # ---------------------------------------------------------------- 2
   passo 2 "Baixando o código ($RAMO)"
   install -d -m 755 "$BASE"
@@ -162,6 +195,14 @@ main() {
     grep -q '^POSTGRES_PASSWORD=.' "$ENVFILE" && grep -q '^SECRET_KEY=.' "$ENVFILE" \
       || falhar "O arquivo $ENVFILE existe, mas está incompleto. Não vou inventar senhas por cima."
     local atual
+    if ! grep -q '^APP_DB_PASSWORD=.' "$ENVFILE"; then
+      # arquivo de uma versão anterior: acrescenta a senha do usuário do site no banco
+      local novo
+      novo=$(gerar_segredo)
+      segredo_valido "$novo" || falhar "Não consegui gerar senhas ao acaso neste servidor."
+      (umask 077; echo "APP_DB_PASSWORD=$novo" >>"$ENVFILE")
+      ok "senha do usuário do site no banco acrescentada"
+    fi
     atual=$(sed -n 's/^SITE_ADDRESS=//p' "$ENVFILE" | head -1)
     if [ "$atual" != "$dominio" ]; then
       local tmp
@@ -176,12 +217,19 @@ main() {
     if docker volume inspect vemcomer_pgdata >/dev/null 2>&1; then
       falhar "Já existe um banco do Vem Comer aqui, mas não há arquivo de senhas. Não vou apagar nada. Me avise."
     fi
+    local s_banco s_chave s_site
+    s_banco=$(gerar_segredo)
+    s_chave=$(gerar_segredo)
+    s_site=$(gerar_segredo)
+    segredo_valido "$s_banco" && segredo_valido "$s_chave" && segredo_valido "$s_site" \
+      || falhar "Não consegui gerar senhas ao acaso neste servidor. Nada foi gravado."
     (
       umask 077
       {
         echo "SITE_ADDRESS=$dominio"
-        echo "POSTGRES_PASSWORD=$(gerar_segredo)"
-        echo "SECRET_KEY=$(gerar_segredo)"
+        echo "POSTGRES_PASSWORD=$s_banco"
+        echo "SECRET_KEY=$s_chave"
+        echo "APP_DB_PASSWORD=$s_site"
       } >"$ENVFILE"
     )
     ok "senhas geradas ao acaso e guardadas em $ENVFILE (só o root lê)"
@@ -208,7 +256,8 @@ main() {
   tem=$(psql_vc -tA -c "select count(*) from information_schema.tables where table_schema = 'public' and table_name = 'companies'")
   if [ "$tem" = "0" ]; then
     # \restrict / \unrestrict são comandos de segurança do pg_dump; o psql do contêiner pode não conhecê-los
-    grep -vE '^\\(un)?restrict ' "$APP/database/schema.production.sql" | psql_vc >/dev/null
+    # -1: tudo numa transação só; se algo falhar no meio, não sobra banco pela metade
+    grep -vE '^\\(un)?restrict ' "$APP/database/schema.production.sql" | psql_vc -1 >/dev/null
     ok "tabelas criadas"
   else
     ok "tabelas já existiam (dados mantidos)"
@@ -220,6 +269,29 @@ main() {
     psql_vc >/dev/null <"$arq"
   done
   ok "atualizações do banco aplicadas"
+
+  # O site conecta com um usuário comum (sem poder de administrador do banco): mesmo que um dia
+  # exista uma falha de SQL no código, ela não consegue criar tabelas nem rodar comandos no contêiner.
+  local senha_site
+  senha_site=$(sed -n 's/^APP_DB_PASSWORD=//p' "$ENVFILE" | head -1)
+  segredo_valido "$senha_site" || falhar "A senha APP_DB_PASSWORD no arquivo $ENVFILE não é válida."
+  psql_vc -1 >/dev/null <<SQL
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'vemcomer_app') THEN
+    CREATE ROLE vemcomer_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION;
+  END IF;
+END
+\$\$;
+ALTER ROLE vemcomer_app WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD '$senha_site';
+GRANT CONNECT ON DATABASE vemcomer TO vemcomer_app;
+GRANT USAGE ON SCHEMA public TO vemcomer_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO vemcomer_app;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO vemcomer_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE vemcomer IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO vemcomer_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE vemcomer IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO vemcomer_app;
+SQL
+  ok "usuário do site no banco criado, só com as permissões que precisa"
 
   # ---------------------------------------------------------------- 6
   passo 6 "Servidor e HTTPS"
@@ -235,13 +307,20 @@ main() {
   systemctl daemon-reload
   systemctl enable --now vem-comer-backup.timer >/dev/null 2>&1
   ok "backup agendado todo dia às 03:30 (Brasília)"
-  bash "$APP/deploy/vps/backup.sh"
-  bash "$APP/deploy/vps/restaurar-teste.sh"
+  local backup_ok=1
+  if ! { bash "$APP/deploy/vps/backup.sh" && bash "$APP/deploy/vps/restaurar-teste.sh"; }; then
+    backup_ok=0
+    aviso "o backup ou o teste de restauração falhou (veja acima). O site continua sendo instalado; resolva isso em seguida."
+  fi
 
   # ---------------------------------------------------------------- 8
   passo 8 "Teste de fora (HTTPS)"
-  local i publico=0
-  for i in $(seq 1 36); do
+  local i publico=0 tentativas=36
+  if [ "$dns_ok" -eq 0 ]; then
+    tentativas=6 # o aviso do passo 1 já disse que o endereço não está certo: não adianta esperar muito
+    aviso "como o endereço (DNS) não está certo, só vou esperar um pouco pelo HTTPS."
+  fi
+  for i in $(seq 1 "$tentativas"); do
     if curl -fsS --max-time 10 "https://$dominio/api/health" 2>/dev/null | grep -Eq '"status": ?"ok"'; then
       publico=1
       break
@@ -252,12 +331,12 @@ main() {
   if [ "$publico" -eq 1 ]; then
     ok "https://$dominio/api/health respondeu"
     local codigo
-    codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 -X POST "https://$dominio/api/auth/register-company" || true)
-    if [ "$codigo" = "404" ]; then
-      ok "cadastro público de restaurante está fechado (como deve ser)"
-    else
-      aviso "o cadastro público respondeu $codigo; era para ser 404. Me avise."
-    fi
+    local variante aberto=0
+    for variante in /api/auth/register-company /api/auth/register-company/; do
+      codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 -X POST "https://$dominio$variante" || true)
+      [ "$codigo" = "404" ] || { aberto=1; aviso "o cadastro público ($variante) respondeu $codigo; era para ser 404. Me avise."; }
+    done
+    [ "$aberto" -eq 0 ] && ok "cadastro público de restaurante está fechado (como deve ser)"
     printf '\nPRONTO. Abra: https://%s\n' "$dominio"
     printf 'Para cadastrar o primeiro restaurante:\n  bash %s/deploy/vps/criar-restaurante.sh\n' "$APP"
   else
@@ -265,9 +344,15 @@ main() {
     echo "  Causas mais comuns:"
     echo "   1) as portas 80 e 443 não estão liberadas no firewall da Hostinger"
     echo "   2) o endereço $dominio ainda não aponta para este servidor"
+    echo "   3) o endereço tem um registro IPv6 (AAAA) apontando para outro lugar"
     echo "  Últimas linhas do porteiro (Caddy):"
     docker logs vemcomer-web --tail 12 2>&1 | cut -c1-160 || true
     echo "  Depois de corrigir, rode o mesmo comando de novo."
+  fi
+
+  if [ "$backup_ok" -eq 0 ]; then
+    printf '\n  ATENÇÃO: o backup falhou nesta rodada. Rode: bash %s/deploy/vps/backup.sh e me mostre o resultado.\n' "$APP"
+    return 1
   fi
 }
 

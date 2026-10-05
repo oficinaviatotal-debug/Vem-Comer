@@ -15,7 +15,7 @@
 	# Registering a restaurant is done by the administrator on the server
 	# (deploy/vps/criar-restaurante.sh), not by the public. Closed from outside until
 	# there is a safe sign-up screen.
-	handle /api/auth/register-company {
+	handle /api/auth/register-company* {
 		respond 404
 	}
 

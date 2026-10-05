@@ -18,6 +18,8 @@ falha() { printf '  BACKUP FALHOU: %s\n' "$*" >&2; exit 1; }
 docker inspect -f '{{.State.Running}}' "$CONT" 2>/dev/null | grep -q true || falha "o banco ($CONT) não está rodando"
 
 install -d -m 700 "$DEST"
+# sobra de uma rodada que foi interrompida à força (falta de memória, desligamento)
+find "$DEST" -maxdepth 1 -name 'vemcomer-*.partial' -mmin +120 -delete 2>/dev/null || true
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 final="$DEST/vemcomer-$stamp.dump"
 tmp="$final.partial"
