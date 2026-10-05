@@ -1,0 +1,566 @@
+/*
+ * Customer screens: what opens when someone scans the table QR code.
+ * Mobile first. The menu reads like a printed cardápio (dishes joined to
+ * prices by dotted leaders) and the order is a comanda, the slip a waiter
+ * writes on. Colors, type and spacing come from the tokens in styles.css.
+ */
+
+.cust {
+  min-height: 100vh;
+  color: var(--tinta);
+}
+
+.cust-wrap {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 var(--s4);
+}
+
+/* ---------- Header: restaurant, table, help, categories ---------- */
+
+.cust-top {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--papel);
+  border-bottom: 1px solid var(--linha);
+}
+
+.cust-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: 64px;
+}
+
+.cust-name {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--folha);
+  font: 700 var(--t-xl) / 1.15 var(--font-display);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cust-table {
+  flex: none;
+}
+
+.cust-table-lost {
+  background: var(--alerta);
+  color: #fff;
+}
+
+.cust-chips {
+  display: flex;
+  gap: var(--s2);
+  padding: 0 0 var(--s3);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.cust-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.cust-chips button {
+  flex: none;
+  min-height: 44px;
+  padding: 0 var(--s4);
+  border: 2px solid var(--linha-forte);
+  border-radius: var(--r-sm);
+  background: var(--comanda);
+  color: var(--folha);
+  font: 700 var(--t-sm) / 1 var(--font-ui);
+  cursor: pointer;
+}
+
+.cust-chips button:hover {
+  border-color: var(--folha);
+}
+
+/* ---------- Menu ---------- */
+
+.cust-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  padding-top: var(--s4);
+  padding-bottom: var(--s6);
+}
+
+.cust-page-title {
+  margin: var(--s2) 0 0;
+  color: var(--folha);
+  font: 700 var(--t-2xl) / 1.15 var(--font-display);
+}
+
+.cust-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.cust-search form {
+  flex: 1;
+  min-width: 0;
+}
+
+.cust-search .voice-command {
+  margin: 0;
+}
+
+.cust-search .voice-command-text {
+  display: none;
+}
+
+.cust-search .cust-note {
+  flex-basis: 100%;
+}
+
+.cust-group {
+  /* Leaves room for the sticky header and the chips when a chip scrolls here. */
+  scroll-margin-top: 128px;
+  margin-top: var(--s4);
+}
+
+.cust-group > h2 {
+  margin: 0;
+  padding-bottom: var(--s2);
+  border-bottom: 2px dashed var(--linha-forte);
+  color: var(--folha);
+  font: 700 var(--t-2xl) / 1.1 var(--font-display);
+}
+
+.cust-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cust-item {
+  padding: var(--s4) 0;
+  border-bottom: 1px solid var(--linha);
+}
+
+.cust-item:last-child {
+  border-bottom: 0;
+}
+
+.cust-item-name {
+  min-width: 0;
+  margin: 0;
+  color: var(--tinta);
+  font: 700 var(--t-lg) / 1.25 var(--font-ui);
+}
+
+.cust-item .money {
+  color: var(--folha);
+  font-size: var(--t-lg);
+}
+
+.cust-item-desc {
+  max-width: 60ch;
+  margin: var(--s1) 0 0;
+  color: var(--nevoa);
+}
+
+/* Hugs the button so the guide's blinking ring marks exactly what to touch. */
+.cust-qty {
+  display: flex;
+  width: fit-content;
+  margin: var(--s3) 0 0 auto;
+}
+
+.cust-step {
+  display: inline-flex;
+  align-items: center;
+  border: 2px solid var(--mata);
+  border-radius: var(--r-sm);
+  background: var(--comanda);
+}
+
+.cust-step button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--mata);
+  font: 700 var(--t-2xl) / 1 var(--font-ui);
+  cursor: pointer;
+}
+
+.cust-step output {
+  min-width: 40px;
+  color: var(--folha);
+  font: 700 var(--t-lg) / 1 var(--font-display);
+  text-align: center;
+}
+
+.cust-empty {
+  margin: var(--s5) 0;
+  color: var(--nevoa);
+  text-align: center;
+}
+
+.cust-empty p {
+  margin: 0 0 var(--s3);
+}
+
+.cust-note {
+  margin: 0;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+}
+
+.cust-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  min-height: 52px;
+  padding: var(--s2) var(--s4);
+  border: 2px solid var(--folha);
+  border-radius: var(--r-sm);
+  background: var(--sol);
+  color: var(--folha);
+  font: 400 var(--t-md) / 1.2 var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cust-banner span:last-child {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.cust-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  padding-top: var(--s4);
+}
+
+.cust-skeleton span {
+  display: block;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--papel-2);
+}
+
+.cust-skeleton span:nth-child(odd) {
+  width: 70%;
+}
+
+/* ---------- Order bar and cart sheet ---------- */
+
+.cust-cartbar {
+  position: fixed;
+  right: var(--s3);
+  bottom: calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+  left: var(--s3);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  max-width: 608px;
+  min-height: 56px;
+  margin: 0 auto;
+  padding: 0 var(--s4);
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--brasa);
+  box-shadow: 0 8px 24px rgba(18, 59, 43, .3);
+  color: #fff;
+  font: 700 var(--t-md) / 1 var(--font-ui);
+  cursor: pointer;
+}
+
+.cust-cartbar:hover {
+  background: #A93709;
+}
+
+.cust-cartbar-count {
+  display: grid;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 var(--s2);
+  border-radius: 16px;
+  background: var(--sol);
+  color: var(--folha);
+  place-items: center;
+}
+
+.cust-cartbar-label {
+  flex: 1;
+  text-align: left;
+}
+
+.cust-cartbar .money {
+  font-size: var(--t-lg);
+}
+
+.cust-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(10, 30, 20, .55);
+}
+
+.cust-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  width: 100%;
+  max-width: 640px;
+  max-height: 94vh;
+  max-height: 94dvh;
+  padding: var(--s4) var(--s4) 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  background: var(--papel);
+  animation: cust-rise .22s ease-out;
+}
+
+@keyframes cust-rise {
+  from {
+    transform: translateY(32px);
+    opacity: 0;
+  }
+}
+
+.cust-sheet-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.cust-sheet-bar h2 {
+  margin: 0;
+  color: var(--folha);
+  font: 700 var(--t-2xl) / 1.1 var(--font-display);
+}
+
+.cust-sheet-bar h2:focus {
+  outline: none;
+}
+
+.cust-line {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+}
+
+.cust-line .leader-row {
+  width: 100%;
+}
+
+.cust-cash {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s1);
+}
+
+.cust-cash .field {
+  width: 100%;
+}
+
+.cust-send-wrap {
+  position: sticky;
+  bottom: 0;
+  margin: 0 calc(var(--s4) * -1);
+  padding: var(--s3) var(--s4) calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--linha);
+  background: var(--papel);
+}
+
+/* ---------- Choice tiles (payment, ratings) ---------- */
+
+.cust-choice {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cust-choice-4 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.cust-choice legend {
+  grid-column: 1 / -1;
+  padding: 0 0 var(--s1);
+  color: var(--folha);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.cust-choice-opt {
+  position: relative;
+  display: block;
+}
+
+.cust-choice-opt input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.cust-choice-opt span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 var(--s2);
+  border: 2px solid var(--linha-forte);
+  border-radius: var(--r-sm);
+  background: var(--comanda);
+  color: var(--folha);
+  font-weight: 700;
+  text-align: center;
+}
+
+.cust-choice-opt input:checked + span {
+  border-color: var(--folha);
+  background: var(--folha);
+  color: #fff;
+}
+
+.cust-choice-opt input:focus-visible + span {
+  outline: 3px solid var(--brasa-viva);
+  outline-offset: 2px;
+}
+
+/* ---------- Tracking ---------- */
+
+.cust-status h2 {
+  margin: 0;
+  color: var(--folha);
+  font: 700 var(--t-3xl) / 1.05 var(--font-display);
+}
+
+.cust-status p {
+  margin: var(--s1) 0 0;
+  color: var(--nevoa);
+}
+
+.cust-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s2);
+  margin: var(--s4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cust-steps li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.cust-steps li::before {
+  content: "";
+  height: 8px;
+  border-radius: 4px;
+  background: var(--papel-2);
+}
+
+.cust-steps li.is-done::before {
+  background: var(--mata);
+}
+
+.cust-steps li.is-current {
+  color: var(--folha);
+}
+
+.cust-steps li.is-current::before {
+  background: var(--sol);
+  box-shadow: inset 0 0 0 2px var(--folha);
+}
+
+.comanda-wrap.is-ready .cust-steps li::before {
+  background: var(--mata);
+}
+
+.cust-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding-top: var(--s3);
+  border-top: 2px dashed var(--linha-forte);
+}
+
+.cust-feedback h3 {
+  margin: 0;
+  color: var(--folha);
+  font: 700 var(--t-xl) / 1.2 var(--font-display);
+}
+
+.cust-feedback textarea {
+  padding: var(--s3);
+  resize: vertical;
+}
+
+.cust-thanks {
+  margin: 0;
+  padding-top: var(--s3);
+  border-top: 2px dashed var(--linha-forte);
+  color: var(--mata);
+  font-weight: 700;
+}
+
+/* ---------- Footer ---------- */
+
+.cust-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  padding-top: var(--s5);
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+  text-align: center;
+}
+
+.cust-foot p {
+  margin: 0;
+}
+
+.cust-foot-logo {
+  width: 110px;
+  height: auto;
+}
+
+.cust-foot a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--folha);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cust-sheet {
+    animation: none;
+  }
+}
