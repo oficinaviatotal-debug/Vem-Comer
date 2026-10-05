@@ -19,6 +19,7 @@ load_dotenv()
 
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', '1048576'))  # 1 MiB
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 
@@ -42,6 +43,14 @@ CORS(app, resources={r"/*": {
 }})
 
 FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
+
+
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'DENY')
+    response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    return response
 
 
 def error_response(public_message, exception=None, status=500):
@@ -121,38 +130,44 @@ _failed_login_attempts = {}
 _login_lock = threading.Lock()
 
 
+def login_rate_limit_key(email):
+    return (email, request.remote_addr or 'unknown')
+
+
 def register_failed_login(email):
     now = time.time()
+    key = login_rate_limit_key(email)
 
     with _login_lock:
         attempts = [
             t
-            for t in _failed_login_attempts.get(email, [])
+            for t in _failed_login_attempts.get(key, [])
             if now - t < LOGIN_WINDOW_SECONDS
         ]
 
         attempts.append(now)
-        _failed_login_attempts[email] = attempts
+        _failed_login_attempts[key] = attempts
 
 
 def is_login_blocked(email):
     now = time.time()
+    key = login_rate_limit_key(email)
 
     with _login_lock:
         attempts = [
             t
-            for t in _failed_login_attempts.get(email, [])
+            for t in _failed_login_attempts.get(key, [])
             if now - t < LOGIN_WINDOW_SECONDS
         ]
 
-        _failed_login_attempts[email] = attempts
+        _failed_login_attempts[key] = attempts
 
         return len(attempts) >= LOGIN_MAX_ATTEMPTS
 
 
 def clear_failed_logins(email):
     with _login_lock:
-        _failed_login_attempts.pop(email, None)
+        _failed_login_attempts.pop(login_rate_limit_key(email), None)
 
 
 @app.route('/api/auth/register-company', methods=['POST'])
