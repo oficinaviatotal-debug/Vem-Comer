@@ -24,7 +24,7 @@ type Recognition = {
 export function canSpeak(): boolean {
   return (
     typeof window !== "undefined" &&
-    "speechSynthesis" in window &&
+    Boolean(window.speechSynthesis) &&
     typeof SpeechSynthesisUtterance !== "undefined"
   );
 }
