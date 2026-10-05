@@ -21,6 +21,9 @@ import {
   createTable,
   deleteTable,
 } from "./api";
+import OnboardingGuide from "../onboarding/OnboardingGuide";
+import { ADMIN_TOUR, ADMIN_TOUR_ID } from "../onboarding/adminTour";
+import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
 
 type Order = {
   id: string;
@@ -59,6 +62,27 @@ type TableRow = {
   status: string;
 };
 
+type AdminView =
+  | "pedidos"
+  | "produtos"
+  | "categorias"
+  | "dashboard"
+  | "usuarios"
+  | "mesas";
+
+const ADMIN_VIEWS: string[] = [
+  "pedidos",
+  "produtos",
+  "categorias",
+  "dashboard",
+  "usuarios",
+  "mesas",
+];
+
+function isAdminView(value: string): value is AdminView {
+  return ADMIN_VIEWS.includes(value);
+}
+
 type AdminPanelProps = {
   companyId: string;
   companySlug: string;
@@ -82,9 +106,7 @@ export default function AdminPanel({
   const lastOrderCountRef = useRef<number | null>(null);
   const [showNewOrderAlert, setShowNewOrderAlert] = useState(false);
 
-  const [view, setView] = useState<
-    "pedidos" | "produtos" | "categorias" | "dashboard" | "usuarios" | "mesas"
-  >("pedidos");
+  const [view, setView] = useState<AdminView>("pedidos");
 
   const [products, setProducts] = useState<Product[]>([]);
   const [menus, setMenus] = useState<Menu[]>([]);
@@ -106,6 +128,23 @@ export default function AdminPanel({
   const [tableQrs, setTableQrs] = useState<Record<string, string>>({});
   const [newTableNumber, setNewTableNumber] = useState("");
   const [tableError, setTableError] = useState("");
+
+  // Guided onboarding. Declared here, before any early return, so the hook
+  // order never changes between renders.
+  const [guideOpen, setGuideOpen] = useState(false);
+  const canUseGuide =
+    currentUser?.role === "OWNER" || currentUser?.role === "MANAGER";
+
+  useEffect(() => {
+    // First time an owner opens the panel on this browser: offer the guide.
+    if (
+      isAuthenticated &&
+      currentUser?.role === "OWNER" &&
+      !hasSeenGuide(ADMIN_TOUR_ID, currentUser.id)
+    ) {
+      setGuideOpen(true);
+    }
+  }, [isAuthenticated, currentUser?.id, currentUser?.role]);
 
   async function loadOrders() {
     try {
@@ -564,6 +603,19 @@ export default function AdminPanel({
       className="admin-panel"
       style={{ padding: "1rem" }}
     >
+      {guideOpen && (
+        <OnboardingGuide
+          steps={ADMIN_TOUR}
+          onNavigate={(target) => {
+            if (isAdminView(target)) setView(target);
+          }}
+          onClose={() => {
+            if (currentUser) markGuideSeen(ADMIN_TOUR_ID, currentUser.id);
+            setGuideOpen(false);
+          }}
+        />
+      )}
+
       {showNewOrderAlert && (
         <div className="admin-alert">
           <span>
@@ -692,6 +744,20 @@ export default function AdminPanel({
               }}
             >
               Usuários
+            </button>
+          )}
+
+          {canUseGuide && (
+            <button
+              id="admin-btn-guide"
+              className="button-action"
+              onClick={() => setGuideOpen(true)}
+              style={{
+                backgroundColor: "var(--green)",
+                color: "#fff",
+              }}
+            >
+              Guia
             </button>
           )}
 
@@ -984,6 +1050,7 @@ export default function AdminPanel({
             <h3>Novo Produto</h3>
 
             <input
+              id="admin-product-name"
               placeholder="Nome"
               value={newName}
               onChange={(e) =>
@@ -1002,6 +1069,7 @@ export default function AdminPanel({
             />
 
             <input
+              id="admin-product-price"
               placeholder="Preço"
               type="number"
               value={newPrice}
@@ -1011,6 +1079,7 @@ export default function AdminPanel({
             />
 
             <select
+              id="admin-product-menu"
               value={newMenuId}
               onChange={(e) =>
                 setNewMenuId(e.target.value)
@@ -1031,6 +1100,7 @@ export default function AdminPanel({
             </select>
 
             <button
+              id="admin-product-add"
               className="button-action"
               onClick={handleCreateProduct}
               style={{
@@ -1104,6 +1174,7 @@ export default function AdminPanel({
             <h3>Nova Categoria</h3>
 
             <input
+              id="admin-menu-name"
               placeholder="Nome da categoria"
               value={newMenuName}
               onChange={(e) =>
@@ -1114,6 +1185,7 @@ export default function AdminPanel({
             />
 
             <button
+              id="admin-menu-add"
               className="button-action"
               onClick={handleCreateMenu}
               style={{
@@ -1173,6 +1245,7 @@ export default function AdminPanel({
             <h3>Nova Mesa</h3>
 
             <input
+              id="admin-table-number"
               placeholder="Número da mesa (ex: 1)"
               type="number"
               value={newTableNumber}
@@ -1190,6 +1263,7 @@ export default function AdminPanel({
             )}
 
             <button
+              id="admin-table-add"
               className="button-action"
               onClick={handleCreateTable}
               style={{
@@ -1202,11 +1276,11 @@ export default function AdminPanel({
           </div>
 
           {tables.length === 0 ? (
-            <p className="admin-empty">
+            <p id="admin-table-list" className="admin-empty">
               Nenhuma mesa cadastrada.
             </p>
           ) : (
-            <div className="admin-tables">
+            <div id="admin-table-list" className="admin-tables">
               {tables.map((table) => (
                 <div
                   key={table.id}
