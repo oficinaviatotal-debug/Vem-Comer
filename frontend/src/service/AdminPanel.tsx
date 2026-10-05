@@ -25,6 +25,13 @@ import OnboardingGuide from "../onboarding/OnboardingGuide";
 import { ADMIN_TOUR, ADMIN_TOUR_ID } from "../onboarding/adminTour";
 import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
 
+type OrderItem = {
+  name: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+};
+
 type Order = {
   id: string;
   customer_name: string;
@@ -33,6 +40,8 @@ type Order = {
   payment_method: string;
   payment_change: number;
   created_at: string;
+  table_number?: string | null;
+  items?: OrderItem[];
 };
 
 type Product = {
@@ -1381,6 +1390,20 @@ export default function AdminPanel({
                   {order.status}
                 </span>
               </div>
+
+              {order.table_number && (
+                <p className="admin-order-table">
+                  Mesa {order.table_number}
+                </p>
+              )}
+
+              <ul className="admin-order-items">
+                {(order.items ?? []).map((item, index) => (
+                  <li key={index}>
+                    {item.quantity}x {item.name}
+                  </li>
+                ))}
+              </ul>
 
               <div className="admin-payment-row">
                 <span>

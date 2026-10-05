@@ -886,19 +886,45 @@ def get_admin_orders(company_id):
         return access_error
 
     try:
+        # Each order carries its items and table number: the kitchen and the
+        # counter need to know what to prepare and where to take it.
         orders = query_db(
             """
             SELECT
-                id,
-                customer_name,
-                total_price,
-                status,
-                payment_method,
-                payment_change,
-                created_at
-            FROM orders
-            WHERE company_id = %s
-            ORDER BY created_at DESC;
+                o.id,
+                o.customer_name,
+                o.total_price,
+                o.status,
+                o.payment_method,
+                o.payment_change,
+                o.created_at,
+                t.number AS table_number,
+                COALESCE(
+                    (
+                        SELECT json_agg(
+                            json_build_object(
+                                'name', p.name,
+                                'quantity', oi.quantity,
+                                'unit_price', oi.unit_price,
+                                'total', oi.total
+                            )
+                            ORDER BY p.name
+                        )
+                        FROM order_items oi
+                        JOIN products p
+                            ON p.id = oi.product_id
+                            AND p.company_id = o.company_id
+                        WHERE oi.order_id = o.id
+                    ),
+                    '[]'::json
+                ) AS items
+            FROM orders o
+            LEFT JOIN tables t
+                ON t.id = o.table_id
+                AND t.company_id = o.company_id
+            WHERE o.company_id = %s
+            ORDER BY o.created_at DESC
+            LIMIT 200;
             """,
             (str(company_id),)
         )
