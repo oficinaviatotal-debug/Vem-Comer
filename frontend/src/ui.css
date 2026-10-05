@@ -1,0 +1,199 @@
+/*
+ * Shared building blocks for every Vem screen: buttons, fields, sheets, chips
+ * and the "dotted leader" that joins an item to its price like a printed bill.
+ * Colors, type and spacing come from the tokens at the top of styles.css.
+ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 48px;
+  padding: 0 var(--s5);
+  border: 2px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--folha);
+  font: 700 var(--t-md) / 1.1 var(--font-ui);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--brasa);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #A93709;
+}
+
+.btn-mata {
+  background: var(--mata);
+  color: #fff;
+}
+
+.btn-mata:hover:not(:disabled) {
+  background: #175830;
+}
+
+.btn-outline {
+  border-color: var(--linha-forte);
+  background: var(--comanda);
+  color: var(--folha);
+}
+
+.btn-outline:hover:not(:disabled) {
+  border-color: var(--folha);
+}
+
+.btn-quiet {
+  color: var(--nevoa);
+  text-decoration: underline;
+}
+
+.btn-danger {
+  border-color: var(--alerta);
+  background: var(--comanda);
+  color: var(--alerta);
+}
+
+.btn-danger.is-armed {
+  background: var(--alerta);
+  color: #fff;
+}
+
+.btn-sm {
+  min-height: 44px;
+  padding: 0 var(--s4);
+  font-size: var(--t-sm);
+}
+
+.btn-block {
+  display: flex;
+  width: 100%;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.field > span {
+  color: var(--folha);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.field > small {
+  color: var(--nevoa);
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--s3);
+  border: 2px solid var(--linha-forte);
+  border-radius: var(--r-sm);
+  background: #fff;
+  color: var(--tinta);
+  font: inherit;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--mata);
+}
+
+.msg-error {
+  margin: 0;
+  color: var(--alerta);
+  font-weight: 700;
+}
+
+/* A white sheet that holds a form or a summary. */
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  padding: var(--s5);
+  border-radius: var(--r-md);
+  background: var(--comanda);
+  box-shadow: var(--sombra-folha);
+}
+
+.sheet > h2,
+.sheet > h3 {
+  margin: 0;
+  font: 700 var(--t-xl) / 1.2 var(--font-display);
+  color: var(--folha);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  background: var(--papel-2);
+  color: var(--folha);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chip-wait {
+  background: var(--sol);
+}
+
+.chip-prep {
+  background: var(--folha);
+  color: #fff;
+}
+
+.chip-done,
+.chip-free {
+  background: var(--mata);
+  color: #fff;
+}
+
+.chip-busy {
+  background: var(--sol);
+}
+
+/* "2x Combinado ........ R$ 99,80" */
+.leader-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+}
+
+.leader {
+  flex: 1;
+  min-width: 12px;
+  border-bottom: 2px dotted var(--linha-forte);
+  transform: translateY(-.2em);
+}
+
+.money {
+  font-family: var(--font-display);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}

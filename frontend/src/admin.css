@@ -1,0 +1,373 @@
+/* Owner panel. Mobile first: one column, big touch targets, no hover-only actions. */
+
+.adm {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 var(--s4) var(--s7);
+  color: var(--tinta);
+}
+
+.adm h1,
+.adm h2,
+.adm h3 {
+  color: var(--folha);
+}
+
+.adm-title {
+  margin: 0;
+  font: 700 var(--t-2xl) / 1.15 var(--font-display);
+}
+
+.adm-lead {
+  margin: var(--s1) 0 0;
+  color: var(--nevoa);
+}
+
+.adm-muted {
+  margin: 2px 0 0;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+}
+
+.adm-status {
+  padding: var(--s7) 0;
+  color: var(--nevoa);
+  text-align: center;
+}
+
+/* ---------- Login ---------- */
+
+.adm-login-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding-top: var(--s5);
+}
+
+.adm-login {
+  width: 100%;
+  max-width: 400px;
+}
+
+.adm-login-logo {
+  width: 150px;
+  margin: 0 auto;
+}
+
+.adm-login .adm-title,
+.adm-login .adm-lead {
+  text-align: center;
+}
+
+/* ---------- Top bar and tabs ---------- */
+
+.adm-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s3) 0;
+}
+
+.adm-logo {
+  width: 96px;
+  height: auto;
+}
+
+.adm-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+
+.adm-who {
+  padding: var(--s2) 0 var(--s3);
+}
+
+.adm-tabs {
+  display: flex;
+  gap: var(--s1);
+  margin: 0 calc(var(--s4) * -1) var(--s5);
+  padding: 0 var(--s4);
+  overflow-x: auto;
+  border-bottom: 2px solid var(--linha);
+  scrollbar-width: none;
+}
+
+.adm-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.adm-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 52px;
+  margin-bottom: -2px;
+  padding: 0 var(--s4);
+  border: 0;
+  border-bottom: 4px solid transparent;
+  background: none;
+  color: var(--nevoa);
+  font: 700 var(--t-md) / 1 var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.adm-tab.is-active {
+  border-bottom-color: var(--brasa-viva);
+  color: var(--folha);
+}
+
+.adm-count {
+  display: inline-grid;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--sol);
+  color: var(--folha);
+  font-size: var(--t-sm);
+}
+
+/* ---------- Alerts and empty states ---------- */
+
+.adm-alert {
+  position: sticky;
+  top: var(--s2);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-bottom: var(--s4);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-sm);
+  background: var(--sol);
+  color: var(--folha);
+  font-weight: 700;
+  box-shadow: var(--sombra-folha);
+}
+
+.adm-empty {
+  padding: var(--s6) var(--s4);
+  border: 2px dashed var(--linha-forte);
+  border-radius: var(--r-md);
+  text-align: center;
+}
+
+.adm-empty h2 {
+  margin: 0 0 var(--s2);
+  font: 700 var(--t-xl) / 1.2 var(--font-display);
+}
+
+.adm-empty p {
+  max-width: 34ch;
+  margin: 0 auto;
+  color: var(--nevoa);
+}
+
+.adm-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+/* ---------- Lists (products, categories, team) ---------- */
+
+.adm-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.adm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s4) 0;
+  border-bottom: 1px solid var(--linha);
+}
+
+.adm-row-main {
+  min-width: 0;
+}
+
+.adm-row-main strong {
+  overflow-wrap: anywhere;
+}
+
+.adm-row-side {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s2);
+}
+
+.adm-row.is-off {
+  opacity: .55;
+}
+
+/* ---------- The order slip (comanda) ---------- */
+
+.adm-orders {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The shadow lives on the wrapper: a mask would clip it away. */
+.comanda-wrap {
+  filter: drop-shadow(0 1px 1px rgba(18, 59, 43, .12)) drop-shadow(0 6px 12px rgba(18, 59, 43, .08));
+}
+
+.comanda-wrap.is-done {
+  opacity: .62;
+}
+
+.comanda {
+  --dente: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s5) var(--s5) calc(var(--s5) + var(--dente) / 2);
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  background: var(--comanda);
+  /* torn paper edge along the bottom */
+  -webkit-mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--dente) / 2) no-repeat,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--dente) calc(var(--dente) / 2) repeat-x;
+  mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--dente) / 2) no-repeat,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--dente) calc(var(--dente) / 2) repeat-x;
+}
+
+.comanda-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-bottom: var(--s3);
+  border-bottom: 2px dashed var(--linha-forte);
+}
+
+.comanda-where {
+  margin: 0;
+  font: 700 var(--t-3xl) / 1 var(--font-display);
+}
+
+.comanda-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  margin: var(--s2) 0 0;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+}
+
+.comanda-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-lg);
+}
+
+.comanda-qty {
+  font-weight: 700;
+}
+
+.comanda-total {
+  padding-top: var(--s3);
+  border-top: 2px dashed var(--linha-forte);
+  font-size: var(--t-lg);
+}
+
+.comanda-total .money {
+  font-size: var(--t-xl);
+}
+
+.comanda-pay {
+  margin: 0;
+  color: var(--nevoa);
+}
+
+.comanda-pay strong {
+  color: var(--folha);
+}
+
+/* ---------- Tables and QR codes ---------- */
+
+.adm-tables {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--s4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.adm-table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4);
+  border-radius: var(--r-md);
+  background: var(--comanda);
+  box-shadow: var(--sombra-folha);
+}
+
+.adm-table-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.adm-table-label {
+  display: block;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+}
+
+.adm-table-number {
+  font: 700 var(--t-3xl) / 1 var(--font-display);
+  color: var(--folha);
+}
+
+.adm-qr {
+  width: 100%;
+  height: auto;
+  border-radius: var(--s2);
+  background: #fff;
+}
+
+/* ---------- Summary ---------- */
+
+.adm-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.adm-summary .money {
+  font-size: var(--t-xl);
+}
+
+.adm-subtitle {
+  margin: var(--s3) 0 0;
+  font: 700 var(--t-lg) / 1.2 var(--font-display);
+}
