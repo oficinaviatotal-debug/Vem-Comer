@@ -16,6 +16,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from db import query_db, get_db_connection
 import pix
 from table_qr import qr_png_for_url
+from trusted_proxy import wrap_trusted_proxy
 
 from dotenv import load_dotenv
 
@@ -23,6 +24,8 @@ load_dotenv()
 
 
 app = Flask(__name__)
+# Behind our HTTPS front door (Caddy) read the real visitor address. Off unless TRUST_PROXY=1.
+app.wsgi_app = wrap_trusted_proxy(app.wsgi_app)
 app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', '1048576'))  # 1 MiB
 
 SECRET_KEY = os.getenv('SECRET_KEY')

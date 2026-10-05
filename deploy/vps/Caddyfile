@@ -1,0 +1,35 @@
+# SITE_ADDRESS comes from the .env file (for example: meurestaurante.com.br).
+# Caddy gets and renews the HTTPS certificate by itself. Ports 80 and 443 must be open.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), geolocation=()"
+		-Server
+	}
+
+	# Registering a restaurant is done by the administrator on the server
+	# (deploy/vps/criar-restaurante.sh), not by the public. Closed from outside until
+	# there is a safe sign-up screen.
+	handle /api/auth/register-company {
+		respond 404
+	}
+
+	handle /api/* {
+		reverse_proxy api:5000
+	}
+
+	handle {
+		root * /srv/site
+		@casca path / /index.html
+		header @casca Cache-Control "no-cache"
+		@arquivos path /assets/*
+		header @arquivos Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+}
