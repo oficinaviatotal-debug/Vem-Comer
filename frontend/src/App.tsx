@@ -9,6 +9,9 @@ import {
   fetchOrder,
   fetchTable,
 } from "./service/api";
+import { getToken } from "./service/api";
+import { lastCompany } from "./service/lastCompany";
+import { panelUrl, wantsPanel } from "./service/links";
 import AdminPanel from "./service/AdminPanel";
 import VoiceCommandButton from "./voice/VoiceCommandButton";
 
@@ -53,48 +56,48 @@ type Order = {
 };
 
 const categories = [
-  { name: "Pizzas", image: "/images/pizza.png" },
+  { name: "Pizzas", image: "/images/pizza-sm.webp" },
   {
     name: "Hambúrguer",
-    image: "/images/hero-burguer.png",
+    image: "/images/hero-burguer-sm.webp",
   },
   { name: "Sushi", image: null },
   { name: "Massas", image: null },
   {
     name: "Self Service",
-    image: "/images/self-service.png",
+    image: "/images/self-service-sm.webp",
   },
   { name: "Saudável", image: null },
   { name: "Doces", image: null },
-  { name: "Bebidas", image: "/images/bebidas.png" },
+  { name: "Bebidas", image: "/images/bebidas-sm.webp" },
 ];
 
 function getCategoryImage(name?: string | null) {
   const value = (name || "").toLowerCase();
 
   if (value.includes("pizza")) {
-    return "/images/pizza.png";
+    return "/images/pizza-sm.webp";
   }
 
   if (
     value.includes("hamb") ||
     value.includes("burger")
   ) {
-    return "/images/hero-burguer.png";
+    return "/images/hero-burguer-sm.webp";
   }
 
   if (
     value.includes("self") ||
     value.includes("executivo")
   ) {
-    return "/images/self-service.png";
+    return "/images/self-service-sm.webp";
   }
 
   if (
     value.includes("bebida") ||
     value.includes("drink")
   ) {
-    return "/images/bebidas.png";
+    return "/images/bebidas-sm.webp";
   }
 
   return null;
@@ -103,7 +106,12 @@ function getCategoryImage(name?: string | null) {
 export default function App() {
   const params = new URLSearchParams(location.search);
 
-  const slug = params.get("empresa");
+  // An owner who already signed in and opens the bare address (for example
+  // from the home-screen icon) goes back to the panel of the same restaurant.
+  const rememberedSlug =
+    !params.get("empresa") && getToken() ? lastCompany() : null;
+
+  const slug = params.get("empresa") || rememberedSlug;
   const tableId = params.get("mesa");
 
   const [company, setCompany] =
@@ -137,7 +145,7 @@ export default function App() {
     useState(false);
 
   const [admin, setAdmin] =
-    useState(false);
+    useState(wantsPanel(location.search) || Boolean(rememberedSlug));
 
   const [activeOrder, setActiveOrder] =
     useState<Order | null>(null);
@@ -266,7 +274,7 @@ export default function App() {
 
   const handleVoiceCommand = (command: any) => {
     if (command.intent === "search_products") {
-      setSearch(String(command.fields?.rawText || "").replace(/^(buscar|procurar|encontrar)\\s*/i, ""));
+      setSearch(String(command.fields?.rawText || "").replace(/^(buscar|procurar|encontrar)\s*/i, ""));
       setVoiceHint("Busca preenchida por voz.");
       return;
     }
@@ -423,6 +431,33 @@ export default function App() {
     }
   }
 
+  if (!slug) {
+    return (
+      <main className="adm adm-login-page">
+        <section className="adm-login sheet">
+          <img
+            className="adm-login-logo"
+            src="/logo-vem-comer.png"
+            alt="Vem Comer"
+          />
+
+          <div>
+            <h1 className="adm-title">Escaneie o QR code da mesa</h1>
+            <p className="adm-lead">
+              Aponte a câmera do celular para o QR code da sua mesa. O cardápio
+              abre na hora e você pede sem chamar o garçom.
+            </p>
+          </div>
+
+          <p className="adm-lead">
+            Dono do restaurante? Abra o link do seu painel, o mesmo que termina
+            em painel=1.
+          </p>
+        </section>
+      </main>
+    );
+  }
+
   if (loading) {
     return (
       <main className="loading-state">
@@ -441,6 +476,16 @@ export default function App() {
         {error ||
           "Estabelecimento não encontrado."}
       </main>
+    );
+  }
+
+  if (admin) {
+    return (
+      <AdminPanel
+        companyId={companyId}
+        companySlug={company.slug}
+        onBack={() => setAdmin(false)}
+      />
     );
   }
 
@@ -536,15 +581,7 @@ export default function App() {
       </header>
 
       <main className="main-content">
-        {admin ? (
-          <AdminPanel
-            companyId={companyId}
-            companySlug={company.slug}
-            onBack={() =>
-              setAdmin(false)
-            }
-          />
-        ) : activeOrder ? (
+        {activeOrder ? (
           <section className="tracking">
             <span className="kicker">
               PEDIDO ENVIADO
@@ -679,7 +716,7 @@ export default function App() {
 
               <div className="hero-food">
                 <img
-                  src="/images/hero-burguer.png"
+                  src="/images/hero-burguer.webp"
                   alt="Hambúrguer artesanal"
                 />
 
@@ -1254,6 +1291,18 @@ export default function App() {
         <p>
           Mais que comida, são momentos
           que importam.
+        </p>
+
+        <p className="footer-owner">
+          <a
+            href={panelUrl(
+              location.origin,
+              location.pathname,
+              company.slug
+            )}
+          >
+            Área do restaurante
+          </a>
         </p>
 
         <span className="footer-copy">

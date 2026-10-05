@@ -24,6 +24,26 @@ import {
 import OnboardingGuide from "../onboarding/OnboardingGuide";
 import { ADMIN_TOUR, ADMIN_TOUR_ID } from "../onboarding/adminTour";
 import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
+import ConfirmButton from "./ConfirmButton";
+import {
+  formatMoney,
+  formatTime,
+  paymentLabel,
+  roleLabel,
+  shortOrderCode,
+} from "./format";
+import {
+  STATUS_DONE,
+  STATUS_PREPARING,
+  isActiveStatus,
+  nextAction,
+  sortForKitchen,
+  statusLabel,
+} from "./orderStatus";
+import { tableOrderUrl as buildTableUrl } from "./links";
+import { rememberCompany } from "./lastCompany";
+import "../ui.css";
+import "../admin.css";
 
 type OrderItem = {
   name: string;
@@ -176,6 +196,7 @@ export default function AdminPanel({
 
       setIsAuthenticated(true);
       setCurrentUser(getUser());
+      rememberCompany(companySlug);
     } catch (err) {
       setLoginError(
         err instanceof Error ? err.message : "Email ou senha inválidos"
@@ -457,116 +478,99 @@ export default function AdminPanel({
   }
 
   function tableOrderUrl(tableId: string) {
-    const url = new URL(window.location.href);
-    url.searchParams.set("empresa", companySlug);
-    url.searchParams.set("mesa", tableId);
-    return url.toString();
+    return buildTableUrl(
+      window.location.origin,
+      window.location.pathname,
+      companySlug,
+      tableId
+    );
+  }
+
+  const sortedOrders = sortForKitchen(orders);
+  const openOrdersCount = orders.filter((order) =>
+    isActiveStatus(order.status)
+  ).length;
+
+  function tabClass(name: AdminView) {
+    return view === name ? "adm-tab is-active" : "adm-tab";
   }
 
   if (!isAuthenticated) {
     return (
-      <div
-        style={{
-          maxWidth: "360px",
-          margin: "4rem auto",
-          padding: "2rem",
-          borderRadius: "12px",
-          backgroundColor: "var(--bg-secondary)",
-          border: "1px solid var(--border-color)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.75rem",
-          boxSizing: "border-box",
-        }}
-      >
-        <h2
-          style={{
-            margin: "0 0 0.5rem 0",
-            textAlign: "center",
+      <main className="adm adm-login-page">
+        <form
+          className="adm-login sheet"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleLogin();
           }}
         >
-          Painel de Controle
-        </h2>
+          <img
+            className="adm-login-logo"
+            src="/logo-vem-comer.png"
+            alt="Vem Comer"
+          />
 
-        <input
-          placeholder="Email"
-          type="email"
-          value={loginEmail}
-          onChange={(e) => setLoginEmail(e.target.value)}
-          style={{
-            padding: "0.6rem",
-            borderRadius: "8px",
-            border: "1px solid var(--border-color)",
-            boxSizing: "border-box",
-            width: "100%",
-          }}
-        />
+          <div>
+            <h1 className="adm-title">Área do restaurante</h1>
+            <p className="adm-lead">
+              Entre com o e-mail e a senha do seu cadastro.
+            </p>
+          </div>
 
-        <input
-          placeholder="Senha"
-          type="password"
-          value={loginPassword}
-          onChange={(e) => setLoginPassword(e.target.value)}
-          onKeyDown={(e) =>
-            e.key === "Enter" && handleLogin()
-          }
-          style={{
-            padding: "0.6rem",
-            borderRadius: "8px",
-            border: "1px solid var(--border-color)",
-            boxSizing: "border-box",
-            width: "100%",
-          }}
-        />
+          <label className="field">
+            <span>E-mail</span>
+            <input
+              id="admin-login-email"
+              type="email"
+              inputMode="email"
+              autoComplete="username"
+              placeholder="voce@restaurante.com"
+              value={loginEmail}
+              onChange={(e) => setLoginEmail(e.target.value)}
+            />
+          </label>
 
-        {loginError && (
-          <p
-            style={{
-              color: "#ef4444",
-              fontSize: "0.85rem",
-              margin: 0,
-            }}
+          <label className="field">
+            <span>Senha</span>
+            <input
+              id="admin-login-password"
+              type="password"
+              autoComplete="current-password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+            />
+          </label>
+
+          {loginError && (
+            <p className="msg-error" role="alert">
+              {loginError}
+            </p>
+          )}
+
+          <button type="submit" className="btn btn-primary btn-block">
+            Entrar
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-quiet"
+            onClick={onBack}
           >
-            {loginError}
-          </p>
-        )}
-
-        <button
-          className="button-action"
-          onClick={handleLogin}
-          style={{
-            backgroundColor: "var(--color-accent)",
-            color: "#fff",
-          }}
-        >
-          Entrar
-        </button>
-
-        <button
-          className="button-action"
-          onClick={onBack}
-          style={{
-            backgroundColor: "transparent",
-            color: "var(--text-muted)",
-          }}
-        >
-          Voltar para o Cardápio
-        </button>
-      </div>
+            Voltar ao cardápio
+          </button>
+        </form>
+      </main>
     );
   }
 
   if (loading) {
     return (
-      <div
-        style={{
-          textAlign: "center",
-          padding: "3rem",
-          color: "var(--text-muted)",
-        }}
-      >
-        Carregando painel de pedidos...
-      </div>
+      <main className="adm">
+        <p className="adm-status" role="status">
+          Carregando pedidos…
+        </p>
+      </main>
     );
   }
 
@@ -578,40 +582,31 @@ export default function AdminPanel({
   const totalOrders = orders.length;
 
   const avgTicket =
-    totalOrders > 0
-      ? totalRevenue / totalOrders
-      : 0;
+    totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-  const ordersByStatus =
-    orders.reduce<Record<string, number>>(
-      (acc, o) => {
-        acc[o.status] =
-          (acc[o.status] || 0) + 1;
+  const ordersByStatus = orders.reduce<Record<string, number>>(
+    (acc, o) => {
+      acc[o.status] = (acc[o.status] || 0) + 1;
+      return acc;
+    },
+    {}
+  );
 
-        return acc;
-      },
-      {}
-    );
+  const ordersByPayment = orders.reduce<Record<string, number>>(
+    (acc, o) => {
+      const key = paymentLabel(o.payment_method);
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    },
+    {}
+  );
 
-  const ordersByPayment =
-    orders.reduce<Record<string, number>>(
-      (acc, o) => {
-        const key =
-          o.payment_method || "Não informado";
-
-        acc[key] =
-          (acc[key] || 0) + 1;
-
-        return acc;
-      },
-      {}
-    );
+  function menuName(menuId: string | null | undefined) {
+    return menus.find((menu) => menu.id === menuId)?.name;
+  }
 
   return (
-    <div
-      className="admin-panel"
-      style={{ padding: "1rem" }}
-    >
+    <div className="adm">
       {guideOpen && (
         <OnboardingGuide
           steps={ADMIN_TOUR}
@@ -626,853 +621,643 @@ export default function AdminPanel({
       )}
 
       {showNewOrderAlert && (
-        <div className="admin-alert">
-          <span>
-            🔔 Atenção: Um novo pedido de mesa acabou de chegar!
-          </span>
+        <div className="adm-alert" role="alert">
+          <span>Chegou um novo pedido.</span>
 
           <button
             type="button"
-            onClick={() =>
-              setShowNewOrderAlert(false)
-            }
+            className="btn btn-outline btn-sm"
+            onClick={() => {
+              setView("pedidos");
+              setShowNewOrderAlert(false);
+            }}
           >
-            Dispensar
+            Ver pedidos
           </button>
         </div>
       )}
 
-      <div className="admin-header">
-        <h2>Painel de Controle</h2>
+      <header className="adm-bar">
+        <img
+          className="adm-logo"
+          src="/logo-vem-comer.png"
+          alt="Vem Comer"
+        />
 
-        <div className="admin-header-actions">
-          <button
-            id="admin-tab-pedidos"
-            className="button-action"
-            onClick={() => setView("pedidos")}
-            style={{
-              backgroundColor:
-                view === "pedidos"
-                  ? "var(--color-accent)"
-                  : "var(--bg-tertiary)",
-              color:
-                view === "pedidos"
-                  ? "#fff"
-                  : "var(--text-main)",
-            }}
-          >
-            Pedidos
-          </button>
-
-          <button
-            id="admin-tab-produtos"
-            className="button-action"
-            onClick={() => setView("produtos")}
-            style={{
-              backgroundColor:
-                view === "produtos"
-                  ? "var(--color-accent)"
-                  : "var(--bg-tertiary)",
-              color:
-                view === "produtos"
-                  ? "#fff"
-                  : "var(--text-main)",
-            }}
-          >
-            Produtos
-          </button>
-
-          <button
-            id="admin-tab-categorias"
-            className="button-action"
-            onClick={() => setView("categorias")}
-            style={{
-              backgroundColor:
-                view === "categorias"
-                  ? "var(--color-accent)"
-                  : "var(--bg-tertiary)",
-              color:
-                view === "categorias"
-                  ? "#fff"
-                  : "var(--text-main)",
-            }}
-          >
-            Categorias
-          </button>
-
-          <button
-            id="admin-tab-mesas"
-            className="button-action"
-            onClick={() => setView("mesas")}
-            style={{
-              backgroundColor:
-                view === "mesas"
-                  ? "var(--color-accent)"
-                  : "var(--bg-tertiary)",
-              color:
-                view === "mesas"
-                  ? "#fff"
-                  : "var(--text-main)",
-            }}
-          >
-            Mesas
-          </button>
-
-          <button
-            id="admin-tab-dashboard"
-            className="button-action"
-            onClick={() => setView("dashboard")}
-            style={{
-              backgroundColor:
-                view === "dashboard"
-                  ? "var(--color-accent)"
-                  : "var(--bg-tertiary)",
-              color:
-                view === "dashboard"
-                  ? "#fff"
-                  : "var(--text-main)",
-            }}
-          >
-            Dashboard
-          </button>
-
-          {currentUser?.role === "OWNER" && (
-            <button
-              id="admin-tab-usuarios"
-              className="button-action"
-              onClick={() => setView("usuarios")}
-              style={{
-                backgroundColor:
-                  view === "usuarios"
-                    ? "var(--color-accent)"
-                    : "var(--bg-tertiary)",
-                color:
-                  view === "usuarios"
-                    ? "#fff"
-                    : "var(--text-main)",
-              }}
-            >
-              Usuários
-            </button>
-          )}
-
+        <div className="adm-bar-actions">
           {canUseGuide && (
             <button
               id="admin-btn-guide"
-              className="button-action"
+              type="button"
+              className="btn btn-outline btn-sm"
               onClick={() => setGuideOpen(true)}
-              style={{
-                backgroundColor: "var(--green)",
-                color: "#fff",
-              }}
             >
               Guia
             </button>
           )}
 
           <button
-            id="admin-btn-logout"
-            className="button-action"
-            onClick={handleLogout}
-            style={{
-              backgroundColor: "#ef4444",
-              color: "#fff",
-            }}
+            type="button"
+            className="btn btn-quiet btn-sm"
+            onClick={onBack}
           >
-            Sair
+            Cardápio
           </button>
 
           <button
-            className="button-action"
-            onClick={onBack}
-            style={{
-              backgroundColor: "var(--text-main)",
-              color: "#fff",
-            }}
+            id="admin-btn-logout"
+            type="button"
+            className="btn btn-quiet btn-sm"
+            onClick={handleLogout}
           >
-            Voltar para o Cardápio
+            Sair
           </button>
         </div>
+      </header>
+
+      <div className="adm-who">
+        <h1 className="adm-title">Painel</h1>
+        {currentUser && (
+          <p className="adm-lead">
+            {currentUser.name}, {roleLabel(currentUser.role)}
+          </p>
+        )}
       </div>
 
-      {view === "dashboard" ? (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "1.5rem",
-          }}
+      <nav className="adm-tabs" aria-label="Seções do painel">
+        <button
+          id="admin-tab-pedidos"
+          type="button"
+          className={tabClass("pedidos")}
+          aria-current={view === "pedidos" ? "page" : undefined}
+          onClick={() => setView("pedidos")}
         >
-          <div
-            style={{
-              display: "flex",
-              gap: "1rem",
-              flexWrap: "wrap",
-            }}
-          >
-            <div className="admin-stat-card">
-              <div className="admin-stat-label">
-                Faturamento total
-              </div>
-
-              <div className="admin-stat-value">
-                R$ {totalRevenue.toFixed(2)}
-              </div>
-            </div>
-
-            <div className="admin-stat-card">
-              <div className="admin-stat-label">
-                Pedidos
-              </div>
-
-              <div className="admin-stat-value">
-                {totalOrders}
-              </div>
-            </div>
-
-            <div className="admin-stat-card">
-              <div className="admin-stat-label">
-                Ticket médio
-              </div>
-
-              <div className="admin-stat-value">
-                R$ {avgTicket.toFixed(2)}
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              gap: "1rem",
-              flexWrap: "wrap",
-            }}
-          >
-            <div className="admin-dashboard-card">
-              <h3>Pedidos por status</h3>
-
-              {Object.entries(
-                ordersByStatus
-              ).map(([status, count]) => (
-                <div
-                  key={status}
-                  className="admin-dashboard-row"
-                >
-                  <span
-                    style={{
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {status}
-                  </span>
-
-                  <strong>{count}</strong>
-                </div>
-              ))}
-            </div>
-
-            <div className="admin-dashboard-card">
-              <h3>Pedidos por pagamento</h3>
-
-              {Object.entries(
-                ordersByPayment
-              ).map(([method, count]) => (
-                <div
-                  key={method}
-                  className="admin-dashboard-row"
-                >
-                  <span
-                    style={{
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {method}
-                  </span>
-
-                  <strong>{count}</strong>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : view === "usuarios" &&
-        currentUser?.role === "OWNER" ? (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "1.5rem",
-          }}
-        >
-          <div className="admin-form-card">
-            <h3>Novo Usuário</h3>
-
-            <input
-              placeholder="Nome"
-              value={newUserName}
-              onChange={(e) =>
-                setNewUserName(e.target.value)
-              }
-            />
-
-            <input
-              placeholder="Email"
-              type="email"
-              value={newUserEmail}
-              onChange={(e) =>
-                setNewUserEmail(e.target.value)
-              }
-            />
-
-            <input
-              placeholder="Senha (mín. 8 caracteres)"
-              type="password"
-              value={newUserPassword}
-              onChange={(e) =>
-                setNewUserPassword(e.target.value)
-              }
-            />
-
-            <select
-              value={newUserRole}
-              onChange={(e) =>
-                setNewUserRole(e.target.value)
-              }
+          Pedidos
+          {openOrdersCount > 0 && (
+            <span
+              className="adm-count"
+              aria-label={`${openOrdersCount} em aberto`}
             >
-              <option value="MANAGER">
-                Gerente
-              </option>
-              <option value="WAITER">
-                Garçom
-              </option>
-              <option value="CASHIER">
-                Caixa
-              </option>
-              <option value="KITCHEN">
-                Cozinha
-              </option>
-              <option value="COURIER">
-                Entregador
-              </option>
-            </select>
+              {openOrdersCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          id="admin-tab-produtos"
+          type="button"
+          className={tabClass("produtos")}
+          aria-current={view === "produtos" ? "page" : undefined}
+          onClick={() => setView("produtos")}
+        >
+          Produtos
+        </button>
+
+        <button
+          id="admin-tab-categorias"
+          type="button"
+          className={tabClass("categorias")}
+          aria-current={view === "categorias" ? "page" : undefined}
+          onClick={() => setView("categorias")}
+        >
+          Categorias
+        </button>
+
+        <button
+          id="admin-tab-mesas"
+          type="button"
+          className={tabClass("mesas")}
+          aria-current={view === "mesas" ? "page" : undefined}
+          onClick={() => setView("mesas")}
+        >
+          Mesas
+        </button>
+
+        <button
+          id="admin-tab-dashboard"
+          type="button"
+          className={tabClass("dashboard")}
+          aria-current={view === "dashboard" ? "page" : undefined}
+          onClick={() => setView("dashboard")}
+        >
+          Resumo
+        </button>
+
+        {currentUser?.role === "OWNER" && (
+          <button
+            id="admin-tab-usuarios"
+            type="button"
+            className={tabClass("usuarios")}
+            aria-current={view === "usuarios" ? "page" : undefined}
+            onClick={() => setView("usuarios")}
+          >
+            Equipe
+          </button>
+        )}
+      </nav>
+
+      {view === "dashboard" ? (
+        <section className="sheet" aria-label="Resumo">
+          <h2>Resumo</h2>
+
+          <ul className="adm-summary">
+            <li className="leader-row">
+              <span>Total dos pedidos</span>
+              <span className="leader" />
+              <span className="money">{formatMoney(totalRevenue)}</span>
+            </li>
+            <li className="leader-row">
+              <span>Pedidos</span>
+              <span className="leader" />
+              <span className="money">{totalOrders}</span>
+            </li>
+            <li className="leader-row">
+              <span>Ticket médio</span>
+              <span className="leader" />
+              <span className="money">{formatMoney(avgTicket)}</span>
+            </li>
+          </ul>
+
+          <h3 className="adm-subtitle">Pedidos por situação</h3>
+          <ul className="adm-summary">
+            {Object.entries(ordersByStatus).map(([status, count]) => (
+              <li key={status} className="leader-row">
+                <span>{statusLabel(status)}</span>
+                <span className="leader" />
+                <span className="money">{count}</span>
+              </li>
+            ))}
+          </ul>
+
+          <h3 className="adm-subtitle">Pedidos por pagamento</h3>
+          <ul className="adm-summary">
+            {Object.entries(ordersByPayment).map(([method, count]) => (
+              <li key={method} className="leader-row">
+                <span>{method}</span>
+                <span className="leader" />
+                <span className="money">{count}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : view === "usuarios" && currentUser?.role === "OWNER" ? (
+        <section className="adm-stack" aria-label="Equipe">
+          <form
+            className="sheet"
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleCreateUser();
+            }}
+          >
+            <h2>Nova pessoa na equipe</h2>
+
+            <label className="field">
+              <span>Nome</span>
+              <input
+                value={newUserName}
+                onChange={(e) => setNewUserName(e.target.value)}
+              />
+            </label>
+
+            <label className="field">
+              <span>E-mail</span>
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="off"
+                value={newUserEmail}
+                onChange={(e) => setNewUserEmail(e.target.value)}
+              />
+            </label>
+
+            <label className="field">
+              <span>Senha</span>
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={newUserPassword}
+                onChange={(e) => setNewUserPassword(e.target.value)}
+              />
+              <small>Mínimo de 8 caracteres.</small>
+            </label>
+
+            <label className="field">
+              <span>Função</span>
+              <select
+                value={newUserRole}
+                onChange={(e) => setNewUserRole(e.target.value)}
+              >
+                <option value="MANAGER">Gerente</option>
+                <option value="WAITER">Garçom</option>
+                <option value="CASHIER">Caixa</option>
+                <option value="KITCHEN">Cozinha</option>
+                <option value="COURIER">Entregador</option>
+              </select>
+            </label>
 
             {userError && (
-              <p className="admin-error">
+              <p className="msg-error" role="alert">
                 {userError}
               </p>
             )}
 
-            <button
-              className="button-action"
-              onClick={handleCreateUser}
-              style={{
-                backgroundColor: "#22c55e",
-                color: "#fff",
-              }}
-            >
-              Adicionar Usuário
+            <button type="submit" className="btn btn-primary btn-block">
+              Adicionar pessoa
             </button>
-          </div>
+          </form>
 
           {users.length === 0 ? (
-            <p className="admin-empty">
-              Nenhum usuário cadastrado.
-            </p>
+            <div className="adm-empty">
+              <h2>Só você por aqui</h2>
+              <p>Adicione garçons, cozinha e caixa para cada um ter o próprio acesso.</p>
+            </div>
           ) : (
-            users.map((user) => (
-              <div
-                key={user.id}
-                className="admin-list-card"
-              >
-                <div
-                  style={{
-                    opacity: user.active
-                      ? 1
-                      : 0.5,
-                    minWidth: 0,
-                  }}
+            <ul className="adm-list">
+              {users.map((user) => (
+                <li
+                  key={user.id}
+                  className={user.active ? "adm-row" : "adm-row is-off"}
                 >
-                  <strong>
-                    {user.name}
-                  </strong>{" "}
-                  — {user.email}
-
-                  <div className="admin-muted">
-                    {user.role}
-                    {!user.active &&
-                      " · Desativado"}
+                  <div className="adm-row-main">
+                    <strong>{user.name}</strong>
+                    <p className="adm-muted">{user.email}</p>
+                    <span className="chip">
+                      {roleLabel(user.role)}
+                      {!user.active && ", desativado"}
+                    </span>
                   </div>
-                </div>
 
-                {user.active &&
-                  user.role !== "OWNER" && (
-                    <button
-                      className="button-action"
-                      style={{
-                        fontSize: "0.85rem",
-                        padding:
-                          "0.5rem 1rem",
-                      }}
-                      onClick={() =>
-                        handleDeactivateUser(
-                          user.id
-                        )
-                      }
-                    >
-                      Desativar
-                    </button>
-                  )}
+                  <div className="adm-row-side">
+                    {user.active && user.role !== "OWNER" && (
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={() => handleDeactivateUser(user.id)}
+                      >
+                        Desativar
+                      </button>
+                    )}
 
-                {!user.active && (
-                  <button
-                    className="button-action"
-                    style={{
-                      fontSize: "0.85rem",
-                      padding:
-                        "0.5rem 1rem",
-                      backgroundColor:
-                        "#ef4444",
-                      color: "#fff",
-                    }}
-                    onClick={() =>
-                      handleDeleteUser(
-                        user.id
-                      )
-                    }
-                  >
-                    Apagar
-                  </button>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      ) : view === "produtos" ? (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "1.5rem",
-          }}
-        >
-          <div className="admin-form-card">
-            <h3>Novo Produto</h3>
-
-            <input
-              id="admin-product-name"
-              placeholder="Nome"
-              value={newName}
-              onChange={(e) =>
-                setNewName(e.target.value)
-              }
-            />
-
-            <input
-              placeholder="Descrição"
-              value={newDescription}
-              onChange={(e) =>
-                setNewDescription(
-                  e.target.value
-                )
-              }
-            />
-
-            <input
-              id="admin-product-price"
-              placeholder="Preço"
-              type="number"
-              value={newPrice}
-              onChange={(e) =>
-                setNewPrice(e.target.value)
-              }
-            />
-
-            <select
-              id="admin-product-menu"
-              value={newMenuId}
-              onChange={(e) =>
-                setNewMenuId(e.target.value)
-              }
-            >
-              <option value="">
-                Selecione a categoria
-              </option>
-
-              {menus.map((menu) => (
-                <option
-                  key={menu.id}
-                  value={menu.id}
-                >
-                  {menu.name}
-                </option>
+                    {!user.active && (
+                      <ConfirmButton
+                        label="Apagar"
+                        onConfirm={() => handleDeleteUser(user.id)}
+                      />
+                    )}
+                  </div>
+                </li>
               ))}
-            </select>
+            </ul>
+          )}
+        </section>
+      ) : view === "produtos" ? (
+        <section className="adm-stack" aria-label="Produtos">
+          <form
+            className="sheet"
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleCreateProduct();
+            }}
+          >
+            <h2>Novo produto</h2>
+
+            <label className="field">
+              <span>Nome</span>
+              <input
+                id="admin-product-name"
+                placeholder="Ex.: Combinado 20 peças"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+            </label>
+
+            <label className="field">
+              <span>Descrição (opcional)</span>
+              <input
+                id="admin-product-description"
+                placeholder="O que vem no prato"
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+              />
+            </label>
+
+            <label className="field">
+              <span>Preço em reais</span>
+              <input
+                id="admin-product-price"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                placeholder="49,90"
+                value={newPrice}
+                onChange={(e) => setNewPrice(e.target.value)}
+              />
+            </label>
+
+            <label className="field">
+              <span>Categoria</span>
+              <select
+                id="admin-product-menu"
+                value={newMenuId}
+                onChange={(e) => setNewMenuId(e.target.value)}
+              >
+                <option value="">Sem categoria</option>
+
+                {menus.map((menu) => (
+                  <option key={menu.id} value={menu.id}>
+                    {menu.name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <button
               id="admin-product-add"
-              className="button-action"
-              onClick={handleCreateProduct}
-              style={{
-                backgroundColor: "#22c55e",
-                color: "#fff",
-              }}
+              type="submit"
+              className="btn btn-primary btn-block"
             >
               Adicionar Produto
             </button>
-          </div>
+          </form>
 
           {products.length === 0 ? (
-            <p className="admin-empty">
-              Nenhum produto cadastrado.
-            </p>
+            <div className="adm-empty">
+              <h2>Nenhum produto ainda</h2>
+              <p>Preencha o nome e o preço acima e toque em Adicionar Produto.</p>
+            </div>
           ) : (
-            products.map((product) => (
-              <div
-                key={product.id}
-                className="admin-list-card"
-              >
-                <div
-                  style={{
-                    minWidth: 0,
-                  }}
-                >
-                  <strong>
-                    {product.name}
-                  </strong>{" "}
-                  — R${" "}
-                  {Number(
-                    product.price
-                  ).toFixed(2)}
-
-                  <div className="admin-muted">
-                    {product.description}
+            <ul className="adm-list">
+              {products.map((product) => (
+                <li key={product.id} className="adm-row">
+                  <div className="adm-row-main">
+                    <strong>{product.name}</strong>
+                    {product.description && (
+                      <p className="adm-muted">{product.description}</p>
+                    )}
+                    {menuName(product.menu_id) && (
+                      <span className="chip">{menuName(product.menu_id)}</span>
+                    )}
                   </div>
-                </div>
 
-                <button
-                  className="button-action"
-                  style={{
-                    fontSize: "0.85rem",
-                    padding:
-                      "0.5rem 1rem",
-                    backgroundColor:
-                      "#ef4444",
-                    color: "#fff",
-                  }}
-                  onClick={() =>
-                    handleDeleteProduct(
-                      product.id
-                    )
-                  }
-                >
-                  Remover
-                </button>
-              </div>
-            ))
+                  <div className="adm-row-side">
+                    <span className="money">{formatMoney(product.price)}</span>
+                    <ConfirmButton
+                      label="Remover"
+                      onConfirm={() => handleDeleteProduct(product.id)}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
-        </div>
+        </section>
       ) : view === "categorias" ? (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "1.5rem",
-          }}
-        >
-          <div className="admin-form-card">
-            <h3>Nova Categoria</h3>
+        <section className="adm-stack" aria-label="Categorias">
+          <form
+            className="sheet"
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleCreateMenu();
+            }}
+          >
+            <h2>Nova categoria</h2>
 
-            <input
-              id="admin-menu-name"
-              placeholder="Nome da categoria"
-              value={newMenuName}
-              onChange={(e) =>
-                setNewMenuName(
-                  e.target.value
-                )
-              }
-            />
+            <label className="field">
+              <span>Nome da categoria</span>
+              <input
+                id="admin-menu-name"
+                placeholder="Ex.: Pratos"
+                value={newMenuName}
+                onChange={(e) => setNewMenuName(e.target.value)}
+              />
+            </label>
 
             <button
               id="admin-menu-add"
-              className="button-action"
-              onClick={handleCreateMenu}
-              style={{
-                backgroundColor: "#22c55e",
-                color: "#fff",
-              }}
+              type="submit"
+              className="btn btn-primary btn-block"
             >
               Adicionar Categoria
             </button>
-          </div>
+          </form>
 
           {menus.length === 0 ? (
-            <p className="admin-empty">
-              Nenhuma categoria cadastrada.
-            </p>
+            <div className="adm-empty">
+              <h2>Nenhuma categoria ainda</h2>
+              <p>Crie a primeira acima, por exemplo Pratos, Bebidas ou Sobremesas.</p>
+            </div>
           ) : (
-            menus.map((menu) => (
-              <div
-                key={menu.id}
-                className="admin-list-card"
-              >
-                <strong>
-                  {menu.name}
-                </strong>
+            <ul className="adm-list">
+              {menus.map((menu) => (
+                <li key={menu.id} className="adm-row">
+                  <strong className="adm-row-main">{menu.name}</strong>
 
-                <button
-                  className="button-action"
-                  style={{
-                    fontSize: "0.85rem",
-                    padding:
-                      "0.5rem 1rem",
-                    backgroundColor:
-                      "#ef4444",
-                    color: "#fff",
-                  }}
-                  onClick={() =>
-                    handleDeleteMenu(
-                      menu.id
-                    )
-                  }
-                >
-                  Remover
-                </button>
-              </div>
-            ))
+                  <ConfirmButton
+                    label="Remover"
+                    onConfirm={() => handleDeleteMenu(menu.id)}
+                  />
+                </li>
+              ))}
+            </ul>
           )}
-        </div>
+        </section>
       ) : view === "mesas" ? (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "1.5rem",
-          }}
-        >
-          <div className="admin-form-card">
-            <h3>Nova Mesa</h3>
+        <section className="adm-stack" aria-label="Mesas">
+          <form
+            className="sheet"
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleCreateTable();
+            }}
+          >
+            <h2>Nova mesa</h2>
 
-            <input
-              id="admin-table-number"
-              placeholder="Número da mesa (ex: 1)"
-              type="number"
-              value={newTableNumber}
-              onChange={(e) =>
-                setNewTableNumber(
-                  e.target.value
-                )
-              }
-            />
+            <label className="field">
+              <span>Número da mesa</span>
+              <input
+                id="admin-table-number"
+                type="number"
+                inputMode="numeric"
+                min="1"
+                placeholder="Ex.: 1"
+                value={newTableNumber}
+                onChange={(e) => setNewTableNumber(e.target.value)}
+              />
+            </label>
 
             {tableError && (
-              <p className="admin-error">
+              <p className="msg-error" role="alert">
                 {tableError}
               </p>
             )}
 
             <button
               id="admin-table-add"
-              className="button-action"
-              onClick={handleCreateTable}
-              style={{
-                backgroundColor: "#22c55e",
-                color: "#fff",
-              }}
+              type="submit"
+              className="btn btn-primary btn-block"
             >
               Adicionar Mesa
             </button>
-          </div>
+          </form>
 
           {tables.length === 0 ? (
-            <p id="admin-table-list" className="admin-empty">
-              Nenhuma mesa cadastrada.
-            </p>
+            <div id="admin-table-list" className="adm-empty">
+              <h2>Nenhuma mesa ainda</h2>
+              <p>Cada mesa ganha um QR Code. O cliente aponta a câmera e já pede.</p>
+            </div>
           ) : (
-            <div id="admin-table-list" className="admin-tables">
+            <ul id="admin-table-list" className="adm-tables">
               {tables.map((table) => (
-                <div
-                  key={table.id}
-                  className="admin-table-card"
-                >
-                  Mesa {table.number}
+                <li key={table.id} className="adm-table">
+                  <div className="adm-table-head">
+                    <div>
+                      <span className="adm-table-label">Mesa</span>
+                      <span className="adm-table-number">{table.number}</span>
+                    </div>
 
-                  <span
-                    style={{
-                      fontSize: "0.8rem",
-                      padding: "0.2rem 0.6rem",
-                      borderRadius: "999px",
-                      backgroundColor:
+                    <span
+                      className={
                         table.status === "livre"
-                          ? "#22c55e"
-                          : "#ef4444",
-                      color: "#fff",
-                    }}
-                  >
-                    {table.status === "livre"
-                      ? "Livre"
-                      : "Ocupada"}
-                  </span>
+                          ? "chip chip-free"
+                          : "chip chip-busy"
+                      }
+                    >
+                      {table.status === "livre" ? "Livre" : "Ocupada"}
+                    </span>
+                  </div>
 
                   {tableQrs[table.id] ? (
-                    <img
-                      src={tableQrs[table.id]}
-                      alt={`QR code da Mesa ${table.number}`}
-                      width={140}
-                      height={140}
-                      style={{
-                        borderRadius: "8px",
-                        maxWidth: "100%",
-                        backgroundColor: "#fff",
-                      }}
-                    />
+                    <>
+                      <img
+                        className="adm-qr"
+                        src={tableQrs[table.id]}
+                        alt={`QR code da Mesa ${table.number}`}
+                        width={160}
+                        height={160}
+                      />
+
+                      <a
+                        className="btn btn-outline btn-sm btn-block"
+                        href={tableQrs[table.id]}
+                        download={`qr-mesa-${table.number}.png`}
+                      >
+                        Baixar QR
+                      </a>
+                    </>
                   ) : (
-                    <span
-                      style={{
-                        fontSize: "0.8rem",
-                      }}
-                    >
-                      Gerando QR code...
-                    </span>
+                    <span className="adm-muted">Gerando QR code…</span>
                   )}
 
-                  <button
-                    className="button-action"
-                    style={{
-                      fontSize: "0.85rem",
-                      padding:
-                        "0.4rem 0.8rem",
-                      width: "100%",
-                      backgroundColor:
-                        "#ef4444",
-                      color: "#fff",
-                    }}
-                    onClick={() =>
-                      handleDeleteTable(
-                        table.id
-                      )
-                    }
-                  >
-                    Remover
-                  </button>
-                </div>
+                  <ConfirmButton
+                    label="Remover"
+                    onConfirm={() => handleDeleteTable(table.id)}
+                  />
+                </li>
               ))}
-            </div>
+            </ul>
           )}
-        </div>
+        </section>
       ) : orders.length === 0 ? (
-        <p className="admin-empty">
-          Nenhum pedido recebido ainda.
-        </p>
-      ) : (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "1.5rem",
-          }}
-        >
-          {orders.map((order) => (
-            <div
-              key={order.id}
-              className="admin-order-card"
-            >
-              <div className="admin-order-header">
-                <h3>
-                  {order.customer_name}
-                </h3>
-
-                <span className="admin-order-id">
-                  ID: {order.id}
-                </span>
-
-                <span className="admin-order-status">
-                  {order.status}
-                </span>
-              </div>
-
-              {order.table_number && (
-                <p className="admin-order-table">
-                  Mesa {order.table_number}
-                </p>
-              )}
-
-              <ul className="admin-order-items">
-                {(order.items ?? []).map((item, index) => (
-                  <li key={index}>
-                    {item.quantity}x {item.name}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="admin-payment-row">
-                <span>
-                  Pagamento:{" "}
-                  <strong
-                    style={{
-                      textTransform:
-                        "capitalize",
-                    }}
-                  >
-                    {order.payment_method}
-                  </strong>
-
-                  {order.payment_method ===
-                    "dinheiro" &&
-                    order.payment_change >
-                      0 && (
-                      <span>
-                        {" "}
-                        (Troco para R${" "}
-                        {Number(
-                          order.payment_change
-                        ).toFixed(2)}
-                        )
-                      </span>
-                    )}
-                </span>
-
-                <strong>
-                  Total: R${" "}
-                  {Number(
-                    order.total_price
-                  ).toFixed(2)}
-                </strong>
-              </div>
-
-              <div className="order-action-buttons">
-                <button
-                  className="button-action"
-                  onClick={() =>
-                    handleStatusChange(
-                      order.id,
-                      "em preparo"
-                    )
-                  }
-                >
-                  Aceitar / Em Preparo
-                </button>
-
-                <button
-                  className="button-action"
-                  onClick={() =>
-                    handleStatusChange(
-                      order.id,
-                      "concluido"
-                    )
-                  }
-                  style={{
-                    backgroundColor:
-                      "#22c55e",
-                    color: "#fff",
-                  }}
-                >
-                  Pronto para Entrega
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="adm-empty">
+          <h2>Nenhum pedido ainda</h2>
+          <p>
+            Quando um cliente pedir pelo QR da mesa, o pedido aparece aqui e o
+            painel avisa você.
+          </p>
         </div>
+      ) : (
+        <ul className="adm-orders" aria-label="Pedidos">
+          {sortedOrders.map((order) => {
+            const next = nextAction(order.status);
+            const changeFor = Number(order.payment_change);
+            const showName =
+              order.customer_name && order.customer_name !== "Cliente Balcão";
+
+            return (
+              <li
+                key={order.id}
+                className={
+                  isActiveStatus(order.status)
+                    ? "comanda-wrap"
+                    : "comanda-wrap is-done"
+                }
+              >
+                <article className="comanda">
+                  <header className="comanda-head">
+                    <div>
+                      <h2 className="comanda-where">
+                        {order.table_number
+                          ? `Mesa ${order.table_number}`
+                          : "Balcão"}
+                      </h2>
+
+                      <p className="comanda-meta">
+                        {showName && <span>{order.customer_name}</span>}
+                        <span>{formatTime(order.created_at)}</span>
+                        <span>{shortOrderCode(order.id)}</span>
+                      </p>
+                    </div>
+
+                    <span
+                      className={
+                        order.status === STATUS_DONE
+                          ? "chip chip-done"
+                          : order.status === STATUS_PREPARING
+                            ? "chip chip-prep"
+                            : "chip chip-wait"
+                      }
+                    >
+                      {statusLabel(order.status)}
+                    </span>
+                  </header>
+
+                  <ul className="comanda-items">
+                    {(order.items ?? []).map((item, index) => (
+                      <li key={index} className="leader-row">
+                        <span>
+                          <span className="comanda-qty">{item.quantity}x</span>{" "}
+                          {item.name}
+                        </span>
+                        <span className="leader" />
+                        <span className="money">{formatMoney(item.total)}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="leader-row comanda-total">
+                    <strong>Total</strong>
+                    <span className="leader" />
+                    <span className="money">
+                      {formatMoney(order.total_price)}
+                    </span>
+                  </div>
+
+                  <p className="comanda-pay">
+                    Pagamento: <strong>{paymentLabel(order.payment_method)}</strong>
+                    {order.payment_method === "dinheiro" && changeFor > 0 && (
+                      <>, troco para {formatMoney(changeFor)}</>
+                    )}
+                  </p>
+
+                  {next && (
+                    <button
+                      type="button"
+                      className={
+                        next.next === STATUS_DONE
+                          ? "btn btn-mata btn-block"
+                          : "btn btn-primary btn-block"
+                      }
+                      onClick={() => handleStatusChange(order.id, next.next)}
+                    >
+                      {next.label}
+                    </button>
+                  )}
+                </article>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

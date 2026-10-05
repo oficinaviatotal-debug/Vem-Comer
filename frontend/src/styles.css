@@ -1,18 +1,93 @@
+/* ---------- Fonts (self-hosted: the CSP only allows our own origin) ---------- */
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/fonts/BricolageGrotesque-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("/fonts/InstrumentSans-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("/fonts/InstrumentSans-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------- Design tokens ---------- */
+
 :root {
-  --green: #2E7032;
-  --orange: #FF6F00;
-  --cream: #FAE9D2;
-  --dark: #1B4332;
-  --muted: #527060;
+  /* Color. Contrast checked against WCAG AA (text >= 4.5:1). */
+  --folha: #123B2B;      /* deep green: ink on light, dark surfaces (12.5:1 with white) */
+  --mata: #1E6B3C;       /* brand green: positive states (6.5:1 with white) */
+  --brasa: #C2410C;      /* action orange for filled buttons (5.2:1 with white) */
+  --brasa-viva: #FF6F00; /* logo orange: highlights, focus, never text */
+  --papel: #F4F5EF;      /* page */
+  --papel-2: #E7EADF;    /* sunken areas, chips */
+  --comanda: #FFFFFF;    /* the order slip and sheets */
+  --sol: #FFC83A;        /* attention (8:1 with --folha) */
+  --tinta: #1B2A22;      /* body text */
+  --nevoa: #5D6B63;      /* secondary text (5.1:1 on --papel) */
+  --alerta: #B42318;     /* errors, destructive (6.6:1 with white) */
+  --linha: rgba(18, 59, 43, .16);
+  --linha-forte: rgba(18, 59, 43, .38);
+
+  /* Type */
+  --font-display: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+  --font-ui: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --t-xs: .75rem;
+  --t-sm: .875rem;
+  --t-md: 1rem;
+  --t-lg: 1.125rem;
+  --t-xl: 1.375rem;
+  --t-2xl: 1.75rem;
+  --t-3xl: 2.25rem;
+
+  /* Space, radius, depth */
+  --s1: .25rem;
+  --s2: .5rem;
+  --s3: .75rem;
+  --s4: 1rem;
+  --s5: 1.5rem;
+  --s6: 2rem;
+  --s7: 3rem;
+  --r-sm: 10px;   /* fields and buttons */
+  --r-md: 16px;   /* sheets and slips */
+  --r-pill: 999px; /* chips only */
+  --sombra-folha: 0 1px 2px rgba(18, 59, 43, .08), 0 8px 24px rgba(18, 59, 43, .08);
+
+  /* Names the first version of the pages already used. Kept so older
+     rules keep working while screens are redesigned one by one. */
+  --green: var(--mata);
+  --orange: var(--brasa);
+  --cream: var(--papel-2);
+  --dark: var(--folha);
+  --muted: var(--nevoa);
   --white: #FFFFFF;
-  --page: #FFFDF9;
-  --border: rgba(27, 67, 50, .12);
-  --shadow: 0 12px 35px rgba(27, 67, 50, .08);
-  /* Used by the owner panel; they were referenced but never defined, which
-     left the active tab and the "Voltar" button with invisible text. */
-  --color-accent: var(--orange);
-  --bg-tertiary: #efe4d2;
-  --text-main: var(--dark);
+  --page: var(--papel);
+  --border: var(--linha);
+  --shadow: var(--sombra-folha);
+  --color-accent: var(--brasa);
+  --bg-tertiary: var(--papel-2);
+  --bg-secondary: var(--comanda);
+  --border-color: var(--linha);
+  --text-main: var(--folha);
+  --text-muted: var(--nevoa);
+}
+
+:focus-visible {
+  outline: 3px solid var(--brasa-viva);
+  outline-offset: 2px;
 }
 
 * {
@@ -32,7 +107,9 @@ body {
   overflow-x: hidden;
   background: var(--page);
   color: var(--dark);
-  font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-ui);
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
@@ -1322,7 +1399,7 @@ footer p {
   content: "";
   position: absolute;
   inset: -4px;
-  border: 4px solid var(--orange);
+  border: 4px solid var(--brasa-viva);
   border-radius: 18px;
   box-shadow: 0 0 18px 4px rgba(255, 111, 0, .85);
   animation: tour-blink 1s ease-in-out infinite;
@@ -1509,4 +1586,16 @@ footer p {
   .tour-listening {
     animation: none;
   }
+}
+
+.footer-owner {
+  margin: var(--s3) 0 0;
+}
+
+.footer-owner a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: inherit;
+  font-weight: 700;
 }
