@@ -1,0 +1,31 @@
+name: Vem Comer guided onboarding tests
+
+on:
+  pull_request:
+    paths:
+      - "frontend/src/onboarding/**"
+      - "frontend/src/service/AdminPanel.tsx"
+      - "tests/onboarding/**"
+      - ".github/workflows/frontend-logic.yml"
+  push:
+    branches:
+      - main
+      - "feat/**"
+
+permissions:
+  contents: read
+
+jobs:
+  onboarding-logic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Node 22 runs TypeScript files directly, so the guide's logic and the
+      # tour script are tested without installing anything.
+      - name: Run guided onboarding tests
+        run: node --experimental-strip-types --no-warnings --test tests/onboarding/*.test.mjs
