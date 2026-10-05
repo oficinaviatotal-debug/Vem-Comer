@@ -5,6 +5,8 @@ import { customerStatus, STEP_LABELS } from "./labels";
 import type { OrderView } from "./types";
 import { orderMemory } from "./orderMemory";
 import OrderFeedback from "./OrderFeedback";
+import PixPayment from "./PixPayment";
+import { keepPolling } from "./payment";
 
 type Props = {
   companyId: string;
@@ -21,6 +23,10 @@ type Props = {
   onGone: () => void;
   /** The customer is done with this slip. */
   onDismiss: () => void;
+  /** This slip carries the element ids the payment guide points at. */
+  pixGuideTarget: boolean;
+  /** "Como pagar? Me ajude": opens the payment guide. */
+  onPixHelp: () => void;
 };
 
 const POLL_MS = 5000;
@@ -52,7 +58,8 @@ export default function OrderTracking(props: Props) {
         setOrder(next);
         setOffline(false);
         callbacks.current.onUpdate(next);
-        if (customerStatus(next.status, null).done) return; // nothing left to wait for
+        // Nothing left to wait for: ready, and no Pix payment still to be confirmed.
+        if (!keepPolling(customerStatus(next.status, null).done, next.payment_method, next.payment_status)) return;
       } catch (error) {
         if (!alive) return;
         if (error instanceof HttpError && (error.status === 401 || error.status === 404)) {
@@ -132,6 +139,15 @@ export default function OrderTracking(props: Props) {
           <span className="leader" aria-hidden="true" />
           <span className="money">{formatMoney(order.total_price)}</span>
         </div>
+
+        <PixPayment
+          orderId={order.id}
+          token={token}
+          method={order.payment_method}
+          status={order.payment_status}
+          guideTarget={props.pixGuideTarget}
+          onHelp={props.onPixHelp}
+        />
 
         {status.done && (props.askFeedback || orderMemory.feedbackSent(order.id)) && (
           <OrderFeedback

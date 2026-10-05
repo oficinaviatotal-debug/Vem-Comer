@@ -5,7 +5,9 @@ import { readFileSync, readdirSync } from "node:fs";
 import {
   CUSTOMER_TOUR_ID,
   CUSTOMER_VIEWS,
+  PIX_TOUR_ID,
   customerTour,
+  pixTour,
 } from "../../frontend/src/customer/customerTour.ts";
 import { parseTourCommand } from "../../frontend/src/onboarding/tourEngine.ts";
 
@@ -78,13 +80,56 @@ test("steps that advance on tap have something to tap", () => {
 });
 
 test("the words in the guide are the words printed on the buttons", () => {
+  // The payment tiles get their labels from payment.ts.
+  const printed = markup + readFileSync(new URL("payment.ts", folder), "utf8");
   for (const word of ["Adicionar", "Ver pedido", "Enviar pedido", "Pix", "Cartão", "Dinheiro"]) {
-    assert.ok(markup.includes(word), `the screens have no "${word}"`);
+    assert.ok(printed.includes(word), `the screens have no "${word}"`);
   }
 });
 
 test("the guide is offered once per device and can be reopened from Ajuda", () => {
   assert.match(app, /hasSeenGuide\(CUSTOMER_TOUR_ID, CUSTOMER_TOUR_USER\)/);
-  assert.match(app, /markGuideSeen\(CUSTOMER_TOUR_ID, CUSTOMER_TOUR_USER\)/);
+  assert.match(app, /markGuideSeen\(tourId, CUSTOMER_TOUR_USER\)/);
+  assert.match(app, /guide === "pix" \? PIX_TOUR_ID : CUSTOMER_TOUR_ID/);
   assert.ok(markup.includes('id="cust-help"'));
+});
+
+test("the payment step only mentions Pix when the restaurant offers it", () => {
+  const withPix = customerTour({ hasCategories: false, hasPix: true }).find((step) => step.id === "pagamento");
+  const without = customerTour({ hasCategories: false, hasPix: false }).find((step) => step.id === "pagamento");
+  assert.match(withPix.text, /Pix/);
+  assert.doesNotMatch(without.text, /Pix/);
+  assert.ok(withPix.text.length <= 260 && without.text.length <= 260);
+});
+
+const payment = pixTour();
+
+test("the Pix guide copies, pays in the bank app, then waits for the restaurant", () => {
+  assert.match(PIX_TOUR_ID, /^cliente-pix-v\d+$/);
+  assert.deepEqual(payment.map((step) => step.id), ["pix-copiar", "pix-banco", "pix-confirmacao"]);
+  assert.equal(new Set(payment.map((step) => step.id)).size, payment.length);
+  for (const step of payment) {
+    assert.ok(step.title.trim() && step.text.trim(), step.id);
+    assert.ok(step.text.length <= 260, `${step.id} is too long to read aloud`);
+    assert.equal(step.view, undefined, `${step.id}: the Pix guide stays on the order slip`);
+  }
+});
+
+test("every target of the Pix guide exists on the order slip", () => {
+  for (const step of payment.filter((item) => item.target)) {
+    const id = step.target.slice(1);
+    const present = markup.includes(`id="${id}"`) || new RegExp(`id=\\{[^}]*"${id}"`).test(markup);
+    assert.ok(present, `${step.id}: no element with id="${id}"`);
+  }
+  assert.ok(payment.filter((step) => step.advanceOnClick).every((step) => step.target));
+});
+
+test("the copy button the guide points at says what the guide says", () => {
+  assert.ok(markup.includes("Copiar código Pix"));
+  assert.match(payment[0].text, /Copiar código Pix/);
+});
+
+test("only one slip carries the guide's ids, so ids stay unique", () => {
+  assert.match(markup, /id=\{guideTarget \? "cust-pix-copy" : undefined\}/);
+  assert.match(app, /pixGuideTarget=\{order\.orderId === pixDueId\}/);
 });

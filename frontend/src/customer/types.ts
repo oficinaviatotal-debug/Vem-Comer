@@ -36,6 +36,10 @@ export type OrderView = {
   total_price: number | string;
   status: string;
   items: OrderItem[];
+  /** "pix", "cartao" or "dinheiro". */
+  payment_method?: string;
+  /** "PENDING" until the restaurant confirms the money arrived, then "PAID". */
+  payment_status?: string;
 };
 
 export type PaymentMethod = "pix" | "cartao" | "dinheiro";

@@ -123,6 +123,26 @@
   font-weight: 700;
 }
 
+.msg-ok {
+  margin: 0;
+  color: var(--mata);
+  font-weight: 700;
+}
+
+/* Payment label on an order card: paid, waiting, or to receive at the table. */
+.chip-pay.is-ok {
+  background: var(--mata);
+  color: #fff;
+}
+
+.chip-pay.is-wait {
+  background: var(--sol);
+}
+
+.chip-pay.is-info {
+  background: var(--papel-2);
+}
+
 /* A white sheet that holds a form or a summary. */
 .sheet {
   display: flex;

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "../ui.css";
 import "./customer.css";
-import { createOrder, fetchMenus, fetchProducts, fetchTable } from "../service/api";
+import { createOrder, fetchMenus, fetchPaymentOptions, fetchProducts, fetchTable } from "../service/api";
 import { formatMoney, shortOrderCode } from "../service/format";
 import OnboardingGuide from "../onboarding/OnboardingGuide";
 import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
@@ -16,7 +16,7 @@ import {
   toOrderItems,
   type CartLine,
 } from "./cart";
-import { customerTour, CUSTOMER_TOUR_ID, CUSTOMER_TOUR_USER } from "./customerTour";
+import { customerTour, CUSTOMER_TOUR_ID, CUSTOMER_TOUR_USER, PIX_TOUR_ID, pixTour } from "./customerTour";
 import {
   cleanCustomerName,
   customerStatus,
@@ -26,6 +26,7 @@ import {
 } from "./labels";
 import { groupProducts } from "./menuGroups";
 import { orderMemory, type RememberedOrder } from "./orderMemory";
+import { effectiveMethod, orderPaymentView } from "./payment";
 import type { Company, Menu, OrderView, PaymentMethod, Product } from "./types";
 import CartSheet from "./CartSheet";
 import MenuView, { CategoryChips } from "./MenuView";
@@ -55,7 +56,8 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   const [query, setQuery] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [name, setName] = useState(() => orderMemory.loadName());
-  const [payment, setPayment] = useState<PaymentMethod>("pix");
+  const [choice, setChoice] = useState<PaymentMethod | null>(null);
+  const [pixOn, setPixOn] = useState(false);
   const [paid, setPaid] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
@@ -64,10 +66,12 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   const [orders, setOrders] = useState<RememberedOrder[]>(() => orderMemory.list(company.slug, tableId));
   const [screen, setScreen] = useState<Screen>(() => (orders.length ? "tracking" : "menu"));
   const [statusById, setStatusById] = useState<Record<string, string>>({});
+  const [payById, setPayById] = useState<Record<string, string>>({});
   const [, setRated] = useState(0);
 
-  const [guideOpen, setGuideOpen] = useState(false);
+  const [guide, setGuide] = useState<"menu" | "pix" | null>(null);
   const autoGuideDone = useRef(false);
+  const autoPixGuideDone = useRef(false);
 
   const loadMenu = useCallback(async () => {
     setLoad("loading");
@@ -106,13 +110,27 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
     };
   }, [company.id, tableId]);
 
+  // Pix is offered only when the restaurant typed its own key. Any failure means "no Pix".
+  useEffect(() => {
+    let alive = true;
+    fetchPaymentOptions(company.id).then((options) => {
+      if (alive) setPixOn(options.pix);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [company.id]);
+
+  const payment = effectiveMethod(choice, pixOn);
+
   const groups = useMemo(() => groupProducts(products, menus, query), [products, menus, query]);
   const allGroups = useMemo(() => groupProducts(products, menus, ""), [products, menus]);
   const showChips = !query.trim() && allGroups.length > 1;
   const count = cartCount(cart);
   const total = cartTotalCents(cart);
 
-  const steps = useMemo(() => customerTour({ hasCategories: showChips }), [showChips]);
+  const steps = useMemo(() => customerTour({ hasCategories: showChips, hasPix: pixOn }), [showChips, pixOn]);
+  const payGuideSteps = useMemo(() => pixTour(), []);
 
   // First visit: offer the guided tour once the menu is on screen.
   useEffect(() => {
@@ -120,7 +138,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
     if (load !== "ready" || screen !== "menu" || products.length === 0) return;
     autoGuideDone.current = true;
     if (orders.length === 0 && !hasSeenGuide(CUSTOMER_TOUR_ID, CUSTOMER_TOUR_USER)) {
-      setGuideOpen(true);
+      setGuide("menu");
     }
   }, [load, screen, products.length, orders.length]);
 
@@ -196,6 +214,8 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
     setStatusById((current) =>
       current[order.id] === order.status ? current : { ...current, [order.id]: order.status }
     );
+    const payKind = orderPaymentView(order.payment_method, order.payment_status).kind;
+    setPayById((current) => (current[order.id] === payKind ? current : { ...current, [order.id]: payKind }));
   }, []);
 
   function handleVoice(command: { intent: string; fields?: Record<string, unknown> }) {
@@ -226,8 +246,9 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   }
 
   function onGuideClose() {
-    markGuideSeen(CUSTOMER_TOUR_ID, CUSTOMER_TOUR_USER);
-    setGuideOpen(false);
+    const tourId = guide === "pix" ? PIX_TOUR_ID : CUSTOMER_TOUR_ID;
+    markGuideSeen(tourId, CUSTOMER_TOUR_USER);
+    setGuide(null);
   }
 
   // One feedback form per visit: on the newest ready order nobody rated yet.
@@ -236,6 +257,16 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
       customerStatus(statusById[order.orderId] ?? "", null).done && !orderMemory.feedbackSent(order.orderId)
   )?.orderId;
   const allOrderIds = orders.map((order) => order.orderId);
+
+  // The first slip still waiting for a Pix payment: the one the payment guide points at.
+  const pixDueId = orders.find((order) => payById[order.orderId] === "pix-due")?.orderId;
+
+  // First Pix code on this device: offer the short payment guide once.
+  useEffect(() => {
+    if (autoPixGuideDone.current || !pixDueId || screen !== "tracking" || guide !== null) return;
+    autoPixGuideDone.current = true;
+    if (!hasSeenGuide(PIX_TOUR_ID, CUSTOMER_TOUR_USER)) setGuide("pix");
+  }, [pixDueId, screen, guide]);
 
   const latest = orders[0];
   const latestStatus = latest ? statusById[latest.orderId] : undefined;
@@ -259,7 +290,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
                 type="button"
                 id="cust-help"
                 className="btn btn-outline btn-sm"
-                onClick={() => setGuideOpen(true)}
+                onClick={() => setGuide("menu")}
               >
                 Ajuda
               </button>
@@ -286,6 +317,8 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
                 onUpdate={handleUpdate}
                 onGone={() => forget(order.orderId)}
                 onDismiss={() => forget(order.orderId)}
+                pixGuideTarget={order.orderId === pixDueId}
+                onPixHelp={() => setGuide("pix")}
               />
             ))}
             <button type="button" className="btn btn-primary btn-block" onClick={() => setScreen("menu")}>
@@ -390,7 +423,8 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
           name={name}
           onName={setName}
           payment={payment}
-          onPayment={setPayment}
+          pixOn={pixOn}
+          onPayment={setChoice}
           paid={paid}
           onPaid={setPaid}
           sending={sending}
@@ -402,7 +436,13 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
         />
       )}
 
-      {guideOpen && <OnboardingGuide steps={steps} onClose={onGuideClose} onNavigate={onNavigate} />}
+      {guide && (
+        <OnboardingGuide
+          steps={guide === "pix" ? payGuideSteps : steps}
+          onClose={onGuideClose}
+          onNavigate={onNavigate}
+        />
+      )}
     </div>
   );
 }

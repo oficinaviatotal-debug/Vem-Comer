@@ -396,6 +396,7 @@
   border: 0;
 }
 
+.cust-choice-2,
 .cust-choice-4 {
   grid-template-columns: repeat(2, 1fr);
 }
@@ -526,6 +527,94 @@
   border-top: 2px dashed var(--linha-forte);
   color: var(--mata);
   font-weight: 700;
+}
+
+/* ---------- Pix payment on the order slip ---------- */
+
+.cust-pix {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding-top: var(--s3);
+  border-top: 2px dashed var(--linha-forte);
+}
+
+.cust-pix h3 {
+  margin: 0;
+  color: var(--folha);
+  font: 700 var(--t-xl) / 1.2 var(--font-display);
+}
+
+.cust-pix-amount .money {
+  color: var(--folha);
+  font-size: var(--t-xl);
+}
+
+.cust-pix-copied {
+  min-height: 1.4em;
+  color: var(--mata);
+  font-weight: 700;
+}
+
+.cust-pix-steps {
+  margin: 0;
+  padding-left: var(--s5);
+  color: var(--tinta);
+}
+
+.cust-pix-steps li + li {
+  margin-top: var(--s1);
+}
+
+.cust-pix textarea {
+  padding: var(--s3);
+  font: 400 var(--t-sm) / 1.35 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  word-break: break-all;
+  resize: none;
+}
+
+.cust-pix-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0;
+}
+
+.cust-pix-qr img {
+  width: 200px;
+  height: 200px;
+  padding: var(--s2);
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--r-sm);
+  background: #fff;
+  image-rendering: pixelated;
+}
+
+.cust-pix-qr figcaption {
+  text-align: center;
+}
+
+.cust-pay {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border: 2px dashed var(--linha-forte);
+  border-radius: var(--r-sm);
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+}
+
+.cust-pay.is-paid {
+  border: 2px solid var(--mata);
+  background: var(--mata);
+  color: #fff;
+}
+
+.cust-pay.is-paid strong {
+  font: 700 var(--t-xl) / 1.2 var(--font-display);
 }
 
 /* ---------- Footer ---------- */

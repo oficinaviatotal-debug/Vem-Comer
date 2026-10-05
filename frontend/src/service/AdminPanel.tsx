@@ -20,11 +20,14 @@ import {
   fetchTableQr,
   createTable,
   deleteTable,
+  confirmPayment,
 } from "./api";
 import OnboardingGuide from "../onboarding/OnboardingGuide";
 import { ADMIN_TOUR, ADMIN_TOUR_ID } from "../onboarding/adminTour";
 import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
 import ConfirmButton from "./ConfirmButton";
+import PixSettingsPanel from "./PixSettingsPanel";
+import { adminPaymentChip, canConfirmPayment } from "../customer/payment";
 import {
   formatMoney,
   formatTime,
@@ -58,6 +61,8 @@ type Order = {
   total_price: number;
   status: string;
   payment_method: string;
+  /** "PENDING" until someone at the restaurant confirms the money arrived, then "PAID". */
+  payment_status?: string;
   payment_change: number;
   created_at: string;
   table_number?: string | null;
@@ -97,7 +102,8 @@ type AdminView =
   | "categorias"
   | "dashboard"
   | "usuarios"
-  | "mesas";
+  | "mesas"
+  | "pagamento";
 
 const ADMIN_VIEWS: string[] = [
   "pedidos",
@@ -106,6 +112,7 @@ const ADMIN_VIEWS: string[] = [
   "dashboard",
   "usuarios",
   "mesas",
+  "pagamento",
 ];
 
 function isAdminView(value: string): value is AdminView {
@@ -157,6 +164,12 @@ export default function AdminPanel({
   const [tableQrs, setTableQrs] = useState<Record<string, string>>({});
   const [newTableNumber, setNewTableNumber] = useState("");
   const [tableError, setTableError] = useState("");
+
+  const [payError, setPayError] = useState<{
+    id: string;
+    message: string;
+  } | null>(null);
+  const [payingId, setPayingId] = useState<string | null>(null);
 
   // Guided onboarding. Declared here, before any early return, so the hook
   // order never changes between renders.
@@ -253,6 +266,29 @@ export default function AdminPanel({
       setOrders(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+    }
+  }
+
+  async function handleConfirmPayment(orderId: string) {
+    setPayError(null);
+    setPayingId(orderId);
+
+    try {
+      await confirmPayment(orderId);
+
+      const data = await fetchAdminOrders(companyId);
+
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setPayError({
+        id: orderId,
+        message:
+          err instanceof Error
+            ? err.message
+            : "Não foi possível confirmar o pagamento",
+      });
+    } finally {
+      setPayingId(null);
     }
   }
 
@@ -743,6 +779,19 @@ export default function AdminPanel({
           Resumo
         </button>
 
+        {(currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") && (
+          <button
+            id="admin-tab-pagamento"
+            type="button"
+            className={tabClass("pagamento")}
+            aria-current={view === "pagamento" ? "page" : undefined}
+            onClick={() => setView("pagamento")}
+          >
+            Pagamento
+          </button>
+        )}
+
         {currentUser?.role === "OWNER" && (
           <button
             id="admin-tab-usuarios"
@@ -800,6 +849,13 @@ export default function AdminPanel({
             ))}
           </ul>
         </section>
+      ) : view === "pagamento" &&
+        (currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") ? (
+        <PixSettingsPanel
+          companyId={companyId}
+          canEdit={currentUser?.role === "OWNER"}
+        />
       ) : view === "usuarios" && currentUser?.role === "OWNER" ? (
         <section className="adm-stack" aria-label="Equipe">
           <form
@@ -1237,8 +1293,46 @@ export default function AdminPanel({
                     Pagamento: <strong>{paymentLabel(order.payment_method)}</strong>
                     {order.payment_method === "dinheiro" && changeFor > 0 && (
                       <>, troco para {formatMoney(changeFor)}</>
-                    )}
+                    )}{" "}
+                    <span
+                      className={
+                        "chip chip-pay is-" +
+                        adminPaymentChip(
+                          order.payment_method,
+                          order.payment_status
+                        ).tone
+                      }
+                    >
+                      {
+                        adminPaymentChip(
+                          order.payment_method,
+                          order.payment_status
+                        ).label
+                      }
+                    </span>
                   </p>
+
+                  {canConfirmPayment(
+                    currentUser?.role,
+                    order.payment_status
+                  ) && (
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-block"
+                      disabled={payingId === order.id}
+                      onClick={() => handleConfirmPayment(order.id)}
+                    >
+                      {payingId === order.id
+                        ? "Confirmando…"
+                        : "Pagamento recebido"}
+                    </button>
+                  )}
+
+                  {payError?.id === order.id && (
+                    <p className="msg-error" role="alert">
+                      {payError.message}
+                    </p>
+                  )}
 
                   {next && (
                     <button
