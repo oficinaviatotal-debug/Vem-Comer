@@ -172,6 +172,9 @@ export default function App() {
   const [feedbackMsg, setFeedbackMsg] =
     useState("");
 
+  const [voiceHint, setVoiceHint] =
+    useState("");
+
   useEffect(() => {
     if (!tableId || !companyId) return;
 
