@@ -240,6 +240,20 @@ export async function fetchTables(companyId: string) {
   return response.json();
 }
 
+export async function fetchTableQr(
+  companyId: string,
+  tableId: string,
+  tableUrl: string
+): Promise<string> {
+  const response = await fetch(
+    `${API_URL}/companies/${companyId}/admin/tables/${tableId}/qr?url=${encodeURIComponent(tableUrl)}`,
+    { headers: authHeaders() }
+  );
+  if (!response.ok) throw new Error("Falha ao gerar QR da mesa");
+  const data = await response.json();
+  return data.data_url as string;
+}
+
 export async function createTable(companyId: string, number: string) {
   const response = await fetch(`${API_URL}/companies/${companyId}/admin/tables`, {
     method: "POST",
