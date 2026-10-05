@@ -5,10 +5,14 @@ import { readFile } from "node:fs/promises";
 import { ADMIN_TOUR, ADMIN_TOUR_ID } from "../../frontend/src/onboarding/adminTour.ts";
 import { parseTourCommand } from "../../frontend/src/onboarding/tourEngine.ts";
 
-const panel = await readFile(
-  new URL("../../frontend/src/service/AdminPanel.tsx", import.meta.url),
-  "utf8"
-);
+// The panel's screens live in AdminPanel.tsx and in the files it hands a tab to.
+const panel = (
+  await Promise.all(
+    ["AdminPanel.tsx", "PixSettingsPanel.tsx"].map((file) =>
+      readFile(new URL(`../../frontend/src/service/${file}`, import.meta.url), "utf8")
+    )
+  )
+).join("\n");
 
 test("the owner tour has an id and enough steps", () => {
   assert.match(ADMIN_TOUR_ID, /^admin-v\d+$/);

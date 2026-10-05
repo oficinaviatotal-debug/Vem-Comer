@@ -92,6 +92,17 @@ Se o cliente ainda não adicionou nada, os passos do carrinho continuam sendo li
 em voz alta e por texto, mas não há o que piscar (a barra e o carrinho só existem
 com itens); ele pode tocar em Próximo ou Pular guia.
 
+### O guia de pagamento do Pix
+
+Depois do primeiro pedido com Pix, `pixTour()` (em `customerTour.ts`) guia o cliente em
+três passos: **Copiar código Pix** (o botão pisca), pagar no app do banco e esperar a
+confirmação do restaurante. Abre sozinho uma vez por aparelho (marca `cliente-pix-v1`) e
+reabre em **Como pagar? Me ajude**. Só a comanda do primeiro Pix pendente leva os `id`
+usados pelo guia, para que nenhum `id` se repita quando há dois pedidos.
+
+No painel do dono, o roteiro (`admin-v2`) ganhou três passos: aba **Pagamento**, chave Pix e
+**Salvar Pix**. Como a versão mudou, donos que já tinham visto o guia o veem de novo.
+
 ### Reuso no Vem Trabalhar
 
 A pasta `onboarding/` não depende do Vem Comer: copie a pasta e o bloco de CSS,

@@ -1,7 +1,7 @@
 import type { TourStep } from "./tourEngine";
 
 /** Bump the id when the script changes a lot, so owners see the new guide. */
-export const ADMIN_TOUR_ID = "admin-v1";
+export const ADMIN_TOUR_ID = "admin-v2";
 
 /**
  * Guided setup for a restaurant owner: categories, dishes, tables and QR
@@ -116,6 +116,33 @@ export const ADMIN_TOUR: TourStep[] = [
       "O cliente aponta a câmera do celular e já faz o pedido.",
     target: "#admin-table-list",
     view: "mesas",
+  },
+  {
+    id: "aba-pagamento",
+    title: "Receba pelo Pix",
+    text:
+      "Toque em Pagamento. Aqui você coloca a sua chave Pix " +
+      "e o cliente paga direto na sua conta.",
+    target: "#admin-tab-pagamento",
+    advanceOnClick: true,
+  },
+  {
+    id: "chave-pix",
+    title: "Sua chave Pix",
+    text:
+      "Escolha o tipo da chave e escreva a chave. " +
+      "Depois escreva o nome do recebedor, a cidade e a sua senha.",
+    target: "#admin-pix-key",
+    view: "pagamento",
+  },
+  {
+    id: "salvar-pix",
+    title: "Salve e teste",
+    text:
+      "Toque em Salvar Pix. Depois toque em Ver código de teste e pague R$ 1,00 " +
+      "para conferir se o dinheiro cai na sua conta.",
+    target: "#admin-pix-save",
+    view: "pagamento",
   },
   {
     id: "aba-pedidos",

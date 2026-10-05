@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { formatMoney } from "../service/format";
 import { cartTotalCents, lineTotalCents, type CartLine } from "./cart";
 import type { PaymentMethod } from "./types";
+import { availableMethods, paymentNote } from "./payment";
 import QuantityStepper from "./QuantityStepper";
 
 type Props = {
@@ -11,6 +12,8 @@ type Props = {
   name: string;
   onName: (value: string) => void;
   payment: PaymentMethod;
+  /** The restaurant set a Pix key, so Pix is offered. */
+  pixOn: boolean;
   onPayment: (value: PaymentMethod) => void;
   paid: string;
   onPaid: (value: string) => void;
@@ -21,12 +24,6 @@ type Props = {
   onSend: () => void;
   onClose: () => void;
 };
-
-const METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: "pix", label: "Pix" },
-  { value: "cartao", label: "Cartão" },
-  { value: "dinheiro", label: "Dinheiro" },
-];
 
 /** Bottom sheet with the order slip (comanda), the customer's name and payment. */
 export default function CartSheet(props: Props) {
@@ -132,9 +129,9 @@ export default function CartSheet(props: Props) {
               />
             </label>
 
-            <fieldset className="cust-choice" id="cust-payment">
+            <fieldset className={props.pixOn ? "cust-choice" : "cust-choice cust-choice-2"} id="cust-payment">
               <legend>Como você vai pagar?</legend>
-              {METHODS.map((method) => (
+              {availableMethods(props.pixOn).map((method) => (
                 <label key={method.value} className="cust-choice-opt">
                   <input
                     type="radio"
@@ -169,7 +166,7 @@ export default function CartSheet(props: Props) {
               </div>
             )}
 
-            <p className="cust-note">Você acerta o pagamento com o atendente.</p>
+            <p className="cust-note">{paymentNote(payment)}</p>
 
             {error && (
               <p className="msg-error" role="alert">
