@@ -1,0 +1,44 @@
+name: Vem Comer front-end build
+
+# Builds the site exactly as the server does (npm ci, then tsc + vite build), so a type
+# error or a broken lock file shows up here and not during an installation.
+
+on:
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "deploy/vps/Dockerfile.web"
+      - ".github/workflows/frontend-build.yml"
+  push:
+    branches:
+      - main
+      - "feat/**"
+
+permissions:
+  contents: read
+
+jobs:
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install exact versions from the lock file
+        run: npm ci
+
+      - name: Type check and build (same as npm run build)
+        env:
+          VITE_API_URL: /api
+        run: npm run build
+
+      - name: The build produced the app and its assets
+        run: |
+          test -s dist/index.html
+          ls dist/assets | grep -E '\.js$' > /dev/null

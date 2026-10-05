@@ -1,0 +1,10 @@
+[Unit]
+Description=Backup diario do Vem Comer (03:30 em Brasilia)
+
+[Timer]
+OnCalendar=*-*-* 06:30:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

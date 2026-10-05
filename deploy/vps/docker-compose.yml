@@ -1,0 +1,101 @@
+# Vem Comer on one server: database, API and HTTPS front door.
+# Everything is named "vemcomer" so it never mixes with anything else running here.
+# Only the front door (Caddy) listens to the internet, on ports 80 and 443.
+# Run it through deploy/vps/instalar.sh, which also creates the .env file.
+name: vemcomer
+
+x-logging: &logs
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: vemcomer-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vemcomer
+      POSTGRES_DB: vemcomer
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is missing in the .env file}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # TCP on purpose: during the first start Postgres only answers on the socket
+      # while it prepares itself, and that must not count as ready.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U vemcomer -d vemcomer"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+    networks:
+      - interna
+    logging: *logs
+
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/vps/Dockerfile.api
+    image: vemcomer-api:local
+    container_name: vemcomer-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # usuário comum do banco (criado pelo instalador); o administrador "vemcomer" fica só para o banco e as migrações
+      DATABASE_URL: postgresql://vemcomer_app:${APP_DB_PASSWORD:?APP_DB_PASSWORD is missing in the .env file}@db:5432/vemcomer
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is missing in the .env file}
+      FLASK_DEBUG: "false"
+      TRUST_PROXY: "1"
+      CORS_ORIGIN_REGEX: https://${SITE_ADDRESS}
+      MAX_CONTENT_LENGTH: "1048576"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5000/api/health', timeout=3).status == 200 else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    networks:
+      - interna
+    logging: *logs
+
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/vps/Dockerfile.web
+    image: vemcomer-web:local
+    container_name: vemcomer-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?SITE_ADDRESS is missing in the .env file}
+    ports:
+      # Só IPv4, de propósito: assim o servidor enxerga o endereço real do visitante.
+      # Pela porta IPv6 do Docker todos pareceriam vir do mesmo endereço (atrapalha o limite de tentativas de login).
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - interna
+    logging: *logs
+
+volumes:
+  pgdata:
+    name: vemcomer_pgdata
+  caddy_data:
+    name: vemcomer_caddy_data
+  caddy_config:
+    name: vemcomer_caddy_config
+
+networks:
+  interna:
+    name: vemcomer_interna

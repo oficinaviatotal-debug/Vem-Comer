@@ -1,0 +1,21 @@
+# Vem Comer front door: builds the React app and serves it with Caddy (automatic HTTPS).
+# Build context: repository root.
+FROM node:22-alpine AS build
+WORKDIR /app
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+COPY frontend/ ./
+# The browser talks to the same address that served the page, under /api.
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=$VITE_API_URL
+# The server also runs other services: keep the build's memory small.
+ENV NODE_OPTIONS=--max-old-space-size=1024
+# Type checking (tsc) runs in CI (.github/workflows/frontend-build.yml). Here only Vite builds,
+# so a type warning cannot block an installation on the server.
+RUN npx vite build
+
+FROM caddy:2-alpine
+COPY deploy/vps/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /app/dist /srv/site

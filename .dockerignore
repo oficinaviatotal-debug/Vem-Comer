@@ -1,0 +1,17 @@
+# Keeps the Docker build small and keeps secrets out of the images.
+.git
+.github
+**/node_modules
+frontend/dist
+frontend/logfile
+**/.env
+**/.env.*
+!**/.env.example
+**/__pycache__
+**/*.pyc
+backend/test_*.py
+tests
+docs
+Scripts
+supabase
+database
