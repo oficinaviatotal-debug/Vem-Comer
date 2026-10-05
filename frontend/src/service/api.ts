@@ -1,6 +1,16 @@
 export const API_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
+/** An API answer that was not OK; lets screens tell "gone" (404/401) from "offline". */
+export class HttpError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 const TOKEN_KEY = "vc_token";
 const USER_KEY = "vc_user";
 
@@ -99,7 +109,10 @@ export async function createOrder(
       table_id: tableId || null
     }),
   });
-  if (!response.ok) throw new Error("Falha ao criar pedido");
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new HttpError(err.error || "Falha ao criar pedido", response.status);
+  }
   return response.json();
 }
 
@@ -121,7 +134,7 @@ export async function createFeedback(
 
 export async function fetchOrder(orderId: string, trackingToken: string) {
   const response = await fetch(`${API_URL}/orders/${orderId}?tracking_token=${encodeURIComponent(trackingToken)}`);
-  if (!response.ok) throw new Error("Falha ao buscar pedido");
+  if (!response.ok) throw new HttpError("Falha ao buscar pedido", response.status);
   return response.json();
 }
 

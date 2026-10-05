@@ -79,6 +79,19 @@ Para ligar a um painel novo:
    do roteiro existe no código do painel. Se alguém renomear um botão e esquecer o
    guia, a verificação automática falha.
 
+### O cliente da mesa também tem guia
+
+`frontend/src/customer/customerTour.ts` guia quem escaneou o QR: categorias,
+**Adicionar**, **Ver pedido**, nome, forma de pagamento e **Enviar pedido**. Abre
+sozinho na primeira visita neste aparelho (a marca "já viu" fica no próprio
+celular, porque o cliente não faz login) e pode ser reaberto pelo botão **Ajuda**
+no topo. O passo de categorias some se o restaurante não tem categorias.
+`tests/customer/customerTour.test.mjs` confere que todo alvo existe nas telas.
+
+Se o cliente ainda não adicionou nada, os passos do carrinho continuam sendo lidos
+em voz alta e por texto, mas não há o que piscar (a barra e o carrinho só existem
+com itens); ele pode tocar em Próximo ou Pular guia.
+
 ### Reuso no Vem Trabalhar
 
 A pasta `onboarding/` não depende do Vem Comer: copie a pasta e o bloco de CSS,
@@ -87,7 +100,7 @@ escreva o roteiro (perfil, vaga, candidatos) e siga os passos acima.
 ## Como testar
 
 ```bash
-node --experimental-strip-types --no-warnings --test tests/onboarding/*.test.mjs
+node --experimental-strip-types --no-warnings --test tests/onboarding/*.test.mjs tests/customer/*.test.mjs tests/ui/*.test.mjs
 ```
 
 Roda também no GitHub (`Vem Comer guided onboarding tests`).
@@ -101,5 +114,6 @@ Roda também no GitHub (`Vem Comer guided onboarding tests`).
   logo após recarregar a página, ele pode ficar mudo no primeiro passo; por isso
   o balão tem o botão **Ouvir de novo**, que sempre funciona com um toque.
 - Os testes automáticos cobrem a lógica e o roteiro. O piscar e o posicionamento
-  na tela precisam ser vistos em um celular real (ainda não foram verificados em
-  navegador).
+  foram conferidos em um navegador Chromium simulando celular (390 x 844) com o
+  servidor simulado; voz e microfone reais, e o toque em aparelhos de verdade,
+  ainda precisam ser vistos em um celular.

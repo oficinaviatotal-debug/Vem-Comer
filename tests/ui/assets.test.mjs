@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const root = new URL("../../frontend/", import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), "utf8");
@@ -39,10 +41,29 @@ test("font licenses travel with the font files", () => {
   assert.ok(exists("/fonts/OFL-InstrumentSans.txt"));
 });
 
-test("every image the app shows exists, and no heavy PNG photo is left", () => {
-  const app = read("src/App.tsx");
-  const images = new Set([...app.matchAll(/"(\/images\/[^"]+)"/g)].map((match) => match[1]));
-  assert.ok(images.size > 0);
-  for (const image of images) assert.ok(exists(image), `${image} is missing`);
-  assert.equal([...images].some((image) => image.endsWith(".png")), false);
+function sourceFiles(dir) {
+  const out = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...sourceFiles(path));
+    else if (/\.(tsx?|css)$/.test(entry.name)) out.push(path);
+  }
+  return out;
+}
+
+test("every image or font path written in the source exists in frontend/public", () => {
+  const src = fileURLToPath(new URL("src/", root));
+  let found = 0;
+  for (const file of sourceFiles(src)) {
+    const text = readFileSync(file, "utf8");
+    for (const [, path] of text.matchAll(/["'(](\/[\w./-]+\.(?:png|webp|jpe?g|svg|ico|woff2?))["')]/g)) {
+      found += 1;
+      assert.ok(exists(path), `${file} points to ${path}, which is not in frontend/public`);
+    }
+  }
+  assert.ok(found > 0, "expected at least the logo and the fonts");
+});
+
+test("no stock photo is bundled: a restaurant must not show another restaurant's food", () => {
+  assert.equal(existsSync(new URL("public/images", root)), false);
 });

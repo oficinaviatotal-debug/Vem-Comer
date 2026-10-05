@@ -58,13 +58,42 @@ o mesmo nome do começo ao fim do fluxo, estados vazios que dizem o que fazer
 ("Crie a primeira acima, por exemplo Pratos"). Ações que apagam pedem dois toques
 (`ConfirmButton`).
 
+## Cardápio do cliente (o que abre no QR da mesa)
+
+Pasta `frontend/src/customer/`, estilos em `customer.css`.
+
+- **Menu primeiro.** Nome do restaurante, número da mesa e, logo abaixo, os
+  pratos. Sem herói, sem promoção, sem "Natal - RN": nada que o restaurante não
+  tenha cadastrado aparece na tela.
+- **Cardápio impresso.** Cada prato liga o nome ao preço por pontinhos
+  (`.leader-row`). Categorias viram atalhos no topo e seções com título.
+  Pratos sem categoria vão para "Outros"; pratos de categoria desligada ficam
+  escondidos.
+- **Uma ação em laranja por vez.** A barra "Ver pedido" no rodapé é o único botão
+  laranja da tela do cardápio; "Adicionar" é contorno e vira `− 1 +` depois do
+  primeiro toque.
+- **Carrinho = comanda.** Folha com borda serrilhada, mesa em destaque, itens e
+  total ligados por pontinhos, nome (opcional) e forma de pagamento abaixo.
+- **Acompanhamento.** A mesma comanda mostra Enviado, Em preparo e Pronto e
+  atualiza sozinha a cada 5 s até ficar pronta. O pedido fica guardado no
+  celular (12 h), então recarregar a página não perde o acompanhamento.
+  Vários pedidos na mesma visita aparecem juntos.
+- **Avaliação só depois do pedido pronto**, uma vez por visita.
+- **Guia falado do cliente** (`customerTour.ts`): na primeira visita neste
+  aparelho e no botão "Ajuda". Ver `docs/onboarding-guiado.md`.
+
+Não há fotos de pratos porque o cadastro de produtos ainda não tem imagem; as
+fotos de hambúrguer e pizza que existiam foram removidas, já que apareciam para
+qualquer restaurante (inclusive um de sushi). Quando houver upload de foto por
+prato, a linha do prato ganha a imagem à esquerda.
+
 ## Imagens e ícones
 
-Fotos em WebP (`/images/*.webp` em 1200 px e `*-sm.webp` em 480 px). Ícones do
-app e `manifest.json` em `frontend/public/`. Os ícones saem do emblema do logo
-atual (raster); se você tiver o logo em vetor, vale regerar.
+Ícones do app e `manifest.json` em `frontend/public/`. Os ícones saem do emblema
+do logo atual (raster); se você tiver o logo em vetor, vale regerar. Sem
+imagens de banco: `tests/ui/assets.test.mjs` falha se `public/images` voltar.
 
 ## O que falta
 
-O cardápio do cliente ainda usa o layout antigo (já com as fontes e cores novas).
-Ele será refeito com a comanda como carrinho e acompanhamento do pedido.
+Foto por prato (upload), Pix com o código do restaurante e confirmação no painel,
+e o mesmo tratamento visual no Vem Trabalhar.
