@@ -37,6 +37,18 @@ dominio_valido() {
 
 segredo_valido() { [[ "$1" =~ ^[0-9a-f]{64}$ ]]; }
 
+# O que o DNS PÚBLICO responde para um nome (tipo A ou AAAA), um endereço por linha.
+# Não uso getent de propósito: neste servidor o arquivo /etc/hosts responde 127.0.1.1 para o
+# próprio nome, e isso não é o que o mundo (nem o Let's Encrypt) enxerga.
+# Devolve 2 se não conseguiu consultar; vazio com sucesso = o nome não tem esse registro.
+dns_publico() {
+  local tipo=$1 nome=$2 numero resposta
+  if [ "$tipo" = A ]; then numero=1; else numero=28; fi
+  resposta=$(curl -fsS --max-time 8 -H 'accept: application/dns-json' \
+    "https://cloudflare-dns.com/dns-query?name=${nome}&type=${tipo}" 2>/dev/null) || return 2
+  printf '%s' "$resposta" | grep -oE '\{[^{}]*"type": *'"$numero"'[ ,}][^{}]*\}' | grep -oE '"data": *"[^"]+"' | cut -d'"' -f4 || true
+}
+
 esperar_saudavel() {
   local nome=$1 limite=$2 passado=0 estado=""
   while [ "$passado" -lt "$limite" ]; do
@@ -76,7 +88,7 @@ main() {
 
   local faltando=""
   local cmd
-  for cmd in docker git curl ss ip getent awk od df seq install systemctl; do
+  for cmd in docker git curl ss ip awk od df seq install systemctl; do
     command -v "$cmd" >/dev/null 2>&1 || faltando="$faltando $cmd"
   done
   [ -z "$faltando" ] || falhar "Faltam estes programas:$faltando"
@@ -130,24 +142,38 @@ main() {
 
   # DNS: o endereço precisa apontar para este servidor, senão o HTTPS não sai
   if [ -n "$dominio" ]; then
-    local ip_local ip_dns ip6_dns
+    local ip_local lista4 lista6 primeiro consulta_ok=1
     ip_local=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for (i = 1; i < NF; i++) if ($i == "src") {print $(i + 1); exit}}' || true)
-    ip_dns=$(getent ahostsv4 "$dominio" 2>/dev/null | awk 'NR==1 {print $1}' || true)
-    if [ -z "$ip_dns" ]; then
+    lista4=$(dns_publico A "$dominio") || consulta_ok=0
+    if [ -z "$lista4" ] && command -v getent >/dev/null 2>&1; then
+      # segunda opinião, só se a consulta pública não trouxe nada; endereço de loopback (127.x) nunca vale
+      lista4=$(getent ahostsv4 "$dominio" 2>/dev/null | awk '$1 !~ /^127\./ && !visto[$1]++ {print $1}' || true)
+    fi
+    primeiro=${lista4%%$'\n'*}
+    if [ -z "$lista4" ] && [ "$consulta_ok" -eq 0 ]; then
+      aviso "não consegui consultar o DNS público agora; não sei dizer se $dominio aponta para este servidor (${ip_local:-?})."
+    elif [ -z "$lista4" ]; then
       aviso "o endereço $dominio ainda não aponta para nenhum servidor (DNS)"
       dns_ok=0
-    elif [ -n "$ip_local" ] && [ "$ip_dns" != "$ip_local" ]; then
-      aviso "o endereço $dominio aponta para $ip_dns, mas este servidor é $ip_local"
-      dns_ok=0
+    elif [ -z "$ip_local" ]; then
+      ok "o endereço aponta para $primeiro (não consegui conferir o endereço deste servidor)"
     else
-      ok "o endereço aponta para este servidor ($ip_dns)"
+      case $'\n'"$lista4"$'\n' in
+        *$'\n'"$ip_local"$'\n'*) ok "o endereço aponta para este servidor ($ip_local)" ;;
+        *)
+          aviso "o endereço $dominio aponta para $primeiro, mas este servidor é $ip_local"
+          dns_ok=0
+          ;;
+      esac
     fi
 
     # Registro IPv6 (AAAA): quem valida o certificado tenta IPv6 primeiro. Este site atende só IPv4.
-    ip6_dns=$(getent ahostsv6 "$dominio" 2>/dev/null | awk '$1 !~ /^::ffff:/ {print $1; exit}' || true)
-    if [ -n "$ip6_dns" ]; then
-      aviso "o endereço $dominio também tem um registro IPv6 (AAAA: $ip6_dns). Este site atende só por IPv4: apague o registro AAAA na zona DNS, senão o certificado HTTPS pode não sair."
-      dns_ok=0
+    if [ "$consulta_ok" -eq 1 ]; then
+      lista6=$(dns_publico AAAA "$dominio") || lista6=""
+      if [ -n "$lista6" ]; then
+        aviso "o endereço $dominio também tem um registro IPv6 (AAAA: ${lista6%%$'\n'*}). Este site atende só por IPv4: apague o registro AAAA na zona DNS, senão o certificado HTTPS pode não sair."
+        dns_ok=0
+      fi
     fi
   fi
 
@@ -317,7 +343,7 @@ SQL
   passo 8 "Teste de fora (HTTPS)"
   local i publico=0 tentativas=36
   if [ "$dns_ok" -eq 0 ]; then
-    tentativas=6 # o aviso do passo 1 já disse que o endereço não está certo: não adianta esperar muito
+    tentativas=12 # o aviso do passo 1 já disse que o endereço não está certo: não adianta esperar muito
     aviso "como o endereço (DNS) não está certo, só vou esperar um pouco pelo HTTPS."
   fi
   for i in $(seq 1 "$tentativas"); do
