@@ -1,8 +1,10 @@
+import base64
 import os
 import time
 import threading
 from decimal import Decimal, InvalidOperation
 from functools import wraps
+from urllib.parse import parse_qs, urlparse
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -12,6 +14,7 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import query_db, get_db_connection
+from table_qr import qr_png_for_url
 
 from dotenv import load_dotenv
 
@@ -1656,6 +1659,82 @@ def admin_get_tables(company_id):
     except Exception as e:
         return error_response(
             "Erro ao buscar mesas",
+            e
+        )
+
+
+TABLE_QR_MAX_URL_LENGTH = 500
+
+
+@app.route(
+    '/api/companies/<uuid:company_id>/admin/tables/<uuid:table_id>/qr',
+    methods=['GET']
+)
+@require_auth
+def admin_get_table_qr(company_id, table_id):
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    try:
+        target_url = (request.args.get('url') or '').strip()
+
+        if not target_url or len(target_url) > TABLE_QR_MAX_URL_LENGTH:
+            return jsonify({
+                "error": "Link da mesa invalido"
+            }), 400
+
+        company = query_db(
+            """
+            SELECT slug
+            FROM companies
+            WHERE id = %s;
+            """,
+            (str(company_id),),
+            one=True
+        )
+
+        table = query_db(
+            """
+            SELECT id
+            FROM tables
+            WHERE id = %s
+            AND company_id = %s;
+            """,
+            (str(table_id), str(company_id)),
+            one=True
+        )
+
+        if not company or not table:
+            return jsonify({
+                "error": "Mesa nao encontrada"
+            }), 404
+
+        parsed = urlparse(target_url)
+        params = parse_qs(parsed.query)
+
+        # The QR may only point at this company's own table link.
+        if (
+            parsed.scheme not in ('http', 'https')
+            or not parsed.netloc
+            or params.get('empresa') != [company['slug']]
+            or params.get('mesa') != [str(table_id)]
+        ):
+            return jsonify({
+                "error": "Link da mesa invalido"
+            }), 400
+
+        png = qr_png_for_url(target_url)
+
+        return jsonify({
+            "data_url": "data:image/png;base64,"
+            + base64.b64encode(png).decode('ascii')
+        }), 200
+
+    except Exception as e:
+        return error_response(
+            "Erro ao gerar QR da mesa",
             e
         )
 

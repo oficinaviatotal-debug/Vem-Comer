@@ -17,6 +17,7 @@ import {
   deactivateUser,
   deleteUser,
   fetchTables,
+  fetchTableQr,
   createTable,
   deleteTable,
 } from "./api";
@@ -102,6 +103,7 @@ export default function AdminPanel({
   const [userError, setUserError] = useState("");
 
   const [tables, setTables] = useState<TableRow[]>([]);
+  const [tableQrs, setTableQrs] = useState<Record<string, string>>({});
   const [newTableNumber, setNewTableNumber] = useState("");
   const [tableError, setTableError] = useState("");
 
@@ -342,8 +344,33 @@ export default function AdminPanel({
   async function loadTables() {
     try {
       const data = await fetchTables(companyId);
+      const rows: TableRow[] = Array.isArray(data) ? data : [];
 
-      setTables(Array.isArray(data) ? data : []);
+      setTables(rows);
+
+      const entries = await Promise.all(
+        rows.map(async (row) => {
+          try {
+            const qr = await fetchTableQr(
+              companyId,
+              row.id,
+              tableOrderUrl(row.id)
+            );
+            return [row.id, qr] as const;
+          } catch (err) {
+            console.error(err);
+            return null;
+          }
+        })
+      );
+
+      setTableQrs(
+        Object.fromEntries(
+          entries.filter(
+            (entry): entry is readonly [string, string] => entry !== null
+          )
+        )
+      );
     } catch (err) {
       console.error(err);
     }
@@ -386,10 +413,6 @@ export default function AdminPanel({
     url.searchParams.set("empresa", companySlug);
     url.searchParams.set("mesa", tableId);
     return url.toString();
-  }
-
-  function tableQrCodeUrl(tableId: string) {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(tableOrderUrl(tableId))}`;
   }
 
   if (!isAuthenticated) {
@@ -1208,18 +1231,27 @@ export default function AdminPanel({
                       : "Ocupada"}
                   </span>
 
-                  <img
-                    src={tableQrCodeUrl(
-                      table.id
-                    )}
-                    alt={`QR code da Mesa ${table.number}`}
-                    width={140}
-                    height={140}
-                    style={{
-                      borderRadius: "8px",
-                      maxWidth: "100%",
-                    }}
-                  />
+                  {tableQrs[table.id] ? (
+                    <img
+                      src={tableQrs[table.id]}
+                      alt={`QR code da Mesa ${table.number}`}
+                      width={140}
+                      height={140}
+                      style={{
+                        borderRadius: "8px",
+                        maxWidth: "100%",
+                        backgroundColor: "#fff",
+                      }}
+                    />
+                  ) : (
+                    <span
+                      style={{
+                        fontSize: "0.8rem",
+                      }}
+                    >
+                      Gerando QR code...
+                    </span>
+                  )}
 
                   <button
                     className="button-action"
