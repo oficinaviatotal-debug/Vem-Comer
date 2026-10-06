@@ -7,6 +7,10 @@ Ele é a régua: antes de dizer que algo está pronto, conferimos aqui.
 O dono fala o texto por voz; as frases abaixo foram só limpadas (pontuação, repetições). Ele ainda vai
 passar mais material (benchmarking, conversas antigas). Quando chegar, entra aqui.
 
+Como ele quer trabalhar: tem 25 anos de gerência e diretoria e vai passar o conhecimento tópico por tópico,
+em conversa, para levar essa gestão a milhares de pessoas que comem, vendem, procuram e oferecem emprego.
+Cada tópico vira regra neste arquivo antes de virar tela.
+
 ## Modelo de negócio (decisivo)
 
 > "Ele comprou o sistema. Vai ter o dono do restaurante que ele mesmo vai tirar foto, ele mesmo vai
@@ -68,6 +72,11 @@ Funciona para quem é analfabeto e para quem vai usar 100% das funções.
 | 23 | **Dois posts por semana, por restaurante**, com o nome dele ("Saiteria do João", "Coxinha Prime", "Frango no pote") e um QR Code pequeno do Vem Comer e do Vem Trabalhar embaixo (mini publicidade). Cláusula no contrato e nos termos de uso. Cada restaurante coloca o link no seu Instagram. | Falta. No começo o sistema cria a imagem e o dono toca para publicar. Publicar sozinho no Instagram exige aprovação da Meta. |
 | 24 | **Base de clientes para disparos** (e-mail, WhatsApp, Telegram): onde achar e como alcançar o consumidor final, "sem consumidor não existe negócio". | Falta. Só com autorização do cliente e opção de sair. |
 | 25 | **Três papéis:** o consumidor final; o dono do restaurante (quem comprou); e o dono do software (melhoria contínua, gestão, cobrança, recebimento, colocar no ar). | Direção geral. |
+| 26 | **Uma pessoa, vários papéis, nos dois produtos.** "Quem oferece emprego também come e vice-versa": quem come também vende, procura ou oferece emprego, e quem oferece emprego também precisa de cursos. Vem Comer e Vem Trabalhar são um ecossistema só. | Falta decidir e construir: um único cadastro/login para os dois (hoje são dois sistemas separados). Direção geral. |
+| 27 | **Gestão de gente completa para quem contrata:** avaliação do perfil na entrada e, com o tempo, avaliação de resultado e de comportamento dos funcionários mais antigos. | Falta. Vem Trabalhar. |
+| 28 | **Aba de cursos**, para quem procura emprego e para quem contrata: atividades didáticas e lúdicas, com inteligência artificial, certificado, prêmio, e cursos interligados que se repetem ao longo do tempo (recorrência). "Diferente de tudo que há no mercado." | Falta. Vem Trabalhar (depois do Vem Comer). |
+| 29 | **Sistema vivo, em constante operação, com robôs de IA** buscando informação e trabalhando: captação de clientes em várias pontas, recorrência, faturamento e valores, desenvolvimento de cursos. | Falta. Valem as regras de sempre: só com autorização de quem recebe, dentro das regras de cada canal, e com um humano vendo o que é enviado em nome de terceiros. |
+| 30 | **Interface simples, clicável, editável e funcional**, completa mas fácil, "diferente de tudo que há no mercado". Régua: o ambulante sem estudo e o diretor de uma rede usam a mesma tela. | Direção geral; vale para toda tela nova. |
 
 ## Como o dono testou e o que não funcionou (guia antigo)
 
