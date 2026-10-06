@@ -190,18 +190,25 @@ export type DraftLine = {
   unit: InputUnit;
   packageQty: number;
   packagePrice: number;
+  /** How much of the package is left after cleaning, in % (100 = nothing is lost). */
+  yieldPct?: number;
 };
+
+function usableFraction(yieldPct: number | undefined): number {
+  const pct = typeof yieldPct === "number" && yieldPct > 0 ? Math.min(yieldPct, 100) : 100;
+  return pct / 100;
+}
 
 /** Cost of one recipe line as typed (null while the quantity is not a valid number). */
 export function draftLineCost(line: DraftLine): number | null {
   const quantity = toBase(line.quantity, line.unit);
-  if (quantity === null || !(line.packageQty > 0)) return null;
-  return (quantity * line.packagePrice) / line.packageQty;
+  const usable = line.packageQty * usableFraction(line.yieldPct);
+  if (quantity === null || !(usable > 0)) return null;
+  return (quantity * line.packagePrice) / usable;
 }
 
-/** Live cost of a portion while the owner edits: lines + other costs. null when nothing valid yet. */
-export function draftCost(lines: DraftLine[], extra: string): number | null {
-  const extraValue = parseDecimal(extra) ?? 0;
+/** Cost of the whole recipe as typed (null while nothing valid yet). */
+export function draftRecipeCost(lines: DraftLine[]): number | null {
   let total = 0;
   let counted = 0;
   for (const line of lines) {
@@ -210,8 +217,35 @@ export function draftCost(lines: DraftLine[], extra: string): number | null {
     total += cost;
     counted += 1;
   }
-  if (counted === 0 && extraValue <= 0) return null;
-  return round(total + Math.max(extraValue, 0), 2);
+  return counted === 0 ? null : total;
+}
+
+/**
+ * Live cost of ONE portion while the owner edits: the recipe divided by how many portions it
+ * makes, plus the other costs per portion (packaging, gas). null when nothing valid yet.
+ */
+export function draftCost(lines: DraftLine[], extra: string, portions = 1): number | null {
+  const extraValue = Math.max(parseDecimal(extra) ?? 0, 0);
+  const recipe = draftRecipeCost(lines);
+  if (recipe === null && extraValue <= 0) return null;
+  const divisor = portions >= 1 ? portions : 1;
+  return round((recipe ?? 0) / divisor + extraValue, 2);
+}
+
+/** "6" -> 6. Empty -> 1 (the card is one portion). Not a whole number from 1 to 500 -> null. */
+export function parsePortions(text: string | number | null | undefined): number | null {
+  if (text === null || text === undefined || String(text).trim() === "") return 1;
+  const value = parseDecimal(text);
+  if (value === null || !Number.isInteger(value) || value < 1 || value > 500) return null;
+  return value;
+}
+
+/** Trimming loss field: empty -> 100. Not a whole number from 1 to 100 -> null. */
+export function parseYieldPct(text: string | number | null | undefined): number | null {
+  if (text === null || text === undefined || String(text).replace("%", "").trim() === "") return 100;
+  const value = parseDecimal(String(text).replace("%", ""));
+  if (value === null || !Number.isInteger(value) || value < 1 || value > 100) return null;
+  return value;
 }
 
 export function cmvOf(cost: number | null, price: number): number | null {
@@ -219,7 +253,7 @@ export function cmvOf(cost: number | null, price: number): number | null {
   return round((cost * 100) / price, 1);
 }
 
-export type IngredientForm = { name: string; quantity: string; unit: InputUnit; price: string };
+export type IngredientForm = { name: string; quantity: string; unit: InputUnit; price: string; yieldPct?: string };
 
 /** First problem to show before sending a new or edited ingredient, or "" when it can go. */
 export function ingredientFormProblem(form: IngredientForm): string {
@@ -228,13 +262,26 @@ export function ingredientFormProblem(form: IngredientForm): string {
   if (toBase(form.quantity, form.unit) === null) return "Escreva o tamanho da embalagem. Ex.: 1 kg, 5 L, 30 unidades.";
   const price = parseDecimal(form.price);
   if (price === null || price < 0) return "Escreva quanto você pagou. Ex.: 18,90.";
+  if (parseYieldPct(form.yieldPct) === null) {
+    return "Aproveitamento: um número de 1 a 100. Ex.: 85 se de 1 kg sobram 850 g limpos.";
+  }
   return "";
 }
 
 export type RecipeDraftLine = { ingredientId: string; quantity: string; unit: InputUnit };
 
 /** First problem in the recipe card, or "". */
-export function recipeProblem(lines: RecipeDraftLine[], extra: string): string {
+export function recipeProblem(
+  lines: RecipeDraftLine[],
+  extra: string,
+  portions: string = "",
+  portionGrams: string = "",
+): string {
+  if (parsePortions(portions) === null) return "Rende quantas porções: um número inteiro. Ex.: 6.";
+  if (portionGrams.trim()) {
+    const grams = parseDecimal(portionGrams);
+    if (grams === null || grams <= 0) return "Peso da porção: escreva em gramas. Ex.: 300.";
+  }
   const seen = new Set<string>();
   for (const line of lines) {
     if (!line.ingredientId) return "Escolha o insumo de cada linha, ou tire a linha vazia.";
@@ -253,9 +300,17 @@ export function recipeProblem(lines: RecipeDraftLine[], extra: string): string {
  * What the server expects in PUT .../recipe. Numbers go as JSON numbers, never as text,
  * so "1.234" can never be read as one thousand on the other side.
  */
-export function recipePayload(portion: string, extra: string, lines: RecipeDraftLine[]) {
+export function recipePayload(
+  portion: string,
+  extra: string,
+  lines: RecipeDraftLine[],
+  portions: string = "",
+  portionGrams: string = "",
+) {
   return {
     portion: portion.trim(),
+    yield_portions: parsePortions(portions) ?? 1,
+    portion_grams: portionGrams.trim() ? parseDecimal(portionGrams) : null,
     extra_cost: extra.trim() ? parseDecimal(extra) ?? 0 : 0,
     items: lines.map((line) => ({
       ingredient_id: line.ingredientId,
@@ -280,4 +335,111 @@ export function periodSentence(period: Period, target: number): string {
   }
   const verdict = period.cmv <= target ? "dentro da meta" : "acima da meta";
   return `Nos últimos ${period.days} dias, o CMV pela ficha foi ${formatPercent(period.cmv)}, ${verdict} de ${target}%. ${number(0).format(period.coverage)}% das vendas tinham ficha.`;
+}
+
+/* ---- Profitability: menu engineering (Kasavana and Smith) ---- */
+
+export type Quadrant = "estrela" | "cavalo" | "quebra_cabeca" | "cao";
+
+export function quadrantLabel(quadrant: Quadrant | null | undefined): string {
+  switch (quadrant) {
+    case "estrela":
+      return "Estrela";
+    case "cavalo":
+      return "Cavalo de tração";
+    case "quebra_cabeca":
+      return "Quebra-cabeça";
+    case "cao":
+      return "Cão";
+    default:
+      return "";
+  }
+}
+
+export function quadrantChip(quadrant: Quadrant | null | undefined): string {
+  switch (quadrant) {
+    case "estrela":
+      return "chip chip-done";
+    case "cavalo":
+      return "chip chip-wait";
+    case "quebra_cabeca":
+      return "chip chip-prep";
+    case "cao":
+      return "chip chip-alto";
+    default:
+      return "chip";
+  }
+}
+
+/** What to do with the dish, in one sentence: the promotion, campaign or change that fits it. */
+export function quadrantAction(quadrant: Quadrant | null | undefined): string {
+  switch (quadrant) {
+    case "estrela":
+      return "Vende muito e dá bom lucro. Não mude a receita; ponha em destaque no cardápio e nos posts.";
+    case "cavalo":
+      return "Vende muito, mas dá pouco lucro. Suba um pouco o preço, acerte a porção ou troque um acompanhamento mais barato.";
+    case "quebra_cabeca":
+      return "Dá bom lucro, mas vende pouco. Faça promoção, foto melhor, combo e peça ao garçom para oferecer.";
+    case "cao":
+      return "Vende pouco e dá pouco lucro. Repense a receita e o preço, ou tire do cardápio.";
+    default:
+      return "Monte a ficha e venda pelo app para este prato entrar no ranking.";
+  }
+}
+
+export type ProfitRow = {
+  name: string;
+  price: number;
+  cost: number | null;
+  sold_30d: number;
+  profit_30d: number | null;
+  quadrant: Quadrant | null;
+};
+
+/** Most profit in the last 30 days first; dishes without a card at the end. Does not change the input. */
+export function sortByProfit<T extends ProfitRow>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => {
+    const pa = a.profit_30d ?? Number.NEGATIVE_INFINITY;
+    const pb = b.profit_30d ?? Number.NEGATIVE_INFINITY;
+    if (pa !== pb) return pb - pa;
+    return a.name.localeCompare(b.name, "pt-BR");
+  });
+}
+
+export function profitSentence(row: ProfitRow): string {
+  const sold = `Vendeu ${row.sold_30d} ${row.sold_30d === 1 ? "porção" : "porções"} em 30 dias`;
+  if (row.profit_30d === null) return `${sold}. Sem ficha: o lucro aparece quando você montar a ficha.`;
+  return `${sold} e deu ${formatMoneyPlain(row.profit_30d)} de lucro sobre o custo dos ingredientes.`;
+}
+
+/* ---- Stock by recipe card ---- */
+
+export type StockInfo = {
+  unit: BaseUnit;
+  stock_controlled: boolean;
+  stock_now: number | null;
+  used_30d: number | null;
+  days_left: number | null;
+};
+
+export function stockSentence(item: StockInfo): string {
+  if (!item.stock_controlled || item.stock_now === null) {
+    return "Estoque: não controlado. Toque em Estoque e diga quanto tem.";
+  }
+  if (item.stock_now <= 0) {
+    return "Estoque: pela ficha, acabou. Conte de novo ou registre a compra.";
+  }
+  const days = item.days_left === null ? "" : ` · dá para uns ${item.days_left} ${item.days_left === 1 ? "dia" : "dias"}`;
+  return `Estoque pela ficha: ${formatQuantity(item.stock_now, item.unit)}${days}.`;
+}
+
+/** "1 kg dá 4,2 pratos de Frango à milanesa" for each dish that uses the ingredient. */
+export function portionsSentences(
+  packageQty: number,
+  unit: BaseUnit,
+  rows: { name: string; portions: number }[],
+): string[] {
+  return rows.map(
+    (row) => `${formatQuantity(packageQty, unit)} dá ${number(1).format(row.portions)} ${row.portions === 1 ? "prato" : "pratos"} de ${row.name}`,
+  );
 }

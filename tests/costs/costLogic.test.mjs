@@ -3,6 +3,15 @@ import assert from "node:assert/strict";
 
 import {
   PACKAGE_UNITS,
+  draftRecipeCost,
+  parsePortions,
+  parseYieldPct,
+  portionsSentences,
+  profitSentence,
+  quadrantAction,
+  quadrantLabel,
+  sortByProfit,
+  stockSentence,
   cmvOf,
   draftCost,
   formatPercent,
@@ -141,6 +150,8 @@ test("recipe problems and payload", () => {
   assert.match(recipeProblem(lines, "abc"), /Outros custos/);
   assert.deepEqual(recipePayload(" 1 pessoa ", "1,50", lines), {
     portion: "1 pessoa",
+    yield_portions: 1,
+    portion_grams: null,
     extra_cost: 1.5,
     items: [
       { ingredient_id: "a", quantity: 250, unit: "g" },
@@ -156,4 +167,61 @@ test("headline of the last 30 days", () => {
     "Nos últimos 30 dias, o CMV pela ficha foi 29,7%, dentro da meta de 35%. 86% das vendas tinham ficha.",
   );
   assert.equal(formatPercent(null), "");
+});
+
+test("a recipe that serves six, with trimming loss", () => {
+  const lines = [
+    { quantity: "1,2", unit: "kg", packageQty: 1000, packagePrice: 18.9, yieldPct: 85 },
+    { quantity: "300", unit: "g", packageQty: 500, packagePrice: 6 },
+    { quantity: "4", unit: "un", packageQty: 12, packagePrice: 12 },
+  ];
+  assert.equal(Math.round(draftRecipeCost(lines) * 100) / 100, 34.28);
+  // the server's example: 34,2824 / 6 + 1,00 = 6,71
+  assert.equal(draftCost(lines, "1,00", 6), 6.71);
+  assert.equal(draftCost(lines.slice(0, 1), "", 1), 26.68);
+});
+
+test("portions and trimming fields", () => {
+  assert.equal(parsePortions(""), 1);
+  assert.equal(parsePortions("6"), 6);
+  assert.equal(parsePortions("2,5"), null);
+  assert.equal(parsePortions("0"), null);
+  assert.equal(parseYieldPct(""), 100);
+  assert.equal(parseYieldPct("85%"), 85);
+  assert.equal(parseYieldPct("101"), null);
+  assert.match(recipeProblem([], "", "2,5"), /Rende/);
+  assert.match(recipeProblem([], "", "6", "abc"), /Peso da porção/);
+  assert.equal(recipeProblem([], "", "6", "250"), "");
+  const payload = recipePayload("1 pessoa", "", [], "6", "250");
+  assert.equal(payload.yield_portions, 6);
+  assert.equal(payload.portion_grams, 250);
+  assert.match(ingredientFormProblem({ name: "Frango", quantity: "1", unit: "kg", price: "18,90", yieldPct: "0" }), /Aproveitamento/);
+});
+
+test("profitability ranking and the action for each dish", () => {
+  const rows = sortByProfit([
+    { name: "Suco", price: 8, cost: null, sold_30d: 50, profit_30d: null, quadrant: null },
+    { name: "PF", price: 18, cost: 10, sold_30d: 120, profit_30d: 960, quadrant: "cavalo" },
+    { name: "Frango", price: 25, cost: 8, sold_30d: 100, profit_30d: 1700, quadrant: "estrela" },
+  ]);
+  assert.deepEqual(rows.map((r) => r.name), ["Frango", "PF", "Suco"]);
+  assert.equal(quadrantLabel("quebra_cabeca"), "Quebra-cabeça");
+  assert.match(quadrantAction("quebra_cabeca"), /promoção/);
+  assert.match(quadrantAction("cavalo"), /preço/);
+  assert.match(quadrantAction(null), /Monte a ficha/);
+  const plain = (text) => text.replace(/\u00a0/g, " ");
+  assert.equal(plain(profitSentence(rows[0])), "Vendeu 100 porções em 30 dias e deu R$ 1.700,00 de lucro sobre o custo dos ingredientes.");
+  assert.match(profitSentence(rows[2]), /Sem ficha/);
+});
+
+test("stock and how many dishes a package makes", () => {
+  assert.match(stockSentence({ unit: "g", stock_controlled: false, stock_now: null, used_30d: null, days_left: null }), /não controlado/);
+  assert.equal(
+    stockSentence({ unit: "g", stock_controlled: true, stock_now: 2647.059, used_30d: 3529.4, days_left: 22 }),
+    "Estoque pela ficha: 2,647 kg · dá para uns 22 dias.",
+  );
+  assert.match(stockSentence({ unit: "g", stock_controlled: true, stock_now: -3, used_30d: 1, days_left: 0 }), /acabou/);
+  assert.deepEqual(portionsSentences(1000, "g", [{ name: "Frango à milanesa", portions: 4.2 }]), [
+    "1 kg dá 4,2 pratos de Frango à milanesa",
+  ]);
 });

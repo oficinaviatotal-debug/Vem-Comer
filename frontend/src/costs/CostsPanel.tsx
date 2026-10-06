@@ -1,33 +1,46 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   deleteIngredient,
   fetchCosts,
   saveCostTarget,
   saveIngredient,
   saveRecipe,
+  saveStock,
   type CostIngredient,
   type CostProduct,
   type CostView,
 } from "../service/api";
 import ConfirmButton from "../service/ConfirmButton";
+import { canListen, hear, type Hearing } from "../assistant/voiceIO";
 import {
   PACKAGE_UNITS,
   cmvOf,
   draftCost,
   draftLineCost,
+  draftRecipeCost,
   formatMoneyPlain,
   formatPercent,
   ingredientFormProblem,
   isInputUnit,
   packageLabel,
   parseDecimal,
+  parsePortions,
+  parseYieldPct,
   periodSentence,
+  portionsSentences,
   productSentence,
+  profitSentence,
+  quadrantAction,
+  quadrantChip,
+  quadrantLabel,
   recipePayload,
   recipeProblem,
+  sortByProfit,
   sortForAttention,
   statusChip,
   statusLabel,
+  stockSentence,
+  toBase,
   toInput,
   unitsFor,
   type BaseUnit,
@@ -35,6 +48,7 @@ import {
   type InputUnit,
   type RecipeDraftLine,
 } from "./costLogic";
+import { mergeSpokenLines, parseRecipeSpeech } from "./recipeSpeech";
 import "./costs.css";
 
 type Props = {
@@ -44,11 +58,20 @@ type Props = {
 type RecipeDraft = {
   productId: string;
   portion: string;
+  portions: string;
+  grams: string;
   extra: string;
   lines: RecipeDraftLine[];
 };
 
-const EMPTY_INGREDIENT: IngredientForm = { name: "", quantity: "", unit: "kg", price: "" };
+type StockDraft = {
+  ingredientId: string;
+  mode: "contagem" | "compra";
+  quantity: string;
+  unit: InputUnit;
+};
+
+const EMPTY_INGREDIENT: IngredientForm = { name: "", quantity: "", unit: "kg", price: "", yieldPct: "100" };
 
 function defaultUnit(base: BaseUnit): InputUnit {
   return base === "un" ? "un" : base;
@@ -58,9 +81,14 @@ function moneyText(value: number): string {
   return value ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) : "";
 }
 
+function numberText(value: number | null): string {
+  return value ? new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(value).replace(/\./g, "") : "";
+}
+
 /**
- * "Custos" tab: what each dish costs (recipe card), its CMV against the owner's
- * target, and the ingredients the restaurant buys. Owner and manager only.
+ * "Custos" tab: what each dish costs (recipe card for N portions, said by voice or typed),
+ * its CMV against the owner's target, the ingredients and their stock, and which dishes
+ * bring the most profit with the action that fits each one. Owner and manager only.
  */
 export default function CostsPanel({ companyId }: Props) {
   const [view, setView] = useState<CostView | null>(null);
@@ -74,10 +102,18 @@ export default function CostsPanel({ companyId }: Props) {
   const [recipeError, setRecipeError] = useState("");
   const [savingRecipe, setSavingRecipe] = useState(false);
 
+  const [listening, setListening] = useState(false);
+  const [heard, setHeard] = useState("");
+  const [heardNotes, setHeardNotes] = useState<string[]>([]);
+  const hearing = useRef<Hearing | null>(null);
+
   const [ingredient, setIngredient] = useState<IngredientForm>(EMPTY_INGREDIENT);
   const [editingIngredient, setEditingIngredient] = useState<CostIngredient | null>(null);
   const [ingredientError, setIngredientError] = useState("");
   const [savingIngredient, setSavingIngredient] = useState(false);
+
+  const [stock, setStock] = useState<StockDraft | null>(null);
+  const [stockError, setStockError] = useState("");
 
   async function reload() {
     try {
@@ -94,6 +130,7 @@ export default function CostsPanel({ companyId }: Props) {
     setView(null);
     setDraft(null);
     void reload();
+    return () => hearing.current?.cancel();
     // reload only depends on the restaurant
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
@@ -115,6 +152,7 @@ export default function CostsPanel({ companyId }: Props) {
     costView.ingredients.map((item): [string, CostIngredient] => [item.id, item]),
   );
   const products = sortForAttention(costView.products);
+  const ranking = sortByProfit(costView.products.filter((product) => product.price > 0));
 
   async function submitTarget() {
     setTargetError("");
@@ -136,12 +174,22 @@ export default function CostsPanel({ companyId }: Props) {
   function startRecipe(product: CostProduct) {
     setRecipeError("");
     setNotice("");
+    setHeard("");
+    setHeardNotes([]);
     setDraft({
       productId: product.id,
       portion: product.portion ?? "",
+      portions: String(product.yield_portions || 1),
+      grams: numberText(product.portion_grams),
       extra: moneyText(product.extra_cost),
       lines: product.recipe.map((line) => ({ ingredientId: line.ingredient_id, ...toInput(line.quantity, line.unit) })),
     });
+  }
+
+  function closeRecipe() {
+    hearing.current?.cancel();
+    setListening(false);
+    setDraft(null);
   }
 
   function changeLine(index: number, patch: Partial<RecipeDraftLine>) {
@@ -168,18 +216,65 @@ export default function CostsPanel({ companyId }: Props) {
     setDraft((current) => (current ? { ...current, lines: current.lines.filter((_, i) => i !== index) } : current));
   }
 
+  async function speakRecipe() {
+    if (!draft) return;
+    if (listening) {
+      hearing.current?.cancel();
+      setListening(false);
+      return;
+    }
+    setRecipeError("");
+    setHeard("");
+    setHeardNotes([]);
+    setListening(true);
+    const session = hear({ onPartial: (text) => setHeard(text), timeoutMs: 30000 });
+    hearing.current = session;
+    const text = await session.result;
+    hearing.current = null;
+    setListening(false);
+    if (!text) {
+      setHeardNotes(["Não ouvi nada. Toque em Falar a ficha e fale de novo, perto do celular."]);
+      return;
+    }
+    setHeard(text);
+    const spoken = parseRecipeSpeech(
+      text,
+      costView.ingredients.map((item) => ({ id: item.id, name: item.name, unit: item.unit })),
+    );
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            lines: mergeSpokenLines(current.lines, spoken.lines),
+            portions: spoken.yieldPortions ? String(spoken.yieldPortions) : current.portions,
+            grams: spoken.portionGrams ? numberText(spoken.portionGrams) : current.grams,
+          }
+        : current,
+    );
+    const notes = [...spoken.unknown];
+    if (spoken.lines.length > 0) notes.unshift(`Entendi ${spoken.lines.length} ${spoken.lines.length === 1 ? "insumo" : "insumos"}. Confira abaixo e toque em Salvar ficha.`);
+    if (spoken.lines.length === 0 && notes.length === 0) {
+      notes.push("Não entendi os insumos. Fale assim: 1,2 quilo de peito de frango, 4 ovos, rende 6 porções.");
+    }
+    setHeardNotes(notes);
+  }
+
   async function submitRecipe(product: CostProduct) {
     if (!draft) return;
     setRecipeError("");
-    const problem = recipeProblem(draft.lines, draft.extra);
+    const problem = recipeProblem(draft.lines, draft.extra, draft.portions, draft.grams);
     if (problem) {
       setRecipeError(problem);
       return;
     }
     setSavingRecipe(true);
     try {
-      await saveRecipe(companyId, product.id, recipePayload(draft.portion, draft.extra, draft.lines));
-      setDraft(null);
+      await saveRecipe(
+        companyId,
+        product.id,
+        recipePayload(draft.portion, draft.extra, draft.lines, draft.portions, draft.grams),
+      );
+      closeRecipe();
       setNotice(`Ficha de ${product.name} salva.`);
       await reload();
     } catch (err) {
@@ -194,7 +289,13 @@ export default function CostsPanel({ companyId }: Props) {
     setNotice("");
     setEditingIngredient(item);
     const input = toInput(item.package_qty, item.unit);
-    setIngredient({ name: item.name, quantity: input.quantity, unit: input.unit, price: moneyText(item.package_price) || "0" });
+    setIngredient({
+      name: item.name,
+      quantity: input.quantity,
+      unit: input.unit,
+      price: moneyText(item.package_price) || "0",
+      yieldPct: String(item.yield_pct || 100),
+    });
   }
 
   function cancelIngredientEdit() {
@@ -220,6 +321,7 @@ export default function CostsPanel({ companyId }: Props) {
           quantity: parseDecimal(ingredient.quantity) ?? 0,
           unit: ingredient.unit,
           price: parseDecimal(ingredient.price) ?? 0,
+          yield_pct: parseYieldPct(ingredient.yieldPct) ?? 100,
         },
         editingIngredient?.id,
       );
@@ -243,6 +345,45 @@ export default function CostsPanel({ companyId }: Props) {
       await reload();
     } catch (err) {
       setIngredientError(err instanceof Error ? err.message : "Não consegui remover o insumo.");
+    }
+  }
+
+  function openStock(item: CostIngredient) {
+    setStockError("");
+    setNotice("");
+    setStock({ ingredientId: item.id, mode: item.stock_controlled ? "compra" : "contagem", quantity: "", unit: defaultUnit(item.unit) === "g" ? "kg" : defaultUnit(item.unit) === "ml" ? "l" : "un" });
+  }
+
+  async function submitStock(item: CostIngredient) {
+    if (!stock) return;
+    setStockError("");
+    const zeroCount = stock.mode === "contagem" && parseDecimal(stock.quantity) === 0;
+    if (!zeroCount && toBase(stock.quantity, stock.unit) === null) {
+      setStockError("Escreva a quantidade. Ex.: 5 kg.");
+      return;
+    }
+    try {
+      await saveStock(companyId, item.id, {
+        mode: stock.mode,
+        quantity: parseDecimal(stock.quantity) ?? 0,
+        unit: stock.unit,
+      });
+      setStock(null);
+      setNotice(stock.mode === "compra" ? `Compra de ${item.name} somada ao estoque.` : `Contagem de ${item.name} salva.`);
+      await reload();
+    } catch (err) {
+      setStockError(err instanceof Error ? err.message : "Não consegui salvar o estoque.");
+    }
+  }
+
+  async function stopStock(item: CostIngredient) {
+    try {
+      await saveStock(companyId, item.id, { mode: "parar" });
+      setStock(null);
+      setNotice(`${item.name} saiu do controle de estoque.`);
+      await reload();
+    } catch (err) {
+      setStockError(err instanceof Error ? err.message : "Não consegui salvar o estoque.");
     }
   }
 
@@ -302,27 +443,33 @@ export default function CostsPanel({ companyId }: Props) {
           <ul className="adm-list">
             {products.map((product) => {
               const editing = draft?.productId === product.id ? draft : null;
-              const liveCost = editing
-                ? draftCost(
-                    editing.lines.map((line) => {
-                      const item = byId.get(line.ingredientId);
-                      return {
-                        quantity: line.quantity,
-                        unit: line.unit,
-                        packageQty: item?.package_qty ?? 0,
-                        packagePrice: item?.package_price ?? 0,
-                      };
-                    }),
-                    editing.extra,
-                  )
-                : null;
+              const portions = editing ? parsePortions(editing.portions) ?? 1 : 1;
+              const draftLines = editing
+                ? editing.lines.map((line) => {
+                    const item = byId.get(line.ingredientId);
+                    return {
+                      quantity: line.quantity,
+                      unit: line.unit,
+                      packageQty: item?.package_qty ?? 0,
+                      packagePrice: item?.package_price ?? 0,
+                      yieldPct: item?.yield_pct ?? 100,
+                    };
+                  })
+                : [];
+              const liveCost = editing ? draftCost(draftLines, editing.extra, portions) : null;
+              const liveRecipe = editing ? draftRecipeCost(draftLines) : null;
+              const details = [
+                product.portion,
+                product.portion_grams ? `${numberText(product.portion_grams)} g` : "",
+                product.yield_portions > 1 ? `receita rende ${product.yield_portions} porções` : "",
+              ].filter(Boolean);
               return (
                 <li key={product.id} className="adm-row cost-row">
                   <div className="adm-row-main cost-row-main">
                     <strong>{product.name}</strong>
                     <span className="cost-price">
                       {formatMoneyPlain(product.price)}
-                      {product.portion ? ` · ${product.portion}` : ""}
+                      {details.length > 0 ? ` · ${details.join(" · ")}` : ""}
                     </span>
                     <span className="adm-muted">{productSentence(product, costView.target)}</span>
                   </div>
@@ -344,16 +491,63 @@ export default function CostsPanel({ companyId }: Props) {
                         void submitRecipe(product);
                       }}
                     >
+                      {canListen() && costView.ingredients.length > 0 && (
+                        <div className="cost-voice">
+                          <button
+                            type="button"
+                            className={listening ? "btn btn-primary cost-voice-btn is-on" : "btn btn-outline cost-voice-btn"}
+                            aria-pressed={listening}
+                            onClick={() => void speakRecipe()}
+                          >
+                            {listening ? "Ouvindo… toque para parar" : "Falar a ficha"}
+                          </button>
+                          <small className="adm-muted">
+                            Ex.: “1,2 quilo de peito de frango, 300 gramas de farinha de rosca, 4 ovos, rende 6 porções, porção de 250 gramas”.
+                          </small>
+                          {heard && <p className="cost-heard">“{heard}”</p>}
+                          {heardNotes.map((note) => (
+                            <p key={note} className="adm-muted cost-heard-note">
+                              {note}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="cost-pack">
+                        <label className="field">
+                          <span>A receita rende quantas porções?</span>
+                          <input
+                            value={editing.portions}
+                            onChange={(event) => setDraft({ ...editing, portions: event.target.value })}
+                            inputMode="numeric"
+                            autoComplete="off"
+                            placeholder="1"
+                          />
+                        </label>
+                        <label className="field">
+                          <span>Peso de cada porção (g)</span>
+                          <input
+                            value={editing.grams}
+                            onChange={(event) => setDraft({ ...editing, grams: event.target.value })}
+                            inputMode="decimal"
+                            autoComplete="off"
+                            placeholder="Ex.: 300"
+                          />
+                        </label>
+                      </div>
+                      <small className="adm-muted">
+                        Escreva a receita inteira: se 1,2 kg de peito vira 6 pratos, ponha 1,2 kg e 6 porções. O custo de cada prato sai sozinho.
+                      </small>
+
                       <label className="field">
-                        <span>Porção</span>
+                        <span>Nome da porção (opcional)</span>
                         <input
                           value={editing.portion}
                           onChange={(event) => setDraft({ ...editing, portion: event.target.value })}
                           maxLength={60}
-                          placeholder="Ex.: 1 pessoa, 300 g, prato feito"
+                          placeholder="Ex.: 1 pessoa, prato feito, meia porção"
                           autoComplete="off"
                         />
-                        <small>Sempre a mesma porção: é ela que tem esse custo.</small>
                       </label>
 
                       {costView.ingredients.length === 0 ? (
@@ -368,6 +562,7 @@ export default function CostsPanel({ companyId }: Props) {
                                   unit: line.unit,
                                   packageQty: item.package_qty,
                                   packagePrice: item.package_price,
+                                  yieldPct: item.yield_pct,
                                 })
                               : null;
                             return (
@@ -393,7 +588,7 @@ export default function CostsPanel({ companyId }: Props) {
                                   </select>
                                 </label>
                                 <label className="field cost-line-qty">
-                                  <span>Quanto vai</span>
+                                  <span>Quanto vai na receita</span>
                                   <input
                                     value={line.quantity}
                                     onChange={(event) => changeLine(index, { quantity: event.target.value })}
@@ -449,7 +644,7 @@ export default function CostsPanel({ companyId }: Props) {
                       <p className="cost-total" aria-live="polite">
                         {liveCost === null
                           ? "Custo da porção: escolha os insumos e as quantidades."
-                          : `Custo da porção: ${formatMoneyPlain(liveCost)}${
+                          : `${portions > 1 && liveRecipe !== null ? `Receita: ${formatMoneyPlain(liveRecipe)} ÷ ${portions} porções. ` : ""}Custo da porção: ${formatMoneyPlain(liveCost)}${
                               cmvOf(liveCost, product.price) !== null
                                 ? ` · CMV ${formatPercent(cmvOf(liveCost, product.price))} (meta ${costView.target}%)`
                                 : ""
@@ -466,7 +661,7 @@ export default function CostsPanel({ companyId }: Props) {
                         <button type="submit" className="btn btn-primary" disabled={savingRecipe}>
                           {savingRecipe ? "Salvando…" : "Salvar ficha"}
                         </button>
-                        <button type="button" className="btn btn-quiet" onClick={() => setDraft(null)}>
+                        <button type="button" className="btn btn-quiet" onClick={closeRecipe}>
                           Cancelar
                         </button>
                       </div>
@@ -479,9 +674,35 @@ export default function CostsPanel({ companyId }: Props) {
         )}
       </div>
 
+      {ranking.length > 0 && (
+        <div className="sheet" aria-label="Lucratividade">
+          <h2>O que dá mais lucro</h2>
+          <p className="adm-muted">
+            Últimos 30 dias, pelos pedidos aceitos. Cada prato ganha um nome pela engenharia de cardápio: o quanto vende
+            e o quanto sobra por porção, comparado com os outros pratos. A ação ao lado é a promoção ou a mudança que combina.
+          </p>
+          <ol className="adm-list cost-ranking">
+            {ranking.map((product) => (
+              <li key={product.id} className="adm-row cost-row">
+                <div className="adm-row-main cost-row-main">
+                  <strong>{product.name}</strong>
+                  <span className="adm-muted">{profitSentence(product)}</span>
+                  <span>{quadrantAction(product.quadrant)}</span>
+                </div>
+                {product.quadrant && (
+                  <div className="adm-row-side">
+                    <span className={quadrantChip(product.quadrant)}>{quadrantLabel(product.quadrant)}</span>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      <div className="sheet" aria-label="Insumos">
       <form
-        className="sheet"
-        aria-label="Insumos"
+        className="cost-form"
         onSubmit={(event) => {
           event.preventDefault();
           void submitIngredient();
@@ -532,20 +753,35 @@ export default function CostsPanel({ companyId }: Props) {
           </label>
         </div>
 
-        <label className="field">
-          <span>Quanto você pagou (R$)</span>
-          <input
-            id="admin-ingredient-price"
-            value={ingredient.price}
-            onChange={(event) => setIngredient({ ...ingredient, price: event.target.value })}
-            inputMode="decimal"
-            autoComplete="off"
-            placeholder="18,90"
-          />
-          {editingIngredient && editingIngredient.used_in > 0 && (
-            <small>Mudar o preço atualiza o custo dos {editingIngredient.used_in} prato(s) que usam este insumo.</small>
-          )}
-        </label>
+        <div className="cost-pack">
+          <label className="field">
+            <span>Quanto você pagou (R$)</span>
+            <input
+              id="admin-ingredient-price"
+              value={ingredient.price}
+              onChange={(event) => setIngredient({ ...ingredient, price: event.target.value })}
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder="18,90"
+            />
+          </label>
+          <label className="field">
+            <span>Aproveitamento (%)</span>
+            <input
+              id="admin-ingredient-yield"
+              value={ingredient.yieldPct ?? ""}
+              onChange={(event) => setIngredient({ ...ingredient, yieldPct: event.target.value })}
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="100"
+            />
+          </label>
+        </div>
+        <small className="adm-muted">
+          Aproveitamento: o que sobra depois de limpar. Se 1 kg de peito vira 850 g limpo, escreva 85. Sem perda, deixe 100.
+          {editingIngredient && editingIngredient.used_in > 0 &&
+            ` Mudar o preço ou o aproveitamento atualiza o custo dos ${editingIngredient.used_in} prato(s) que usam este insumo.`}
+        </small>
 
         {ingredientError && (
           <p className="msg-error" role="alert">
@@ -563,33 +799,112 @@ export default function CostsPanel({ companyId }: Props) {
             </button>
           )}
         </div>
+      </form>
 
         {costView.ingredients.length > 0 && (
           <ul className="adm-list">
-            {costView.ingredients.map((item) => (
-              <li key={item.id} className="adm-row">
-                <div className="adm-row-main cost-row-main">
-                  <strong>{item.name}</strong>
-                  <span className="adm-muted">
-                    {packageLabel(item.package_price, item.package_qty, item.unit)}
-                    {item.used_in > 0 ? ` · em ${item.used_in} prato(s)` : " · ainda em nenhum prato"}
-                  </span>
-                </div>
-                <div className="adm-row-side">
-                  <button type="button" className="btn btn-outline btn-sm" onClick={() => startIngredientEdit(item)}>
-                    Mudar
-                  </button>
-                  <ConfirmButton
-                    label="Remover"
-                    confirmLabel={item.used_in > 0 ? "Sai das fichas. Toque de novo" : "Toque de novo"}
-                    onConfirm={() => void removeIngredient(item)}
-                  />
-                </div>
-              </li>
-            ))}
+            {costView.ingredients.map((item) => {
+              const counting = stock?.ingredientId === item.id ? stock : null;
+              return (
+                <li key={item.id} className="adm-row cost-row">
+                  <div className="adm-row-main cost-row-main">
+                    <strong>{item.name}</strong>
+                    <span className="adm-muted">
+                      {packageLabel(item.package_price, item.package_qty, item.unit)}
+                      {item.yield_pct < 100 ? ` · aproveitamento ${item.yield_pct}%` : ""}
+                      {item.used_in > 0 ? ` · em ${item.used_in} prato(s)` : " · ainda em nenhum prato"}
+                    </span>
+                    {portionsSentences(item.package_qty, item.unit, item.portions_per_package).map((sentence) => (
+                      <span key={sentence} className="cost-yield">
+                        {sentence}
+                      </span>
+                    ))}
+                    <span className="adm-muted">{stockSentence(item)}</span>
+                  </div>
+                  <div className="adm-row-side">
+                    <button type="button" className="btn btn-outline btn-sm" onClick={() => openStock(item)}>
+                      Estoque
+                    </button>
+                    <button type="button" className="btn btn-outline btn-sm" onClick={() => startIngredientEdit(item)}>
+                      Mudar
+                    </button>
+                    <ConfirmButton
+                      label="Remover"
+                      confirmLabel={item.used_in > 0 ? "Sai das fichas. Toque de novo" : "Toque de novo"}
+                      onConfirm={() => void removeIngredient(item)}
+                    />
+                  </div>
+
+                  {counting && (
+                    <div className="cost-editor" role="group" aria-label={`Estoque de ${item.name}`}>
+                      <div className="cost-pack">
+                        <label className="field">
+                          <span>O que aconteceu?</span>
+                          <select
+                            value={counting.mode}
+                            onChange={(event) =>
+                              setStock({ ...counting, mode: event.target.value === "compra" ? "compra" : "contagem" })
+                            }
+                          >
+                            <option value="contagem">Contei: tenho agora</option>
+                            <option value="compra">Comprei: somar</option>
+                          </select>
+                        </label>
+                        <label className="field">
+                          <span>Quantidade</span>
+                          <input
+                            value={counting.quantity}
+                            onChange={(event) => setStock({ ...counting, quantity: event.target.value })}
+                            inputMode="decimal"
+                            autoComplete="off"
+                            placeholder="5"
+                          />
+                        </label>
+                      </div>
+                      <label className="field">
+                        <span>Unidade</span>
+                        <select
+                          value={counting.unit}
+                          onChange={(event) => {
+                            if (isInputUnit(event.target.value)) setStock({ ...counting, unit: event.target.value });
+                          }}
+                        >
+                          {unitsFor(item.unit).map((unit) => (
+                            <option key={unit.value} value={unit.value}>
+                              {unit.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <small className="adm-muted">
+                        Depois disso, cada venda aceita tira do estoque o que a ficha diz. Conte de novo de vez em quando para acertar.
+                      </small>
+                      {stockError && (
+                        <p className="msg-error" role="alert">
+                          {stockError}
+                        </p>
+                      )}
+                      <div className="cost-actions">
+                        <button type="button" className="btn btn-primary" onClick={() => void submitStock(item)}>
+                          Salvar estoque
+                        </button>
+                        {item.stock_controlled && (
+                          <button type="button" className="btn btn-quiet" onClick={() => void stopStock(item)}>
+                            Parar de controlar
+                          </button>
+                        )}
+                        <button type="button" className="btn btn-quiet" onClick={() => setStock(null)}>
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
-      </form>
+      </div>
     </section>
   );
 }

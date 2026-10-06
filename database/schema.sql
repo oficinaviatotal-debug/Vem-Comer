@@ -69,6 +69,8 @@ CREATE TABLE products (
     image_key VARCHAR(32),
     portion VARCHAR(60),
     extra_cost NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (extra_cost >= 0),
+    yield_portions SMALLINT NOT NULL DEFAULT 1 CHECK (yield_portions BETWEEN 1 AND 500),
+    portion_grams NUMERIC(8,1) CHECK (portion_grams > 0),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -79,6 +81,9 @@ CREATE TABLE ingredients (
     unit VARCHAR(2) NOT NULL CHECK (unit IN ('g', 'ml', 'un')),
     package_qty NUMERIC(12,3) NOT NULL CHECK (package_qty > 0),
     package_price NUMERIC(10,2) NOT NULL CHECK (package_price >= 0),
+    yield_pct SMALLINT NOT NULL DEFAULT 100 CHECK (yield_pct BETWEEN 1 AND 100),
+    stock_qty NUMERIC(12,3) CHECK (stock_qty >= 0),
+    stock_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

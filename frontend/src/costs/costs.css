@@ -102,3 +102,47 @@
     grid-column: auto;
   }
 }
+
+.cost-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.cost-form > h2 {
+  margin: 0;
+  font: 700 var(--t-xl) / 1.2 var(--font-display);
+  color: var(--folha);
+}
+
+.cost-voice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding-bottom: var(--s3);
+  border-bottom: 1px dashed var(--linha);
+}
+
+.cost-voice-btn {
+  align-self: flex-start;
+}
+
+.cost-heard {
+  margin: 0;
+  font-style: italic;
+  color: var(--folha);
+}
+
+.cost-heard-note {
+  margin: 0;
+}
+
+.cost-yield {
+  font-size: var(--t-sm);
+  color: var(--mata);
+  font-weight: 700;
+}
+
+.cost-ranking {
+  counter-reset: none;
+}

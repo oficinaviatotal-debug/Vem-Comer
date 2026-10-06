@@ -19,6 +19,49 @@ Aba **Custos** do painel (só dono e gerente):
 
 A lista mostra primeiro os pratos com custo alto, depois os de atenção, depois os sem ficha.
 
+## Rendimento, aproveitamento e padronização (pedido do GD, 06/10/2026)
+
+- **A receita rende quantas porções.** A ficha guarda a receita inteira: frango à milanesa com 1,2 kg de peito,
+  300 g de farinha e 4 ovos rende 6 porções. O custo da porção é o custo da receita ÷ 6, mais embalagem e gás
+  por porção.
+- **Peso de cada porção (g)**, para padronizar o prato (o garçom e a cozinha servem sempre igual).
+- **Aproveitamento do insumo (%)**: o que sobra depois de limpar. 1 kg de peito que vira 850 g limpo = 85%.
+  A ficha usa o peso limpo; o custo e o estoque voltam ao peso comprado.
+- **Quantos pratos uma embalagem rende**: "1 kg dá 4,2 pratos de Frango à milanesa", em cada insumo.
+- **Ficha falada**: botão "Falar a ficha". O dono fala, por exemplo, "1,2 quilo de peito de frango, 300 gramas de
+  farinha de rosca, quatro ovos, rende 6 porções, porção de 250 gramas". A tela mostra o que entendeu e só salva
+  quando ele toca em Salvar. Entende números falados ("duzentos e cinquenta", "um quilo e meio", "meia dúzia") e nomes
+  curtos ("frango" acha "Peito de frango"). O que não entendeu aparece explicado. Peso sem unidade ("um peito") é
+  recusado com o pedido "diga em gramas ou quilos". Lógica em `frontend/src/costs/recipeSpeech.ts`.
+
+## Estoque pela ficha
+
+- O dono toca em **Estoque** no insumo e diz "Contei: tenho agora 5 kg" ou "Comprei: somar 2 kg".
+- Daí em diante, cada venda **aceita pela cozinha** tira do estoque o que a ficha diz (com o aproveitamento).
+  A tela mostra o estoque de agora e para quantos dias dá, no ritmo dos últimos 30 dias.
+- É estoque **teórico**. Contar de novo de vez em quando acerta a diferença (perda, desperdício, erro de porção);
+  a diferença entre o teórico e o contado é a perda que o dono não via.
+- Guardado em `ingredients.stock_qty` e `stock_at` (migração 007). Rota `POST .../admin/ingredients/<id>/stock`
+  com `contagem`, `compra` ou `parar`.
+
+## O que dá mais lucro (engenharia de cardápio)
+
+Seção "O que dá mais lucro": cada prato com o que vendeu e o lucro sobre o custo dos ingredientes nos últimos 30 dias,
+do maior para o menor, e o nome da engenharia de cardápio (Kasavana e Smith, 1982):
+
+| Nome | Quando | Ação sugerida na tela |
+| --- | --- | --- |
+| Estrela | vende muito, margem alta | não mexer na receita; destaque no cardápio e nos posts |
+| Cavalo de tração | vende muito, margem baixa | subir um pouco o preço, acertar a porção, acompanhamento mais barato |
+| Quebra-cabeça | vende pouco, margem alta | promoção, foto melhor, combo, o garçom oferecer |
+| Cão | vende pouco, margem baixa | repensar receita e preço, ou tirar do cardápio |
+
+Linhas de corte: popular = vendeu pelo menos 70% do que caberia a cada prato numa divisão igual; margem alta = margem
+por porção maior ou igual à média ponderada pelas vendas. Só entram pratos com ficha e com preço. Fonte do método:
+[Beancount: engenharia de cardápio](https://beancount.io/pt/blog/2026/07/08/menu-engineering-food-cost-percentage-stars-plowhorses-puzzles-dogs-matrix).
+Essas ações são o começo da gestão de promoções e campanhas; o disparo (e-mail, WhatsApp, posts) é o item 9.
+
+
 ## As contas (`backend/costing.py`)
 
 - Custo da porção = soma de (quantidade usada × preço da embalagem ÷ tamanho da embalagem) + outros custos.
@@ -54,6 +97,7 @@ A lista mostra primeiro os pratos com custo alto, depois os de atenção, depois
 
 ## Limites desta versão
 
+- O estoque é teórico (pela ficha) até a entrada de notas do item 22.
 - É o **CMV teórico** (pela ficha técnica). O CMV real, pelo estoque (estoque inicial + compras − estoque final),
   depende da entrada de notas e do estoque: é o item 22 (compra inteligente).
 - Cadastro de insumo e de ficha é por toque e digitação. Voz e foto da nota vêm depois, reaproveitando o
@@ -65,3 +109,5 @@ A lista mostra primeiro os pratos com custo alto, depois os de atenção, depois
 - `backend/test_costing.py`: as contas, as unidades, os números no formato brasileiro.
 - `backend/test_costs_endpoints.py`: login, cargo, restaurante, cada rota e o custo gravado no pedido.
 - `tests/costs/costLogic.test.mjs`: a lógica da tela (custo ao vivo, frases, ordem da lista).
+- `backend/test_costs_view.py`: rendimento, aproveitamento, estoque e o custo gravado no pedido.
+- `tests/costs/recipeSpeech.test.mjs`: a ficha falada.

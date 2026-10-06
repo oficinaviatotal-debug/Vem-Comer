@@ -1,5 +1,6 @@
 import os
 import unittest
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -95,9 +96,12 @@ LINE_ROWS = [
     {"product_id": PRODUCT_ID, "ingredient_id": CHICKEN_ID, "quantity": Decimal("250.000")},
     {"product_id": PRODUCT_ID, "ingredient_id": POTATO_ID, "quantity": Decimal("200.000")},
 ]
+NOW = datetime.now(timezone.utc)
 SOLD_ROWS = [
-    {"quantity": 2, "unit_price": Decimal("25.00"), "unit_cost": Decimal("7.43")},
-    {"quantity": 1, "unit_price": Decimal("8.00"), "unit_cost": None},
+    {"product_id": PRODUCT_ID, "quantity": 2, "unit_price": Decimal("25.00"), "unit_cost": Decimal("7.43"),
+     "created_at": NOW - timedelta(days=1)},
+    {"product_id": JUICE_ID, "quantity": 1, "unit_price": Decimal("8.00"), "unit_cost": None,
+     "created_at": NOW - timedelta(days=2)},
 ]
 
 
@@ -158,6 +162,14 @@ class CostsViewTests(unittest.TestCase):
         self.assertEqual(chicken["unit_cost"], 0.0189)
         self.assertEqual(body["period"]["cmv"], 29.7)
         self.assertEqual(body["period"]["coverage"], 86)
+        self.assertEqual(dish["sold_30d"], 2)
+        self.assertEqual(dish["profit_30d"], 35.14)
+        self.assertEqual(dish["quadrant"], "estrela")   # o unico prato com margem conhecida
+        self.assertIsNone(juice["quadrant"])
+        self.assertEqual(chicken["portions_per_package"], [
+            {"product_id": PRODUCT_ID, "name": "Frango com batata", "portions": 4.0}
+        ])
+        self.assertFalse(chicken["stock_controlled"])
         sold_query = next(sql for sql, _ in query.calls if "FROM order_items" in sql)
         self.assertIn("o.status IN ('em preparo', 'concluido')", sold_query)
         # Toda consulta e presa ao restaurante do login.
@@ -210,7 +222,7 @@ class IngredientTests(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertTrue(conn.committed)
         _, params = conn.cursor_obj.executed[0]
-        self.assertEqual(params, (COMPANY_ID, "Frango", "g", Decimal("1000.000"), Decimal("18.90")))
+        self.assertEqual(params, (COMPANY_ID, "Frango", "g", Decimal("1000.000"), Decimal("18.90"), 100))
 
     def test_create_rejects_bad_input_without_touching_the_database(self):
         for body in (
@@ -262,13 +274,13 @@ class IngredientTests(unittest.TestCase):
         with patch.object(backend_app, "get_db_connection", return_value=conn):
             response = self.client.put(
                 f"{BASE}/ingredients/{CHICKEN_ID}",
-                json={"name": "Frango", "quantity": "1", "unit": "kg", "price": "21,50"},
+                json={"name": "Frango", "quantity": "1", "unit": "kg", "price": "21,50", "yield_pct": "85"},
                 headers=auth("MANAGER"),
             )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(conn.committed)
         update = next(item for item in conn.cursor_obj.executed if item[0].startswith("UPDATE ingredients"))
-        self.assertEqual(update[1], ("Frango", "g", Decimal("1000.000"), Decimal("21.50"), CHICKEN_ID, COMPANY_ID))
+        self.assertEqual(update[1], ("Frango", "g", Decimal("1000.000"), Decimal("21.50"), 85, CHICKEN_ID, COMPANY_ID))
         self.assertIn("AND company_id = %s", update[0])
 
     def test_delete(self):
@@ -358,7 +370,7 @@ class RecipeTests(unittest.TestCase):
             ]),
         )
         update = next(params for sql, params in executed if sql.startswith("UPDATE products"))
-        self.assertEqual(update, ("1 pessoa", Decimal("1.50"), PRODUCT_ID, COMPANY_ID))
+        self.assertEqual(update, ("1 pessoa", Decimal("1.50"), 1, None, PRODUCT_ID, COMPANY_ID))
 
     def test_absurd_portion_cost_is_refused(self):
         conn = FakeConnection([
@@ -393,38 +405,91 @@ class RecipeTests(unittest.TestCase):
         self.assertTrue(any("DELETE FROM product_ingredients" in sql for sql in conn.sql()))
 
 
-class OrderUnitCostTests(unittest.TestCase):
-    def test_costs_per_product(self):
-        cursor = ScriptedCursor([
-            ("FROM products p", [
-                {"product_id": PRODUCT_ID, "extra_cost": Decimal("1.50"), "quantity": Decimal("250"),
-                 "package_qty": Decimal("1000"), "package_price": Decimal("18.90")},
-                {"product_id": PRODUCT_ID, "extra_cost": Decimal("1.50"), "quantity": Decimal("200"),
-                 "package_qty": Decimal("2000"), "package_price": Decimal("12.00")},
-                {"product_id": JUICE_ID, "extra_cost": Decimal("0"), "quantity": None,
-                 "package_qty": None, "package_price": None},
-            ]),
-        ])
-        costs = backend_app.order_unit_costs(cursor, COMPANY_ID, [PRODUCT_ID, JUICE_ID, PRODUCT_ID])
-        self.assertEqual(costs[PRODUCT_ID], Decimal("7.43"))
-        self.assertIsNone(costs[JUICE_ID])
-        self.assertEqual(cursor.executed[0][0], "SAVEPOINT unit_costs;")
-        self.assertEqual(cursor.executed[1][1], (COMPANY_ID, sorted([PRODUCT_ID, JUICE_ID])))
+class StockRouteTests(unittest.TestCase):
+    def setUp(self):
+        self.client = backend_app.app.test_client()
+        self.route = f"{BASE}/ingredients/{CHICKEN_ID}/stock"
 
-    def test_absurd_cost_is_left_empty_instead_of_breaking_the_order(self):
-        # "1 g por R$ 18.900" e 10 kg na ficha: custo de R$ 189 milhoes nao cabe em order_items.unit_cost
-        cursor = ScriptedCursor([
-            ("FROM products p", [
-                {"product_id": PRODUCT_ID, "extra_cost": Decimal("0"), "quantity": Decimal("10000"),
-                 "package_qty": Decimal("1"), "package_price": Decimal("18900.00")},
-            ]),
-        ])
-        self.assertEqual(backend_app.order_unit_costs(cursor, COMPANY_ID, [PRODUCT_ID]), {PRODUCT_ID: None})
+    def test_count(self):
+        conn = FakeConnection([("FROM ingredients", {"unit": "g", "yield_pct": 85, "stock_qty": None, "stock_at": None})])
+        with patch.object(backend_app, "get_db_connection", return_value=conn):
+            response = self.client.post(self.route, json={"mode": "contagem", "quantity": "5", "unit": "kg"}, headers=auth())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["stock_qty"], 5000.0)
+        update = next(item for item in conn.cursor_obj.executed if item[0].startswith("UPDATE ingredients"))
+        self.assertEqual(update[1][0], Decimal("5000.000"))
+        self.assertEqual(update[1][2:], (CHICKEN_ID, COMPANY_ID))
+        self.assertTrue(conn.committed)
 
-    def test_failure_never_blocks_the_order(self):
-        cursor = ScriptedCursor([("FROM products p", RuntimeError("coluna nao existe"))])
-        self.assertEqual(backend_app.order_unit_costs(cursor, COMPANY_ID, [PRODUCT_ID]), {})
-        self.assertIn("ROLLBACK TO SAVEPOINT unit_costs;", [sql for sql, _ in cursor.executed])
+    def test_count_of_zero_is_valid(self):
+        conn = FakeConnection([("FROM ingredients", {"unit": "g", "yield_pct": 100, "stock_qty": None, "stock_at": None})])
+        with patch.object(backend_app, "get_db_connection", return_value=conn):
+            response = self.client.post(self.route, json={"mode": "contagem", "quantity": 0, "unit": "kg"}, headers=auth())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["stock_qty"], 0.0)
+
+    def test_purchase_adds_to_what_is_left(self):
+        conn = FakeConnection([
+            ("FROM ingredients", {"unit": "g", "yield_pct": 85, "stock_qty": Decimal("5000"), "stock_at": NOW - timedelta(days=2)}),
+            ("FROM order_items", [{"sold": 10, "recipe_qty": Decimal("1200"), "yield_portions": 6}]),
+        ])
+        with patch.object(backend_app, "get_db_connection", return_value=conn):
+            response = self.client.post(self.route, json={"mode": "compra", "quantity": "2", "unit": "kg"}, headers=auth())
+        self.assertEqual(response.status_code, 200)
+        # sobrou 2647,059 g + comprou 2000 g
+        self.assertEqual(response.get_json()["stock_qty"], 4647.059)
+        sold_query = next(item for item in conn.cursor_obj.executed if "FROM order_items" in item[0])
+        self.assertEqual(sold_query[1][0], COMPANY_ID)
+        self.assertEqual(sold_query[1][2], CHICKEN_ID)
+
+    def test_stop_and_errors(self):
+        conn = FakeConnection([("FROM ingredients", {"unit": "g", "yield_pct": 100, "stock_qty": Decimal("1"), "stock_at": NOW})])
+        with patch.object(backend_app, "get_db_connection", return_value=conn):
+            response = self.client.post(self.route, json={"mode": "parar"}, headers=auth())
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.get_json()["stock_qty"])
+
+        self.assertEqual(self.client.post(self.route, json={"mode": "outro"}, headers=auth()).status_code, 400)
+        conn = FakeConnection([("FROM ingredients", {"unit": "g", "yield_pct": 100, "stock_qty": None, "stock_at": None})])
+        with patch.object(backend_app, "get_db_connection", return_value=conn):
+            wrong_unit = self.client.post(self.route, json={"mode": "contagem", "quantity": 2, "unit": "L"}, headers=auth())
+        self.assertEqual(wrong_unit.status_code, 400)
+        conn = FakeConnection([("FROM ingredients", None)])
+        with patch.object(backend_app, "get_db_connection", return_value=conn):
+            missing = self.client.post(self.route, json={"mode": "contagem", "quantity": 2, "unit": "kg"}, headers=auth())
+        self.assertEqual(missing.status_code, 404)
+        self.assertEqual(
+            self.client.post(self.route, json={"mode": "parar"}, headers=auth("WAITER")).status_code, 403
+        )
+
+
+class RecipeYieldTests(unittest.TestCase):
+    def setUp(self):
+        self.client = backend_app.app.test_client()
+
+    def test_recipe_that_serves_six(self):
+        conn = FakeConnection([
+            ("FROM products p", {"id": PRODUCT_ID, "price": Decimal("30.00"), "cmv_target": 35}),
+            ("FROM ingredients", [dict(INGREDIENT_ROWS[0], yield_pct=85)]),
+        ])
+        body = {
+            "portion": "1 pessoa", "portion_grams": "250", "yield_portions": "6",
+            "items": [{"ingredient_id": CHICKEN_ID, "quantity": "1,2", "unit": "kg"}],
+        }
+        with patch.object(backend_app, "get_db_connection", return_value=conn):
+            response = self.client.put(f"{BASE}/products/{PRODUCT_ID}/recipe", json=body, headers=auth())
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()["cost"], 4.45)
+        update = next(params for sql, params in conn.cursor_obj.executed if sql.startswith("UPDATE products"))
+        self.assertEqual(update, ("1 pessoa", Decimal("0.00"), 6, Decimal("250.0"), PRODUCT_ID, COMPANY_ID))
+
+    def test_bad_yield(self):
+        with patch.object(backend_app, "get_db_connection") as connect:
+            response = self.client.put(
+                f"{BASE}/products/{PRODUCT_ID}/recipe", json={"items": [], "yield_portions": "2,5"}, headers=auth()
+            )
+        self.assertEqual(response.status_code, 400)
+        connect.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ import base64
 import os
 import time
 import threading
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 from urllib.parse import parse_qs, urlparse
@@ -15,6 +16,13 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import query_db, get_db_connection
 import costing
+from costs_view import (  # noqa: F401 (cost_since e build_cost_view tambem sao usados pelos testes)
+    COST_PERIOD_DAYS,
+    _num,
+    build_cost_view,
+    cost_since,
+    order_unit_costs,
+)
 import image_enhance
 import media_store
 import menu_photo
@@ -2900,14 +2908,6 @@ def confirm_order_payment(order_id):
 # So dono e gerente veem custo; o cliente nunca ve (a rota publica de produtos nao muda).
 # =====================================================================================
 COST_ROLES = ('OWNER', 'MANAGER')
-COST_PERIOD_DAYS = 30
-
-
-def _num(value, places='0.01'):
-    """Decimal do banco -> numero do JSON (a tela trabalha com number)."""
-    if value is None:
-        return None
-    return float(Decimal(value).quantize(Decimal(places)))
 
 
 def _close_quietly(conn, cur=None, rollback=True):
@@ -2918,140 +2918,6 @@ def _close_quietly(conn, cur=None, rollback=True):
     if cur is not None:
         cur.close()
     conn.close()
-
-
-def order_unit_costs(cur, company_id, product_ids):
-    """Custo de cada prato neste momento, para gravar no pedido.
-
-    Roda dentro da transacao do pedido, protegido por um savepoint: se algo der errado aqui,
-    o pedido segue sem custo (o cliente nunca fica sem pedir por causa da conta do custo).
-    """
-    ids = sorted({str(pid) for pid in product_ids})
-    if not ids:
-        return {}
-    try:
-        cur.execute("SAVEPOINT unit_costs;")
-        cur.execute(
-            """
-            SELECT
-                p.id AS product_id,
-                p.extra_cost,
-                pi.quantity,
-                i.package_qty,
-                i.package_price
-            FROM products p
-            LEFT JOIN product_ingredients pi
-                ON pi.product_id = p.id
-            LEFT JOIN ingredients i
-                ON i.id = pi.ingredient_id
-                AND i.company_id = p.company_id
-            WHERE p.company_id = %s
-            AND p.id::text = ANY(%s);
-            """,
-            (str(company_id), ids)
-        )
-        rows = cur.fetchall() or []
-        cur.execute("RELEASE SAVEPOINT unit_costs;")
-    except Exception:
-        try:
-            cur.execute("ROLLBACK TO SAVEPOINT unit_costs;")
-        except Exception:
-            pass
-        return {}
-
-    try:
-        lines = {}
-        extras = {}
-        for row in rows:
-            pid = str(row['product_id'])
-            extras[pid] = row.get('extra_cost') or 0
-            lines.setdefault(pid, [])
-            if row.get('quantity') is not None and row.get('package_qty') is not None:
-                lines[pid].append((row['quantity'], row['package_qty'], row['package_price']))
-
-        # Custo absurdo (erro de digitacao) nao cabe no pedido e nunca pode travar a venda: fica vazio.
-        return {
-            pid: costing.storable_cost(costing.product_cost(pid_lines, extras.get(pid, 0)))
-            for pid, pid_lines in lines.items()
-        }
-    except Exception:
-        return {}
-
-
-def build_cost_view(target, ingredient_rows, product_rows, line_rows, sold_rows):
-    """Monta, a partir das linhas do banco, tudo que a aba Custos mostra."""
-    ingredients = {str(row['id']): row for row in ingredient_rows}
-    used_in = {}
-    lines_by_product = {}
-    for row in line_rows:
-        ingredient = ingredients.get(str(row['ingredient_id']))
-        if ingredient is None:
-            continue
-        lines_by_product.setdefault(str(row['product_id']), []).append((row, ingredient))
-        used_in[str(ingredient['id'])] = used_in.get(str(ingredient['id']), 0) + 1
-
-    products = []
-    for product in product_rows:
-        pid = str(product['id'])
-        lines = lines_by_product.get(pid, [])
-        price = Decimal(product.get('price') or 0)
-        cost = costing.product_cost(
-            ((line['quantity'], ing['package_qty'], ing['package_price']) for line, ing in lines),
-            product.get('extra_cost') or 0
-        )
-        products.append({
-            "id": pid,
-            "name": product['name'],
-            "price": _num(price),
-            "menu_id": str(product['menu_id']) if product.get('menu_id') else None,
-            "portion": product.get('portion'),
-            "extra_cost": _num(product.get('extra_cost') or 0),
-            "recipe": [
-                {
-                    "ingredient_id": str(ing['id']),
-                    "name": ing['name'],
-                    "unit": ing['unit'],
-                    "quantity": _num(line['quantity'], '0.001'),
-                    "cost": _num(costing.line_cost(line['quantity'], ing['package_qty'], ing['package_price']))
-                }
-                for line, ing in lines
-            ],
-            "cost": _num(cost),
-            "cmv": _num(costing.cmv_percent(cost, price), '0.1'),
-            "margin": _num(costing.margin(cost, price)),
-            "status": costing.status(cost, price, target),
-            "suggested_price": _num(costing.suggested_price(cost, target)),
-        })
-
-    period = costing.period_summary(
-        (row['quantity'], row['unit_price'], row.get('unit_cost')) for row in sold_rows
-    )
-
-    return {
-        "target": target,
-        "ingredients": [
-            {
-                "id": str(row['id']),
-                "name": row['name'],
-                "unit": row['unit'],
-                "package_qty": _num(row['package_qty'], '0.001'),
-                "package_price": _num(row['package_price']),
-                "unit_cost": _num(costing.line_cost(1, row['package_qty'], row['package_price']), '0.0001'),
-                "used_in": used_in.get(str(row['id']), 0),
-            }
-            for row in ingredient_rows
-        ],
-        "products": products,
-        "with_cost": sum(1 for p in products if p["cost"] is not None),
-        "period": {
-            "days": COST_PERIOD_DAYS,
-            "revenue": _num(period['revenue']),
-            "covered_revenue": _num(period['covered_revenue']),
-            "cost": _num(period['cost']),
-            "cmv": _num(period['cmv'], '0.1'),
-            "coverage": _num(period['coverage'], '1'),
-        },
-    }
 
 
 def load_cost_view(company_id):
@@ -3066,7 +2932,7 @@ def load_cost_view(company_id):
 
     ingredient_rows = query_db(
         """
-        SELECT id, name, unit, package_qty, package_price
+        SELECT id, name, unit, package_qty, package_price, yield_pct, stock_qty, stock_at
         FROM ingredients
         WHERE company_id = %s
         ORDER BY lower(name), id;
@@ -3075,7 +2941,7 @@ def load_cost_view(company_id):
     ) or []
     product_rows = query_db(
         """
-        SELECT id, name, price, menu_id, portion, extra_cost
+        SELECT id, name, price, menu_id, portion, portion_grams, yield_portions, extra_cost
         FROM products
         WHERE company_id = %s
         ORDER BY lower(name), id;
@@ -3093,19 +2959,20 @@ def load_cost_view(company_id):
         """,
         (str(company_id),)
     ) or []
+    now = datetime.now(timezone.utc)
     sold_rows = query_db(
         """
-        SELECT oi.quantity, oi.unit_price, oi.unit_cost
+        SELECT oi.product_id, oi.quantity, oi.unit_price, oi.unit_cost, o.created_at
         FROM order_items oi
         JOIN orders o ON o.id = oi.order_id
         WHERE o.company_id = %s
         AND o.status IN ('em preparo', 'concluido')
-        AND o.created_at >= now() - make_interval(days => %s);
+        AND o.created_at >= %s;
         """,
-        (str(company_id), COST_PERIOD_DAYS)
+        (str(company_id), cost_since(ingredient_rows, now))
     ) or []
 
-    return build_cost_view(target, ingredient_rows, product_rows, line_rows, sold_rows)
+    return build_cost_view(target, ingredient_rows, product_rows, line_rows, sold_rows, now)
 
 
 def ingredient_fields(data):
@@ -3120,7 +2987,10 @@ def ingredient_fields(data):
         'Preco pago',
         maximum=costing.MAX_PACKAGE_PRICE
     ))
-    return {"name": name, "unit": unit, "package_qty": package_qty, "package_price": price}
+    yield_pct = costing.normalize_yield_pct(data.get('yield_pct'))
+    return {
+        "name": name, "unit": unit, "package_qty": package_qty, "package_price": price, "yield_pct": yield_pct
+    }
 
 
 @app.route('/api/companies/<uuid:company_id>/admin/costs', methods=['GET'])
@@ -3195,11 +3065,14 @@ def admin_create_ingredient(company_id):
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute(
             """
-            INSERT INTO ingredients (company_id, name, unit, package_qty, package_price)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO ingredients (company_id, name, unit, package_qty, package_price, yield_pct)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id;
             """,
-            (str(company_id), fields['name'], fields['unit'], fields['package_qty'], fields['package_price'])
+            (
+                str(company_id), fields['name'], fields['unit'], fields['package_qty'], fields['package_price'],
+                fields['yield_pct']
+            )
         )
         row = cur.fetchone()
         conn.commit()
@@ -3264,12 +3137,12 @@ def admin_update_ingredient(company_id, ingredient_id):
         cur.execute(
             """
             UPDATE ingredients
-            SET name = %s, unit = %s, package_qty = %s, package_price = %s, updated_at = now()
+            SET name = %s, unit = %s, package_qty = %s, package_price = %s, yield_pct = %s, updated_at = now()
             WHERE id = %s
             AND company_id = %s;
             """,
             (
-                fields['name'], fields['unit'], fields['package_qty'], fields['package_price'],
+                fields['name'], fields['unit'], fields['package_qty'], fields['package_price'], fields['yield_pct'],
                 str(ingredient_id), str(company_id)
             )
         )
@@ -3330,6 +3203,8 @@ def admin_save_recipe(company_id, product_id):
     extra_raw = data.get('extra_cost')
     try:
         portion = costing.clean_portion(data.get('portion'))
+        yield_portions = costing.normalize_yield_portions(data.get('yield_portions'))
+        portion_grams = costing.normalize_portion_grams(data.get('portion_grams'))
         extra_cost = costing.money(costing.parse_number(
             0 if extra_raw in (None, '') else extra_raw,
             'Outros custos',
@@ -3370,7 +3245,7 @@ def admin_save_recipe(company_id, product_id):
         if ids:
             cur.execute(
                 """
-                SELECT id, unit, package_qty, package_price
+                SELECT id, unit, package_qty, package_price, yield_pct
                 FROM ingredients
                 WHERE company_id = %s
                 AND id::text = ANY(%s)
@@ -3383,8 +3258,12 @@ def admin_save_recipe(company_id, product_id):
         try:
             lines = costing.recipe_lines(items, {iid: row['unit'] for iid, row in known.items()})
             cost = costing.product_cost(
-                ((qty, known[iid]['package_qty'], known[iid]['package_price']) for iid, qty in lines),
-                extra_cost
+                (
+                    (qty, known[iid]['package_qty'], known[iid]['package_price'], known[iid].get('yield_pct') or 100)
+                    for iid, qty in lines
+                ),
+                extra_cost,
+                yield_portions
             )
             if cost is not None and cost > costing.MAX_PORTION_COST:
                 raise costing.CostError(
@@ -3409,11 +3288,11 @@ def admin_save_recipe(company_id, product_id):
         cur.execute(
             """
             UPDATE products
-            SET portion = %s, extra_cost = %s
+            SET portion = %s, extra_cost = %s, yield_portions = %s, portion_grams = %s
             WHERE id = %s
             AND company_id = %s;
             """,
-            (portion, extra_cost, str(product_id), str(company_id))
+            (portion, extra_cost, yield_portions, portion_grams, str(product_id), str(company_id))
         )
         conn.commit()
         _close_quietly(conn, cur, rollback=False)
@@ -3430,6 +3309,102 @@ def admin_save_recipe(company_id, product_id):
     except Exception as e:
         _close_quietly(conn, cur)
         return error_response("Erro ao salvar a ficha do prato", e)
+
+
+@app.route('/api/companies/<uuid:company_id>/admin/ingredients/<uuid:ingredient_id>/stock', methods=['POST'])
+@require_roles(*COST_ROLES)
+def admin_ingredient_stock(company_id, ingredient_id):
+    """Estoque pela ficha. mode: 'contagem' (o que tem agora), 'compra' (soma ao que tem) ou 'parar'."""
+    access_error = require_company_access(company_id)
+    if access_error:
+        return access_error
+
+    data = request.get_json(silent=True) or {}
+    mode = data.get('mode')
+    if mode not in ('contagem', 'compra', 'parar'):
+        return jsonify({"error": "Escolha: contei, comprei ou parar de controlar."}), 400
+    amount = None
+    unit = None
+    if mode != 'parar':
+        try:
+            if mode == 'contagem' and costing.parse_number(data.get('quantity'), 'Quantidade') == 0:
+                # "contei e acabou": zero e uma contagem valida
+                amount = Decimal('0.000')
+                unit = costing.UNITS[costing.normalize_unit(data.get('unit'))][0]
+            else:
+                amount, unit = costing.to_base(data.get('quantity'), data.get('unit'), 'Quantidade')
+        except costing.CostError as error:
+            return jsonify({"error": str(error)}), 400
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            """
+            SELECT unit, yield_pct, stock_qty, stock_at
+            FROM ingredients
+            WHERE id = %s
+            AND company_id = %s
+            FOR UPDATE;
+            """,
+            (str(ingredient_id), str(company_id))
+        )
+        row = cur.fetchone()
+        if row is None:
+            _close_quietly(conn, cur)
+            return jsonify({"error": "Insumo nao encontrado"}), 404
+        if unit is not None and unit != row['unit']:
+            _close_quietly(conn, cur)
+            return jsonify({"error": "Unidade nao combina com o insumo: peso com peso, liquido com liquido."}), 400
+
+        new_stock = None
+        if mode == 'contagem':
+            new_stock = amount
+        elif mode == 'compra':
+            current = Decimal('0')
+            if row.get('stock_qty') is not None and row.get('stock_at') is not None:
+                cur.execute(
+                    """
+                    SELECT oi.quantity AS sold, pi.quantity AS recipe_qty, p.yield_portions
+                    FROM order_items oi
+                    JOIN orders o ON o.id = oi.order_id
+                    JOIN products p ON p.id = oi.product_id AND p.company_id = o.company_id
+                    JOIN product_ingredients pi ON pi.product_id = p.id
+                    WHERE o.company_id = %s
+                    AND o.status IN ('em preparo', 'concluido')
+                    AND o.created_at > %s
+                    AND pi.ingredient_id = %s;
+                    """,
+                    (str(company_id), row['stock_at'], str(ingredient_id))
+                )
+                used = sum(
+                    (costing.gross_use(r['sold'], r['recipe_qty'], r.get('yield_portions') or 1, row.get('yield_pct'))
+                     for r in (cur.fetchall() or [])),
+                    Decimal('0')
+                )
+                current = max(costing.stock_now(row['stock_qty'], used), Decimal('0'))
+            new_stock = current + amount
+            if new_stock > costing.MAX_PACKAGE_QTY * 100:
+                _close_quietly(conn, cur)
+                return jsonify({"error": "Quantidade grande demais. Confira se digitou certo."}), 400
+
+        cur.execute(
+            """
+            UPDATE ingredients
+            SET stock_qty = %s, stock_at = CASE WHEN %s IS NULL THEN NULL ELSE now() END
+            WHERE id = %s
+            AND company_id = %s;
+            """,
+            (new_stock, new_stock, str(ingredient_id), str(company_id))
+        )
+        conn.commit()
+        _close_quietly(conn, cur, rollback=False)
+        return jsonify({"stock_qty": _num(new_stock, '0.001'), "unit": row['unit']}), 200
+    except Exception as e:
+        _close_quietly(conn, cur)
+        return error_response("Erro ao salvar o estoque", e)
 
 
 if __name__ == '__main__':

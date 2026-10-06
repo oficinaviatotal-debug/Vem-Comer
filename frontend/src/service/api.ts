@@ -464,9 +464,19 @@ export type CostIngredient = {
   unit: "g" | "ml" | "un";
   package_qty: number;
   package_price: number;
+  /** % left after cleaning (100 = nothing is lost). */
+  yield_pct: number;
   unit_cost: number;
   /** In how many dishes' recipe cards it appears. */
   used_in: number;
+  /** How many portions of each dish one package makes. */
+  portions_per_package: Array<{ product_id: string; name: string; portions: number }>;
+  stock_controlled: boolean;
+  /** Stock now by the recipe cards: last count or purchase minus what the accepted sales used. */
+  stock_now: number | null;
+  stock_at: string | null;
+  used_30d: number | null;
+  days_left: number | null;
 };
 
 export type CostRecipeLine = {
@@ -485,6 +495,9 @@ export type CostProduct = {
   price: number;
   menu_id: string | null;
   portion: string | null;
+  portion_grams: number | null;
+  /** How many portions the recipe card makes (1 = the card is one portion). */
+  yield_portions: number;
   extra_cost: number;
   recipe: CostRecipeLine[];
   cost: number | null;
@@ -492,6 +505,9 @@ export type CostProduct = {
   margin: number | null;
   status: CostStatusCode;
   suggested_price: number | null;
+  sold_30d: number;
+  profit_30d: number | null;
+  quadrant: "estrela" | "cavalo" | "quebra_cabeca" | "cao" | null;
 };
 
 export type CostView = {
@@ -507,16 +523,33 @@ export type CostView = {
     cmv: number | null;
     coverage: number | null;
   };
+  menu: { margin_cut: number | null; share_cut: number | null };
 };
 
 /** Numbers travel as JSON numbers (never "1.234" as text). */
-export type IngredientInput = { name: string; quantity: number; unit: string; price: number };
+export type IngredientInput = { name: string; quantity: number; unit: string; price: number; yield_pct: number };
 
 export type RecipeInput = {
   portion: string;
+  yield_portions: number;
+  portion_grams: number | null;
   extra_cost: number;
   items: Array<{ ingredient_id: string; quantity: number; unit: string }>;
 };
+
+export type StockInput =
+  | { mode: "contagem" | "compra"; quantity: number; unit: string }
+  | { mode: "parar" };
+
+/** "contagem": what is on the shelf now; "compra": add to what is left; "parar": stop tracking. */
+export async function saveStock(companyId: string, ingredientId: string, input: StockInput): Promise<void> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/ingredients/${ingredientId}/stock`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) throw await readError(response, "Não consegui salvar o estoque.");
+}
 
 export async function fetchCosts(companyId: string): Promise<CostView> {
   const response = await fetch(`${API_URL}/companies/${companyId}/admin/costs`, { headers: authHeaders() });

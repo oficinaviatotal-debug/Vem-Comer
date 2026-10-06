@@ -167,5 +167,78 @@ class NameTests(unittest.TestCase):
         self.assertEqual(costing.clean_portion("1 pessoa"), "1 pessoa")
 
 
+class YieldTests(unittest.TestCase):
+    def test_recipe_for_many_portions(self):
+        # frango a milanesa: 1,2 kg de peito limpo (aproveitamento 85%), 300 g de farinha, 4 ovos, rende 6
+        lines = [
+            (Decimal("1200"), Decimal("1000"), Decimal("18.90"), 85),   # 1200 x 18,90 / 850 = 26,682...
+            (Decimal("300"), Decimal("500"), Decimal("6.00"), 100),     # 3,60
+            (Decimal("4"), Decimal("12"), Decimal("12.00"), 100),       # 4,00
+        ]
+        # receita 34,2824 / 6 = 5,7137 + embalagem 1,00 = 6,71
+        self.assertEqual(costing.product_cost(lines, Decimal("1.00"), 6), Decimal("6.71"))
+        # a mesma ficha, de uma porcao so, como no comeco
+        self.assertEqual(costing.product_cost(lines[:1], 0), Decimal("26.68"))
+
+    def test_trimming_loss_raises_the_cost(self):
+        self.assertEqual(costing.line_cost(Decimal("850"), Decimal("1000"), Decimal("18.90"), 85), Decimal("18.9"))
+        self.assertEqual(costing.line_cost(Decimal("850"), Decimal("1000"), Decimal("18.90")), Decimal("16.065"))
+
+    def test_portions_per_package(self):
+        # 1 kg de peito, 85% limpo = 850 g; 1200 g rendem 6 pratos = 200 g por prato -> 4,2 pratos
+        self.assertEqual(costing.portions_per_package(Decimal("1000"), 85, Decimal("1200"), 6), Decimal("4.2"))
+        self.assertEqual(costing.portions_per_package(Decimal("1000"), 100, Decimal("250")), Decimal("4.0"))
+
+    def test_normalizers(self):
+        self.assertEqual(costing.normalize_yield_portions(""), 1)
+        self.assertEqual(costing.normalize_yield_portions("6"), 6)
+        self.assertEqual(costing.normalize_yield_pct("85%"), 85)
+        self.assertEqual(costing.normalize_yield_pct(None), 100)
+        self.assertIsNone(costing.normalize_portion_grams(""))
+        self.assertEqual(costing.normalize_portion_grams("300"), Decimal("300.0"))
+        for bad in ("0", "2,5", "501"):
+            with self.assertRaises(CostError, msg=bad):
+                costing.normalize_yield_portions(bad)
+        for bad in ("0", "101", "85,5"):
+            with self.assertRaises(CostError, msg=bad):
+                costing.normalize_yield_pct(bad)
+
+
+class StockTests(unittest.TestCase):
+    def test_gross_use_and_stock(self):
+        # 10 pratos de uma receita de 1200 g que rende 6, peito com 85% de aproveitamento:
+        # 10 x 200 g = 2000 g limpo = 2352,94 g comprado
+        use = costing.gross_use(10, Decimal("1200"), 6, 85)
+        self.assertEqual(use.quantize(Decimal("0.01")), Decimal("2352.94"))
+        self.assertEqual(costing.stock_now(Decimal("5000"), use), Decimal("2647.059"))
+        self.assertIsNone(costing.stock_now(None, use))
+
+    def test_days_left(self):
+        self.assertEqual(costing.days_left(Decimal("3000"), Decimal("9000"), 30), 10)  # 300 por dia
+        self.assertEqual(costing.days_left(Decimal("-5"), Decimal("9000"), 30), 0)
+        self.assertIsNone(costing.days_left(Decimal("3000"), Decimal("0"), 30))
+        self.assertIsNone(costing.days_left(None, Decimal("10"), 30))
+
+
+class MenuEngineeringTests(unittest.TestCase):
+    def test_four_quadrants(self):
+        items = [
+            ("frango", 100, Decimal("17.00")),   # muito vendido, margem alta -> estrela
+            ("pf", 120, Decimal("8.00")),        # muito vendido, margem baixa -> cavalo
+            ("peixe", 10, Decimal("30.00")),     # pouco vendido, margem alta -> quebra-cabeca
+            ("sopa", 5, Decimal("4.00")),        # pouco vendido, margem baixa -> cao
+            ("suco", 50, None),                  # sem ficha: fora da conta
+        ]
+        quadrants, margin_cut, share_cut = costing.menu_engineering(items)
+        self.assertEqual(quadrants, {"frango": "estrela", "pf": "cavalo", "peixe": "quebra_cabeca", "sopa": "cao"})
+        # media ponderada: (1700 + 960 + 300 + 20) / 235 = 12,68
+        self.assertEqual(margin_cut, Decimal("12.68"))
+        self.assertEqual(share_cut, Decimal("17.5"))  # 70% de 1/4
+
+    def test_without_sales(self):
+        self.assertEqual(costing.menu_engineering([("a", 0, Decimal("5"))]), ({}, None, None))
+        self.assertEqual(costing.menu_engineering([]), ({}, None, None))
+
+
 if __name__ == "__main__":
     unittest.main()
