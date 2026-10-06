@@ -16,6 +16,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from db import query_db, get_db_connection
 import image_enhance
 import media_store
+import menu_photo
 import menu_import
 import menu_templates
 import pix
@@ -33,9 +34,12 @@ app.wsgi_app = wrap_trusted_proxy(app.wsgi_app)
 app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', '1048576'))  # 1 MiB
 # Foto de prato: so as rotas de foto aceitam corpo maior (veja allow_big_body_for_photos).
 PHOTO_MAX_BYTES = int(os.getenv('PHOTO_MAX_BYTES', str(10 * 1024 * 1024)))  # 10 MiB
-PHOTO_ENDPOINTS = {'admin_upload_product_photo'}
+PHOTO_ENDPOINTS = {'admin_upload_product_photo', 'admin_parse_menu_photo'}
 # No maximo 2 fotos sendo processadas ao mesmo tempo: o processamento usa memoria e processador.
 _photo_slots = threading.BoundedSemaphore(2)
+# Leitura de cardapio por foto: cada uma segura uma linha de execucao por ate ~1 minuto esperando a IA.
+# Com so 2 ao mesmo tempo, sobram linhas para o resto do servidor.
+_menu_read_slots = threading.BoundedSemaphore(2)
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 
@@ -1506,6 +1510,68 @@ def admin_get_menu_template(template_id):
         }), 404
 
     return jsonify(template), 200
+
+
+@app.route('/api/admin/menu/capabilities', methods=['GET'])
+@require_roles('OWNER', 'MANAGER')
+def admin_menu_capabilities():
+    """Diz para a tela o que este servidor sabe fazer (hoje: ler cardapio por foto)."""
+    return jsonify({"photo_menu": menu_photo.is_configured()}), 200
+
+
+@app.route('/api/admin/menu/parse-photo', methods=['POST'])
+@require_roles('OWNER', 'MANAGER')
+def admin_parse_menu_photo():
+    """Le a(s) foto(s) de um cardapio (campo "photos") e devolve categorias, pratos e preços.
+
+    Nao grava nada: o dono confere na tela e o cadastro acontece pela rota de importacao de sempre.
+    """
+    company_id = request.user.get('company_id')
+
+    if not menu_photo.is_configured():
+        return jsonify({
+            "error": "A leitura por foto ainda nao foi ligada neste servidor."
+        }), 501
+
+    uploads = request.files.getlist('photos')
+
+    if not uploads:
+        return jsonify({"error": "Nao recebi nenhuma foto. Tente de novo."}), 400
+
+    if len(uploads) > menu_photo.MAX_IMAGES:
+        return jsonify({
+            "error": f"Mande no maximo {menu_photo.MAX_IMAGES} fotos de cada vez."
+        }), 400
+
+    photos = []
+    total = 0
+
+    for upload in uploads:
+        data = upload.read(PHOTO_MAX_BYTES + 1)
+        total += len(data)
+
+        if total > PHOTO_MAX_BYTES:
+            return jsonify({
+                "error": "As fotos sao grandes demais. Tire menos fotos ou use a camera normal do celular."
+            }), 413
+
+        photos.append(data)
+
+    if not _menu_read_slots.acquire(timeout=5):
+        return jsonify({
+            "error": "O servidor esta ocupado lendo outros cardapios. Tente de novo em alguns segundos."
+        }), 503
+
+    try:
+        result = menu_photo.read_menu(photos, str(company_id))
+    except menu_photo.MenuPhotoError as e:
+        return jsonify({"error": e.message}), e.status
+    except Exception as e:
+        return error_response("Erro ao ler o cardapio da foto", e)
+    finally:
+        _menu_read_slots.release()
+
+    return jsonify(result), 200
 
 
 @app.route(
