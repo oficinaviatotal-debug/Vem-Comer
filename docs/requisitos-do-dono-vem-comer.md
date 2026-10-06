@@ -24,7 +24,8 @@ O dono do projeto vende uma assinatura de software (SaaS). Ele **não opera nada
   administrador roda `abrir-cadastro.sh abrir`. Falta, antes de abrir: revisão dos termos por advogado,
   contato de suporte, confirmação de e-mail e "esqueci a senha" (precisam de um serviço de e-mail).
 - Precisa aprender a usar sozinho: o assistente explica, fala e conserta o que o dono errou.
-- Precisa de cobrança da assinatura e de período de teste. **Falta.**
+- Precisa de cobrança da assinatura e de período de teste. **Falta construir.** Preços do Vem Trabalhar e regra do teste
+  (1 semana, sem baixar nada) decididos em 06/10: `docs/assinatura-e-cobranca.md`. Preço do Vem Comer ainda aberto.
 - Suporte tem de ser quase todo automático (o assistente responde; pouca coisa chega a uma pessoa).
 - Segurança e isolamento entre restaurantes têm de ser tão bons quanto os de um produto grande.
 - LGPD: o restaurante é quem decide sobre os dados dos clientes dele; o Vem Comer é o operador dos dados.
