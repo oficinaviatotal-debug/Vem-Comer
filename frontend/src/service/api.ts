@@ -454,3 +454,44 @@ export async function importMenu(
   if (!response.ok) throw await readError(response, "Falha ao cadastrar o cardápio");
   return response.json();
 }
+
+export type PhotoResult = {
+  image_url: string | null;
+  thumb_url: string | null;
+  /** What the server improved, in words for the owner ("Mais luz", ...). */
+  improvements: string[];
+  /** Honest hints ("a foto ficou escura..."). */
+  tips: string[];
+};
+
+/** Sends one dish photo (a JPEG made by photos/photoFiles). Replaces the old photo, if any. */
+export async function uploadProductPhoto(productId: string, photo: Blob): Promise<PhotoResult> {
+  const form = new FormData();
+  form.append("photo", photo, "prato.jpg");
+  // No Content-Type here: the browser writes it, with the boundary the server needs.
+  const response = await fetch(`${API_URL}/admin/products/${productId}/photo`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: form,
+  });
+  if (!response.ok) throw await readError(response, "Não consegui enviar a foto.");
+  return response.json();
+}
+
+export async function deleteProductPhoto(productId: string): Promise<void> {
+  const response = await fetch(`${API_URL}/admin/products/${productId}/photo`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw await readError(response, "Não consegui remover a foto.");
+}
+
+/**
+ * Full address of a photo the server returned ("/media/..."). Anything that is not one of our
+ * own photo paths gives an empty string, so a strange value can never end up in an <img>.
+ */
+export function mediaUrl(path: string | null | undefined): string {
+  if (!path || !/^\/media\/[0-9a-f-]{36}\/[0-9a-f]{32}(-thumb)?\.webp$/.test(path)) return "";
+  const origin = /^https?:\/\//.test(API_URL) ? new URL(API_URL).origin : "";
+  return origin + path;
+}

@@ -11,6 +11,7 @@ CREATE TABLE companies (
     pix_key VARCHAR(77),
     pix_receiver_name VARCHAR(25),
     pix_city VARCHAR(15),
+    logo_key VARCHAR(32),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -60,6 +61,7 @@ CREATE TABLE products (
     description TEXT,
     price NUMERIC(10,2) NOT NULL CHECK (price >= 0),
     active BOOLEAN NOT NULL DEFAULT TRUE,
+    image_key VARCHAR(32),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

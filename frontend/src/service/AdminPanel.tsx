@@ -21,7 +21,9 @@ import {
   createTable,
   deleteTable,
   confirmPayment,
+  mediaUrl,
 } from "./api";
+import PhotoPicker from "../photos/PhotoPicker";
 import OnboardingGuide from "../onboarding/OnboardingGuide";
 import { ADMIN_TOUR, ADMIN_TOUR_ID } from "../onboarding/adminTour";
 import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
@@ -76,6 +78,8 @@ type Product = {
   description: string;
   price: number;
   menu_id: string;
+  thumb_url?: string | null;
+  image_url?: string | null;
 };
 
 type Menu = {
@@ -148,6 +152,7 @@ export default function AdminPanel({
   const [view, setView] = useState<AdminView>("pedidos");
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [photoFor, setPhotoFor] = useState<string | null>(null);
   const [menus, setMenus] = useState<Menu[]>([]);
   const [users, setUsers] = useState<StaffUser[]>([]);
 
@@ -1092,7 +1097,17 @@ export default function AdminPanel({
           ) : (
             <ul className="adm-list">
               {products.map((product) => (
-                <li key={product.id} className="adm-row">
+                <li key={product.id} className="adm-row adm-row-photo">
+                  {mediaUrl(product.thumb_url) && (
+                    <img
+                      className="adm-thumb"
+                      src={mediaUrl(product.thumb_url)}
+                      alt=""
+                      width={72}
+                      height={54}
+                      loading="lazy"
+                    />
+                  )}
                   <div className="adm-row-main">
                     <strong>{product.name}</strong>
                     {product.description && (
@@ -1105,11 +1120,35 @@ export default function AdminPanel({
 
                   <div className="adm-row-side">
                     <span className="money">{formatMoney(product.price)}</span>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      aria-expanded={photoFor === product.id}
+                      onClick={() => setPhotoFor(photoFor === product.id ? null : product.id)}
+                    >
+                      {photoFor === product.id
+                        ? "Fechar"
+                        : product.thumb_url
+                          ? "Trocar foto"
+                          : "Colocar foto"}
+                    </button>
                     <ConfirmButton
                       label="Remover"
                       onConfirm={() => handleDeleteProduct(product.id)}
                     />
                   </div>
+
+                  {photoFor === product.id && (
+                    <div className="adm-row-photo-picker">
+                      <PhotoPicker
+                        productId={product.id}
+                        productName={product.name}
+                        currentPhoto={product.image_url}
+                        onSaved={() => loadProducts()}
+                        onRemoved={() => loadProducts()}
+                      />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

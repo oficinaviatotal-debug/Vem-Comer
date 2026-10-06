@@ -13,6 +13,9 @@ export type Product = {
   name: string;
   description?: string | null;
   price: number | string;
+  /** Paths like "/media/<company>/<key>.webp"; null when the dish has no photo. Use mediaUrl() to show them. */
+  image_url?: string | null;
+  thumb_url?: string | null;
 };
 
 export type Menu = {
