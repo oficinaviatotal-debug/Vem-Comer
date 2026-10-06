@@ -1,0 +1,161 @@
+import unittest
+from decimal import Decimal
+
+import costing
+from costing import CostError
+
+
+class ParseNumberTests(unittest.TestCase):
+    def test_accepts_brazilian_and_plain_formats(self):
+        self.assertEqual(costing.parse_number("18,90", "Preço"), Decimal("18.90"))
+        self.assertEqual(costing.parse_number("R$ 1.234,56", "Preço"), Decimal("1234.56"))
+        self.assertEqual(costing.parse_number("0,250", "Qtd"), Decimal("0.250"))
+        self.assertEqual(costing.parse_number(18.9, "Preço"), Decimal("18.9"))
+        self.assertEqual(costing.parse_number(2, "Qtd"), Decimal("2"))
+
+    def test_rejects_text_negative_bool_and_infinite(self):
+        for bad in ("abc", "-1", True, None, "inf", "NaN", [], {}):
+            with self.assertRaises(CostError, msg=repr(bad)):
+                costing.parse_number(bad, "Preço")
+
+    def test_zero_only_when_allowed(self):
+        self.assertEqual(costing.parse_number("0", "Preço"), Decimal("0"))
+        with self.assertRaises(CostError):
+            costing.parse_number("0", "Quantidade", allow_zero=False)
+
+    def test_maximum(self):
+        with self.assertRaises(CostError):
+            costing.parse_number("100001", "Preço", maximum=Decimal("100000"))
+
+
+class UnitTests(unittest.TestCase):
+    def test_converts_to_stored_unit(self):
+        self.assertEqual(costing.to_base("1", "kg"), (Decimal("1000.000"), "g"))
+        self.assertEqual(costing.to_base("0,25", "kg"), (Decimal("250.000"), "g"))
+        self.assertEqual(costing.to_base("2", "L"), (Decimal("2000.000"), "ml"))
+        self.assertEqual(costing.to_base("350", "ml"), (Decimal("350.000"), "ml"))
+        self.assertEqual(costing.to_base("1", "dz"), (Decimal("12.000"), "un"))
+        self.assertEqual(costing.to_base("3", "unidade"), (Decimal("3.000"), "un"))
+
+    def test_spoken_unit_names(self):
+        self.assertEqual(costing.normalize_unit("Quilos"), "kg")
+        self.assertEqual(costing.normalize_unit("litro"), "l")
+        self.assertEqual(costing.normalize_unit("dúzia"), "dz")
+
+    def test_unknown_unit(self):
+        with self.assertRaises(CostError):
+            costing.to_base("1", "xícara")
+
+    def test_too_small_after_rounding(self):
+        with self.assertRaises(CostError):
+            costing.to_base("0.0001", "g")
+
+    def test_too_big(self):
+        with self.assertRaises(CostError):
+            costing.to_base("2000", "kg")
+
+
+class CostTests(unittest.TestCase):
+    def test_product_cost_from_recipe(self):
+        # frango: 250 g de um pacote de 1 kg por R$ 18,90 = 4,725
+        # batata: 200 g de um saco de 2 kg por R$ 12,00 = 1,20
+        # embalagem e gas: R$ 1,50
+        lines = [
+            (Decimal("250"), Decimal("1000"), Decimal("18.90")),
+            (Decimal("200"), Decimal("2000"), Decimal("12.00")),
+        ]
+        self.assertEqual(costing.product_cost(lines, Decimal("1.50")), Decimal("7.43"))
+
+    def test_no_recipe_means_unknown_not_zero(self):
+        self.assertIsNone(costing.product_cost([], 0))
+        self.assertEqual(costing.product_cost([], Decimal("2")), Decimal("2.00"))
+
+    def test_cmv_status_and_suggested_price(self):
+        cost = Decimal("7.43")
+        self.assertEqual(costing.cmv_percent(cost, Decimal("25")), Decimal("29.7"))
+        self.assertEqual(costing.status(cost, Decimal("25"), 35), "ok")
+        self.assertEqual(costing.status(cost, Decimal("17"), 35), "atencao")  # 43,7%
+        self.assertEqual(costing.status(cost, Decimal("15"), 35), "alto")     # 49,5%
+        self.assertEqual(costing.status(None, Decimal("15"), 35), "sem_custo")
+        self.assertEqual(costing.status(cost, Decimal("0"), 35), "sem_preco")
+        # 7,43 / 0,35 = 21,228... -> 21,23 (para cima, para nao passar da meta)
+        self.assertEqual(costing.suggested_price(cost, 35), Decimal("21.23"))
+        self.assertLessEqual(costing.cmv_percent(cost, Decimal("21.23")), Decimal("35"))
+        self.assertEqual(costing.margin(cost, Decimal("25")), Decimal("17.57"))
+
+    def test_sebrae_example(self):
+        # Exemplo do Sebrae: prato de R$ 4 com meta de 30% -> cerca de R$ 13,30
+        self.assertEqual(costing.suggested_price(Decimal("4"), 30), Decimal("13.34"))
+
+    def test_target(self):
+        self.assertEqual(costing.normalize_target("35"), 35)
+        for bad in ("4", "91", "35,5", "abc"):
+            with self.assertRaises(CostError, msg=bad):
+                costing.normalize_target(bad)
+
+
+class PeriodTests(unittest.TestCase):
+    def test_only_items_with_cost_enter_the_cmv(self):
+        summary = costing.period_summary([
+            (2, Decimal("25.00"), Decimal("7.43")),   # vendeu 50, custou 14,86
+            (1, Decimal("8.00"), None),              # suco sem ficha
+        ])
+        self.assertEqual(summary["revenue"], Decimal("58.00"))
+        self.assertEqual(summary["covered_revenue"], Decimal("50.00"))
+        self.assertEqual(summary["cost"], Decimal("14.86"))
+        self.assertEqual(summary["cmv"], Decimal("29.7"))
+        self.assertEqual(summary["coverage"], Decimal("86"))
+
+    def test_empty(self):
+        summary = costing.period_summary([])
+        self.assertIsNone(summary["cmv"])
+        self.assertIsNone(summary["coverage"])
+
+
+class RecipeLinesTests(unittest.TestCase):
+    INGREDIENTS = {"a": "g", "b": "ml", "c": "un"}
+
+    def test_valid_recipe(self):
+        lines = costing.recipe_lines(
+            [
+                {"ingredient_id": "a", "quantity": "0,25", "unit": "kg"},
+                {"ingredient_id": "b", "quantity": 50, "unit": "ml"},
+                {"ingredient_id": "c", "quantity": 1, "unit": "un"},
+            ],
+            self.INGREDIENTS,
+        )
+        self.assertEqual(lines, [("a", Decimal("250.000")), ("b", Decimal("50.000")), ("c", Decimal("1.000"))])
+
+    def test_rejects_unknown_duplicate_and_wrong_unit(self):
+        cases = [
+            [{"ingredient_id": "x", "quantity": 1, "unit": "g"}],
+            [{"ingredient_id": "a", "quantity": 1, "unit": "g"}, {"ingredient_id": "a", "quantity": 2, "unit": "g"}],
+            [{"ingredient_id": "a", "quantity": 1, "unit": "ml"}],
+            [{"ingredient_id": "a", "quantity": 0, "unit": "g"}],
+            "not a list",
+            ["not a dict"],
+        ]
+        for items in cases:
+            with self.assertRaises(CostError, msg=repr(items)):
+                costing.recipe_lines(items, self.INGREDIENTS)
+
+    def test_limit_of_lines(self):
+        many = {str(i): "g" for i in range(41)}
+        items = [{"ingredient_id": str(i), "quantity": 1, "unit": "g"} for i in range(41)]
+        with self.assertRaises(CostError):
+            costing.recipe_lines(items, many)
+
+
+class NameTests(unittest.TestCase):
+    def test_clean_name_and_portion(self):
+        self.assertEqual(costing.clean_name("  Peito   de frango "), "Peito de frango")
+        with self.assertRaises(CostError):
+            costing.clean_name("   ")
+        with self.assertRaises(CostError):
+            costing.clean_name("x" * 81)
+        self.assertIsNone(costing.clean_portion("  "))
+        self.assertEqual(costing.clean_portion("1 pessoa"), "1 pessoa")
+
+
+if __name__ == "__main__":
+    unittest.main()

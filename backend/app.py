@@ -14,6 +14,7 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import query_db, get_db_connection
+import costing
 import image_enhance
 import media_store
 import menu_photo
@@ -857,6 +858,13 @@ def create_company_order(company_id):
 
         order_id = cur.fetchone()['id']
 
+        # Custo de cada prato agora (ficha tecnica), para o CMV do mes nao mudar quando o insumo encarecer.
+        unit_costs = order_unit_costs(
+            cur,
+            company_id,
+            [item[0] for item in order_items]
+        )
+
         for product_id, quantity, unit_price, item_total in order_items:
             cur.execute(
                 """
@@ -865,16 +873,18 @@ def create_company_order(company_id):
                     product_id,
                     quantity,
                     unit_price,
-                    total
+                    total,
+                    unit_cost
                 )
-                VALUES (%s, %s, %s, %s, %s);
+                VALUES (%s, %s, %s, %s, %s, %s);
                 """,
                 (
                     str(order_id),
                     str(product_id),
                     quantity,
                     unit_price,
-                    item_total
+                    item_total,
+                    unit_costs.get(str(product_id))
                 )
             )
 
@@ -2883,6 +2893,533 @@ def confirm_order_payment(order_id):
             "Erro ao confirmar pagamento",
             e
         )
+
+
+# =====================================================================================
+# Custos, porcao e CMV (item 6 da ordem de trabalho). Contas em costing.py.
+# So dono e gerente veem custo; o cliente nunca ve (a rota publica de produtos nao muda).
+# =====================================================================================
+COST_ROLES = ('OWNER', 'MANAGER')
+COST_PERIOD_DAYS = 30
+
+
+def _num(value, places='0.01'):
+    """Decimal do banco -> numero do JSON (a tela trabalha com number)."""
+    if value is None:
+        return None
+    return float(Decimal(value).quantize(Decimal(places)))
+
+
+def _close_quietly(conn, cur=None, rollback=True):
+    if conn is None or conn.closed:
+        return
+    if rollback:
+        conn.rollback()
+    if cur is not None:
+        cur.close()
+    conn.close()
+
+
+def order_unit_costs(cur, company_id, product_ids):
+    """Custo de cada prato neste momento, para gravar no pedido.
+
+    Roda dentro da transacao do pedido, protegido por um savepoint: se algo der errado aqui,
+    o pedido segue sem custo (o cliente nunca fica sem pedir por causa da conta do custo).
+    """
+    ids = sorted({str(pid) for pid in product_ids})
+    if not ids:
+        return {}
+    try:
+        cur.execute("SAVEPOINT unit_costs;")
+        cur.execute(
+            """
+            SELECT
+                p.id AS product_id,
+                p.extra_cost,
+                pi.quantity,
+                i.package_qty,
+                i.package_price
+            FROM products p
+            LEFT JOIN product_ingredients pi
+                ON pi.product_id = p.id
+            LEFT JOIN ingredients i
+                ON i.id = pi.ingredient_id
+                AND i.company_id = p.company_id
+            WHERE p.company_id = %s
+            AND p.id::text = ANY(%s);
+            """,
+            (str(company_id), ids)
+        )
+        rows = cur.fetchall() or []
+        cur.execute("RELEASE SAVEPOINT unit_costs;")
+    except Exception:
+        try:
+            cur.execute("ROLLBACK TO SAVEPOINT unit_costs;")
+        except Exception:
+            pass
+        return {}
+
+    lines = {}
+    extras = {}
+    for row in rows:
+        pid = str(row['product_id'])
+        extras[pid] = row.get('extra_cost') or 0
+        lines.setdefault(pid, [])
+        if row.get('quantity') is not None and row.get('package_qty') is not None:
+            lines[pid].append((row['quantity'], row['package_qty'], row['package_price']))
+
+    return {
+        pid: costing.product_cost(pid_lines, extras.get(pid, 0))
+        for pid, pid_lines in lines.items()
+    }
+
+
+def build_cost_view(target, ingredient_rows, product_rows, line_rows, sold_rows):
+    """Monta, a partir das linhas do banco, tudo que a aba Custos mostra."""
+    ingredients = {str(row['id']): row for row in ingredient_rows}
+    used_in = {}
+    lines_by_product = {}
+    for row in line_rows:
+        ingredient = ingredients.get(str(row['ingredient_id']))
+        if ingredient is None:
+            continue
+        lines_by_product.setdefault(str(row['product_id']), []).append((row, ingredient))
+        used_in[str(ingredient['id'])] = used_in.get(str(ingredient['id']), 0) + 1
+
+    products = []
+    for product in product_rows:
+        pid = str(product['id'])
+        lines = lines_by_product.get(pid, [])
+        price = Decimal(product.get('price') or 0)
+        cost = costing.product_cost(
+            ((line['quantity'], ing['package_qty'], ing['package_price']) for line, ing in lines),
+            product.get('extra_cost') or 0
+        )
+        products.append({
+            "id": pid,
+            "name": product['name'],
+            "price": _num(price),
+            "menu_id": str(product['menu_id']) if product.get('menu_id') else None,
+            "portion": product.get('portion'),
+            "extra_cost": _num(product.get('extra_cost') or 0),
+            "recipe": [
+                {
+                    "ingredient_id": str(ing['id']),
+                    "name": ing['name'],
+                    "unit": ing['unit'],
+                    "quantity": _num(line['quantity'], '0.001'),
+                    "cost": _num(costing.line_cost(line['quantity'], ing['package_qty'], ing['package_price']))
+                }
+                for line, ing in lines
+            ],
+            "cost": _num(cost),
+            "cmv": _num(costing.cmv_percent(cost, price), '0.1'),
+            "margin": _num(costing.margin(cost, price)),
+            "status": costing.status(cost, price, target),
+            "suggested_price": _num(costing.suggested_price(cost, target)),
+        })
+
+    period = costing.period_summary(
+        (row['quantity'], row['unit_price'], row.get('unit_cost')) for row in sold_rows
+    )
+
+    return {
+        "target": target,
+        "ingredients": [
+            {
+                "id": str(row['id']),
+                "name": row['name'],
+                "unit": row['unit'],
+                "package_qty": _num(row['package_qty'], '0.001'),
+                "package_price": _num(row['package_price']),
+                "unit_cost": _num(costing.line_cost(1, row['package_qty'], row['package_price']), '0.0001'),
+                "used_in": used_in.get(str(row['id']), 0),
+            }
+            for row in ingredient_rows
+        ],
+        "products": products,
+        "with_cost": sum(1 for p in products if p["cost"] is not None),
+        "period": {
+            "days": COST_PERIOD_DAYS,
+            "revenue": _num(period['revenue']),
+            "covered_revenue": _num(period['covered_revenue']),
+            "cost": _num(period['cost']),
+            "cmv": _num(period['cmv'], '0.1'),
+            "coverage": _num(period['coverage'], '1'),
+        },
+    }
+
+
+def load_cost_view(company_id):
+    company = query_db(
+        "SELECT cmv_target FROM companies WHERE id = %s;",
+        (str(company_id),),
+        one=True
+    )
+    if not company:
+        return None
+    target = int(company.get('cmv_target') or costing.DEFAULT_TARGET)
+
+    ingredient_rows = query_db(
+        """
+        SELECT id, name, unit, package_qty, package_price
+        FROM ingredients
+        WHERE company_id = %s
+        ORDER BY lower(name), id;
+        """,
+        (str(company_id),)
+    ) or []
+    product_rows = query_db(
+        """
+        SELECT id, name, price, menu_id, portion, extra_cost
+        FROM products
+        WHERE company_id = %s
+        ORDER BY lower(name), id;
+        """,
+        (str(company_id),)
+    ) or []
+    line_rows = query_db(
+        """
+        SELECT pi.product_id, pi.ingredient_id, pi.quantity
+        FROM product_ingredients pi
+        JOIN products p ON p.id = pi.product_id
+        JOIN ingredients i ON i.id = pi.ingredient_id
+        WHERE p.company_id = %s
+        AND i.company_id = p.company_id;
+        """,
+        (str(company_id),)
+    ) or []
+    sold_rows = query_db(
+        """
+        SELECT oi.quantity, oi.unit_price, oi.unit_cost
+        FROM order_items oi
+        JOIN orders o ON o.id = oi.order_id
+        WHERE o.company_id = %s
+        AND o.created_at >= now() - make_interval(days => %s);
+        """,
+        (str(company_id), COST_PERIOD_DAYS)
+    ) or []
+
+    return build_cost_view(target, ingredient_rows, product_rows, line_rows, sold_rows)
+
+
+def ingredient_fields(data):
+    name = costing.clean_name(data.get('name'), 'Nome do insumo')
+    package_qty, unit = costing.to_base(
+        data.get('quantity'),
+        data.get('unit'),
+        'Tamanho da embalagem'
+    )
+    price = costing.money(costing.parse_number(
+        data.get('price'),
+        'Preco pago',
+        maximum=costing.MAX_PACKAGE_PRICE
+    ))
+    return {"name": name, "unit": unit, "package_qty": package_qty, "package_price": price}
+
+
+@app.route('/api/companies/<uuid:company_id>/admin/costs', methods=['GET'])
+@require_roles(*COST_ROLES)
+def admin_get_costs(company_id):
+    access_error = require_company_access(company_id)
+    if access_error:
+        return access_error
+
+    try:
+        view = load_cost_view(company_id)
+    except Exception as e:
+        return error_response("Erro ao carregar os custos", e)
+
+    if view is None:
+        return jsonify({"error": "Restaurante nao encontrado"}), 404
+
+    return jsonify(view), 200
+
+
+@app.route('/api/companies/<uuid:company_id>/admin/costs/target', methods=['PUT'])
+@require_roles(*COST_ROLES)
+def admin_save_cost_target(company_id):
+    access_error = require_company_access(company_id)
+    if access_error:
+        return access_error
+
+    data = request.get_json(silent=True) or {}
+    try:
+        target = costing.normalize_target(data.get('target'))
+    except costing.CostError as error:
+        return jsonify({"error": str(error)}), 400
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            "UPDATE companies SET cmv_target = %s WHERE id = %s RETURNING cmv_target;",
+            (target, str(company_id))
+        )
+        row = cur.fetchone()
+        if row is None:
+            _close_quietly(conn, cur)
+            return jsonify({"error": "Restaurante nao encontrado"}), 404
+        conn.commit()
+        _close_quietly(conn, cur, rollback=False)
+        return jsonify({"target": target}), 200
+    except Exception as e:
+        _close_quietly(conn, cur)
+        return error_response("Erro ao salvar a meta", e)
+
+
+@app.route('/api/companies/<uuid:company_id>/admin/ingredients', methods=['POST'])
+@require_roles(*COST_ROLES)
+def admin_create_ingredient(company_id):
+    access_error = require_company_access(company_id)
+    if access_error:
+        return access_error
+
+    data = request.get_json(silent=True) or {}
+    try:
+        fields = ingredient_fields(data)
+    except costing.CostError as error:
+        return jsonify({"error": str(error)}), 400
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            """
+            INSERT INTO ingredients (company_id, name, unit, package_qty, package_price)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id;
+            """,
+            (str(company_id), fields['name'], fields['unit'], fields['package_qty'], fields['package_price'])
+        )
+        row = cur.fetchone()
+        conn.commit()
+        _close_quietly(conn, cur, rollback=False)
+        return jsonify({"id": str(row['id']), "message": "Insumo salvo"}), 201
+    except psycopg2.errors.UniqueViolation:
+        _close_quietly(conn, cur)
+        return jsonify({"error": "Ja existe um insumo com esse nome."}), 409
+    except Exception as e:
+        _close_quietly(conn, cur)
+        return error_response("Erro ao salvar o insumo", e)
+
+
+@app.route('/api/companies/<uuid:company_id>/admin/ingredients/<uuid:ingredient_id>', methods=['PUT'])
+@require_roles(*COST_ROLES)
+def admin_update_ingredient(company_id, ingredient_id):
+    access_error = require_company_access(company_id)
+    if access_error:
+        return access_error
+
+    data = request.get_json(silent=True) or {}
+    try:
+        fields = ingredient_fields(data)
+    except costing.CostError as error:
+        return jsonify({"error": str(error)}), 400
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            """
+            SELECT unit
+            FROM ingredients
+            WHERE id = %s
+            AND company_id = %s
+            FOR UPDATE;
+            """,
+            (str(ingredient_id), str(company_id))
+        )
+        current = cur.fetchone()
+        if current is None:
+            _close_quietly(conn, cur)
+            return jsonify({"error": "Insumo nao encontrado"}), 404
+
+        if current['unit'] != fields['unit']:
+            cur.execute(
+                "SELECT count(*) AS n FROM product_ingredients WHERE ingredient_id = %s;",
+                (str(ingredient_id),)
+            )
+            used = int((cur.fetchone() or {}).get('n') or 0)
+            if used:
+                _close_quietly(conn, cur)
+                return jsonify({
+                    "error": (
+                        f"Esse insumo esta em {used} prato(s). Para trocar peso por liquido ou por unidade, "
+                        "crie outro insumo."
+                    )
+                }), 409
+
+        cur.execute(
+            """
+            UPDATE ingredients
+            SET name = %s, unit = %s, package_qty = %s, package_price = %s, updated_at = now()
+            WHERE id = %s
+            AND company_id = %s;
+            """,
+            (
+                fields['name'], fields['unit'], fields['package_qty'], fields['package_price'],
+                str(ingredient_id), str(company_id)
+            )
+        )
+        conn.commit()
+        _close_quietly(conn, cur, rollback=False)
+        return jsonify({"message": "Insumo salvo"}), 200
+    except psycopg2.errors.UniqueViolation:
+        _close_quietly(conn, cur)
+        return jsonify({"error": "Ja existe um insumo com esse nome."}), 409
+    except Exception as e:
+        _close_quietly(conn, cur)
+        return error_response("Erro ao salvar o insumo", e)
+
+
+@app.route('/api/companies/<uuid:company_id>/admin/ingredients/<uuid:ingredient_id>', methods=['DELETE'])
+@require_roles(*COST_ROLES)
+def admin_delete_ingredient(company_id, ingredient_id):
+    access_error = require_company_access(company_id)
+    if access_error:
+        return access_error
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            """
+            DELETE FROM ingredients
+            WHERE id = %s
+            AND company_id = %s
+            RETURNING id;
+            """,
+            (str(ingredient_id), str(company_id))
+        )
+        removed = cur.fetchone()
+        if removed is None:
+            _close_quietly(conn, cur)
+            return jsonify({"error": "Insumo nao encontrado"}), 404
+        conn.commit()
+        _close_quietly(conn, cur, rollback=False)
+        return jsonify({"message": "Insumo removido. Ele saiu das fichas dos pratos."}), 200
+    except Exception as e:
+        _close_quietly(conn, cur)
+        return error_response("Erro ao remover o insumo", e)
+
+
+@app.route('/api/companies/<uuid:company_id>/admin/products/<uuid:product_id>/recipe', methods=['PUT'])
+@require_roles(*COST_ROLES)
+def admin_save_recipe(company_id, product_id):
+    """Troca a ficha tecnica inteira do prato (insumos e quantidades), a porcao e os outros custos."""
+    access_error = require_company_access(company_id)
+    if access_error:
+        return access_error
+
+    data = request.get_json(silent=True) or {}
+    items = data.get('items', [])
+    extra_raw = data.get('extra_cost')
+    try:
+        portion = costing.clean_portion(data.get('portion'))
+        extra_cost = costing.money(costing.parse_number(
+            0 if extra_raw in (None, '') else extra_raw,
+            'Outros custos',
+            maximum=costing.MAX_EXTRA_COST
+        ))
+        if not isinstance(items, list):
+            raise costing.CostError("Ficha tecnica invalida.")
+    except costing.CostError as error:
+        return jsonify({"error": str(error)}), 400
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            """
+            SELECT p.id, p.price, c.cmv_target
+            FROM products p
+            JOIN companies c ON c.id = p.company_id
+            WHERE p.id = %s
+            AND p.company_id = %s
+            FOR UPDATE OF p;
+            """,
+            (str(product_id), str(company_id))
+        )
+        product = cur.fetchone()
+        if product is None:
+            _close_quietly(conn, cur)
+            return jsonify({"error": "Prato nao encontrado"}), 404
+
+        ids = sorted({
+            str(item.get('ingredient_id'))
+            for item in items
+            if isinstance(item, dict) and item.get('ingredient_id')
+        })
+        known = {}
+        if ids:
+            cur.execute(
+                """
+                SELECT id, unit, package_qty, package_price
+                FROM ingredients
+                WHERE company_id = %s
+                AND id::text = ANY(%s);
+                """,
+                (str(company_id), ids)
+            )
+            known = {str(row['id']): row for row in (cur.fetchall() or [])}
+
+        try:
+            lines = costing.recipe_lines(items, {iid: row['unit'] for iid, row in known.items()})
+        except costing.CostError as error:
+            _close_quietly(conn, cur)
+            return jsonify({"error": str(error)}), 400
+
+        cur.execute(
+            "DELETE FROM product_ingredients WHERE product_id = %s;",
+            (str(product_id),)
+        )
+        for ingredient_id, quantity in lines:
+            cur.execute(
+                """
+                INSERT INTO product_ingredients (product_id, ingredient_id, quantity)
+                VALUES (%s, %s, %s);
+                """,
+                (str(product_id), ingredient_id, quantity)
+            )
+        cur.execute(
+            """
+            UPDATE products
+            SET portion = %s, extra_cost = %s
+            WHERE id = %s
+            AND company_id = %s;
+            """,
+            (portion, extra_cost, str(product_id), str(company_id))
+        )
+        conn.commit()
+        _close_quietly(conn, cur, rollback=False)
+
+        target = int(product.get('cmv_target') or costing.DEFAULT_TARGET)
+        price = Decimal(product.get('price') or 0)
+        cost = costing.product_cost(
+            ((qty, known[iid]['package_qty'], known[iid]['package_price']) for iid, qty in lines),
+            extra_cost
+        )
+        return jsonify({
+            "message": "Ficha salva",
+            "cost": _num(cost),
+            "cmv": _num(costing.cmv_percent(cost, price), '0.1'),
+            "status": costing.status(cost, price, target),
+            "suggested_price": _num(costing.suggested_price(cost, target)),
+        }), 200
+    except Exception as e:
+        _close_quietly(conn, cur)
+        return error_response("Erro ao salvar a ficha do prato", e)
 
 
 if __name__ == '__main__':

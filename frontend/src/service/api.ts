@@ -455,6 +455,115 @@ export async function fetchPixPreview(companyId: string): Promise<PixCode> {
   return response.json();
 }
 
+/* ---- Costs: ingredients, recipe card per dish and CMV (owner and manager only) ---- */
+
+export type CostIngredient = {
+  id: string;
+  name: string;
+  /** How the server keeps the quantity: "g", "ml" or "un". */
+  unit: "g" | "ml" | "un";
+  package_qty: number;
+  package_price: number;
+  unit_cost: number;
+  /** In how many dishes' recipe cards it appears. */
+  used_in: number;
+};
+
+export type CostRecipeLine = {
+  ingredient_id: string;
+  name: string;
+  unit: "g" | "ml" | "un";
+  quantity: number;
+  cost: number;
+};
+
+export type CostStatusCode = "ok" | "atencao" | "alto" | "sem_custo" | "sem_preco";
+
+export type CostProduct = {
+  id: string;
+  name: string;
+  price: number;
+  menu_id: string | null;
+  portion: string | null;
+  extra_cost: number;
+  recipe: CostRecipeLine[];
+  cost: number | null;
+  cmv: number | null;
+  margin: number | null;
+  status: CostStatusCode;
+  suggested_price: number | null;
+};
+
+export type CostView = {
+  target: number;
+  ingredients: CostIngredient[];
+  products: CostProduct[];
+  with_cost: number;
+  period: {
+    days: number;
+    revenue: number | null;
+    covered_revenue: number | null;
+    cost: number | null;
+    cmv: number | null;
+    coverage: number | null;
+  };
+};
+
+export type IngredientInput = { name: string; quantity: string; unit: string; price: string };
+
+export type RecipeInput = {
+  portion: string;
+  extra_cost: string;
+  items: Array<{ ingredient_id: string; quantity: string; unit: string }>;
+};
+
+export async function fetchCosts(companyId: string): Promise<CostView> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/costs`, { headers: authHeaders() });
+  if (!response.ok) throw await readError(response, "Não consegui abrir os custos.");
+  return response.json();
+}
+
+export async function saveCostTarget(companyId: string, target: number): Promise<{ target: number }> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/costs/target`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ target }),
+  });
+  if (!response.ok) throw await readError(response, "Não consegui salvar a meta.");
+  return response.json();
+}
+
+export async function saveIngredient(
+  companyId: string,
+  input: IngredientInput,
+  ingredientId?: string,
+): Promise<void> {
+  const base = `${API_URL}/companies/${companyId}/admin/ingredients`;
+  const response = await fetch(ingredientId ? `${base}/${ingredientId}` : base, {
+    method: ingredientId ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) throw await readError(response, "Não consegui salvar o insumo.");
+}
+
+export async function deleteIngredient(companyId: string, ingredientId: string): Promise<void> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/ingredients/${ingredientId}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw await readError(response, "Não consegui remover o insumo.");
+}
+
+export async function saveRecipe(companyId: string, productId: string, input: RecipeInput): Promise<void> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/products/${productId}/recipe`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) throw await readError(response, "Não consegui salvar a ficha do prato.");
+}
+
 /* ---- Menu assistant: ready-made menus and registering many dishes at once ---- */
 
 export type MenuTemplateSummary = {

@@ -16,6 +16,7 @@ CREATE TABLE companies (
     terms_version VARCHAR(20),
     terms_accepted_at TIMESTAMPTZ,
     signup_source VARCHAR(20),
+    cmv_target SMALLINT NOT NULL DEFAULT 35 CHECK (cmv_target BETWEEN 5 AND 90),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -66,8 +67,32 @@ CREATE TABLE products (
     price NUMERIC(10,2) NOT NULL CHECK (price >= 0),
     active BOOLEAN NOT NULL DEFAULT TRUE,
     image_key VARCHAR(32),
+    portion VARCHAR(60),
+    extra_cost NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (extra_cost >= 0),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE ingredients (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    name VARCHAR(80) NOT NULL,
+    unit VARCHAR(2) NOT NULL CHECK (unit IN ('g', 'ml', 'un')),
+    package_qty NUMERIC(12,3) NOT NULL CHECK (package_qty > 0),
+    package_price NUMERIC(10,2) NOT NULL CHECK (package_price >= 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX ingredients_company_name ON ingredients (company_id, lower(name));
+
+CREATE TABLE product_ingredients (
+    product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
+    quantity NUMERIC(12,3) NOT NULL CHECK (quantity > 0),
+    PRIMARY KEY (product_id, ingredient_id)
+);
+
+CREATE INDEX product_ingredients_ingredient ON product_ingredients (ingredient_id);
 
 CREATE TABLE tables (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -96,7 +121,8 @@ CREATE TABLE order_items (
     product_id UUID NOT NULL REFERENCES products(id),
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     unit_price NUMERIC(10,2) NOT NULL CHECK (unit_price >= 0),
-    total NUMERIC(10,2) NOT NULL CHECK (total >= 0)
+    total NUMERIC(10,2) NOT NULL CHECK (total >= 0),
+    unit_cost NUMERIC(10,2) CHECK (unit_cost >= 0)
 );
 
 CREATE TABLE payments (

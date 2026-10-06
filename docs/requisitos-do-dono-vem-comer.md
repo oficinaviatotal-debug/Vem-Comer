@@ -57,7 +57,7 @@ Funciona para quem é analfabeto e para quem vai usar 100% das funções.
 | 5 | **Criação de logomarca** (se não tem, o sistema pergunta cores/fachada e cria). | Falta. |
 | 6 | **Cardápio com categorias e imagem do que ele usou.** QR de mesa e link do cardápio. | Feito (cardápio, QR de mesa). Fotos: em andamento. |
 | 7 | **Cadastro com CEP; entrega roteirizada pelo CEP; a cozinha recebe o pedido.** | Falta (cozinha recebe: existe a tela de pedidos; CEP e rota: falta). |
-| 8 | **Cadastro de porção** (padronização mínima), **gerência de produtos e de custos, CMV da cozinha.** "O cara nunca teve isso." | Falta. |
+| 8 | **Cadastro de porção** (padronização mínima), **gerência de produtos e de custos, CMV da cozinha.** "O cara nunca teve isso." | Construído (aba **Custos** do painel): insumos como vêm na nota, ficha técnica por porção, custo e CMV de cada prato contra a meta do dono (começa em 35%), preço sugerido e CMV dos últimos 30 dias pelos pedidos. É o CMV pela ficha; o CMV pelo estoque vem com a compra inteligente (linha 22). `docs/custos-e-cmv.md`. |
 | 9 | **Entrega em grande escala:** vários motoqueiros, rotas por região, controle de produtos por motoqueiro. | Falta. |
 | 10 | **Bar e salão:** mesas internas e externas, no primeiro andar, do lado de fora; quantidade de mesas por área e por garçom. | Parcial: mesas e QR existem; áreas e garçom por área faltam. |
 | 11 | **Garçom com meta.** "Eles não têm meta." | Falta. |
