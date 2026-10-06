@@ -29,20 +29,26 @@ usa a mesma peça da entrega por CEP do Vem Comer.
 
 ## Cursos
 
-- Curso livre próprio: lições de 5 a 8 minutos, atividade de toque, reteste, prova final com nota mínima
+- Só cursos livres são nossos: lições de 5 a 8 minutos, atividade de toque, reteste, prova final com nota mínima
   de 70% que dá certificado e nunca elimina. Rascunho por IA, revisão humana antes de publicar.
-- Certificado é de curso livre. Diploma técnico (enfermagem, elétrica, eletrônica, mecânica de moto)
-  só escola credenciada emite: o Vem Trabalhar faz o link, o aluno e o match.
-- Catálogo de terceiros: só nomes, números e links para a página oficial; nada copiado.
+- Catálogos de terceiros (Sebrae, Fundação Bradesco, Sistema S etc.) e os dados regionais do IBGE ficam fora
+  (decisão do GD, 06/10/2026). A primeira versão da planilha, com esse levantamento, continua no histórico do git
+  (commit de51e17).
+- Curso técnico e faculdade entram por parceria: a escola paga ao Vem Trabalhar 50% da matrícula e 30% de cada
+  mensalidade (entendimento da fala do GD; falta confirmar por quantas mensalidades e se vale igual para
+  técnico e faculdade). O aluno paga o preço normal da escola.
+- Curso de parceiro leva a etiqueta "Parceiro". A comissão nunca muda a nota do match nem a ordem das vagas.
+- Certificado é de curso livre. Diploma técnico ou superior só instituição credenciada emite: o Vem Trabalhar
+  faz o link, o aluno e o match. Conferir credenciamento antes de fechar com a escola.
 - Curso livre não precisa de MEC (palavra do GD); confirmar com advogado antes de abrir.
 
 ## O que ainda falta decidir
 
-Veja a aba `Leia primeiro`: meta de 200 cursos (no total ou por região), R$ 80 mensal ou único,
-currículo básico grátis, parceiros e escolas, a metodologia de gestão dos 25 anos do GD, revisão do advogado.
+Veja a aba `Leia primeiro`: prazo da comissão de 30%, quais escolas e faculdades, meta de 200 cursos (no total ou
+por região), R$ 80 mensal ou único, currículo básico grátis, a metodologia de gestão dos 25 anos do GD, revisão do advogado.
 
 ## Limites
 
-Todos os nomes de curso marcados como "Visto em reportagem" precisam de conferência no site oficial.
+Nenhuma escola foi contatada; as abas de parceiros têm só um exemplo inventado e a linha do Centec, citado pelo GD.
 Os pesos, as velocidades e as notas de leitura automática (ATS) são premissas nossas.
 As frases do teste de perfil são traduções nossas do IPIP (domínio público) e pedem revisão de psicólogo.

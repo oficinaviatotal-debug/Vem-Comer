@@ -64,3 +64,10 @@ Preço **ainda não definido**. A mesma mecânica (semana grátis, depois Pix) s
 3. Preço do **Vem Comer**.
 4. Qual **CNPJ** recebe e qual **PSP** (taxas, CPF ou CNPJ).
 5. O que precisa estar funcionando em **13/10**.
+
+## Receita de parcerias com escolas (decisão do GD, 06/10/2026)
+
+Além das assinaturas, o Vem Trabalhar recebe das escolas parceiras (técnicas e faculdades): 50% da matrícula e
+30% de cada mensalidade dos alunos que levar. O aluno paga o preço normal da escola. Por quantas mensalidades a
+comissão vale está em aberto. Detalhes e calculadora em `docs/planilhas/Vem-Trabalhar-planilhas.xlsx` (aba `Parcerias`).
+No código, a comissão fica fora do match e fora da ordem das vagas; o curso de parceiro leva a etiqueta "Parceiro".
