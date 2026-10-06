@@ -238,6 +238,17 @@ foi aberta.
 | Cursos | Coursera, Udemy, Alura, DIO, SENAI, SENAC, Fundação Bradesco | não |
 | Faculdades | Uninassau e demais | não |
 | Canais | Política do WhatsApp Business | sim |
+| Vagas e RH com IA | Gentia (anúncio patrocinado no Instagram, print do GD de 06/10/2026) | só o print |
+
+**Print recebido (anúncio da Gentia, 06/10/2026).** Peça de venda de "50 vagas
+rodando para 1 recrutador". Mostra seis blocos de tela: vagas em andamento,
+triagem com IA (candidatos analisados e % de aderência), entrevistas em escala
+conduzidas por IA, busca de talentos ativos e passivos, lista dos melhores por
+vaga e status de cada vaga, e o lema "o humano só aprova". Os números do
+anúncio (12.480 candidatos, 10x mais produtividade) são promessa de venda, não
+foram verificados. O que vale como ideia para o Vem Trabalhar: painel único com
+todas as vagas e o estado de cada uma, lista curta por vaga e decisão final
+humana, que combina com a seção 7. Nada foi copiado; só as ideias gerais.
 
 ## 9. Requisitos novos propostos
 

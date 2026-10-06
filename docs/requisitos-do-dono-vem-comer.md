@@ -54,7 +54,7 @@ Funciona para quem é analfabeto e para quem vai usar 100% das funções.
 | 2 | **Subir foto do prato** (foto, galeria ou vídeo). | Em andamento: PR de fotos. |
 | 3 | **Melhorar a foto automaticamente, para todo mundo.** Os concorrentes sobem foto tirada da internet, sem melhoria nem personalização. | Em andamento: contraste, luz, cor e nitidez no servidor. Falta calibrar com fotos reais. |
 | 4 | **Bater uma foto do cardápio inteiro e o sistema cadastrar tudo sozinho**, com categorias (comida, bebida, sobremesa). | Em andamento: tela, servidor e script da chave prontos e testados com IA simulada (`docs/cardapio-por-foto.md`). Falta: chave de IA paga e teste com cardápios reais. |
-| 5 | **Criação de logomarca** (se não tem, o sistema pergunta cores/fachada e cria). | Falta. |
+| 5 | **Criação de logomarca** (se não tem, o sistema pergunta cores/fachada e cria). | Construída (aba **Marca** do painel): 13 tipos de comida, 9 cores da fachada, 6 modelos, desenhada no celular, sem custo e sem internet; quem já tem logomarca envia a sua. Aparece no cardápio do cliente. Falta ver no aparelho real e usar a logomarca nos posts e no QR. `docs/logomarca.md`. |
 | 6 | **Cardápio com categorias e imagem do que ele usou.** QR de mesa e link do cardápio. | Feito (cardápio, QR de mesa). Fotos: em andamento. |
 | 7 | **Cadastro com CEP; entrega roteirizada pelo CEP; a cozinha recebe o pedido.** | Falta (cozinha recebe: existe a tela de pedidos; CEP e rota: falta). |
 | 8 | **Cadastro de porção** (padronização mínima), **gerência de produtos e de custos, CMV da cozinha.** "O cara nunca teve isso." | Falta. |
@@ -80,6 +80,15 @@ Funciona para quem é analfabeto e para quem vai usar 100% das funções.
 | 28 | **Aba de cursos**, para quem procura emprego e para quem contrata: atividades didáticas e lúdicas, com inteligência artificial, certificado, prêmio, e cursos interligados que se repetem ao longo do tempo (recorrência). "Diferente de tudo que há no mercado." | Falta. Vem Trabalhar (depois do Vem Comer). |
 | 29 | **Sistema vivo, em constante operação, com robôs de IA** buscando informação e trabalhando: captação de clientes em várias pontas, recorrência, faturamento e valores, desenvolvimento de cursos. | Falta. Valem as regras de sempre: só com autorização de quem recebe, dentro das regras de cada canal, e com um humano vendo o que é enviado em nome de terceiros. |
 | 30 | **Interface simples, clicável, editável e funcional**, completa mas fácil, "diferente de tudo que há no mercado". Régua: o ambulante sem estudo e o diretor de uma rede usam a mesma tela. | Direção geral; vale para toda tela nova. |
+| 31 | **Vem Estudar:** catálogo de cursos curtos (até 80 h) com certificado no perfil da pessoa. Começa com cursos públicos; curso próprio ou de parceiro vem com CNPJ e nota. | Falta. Confirmar com o GD o sentido de "não precisa de Mac" (`docs/benchmark-ecossistema.md`, seção 4). Vem Trabalhar. |
+| 32 | **Faculdades parceiras** (Uninassau e técnicos), dentro da plataforma, com taxa de matrícula e percentual da mensalidade. | Falta. Só com contrato escrito; antes disso, só link para o site oficial. |
+| 33 | **Aba RH:** o match usa todas as respostas do candidato e todos os requisitos da vaga e explica o porquê. | Falta. A decisão final é humana. Vem Trabalhar. |
+| 34 | **RH terceirizado:** empresa sem RH envia N candidatos; o RH parceiro faz videochamada, preenche relatório de 20 perguntas mais relatório escrito, e devolve à empresa. | Falta. Consentimento do candidato. O GD define quem são os RH parceiros e quem paga. |
+| 35 | **Currículo por voz, vídeo e foto** para quem nunca trabalhou ou não sabe escrever; grátis para o candidato. | Falta. Referência mais próxima: VC_CV da Vagas.com.br (texto). Vem Trabalhar. |
+| 36 | **Testes de perfil, caráter e competência por voz, vídeo e áudio.** | Falta. Instrumentos validados, consentimento, sem rejeição automática. |
+| 37 | **Captação pelo Instagram próprio** do Vem Comer e do Vem Trabalhar. | Falta. Conteúdo e link; sem mensagem direta em massa. |
+
+Os itens 31 a 37 vêm do benchmark (`docs/benchmark-ecossistema.md`, seção 9) e nenhum entra no RC de 13/10.
 
 ## Como o dono testou e o que não funcionou (guia antigo)
 
@@ -102,7 +111,7 @@ Funciona para quem é analfabeto e para quem vai usar 100% das funções.
 2. Cadastro do restaurante pela internet, sem ajuda (construído e fechado; falta e-mail confirmado, "esqueci a
    senha", revisão dos termos e abrir com `abrir-cadastro.sh`).
 3. Foto do cardápio inteiro cadastrando sozinha (pronta; falta ligar a chave de IA e testar com cardápios reais).
-4. Logomarca.
+4. Logomarca (construída; falta ver no aparelho real).
 5. Assinatura e cobrança (teste grátis, plano).
 6. Porção, custo e CMV.
 7. Entrega por CEP e região.

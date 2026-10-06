@@ -4,6 +4,9 @@ export type Company = {
   id: string;
   name: string;
   slug: string;
+  /** Paths like "/media/<company>/<key>.webp"; null when the restaurant has no logo. Use mediaUrl() to show them. */
+  logo_url?: string | null;
+  logo_thumb_url?: string | null;
 };
 
 export type Product = {
