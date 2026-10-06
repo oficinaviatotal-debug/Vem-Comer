@@ -92,13 +92,13 @@ echo "Testando a chave com uma pergunta mínima (custa uma fração de centavo).
 corpo='{"model":"'"$MODELO_TESTE"'","max_tokens":1,"messages":[{"role":"user","content":"oi"}]}'
 # A chave vai por um arquivo de configuração lido da entrada padrão: assim ela não aparece nos argumentos
 # do programa (que qualquer um pode ver com ps).
-codigo=$(printf 'header = "x-api-key: %s"\n' "$chave" | curl -sS -K - --max-time 40 -o /dev/null -w '%{http_code}' \
+codigo=$(printf 'header = "Authorization: Bearer %s"\n' "$chave" | curl -sS -K - --max-time 40 -o /dev/null -w '%{http_code}' \
   -H 'anthropic-version: 2023-06-01' -H 'content-type: application/json' \
   -X POST --data "$corpo" "$API_URL" 2>/dev/null) || codigo="000"
 
 case "$codigo" in
   200) ok "a Anthropic aceitou a chave" ;;
-  401) unset chave; falhar "A Anthropic não aceitou a chave (erro 401). Confira se copiou a chave inteira. Nada foi gravado." ;;
+  401) unset chave; falhar "A Anthropic não aceitou a chave (erro 401). Confira se copiou a chave inteira e se ela não expirou ou foi apagada. Nada foi gravado." ;;
   402|403) unset chave; falhar "A chave é válida, mas a conta não tem crédito ou permissão (erro $codigo). Coloque crédito em console.anthropic.com e rode de novo. Nada foi gravado." ;;
   429) unset chave; falhar "A Anthropic pediu para esperar (erro 429). Tente de novo em alguns minutos. Nada foi gravado." ;;
   000) unset chave; falhar "Não consegui falar com a Anthropic daqui. Veja se o servidor tem internet e tente de novo. Nada foi gravado." ;;

@@ -38,7 +38,14 @@ Se o servidor não tiver a chave da IA, nada disso aparece: o Assistente é o de
 
 ## Como ligar e desligar (administrador)
 
-Precisa de uma chave de API da Anthropic (conta paga, com crédito): https://console.anthropic.com/settings/keys
+Precisa de uma chave de API da Anthropic, em https://platform.claude.com/settings/keys, e de saldo na conta
+(Dashboard → **Adicionar saldo**; sem saldo a leitura falha).
+
+Ao criar a chave, escolha a validade **Nunca** (a chave fica só no servidor, com permissão 600). Uma chave com
+validade (3 h, 1, 7 ou 30 dias) **para de funcionar sozinha** no dia: a API passa a responder 401, a tela continua
+oferecendo a foto, mas a leitura falha com "indisponível". Se a chave for de validade curta, anote a data.
+Nunca mostre a chave em print nem a cole em conversa: se isso acontecer, apague a chave em
+**Delete** na lista de chaves e crie outra. O script abaixo é o único lugar onde ela é digitada.
 
 ```
 bash /opt/vem-comer/app/deploy/vps/configurar-ia.sh

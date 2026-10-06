@@ -152,7 +152,7 @@ class ConfigurarIaTests(unittest.TestCase):
         self.assertEqual(stat.S_IMODE(os.stat(self.envfile).st_mode), 0o600)
         # a chave foi à API só no cabeçalho, e o teste custa 1 token
         sent = self.api.requests[0]
-        self.assertEqual(sent["headers"]["x-api-key"], KEY)
+        self.assertEqual(sent["headers"]["authorization"], f"Bearer {KEY}")
         self.assertEqual(sent["headers"]["anthropic-version"], "2023-06-01")
         self.assertEqual(json.loads(sent["body"])["max_tokens"], 1)
         # e nunca nos argumentos do curl (que qualquer um vê com ps)

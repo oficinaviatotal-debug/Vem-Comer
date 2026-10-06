@@ -205,7 +205,7 @@ def _post(body: dict, key: str) -> dict:
         method="POST",
         headers={
             "content-type": "application/json",
-            "x-api-key": key,
+            "authorization": f"Bearer {key}",  # forma preferida na documentacao atual; x-api-key e o formato antigo
             "anthropic-version": API_VERSION,
         },
     )

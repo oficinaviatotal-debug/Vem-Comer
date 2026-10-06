@@ -337,7 +337,8 @@ class HttpTests(unittest.TestCase):
         sent = self.fake.requests[0]
         self.assertEqual(sent["path"], "/v1/messages")
         headers = {k.lower(): v for k, v in sent["headers"].items()}
-        self.assertEqual(headers["x-api-key"], FAKE_KEY)
+        self.assertEqual(headers["authorization"], f"Bearer {FAKE_KEY}")
+        self.assertNotIn("x-api-key", headers)
         self.assertEqual(headers["anthropic-version"], "2023-06-01")
         self.assertEqual(headers["content-type"], "application/json")
         self.assertEqual(json.loads(sent["body"]), {"model": "m", "x": 1})
