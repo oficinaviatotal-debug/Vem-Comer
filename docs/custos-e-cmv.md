@@ -95,6 +95,17 @@ Essas ações são o começo da gestão de promoções e campanhas; o disparo (e
 - Trocar a unidade de um insumo que já está em ficha (peso para líquido, por exemplo) é recusado:
   as quantidades das fichas ficariam erradas. O dono cria outro insumo.
 
+## Próximos passos (fala do GD, 06/10/2026)
+
+- **Entrada de nota por foto**: DANFE, cupom fiscal, nota escrita à mão ou uma folha com o que foi comprado. A foto é lida
+  pela mesma peça do cardápio por foto; o dono confere; a compra soma no estoque e atualiza o preço do insumo. Nota
+  eletrônica tem chave de acesso e QR, que ajudam a ler os itens sem erro (a confirmar como consultar).
+- **Galinha inteira desossada**: já funciona com o aproveitamento (ex.: galinha de 4 kg que rende 2,4 kg de carne = 60%).
+  O próximo nível é o **preparo** (ex.: frango desfiado temperado) com ficha própria, usado em vários pratos (cachorro-quente,
+  torta), para o custo e o estoque descerem certo.
+- **Ensinar aos poucos**: o guia de cada aba começa pelo simples (preço e insumos) e só sugere rendimento, estoque e
+  engenharia de cardápio quando o dono já usa o básico. Quem já sabe tudo pode ligar o modo completo.
+
 ## Limites desta versão
 
 - O estoque é teórico (pela ficha) até a entrada de notas do item 22.
