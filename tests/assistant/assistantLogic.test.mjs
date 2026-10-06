@@ -119,8 +119,24 @@ test("a fragment that starts with a connector is not a dish", () => {
 test("empty or noise input gives nothing", () => {
   for (const said of ["", "   ", "...", "e", "tenho"]) {
     const result = interpretSpokenItems(said, LANCHES);
-    assert.deepEqual(result, { matched: [], custom: [], unclear: [] }, JSON.stringify(said));
+    assert.deepEqual(result, { matched: [], custom: [], unclear: [], finished: false }, JSON.stringify(said));
   }
+});
+
+test("a closing word ends the category and is never saved as a dish", () => {
+  const withDish = interpretSpokenItems("coxinha e pão de queijo, pronto", LANCHES);
+  assert.deepEqual(names(withDish.matched), ["Pão de queijo", "Coxinha"]);
+  assert.deepEqual(withDish.custom, []);
+  assert.equal(withDish.finished, true);
+
+  const onlyClosing = interpretSpokenItems("pronto", LANCHES);
+  assert.deepEqual(onlyClosing, { matched: [], custom: [], unclear: [], finished: true });
+
+  const leading = interpretSpokenItems("terminei feijoada", []);
+  assert.deepEqual(leading.custom, ["Feijoada"]);
+  assert.equal(leading.finished, true);
+
+  assert.equal(interpretSpokenItems("coxinha", LANCHES).finished, false);
 });
 
 test("business type: names, nicknames and plurals", () => {

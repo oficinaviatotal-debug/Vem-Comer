@@ -45,6 +45,7 @@ import {
 } from "./orderStatus";
 import { tableOrderUrl as buildTableUrl } from "./links";
 import { rememberCompany } from "./lastCompany";
+import MenuAssistant from "../assistant/MenuAssistant";
 import "../ui.css";
 import "../admin.css";
 
@@ -98,6 +99,7 @@ type TableRow = {
 
 type AdminView =
   | "pedidos"
+  | "assistente"
   | "produtos"
   | "categorias"
   | "dashboard"
@@ -107,6 +109,7 @@ type AdminView =
 
 const ADMIN_VIEWS: string[] = [
   "pedidos",
+  "assistente",
   "produtos",
   "categorias",
   "dashboard",
@@ -739,6 +742,19 @@ export default function AdminPanel({
           )}
         </button>
 
+        {(currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") && (
+          <button
+            id="admin-tab-assistente"
+            type="button"
+            className={tabClass("assistente")}
+            aria-current={view === "assistente" ? "page" : undefined}
+            onClick={() => setView("assistente")}
+          >
+            Assistente
+          </button>
+        )}
+
         <button
           id="admin-tab-produtos"
           type="button"
@@ -966,6 +982,12 @@ export default function AdminPanel({
             </ul>
           )}
         </section>
+      ) : view === "assistente" ? (
+        <MenuAssistant
+          companyId={companyId}
+          onSaved={loadProducts}
+          onSeeMenu={() => setView("produtos")}
+        />
       ) : view === "produtos" ? (
         <section className="adm-stack" aria-label="Produtos">
           <form
@@ -1041,6 +1063,13 @@ export default function AdminPanel({
             <div className="adm-empty">
               <h2>Nenhum produto ainda</h2>
               <p>Preencha o nome e o preço acima e toque em Adicionar Produto.</p>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setView("assistente")}
+              >
+                Cadastrar vários pratos com o assistente
+              </button>
             </div>
           ) : (
             <ul className="adm-list">

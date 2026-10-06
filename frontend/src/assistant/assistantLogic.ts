@@ -92,6 +92,8 @@ export type SpokenItems = {
   custom: string[];
   /** Pieces that could not be turned into a dish (usually several dishes run together). */
   unclear: string[];
+  /** The person ended the phrase with "pronto" (or similar): this category is finished. */
+  finished: boolean;
 };
 
 /** Words that open a phrase ("eu tenho ...") and are not part of a dish name. */
@@ -108,6 +110,9 @@ const LEAD_NOUNS = new Set([
   "carne", "espetinho", "acompanhamento", "suco", "cerveja", "doce", "pao", "cafe",
   "item", "coisa",
 ]);
+
+/** "coxinha e pão de queijo, pronto": the closing word is not a dish, it ends the category. */
+const CLOSERS = new Set(["pronto", "terminei", "acabou", "proxima", "proximo", "fim", "chega", "passa"]);
 
 /** Between two dishes people say "e" or "mais". */
 const SEPARATORS = new Set(["e", "mais", "tambem", "alem", "depois", "ainda"]);
@@ -189,27 +194,39 @@ export function interpretSpokenItems(transcript: string, itemNames: string[]): S
 
   const custom: string[] = [];
   const unclear: string[] = [];
+  let finished = false;
 
   let spanStart = -1;
   const closeSpan = (end: number) => {
     if (spanStart < 0) return;
     let from = spanStart;
+    let to = end;
     spanStart = -1;
+
+    // Closing words ("pronto") end the category; they are never part of a dish.
+    while (to > from && CLOSERS.has(tokens[to - 1].norm)) {
+      finished = true;
+      to -= 1;
+    }
 
     // Drop the opening words of the phrase ("eu tenho", "meus pratos são", "e").
     for (;;) {
-      if (from >= end) return;
+      if (from >= to) return;
       const word = tokens[from].norm;
       if (LEAD_WORDS.has(word)) {
         from += 1;
-      } else if (LEAD_NOUNS.has(word) && from + 1 < end && tokens[from + 1].norm === "sao") {
+      } else if (CLOSERS.has(word)) {
+        finished = true;
+        from += 1;
+      } else if (LEAD_NOUNS.has(word) && from + 1 < to && tokens[from + 1].norm === "sao") {
         from += 2;
       } else {
         break;
       }
     }
 
-    if (from >= end) return;
+    if (from >= to) return;
+    end = to;
     const length = end - from;
     const text = spanText(tokenized, from, end);
     if (!text) return;
@@ -244,7 +261,7 @@ export function interpretSpokenItems(transcript: string, itemNames: string[]): S
   }
   closeSpan(tokens.length);
 
-  return { matched: [...matched].sort((a, b) => a - b), custom, unclear };
+  return { matched: [...matched].sort((a, b) => a - b), custom, unclear, finished };
 }
 
 /* ----------------------------------------------------------- business type */

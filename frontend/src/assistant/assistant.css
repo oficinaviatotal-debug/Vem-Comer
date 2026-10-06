@@ -1,0 +1,306 @@
+/*
+ * Menu assistant. Big touch targets and short text: the person using it may
+ * have little schooling and is often holding the phone with one hand in a
+ * kitchen. Colors, type and spacing come from the tokens in styles.css.
+ */
+
+.asst {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.asst-lead {
+  margin: 0;
+  font-size: var(--t-lg);
+  line-height: 1.45;
+  color: var(--tinta);
+}
+
+.asst-start {
+  min-height: 64px;
+  font-size: var(--t-xl);
+}
+
+.asst-help {
+  margin: 0;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+}
+
+.asst-progress {
+  margin: 0;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+/* What the assistant says, as a speech bubble. */
+.asst-bubble {
+  padding: var(--s4) var(--s5);
+  border-radius: var(--r-md);
+  background: var(--folha);
+  color: #fff;
+}
+
+.asst-bubble p {
+  margin: 0;
+  font: 600 var(--t-xl) / 1.35 var(--font-display);
+}
+
+.asst-bubble small {
+  display: block;
+  margin-top: var(--s2);
+  font-size: var(--t-sm);
+  color: rgba(255, 255, 255, .8);
+}
+
+.asst-bubble .asst-listening {
+  color: var(--sol);
+  font-weight: 700;
+}
+
+.asst-notice {
+  margin: 0;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+}
+
+/* Business types: big cards, two per row. */
+.asst-types {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3);
+}
+
+.asst-type {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 112px;
+  padding: var(--s3);
+  border: 2px solid var(--linha-forte);
+  border-radius: var(--r-md);
+  background: var(--comanda);
+  color: var(--folha);
+  font: 700 var(--t-md) / 1.2 var(--font-ui);
+  text-align: center;
+  cursor: pointer;
+}
+
+.asst-type:hover:not(:disabled),
+.asst-type:focus-visible {
+  border-color: var(--brasa-viva);
+}
+
+.asst-type:disabled {
+  opacity: .5;
+  cursor: wait;
+}
+
+.asst-type-icon {
+  font-size: 2.25rem;
+  line-height: 1;
+}
+
+/* Dishes to tick. */
+.asst-pick-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.asst-pick-head h3 {
+  margin: 0;
+  font: 700 var(--t-xl) / 1.2 var(--font-display);
+  color: var(--folha);
+}
+
+.asst-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.asst-chip {
+  min-height: 48px;
+  padding: 0 var(--s4);
+  border: 2px solid var(--linha-forte);
+  border-radius: var(--r-pill);
+  background: var(--comanda);
+  color: var(--folha);
+  font: 600 var(--t-md) / 1.1 var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.asst-chip.is-on {
+  border-color: var(--mata);
+  background: var(--mata);
+  color: #fff;
+}
+
+.asst-unclear {
+  padding: var(--s3);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+}
+
+.asst-unclear p {
+  margin: 0 0 var(--s2);
+  font-size: var(--t-sm);
+  color: var(--tinta);
+}
+
+.asst-other {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--s3);
+}
+
+.asst-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+}
+
+.asst-actions .btn-primary {
+  flex: 1 1 100%;
+}
+
+/* One price at a time. */
+.asst-price-category {
+  margin: 0;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.asst-price-name {
+  margin: 0;
+  font: 700 var(--t-2xl) / 1.15 var(--font-display);
+  color: var(--folha);
+}
+
+.field input.asst-price-input {
+  min-height: 64px;
+  font-size: var(--t-2xl);
+  font-weight: 700;
+}
+
+/* Review. */
+.asst-review h3 {
+  margin: 0;
+  font: 700 var(--t-xl) / 1.2 var(--font-display);
+  color: var(--folha);
+}
+
+.asst-review-group h4 {
+  margin: 0 0 var(--s2);
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.asst-review-group ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.asst-review-group li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 6.5rem auto;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.asst-review-name {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.asst-review-price {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--s3);
+  border: 2px solid var(--linha-forte);
+  border-radius: var(--r-sm);
+  background: #fff;
+  color: var(--tinta);
+  font: 700 var(--t-md) / 1 var(--font-ui);
+  text-align: right;
+}
+
+.asst-review-price:focus {
+  border-color: var(--mata);
+}
+
+.asst-done h3 {
+  margin: 0;
+  font: 700 var(--t-xl) / 1.2 var(--font-display);
+  color: var(--mata);
+}
+
+.asst-done p {
+  margin: 0;
+}
+
+/* The microphone stays within reach of the thumb. */
+.asst-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3);
+  margin: 0 calc(var(--s4) * -1);
+  padding: var(--s3) var(--s4);
+  border-top: 2px solid var(--linha);
+  background: var(--papel);
+}
+
+.asst-mic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  flex: 1 1 12rem;
+  min-height: 56px;
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--mata);
+  color: #fff;
+  font: 700 var(--t-lg) / 1 var(--font-ui);
+  cursor: pointer;
+}
+
+.asst-mic:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.asst-mic.is-listening {
+  background: var(--alerta);
+  animation: asst-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes asst-pulse {
+  50% {
+    box-shadow: 0 0 0 8px rgba(180, 35, 24, .2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .asst-mic.is-listening {
+    animation: none;
+  }
+}
