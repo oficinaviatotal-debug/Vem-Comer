@@ -71,3 +71,11 @@ Além das assinaturas, o Vem Trabalhar recebe das escolas parceiras (técnicas e
 30% de cada mensalidade dos alunos que levar. O aluno paga o preço normal da escola. Por quantas mensalidades a
 comissão vale está em aberto. Detalhes e calculadora em `docs/planilhas/Vem-Trabalhar-planilhas.xlsx` (aba `Parcerias`).
 No código, a comissão fica fora do match e fora da ordem das vagas; o curso de parceiro leva a etiqueta "Parceiro".
+
+## Receita do RH terceirizado (pedido do GD, 06/10/2026)
+
+- Taxa do profissional de RH para se cadastrar: R$ 200 (em aberto: uma vez ou por mês).
+- Cada RH define o preço da entrevista; o Vem Trabalhar fica com 30% de cada entrevista paga pela plataforma.
+  Exemplo da planilha (valores inventados): entrevista de R$ 150 → R$ 45 para o Vem Trabalhar e R$ 105 para o RH.
+- Precisa de meio de pagamento com divisão automática (split) para o repasse de 70%; até lá, repasse manual com registro.
+- Calculadora na aba `RH parceiro` de `docs/planilhas/Vem-Trabalhar-planilhas.xlsx`.

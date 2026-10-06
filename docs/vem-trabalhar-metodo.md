@@ -41,6 +41,36 @@ usa a mesma peça da entrega por CEP do Vem Comer.
 - Certificado é de curso livre. Diploma técnico ou superior só instituição credenciada emite: o Vem Trabalhar
   faz o link, o aluno e o match. Conferir credenciamento antes de fechar com a escola.
 - Curso livre não precisa de MEC (palavra do GD); confirmar com advogado antes de abrir.
+- **Meta: 200 cursos livres nossos por região** (decisão do GD, 06/10/2026), podendo repetir entre regiões.
+  Catálogo na aba `Catálogo por região`: 120 do núcleo nacional (os 71 que já existiam + 49 novos) e 80 de cada região,
+  394 cursos diferentes no total. São ideias; cada um ainda precisa ser escrito, revisado por quem conhece o ofício e
+  testado com alunos.
+- **Padrão de toda lição** (aba `Padrão do curso`): vídeo curto, texto para ler ou ouvir, desenho para tocar no certo e no
+  errado, atividade de toque, reflexão, teste com reteste e, no fim do curso, prova final e certificado. Material nosso,
+  com a identidade do Vem e um personagem guia original. Lição de exemplo em `docs/prototipos/curso-operador-de-caixa.html`.
+- Curso de terceiro só com autorização por escrito; escola parceira (por exemplo, o Centec) pode pôr os próprios cursos
+  pelo portal do parceiro e entra no mesmo marketing.
+
+## Equipe da empresa e avaliação
+
+A empresa manda a equipe por planilha (Excel ou CSV), foto de uma lista ou voz (aba `Importar equipe`). O sistema propõe
+as competências de cada cargo e os cursos do catálogo que ajudam; a empresa confere. Cada funcionário recebe um convite e
+aceita. A avaliação de desempenho (aba `Desempenho`) mostra os pontos a desenvolver e os cursos indicados. Avaliação serve
+para desenvolver, nunca para demitir de forma automática. Não pedimos CPF, idade, estado civil, filhos nem saúde.
+
+## RH terceirizado (RH parceiro)
+
+Pedido do GD (06/10/2026), aba `RH parceiro`:
+
+- Profissionais de RH se cadastram (taxa de R$ 200; falta saber se é uma vez ou por mês) e dizem o preço da entrevista.
+- Empresas sem RH, pequenas ou grandes, contratam pela plataforma. A entrevista é online, dentro do Vem Trabalhar, com
+  roteiro de no mínimo 20 perguntas (comportamento, competências da vaga, soft skills e hard skills), junto com o
+  currículo, o match e, se o candidato autorizar, o teste de perfil.
+- O RH escreve o relatório final; a decisão é da empresa. O candidato recebe um retorno com cursos que ajudam.
+- A empresa paga pela plataforma; o Vem Trabalhar fica com **30%** e repassa 70% ao RH (repasse automático depende do
+  meio de pagamento com divisão, ainda a escolher).
+- Para o advogado: teste psicológico, na lei, é de psicólogo; "análise social" de redes só com autorização e só do que for
+  profissional; contrato com o RH (sigilo, prazo, cancelamento).
 
 ## Currículo, IA e voz
 
@@ -49,8 +79,9 @@ voz e o registro de benchmark estão em `docs/curriculo-ia-e-voz.md` (abas novas
 
 ## O que ainda falta decidir
 
-Veja a aba `Leia primeiro`: prazo da comissão de 30%, quais escolas e faculdades, meta de 200 cursos (no total ou
-por região), R$ 80 mensal ou único, currículo básico grátis, a metodologia de gestão dos 25 anos do GD, revisão do advogado.
+Veja a aba `Leia primeiro`: prazo da comissão de 30%, quais escolas e faculdades, nome da escola ("Vem Aprender"?),
+R$ 80 mensal ou único, currículo básico grátis, taxa do RH uma vez ou mensal, se o RH precisa ser psicólogo, a metodologia
+de gestão dos 25 anos do GD, revisão do advogado.
 
 ## Limites
 
