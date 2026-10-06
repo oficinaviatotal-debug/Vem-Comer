@@ -69,7 +69,7 @@ Preço **ainda não definido**. A mesma mecânica (semana grátis, depois Pix) s
 
 Além das assinaturas, o Vem Trabalhar recebe das escolas parceiras (técnicas e faculdades): 50% da matrícula e
 30% de cada mensalidade dos alunos que levar. O aluno paga o preço normal da escola. Por quantas mensalidades a
-comissão vale está em aberto. Detalhes e calculadora em `docs/planilhas/Vem-Trabalhar-planilhas.xlsx` (aba `Parcerias`).
+comissão vale está em aberto. Referência de mercado: o anúncio de parceiros da Uniateneu (06/10/2026) fala em até 100% da matrícula e até 70% das mensalidades; nossos 50% e 30% são piso para negociar. Detalhes e calculadora em `docs/planilhas/Vem-Trabalhar-planilhas.xlsx` (aba `Parcerias`).
 No código, a comissão fica fora do match e fora da ordem das vagas; o curso de parceiro leva a etiqueta "Parceiro".
 
 ## Receita do RH terceirizado (pedido do GD, 06/10/2026)
