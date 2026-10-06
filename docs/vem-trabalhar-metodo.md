@@ -42,6 +42,11 @@ usa a mesma peça da entrega por CEP do Vem Comer.
   faz o link, o aluno e o match. Conferir credenciamento antes de fechar com a escola.
 - Curso livre não precisa de MEC (palavra do GD); confirmar com advogado antes de abrir.
 
+## Currículo, IA e voz
+
+A entrevista do currículo por foto ou voz, as tarefas por área, os 3 pilares de IA para cada dono, os comandos de
+voz e o registro de benchmark estão em `docs/curriculo-ia-e-voz.md` (abas novas da planilha, versão 4).
+
 ## O que ainda falta decidir
 
 Veja a aba `Leia primeiro`: prazo da comissão de 30%, quais escolas e faculdades, meta de 200 cursos (no total ou
