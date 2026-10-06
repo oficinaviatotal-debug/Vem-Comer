@@ -36,6 +36,7 @@ export const ADMIN_TOUR: TourStep[] = [
     title: "Dê um nome à categoria",
     text: "Escreva o nome da primeira categoria. Por exemplo: Pratos.",
     target: "#admin-menu-name",
+    dictate: "text",
     view: "categorias",
   },
   {
@@ -60,6 +61,7 @@ export const ADMIN_TOUR: TourStep[] = [
     title: "Nome do prato",
     text: "Escreva o nome do prato. Por exemplo: Combinado de 20 peças.",
     target: "#admin-product-name",
+    dictate: "text",
     view: "produtos",
   },
   {
@@ -67,6 +69,7 @@ export const ADMIN_TOUR: TourStep[] = [
     title: "Preço",
     text: "Escreva o preço, só os números. Por exemplo: 49,90.",
     target: "#admin-product-price",
+    dictate: "price",
     view: "produtos",
   },
   {
@@ -74,6 +77,7 @@ export const ADMIN_TOUR: TourStep[] = [
     title: "Escolha a categoria",
     text: "Toque aqui e escolha a categoria do prato.",
     target: "#admin-product-menu",
+    dictate: "choice",
     view: "produtos",
   },
   {
@@ -98,6 +102,7 @@ export const ADMIN_TOUR: TourStep[] = [
     title: "Número da mesa",
     text: "Escreva o número da mesa. Por exemplo: 1.",
     target: "#admin-table-number",
+    dictate: "integer",
     view: "mesas",
   },
   {
