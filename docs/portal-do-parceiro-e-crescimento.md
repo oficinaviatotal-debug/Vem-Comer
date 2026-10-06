@@ -78,3 +78,14 @@ estagiários e empresas contratando, e divulgue em muitos meios, tudo automátic
   (vagas e cardápios); certificado com link que a pessoa compartilha; indicação com prêmio; QR nas mesas; páginas de vagas
   e de comida parceiras; anúncios pagos por região; e-mail e WhatsApp para quem pediu.
 
+### Mais dois posts trazidos pelo GD (06/10/2026), casos de teste da vaga por foto
+
+- **Recepcionista em escola de Natal**, publicada por uma consultoria de RH, com QR para enviar currículo e a marca
+  "Conteúdo de IA" do Instagram na imagem. Os "diferenciais" pedem curso de atendimento ou recepção: o Vem mostra ao
+  candidato "fazer o curso Recepcionista aumenta sua nota nesta vaga". Consultorias de RH como essa são candidatas a
+  RH parceiro. A imagem do nosso post automático também leva o aviso quando for criada por IA.
+- **Processo seletivo com edital** (23 vagas + cadastro reserva, inscrições de 09/10 a 13/10/2026, três cidades do RN,
+  instrutor e supervisor). Vira um tipo de vaga "processo seletivo": prazo, cargos, cidades e link para a inscrição
+  oficial (o Vem não recebe a inscrição, leva até ela), com aviso antes do fim do prazo para quem combina. Editais públicos
+  podem ser lidos pelo agente nas páginas oficiais, que existem para ser divulgadas.
+
