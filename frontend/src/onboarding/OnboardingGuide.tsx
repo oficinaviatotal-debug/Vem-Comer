@@ -376,21 +376,10 @@ export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
             <button
               type="button"
               className="tour-link-button"
-              onClick={() => speak(`${step.title}. ${step.text}`)}
-            >
-              Ouvir de novo
-            </button>
-          )}
-          {voiceAvailable && (
-            <button
-              type="button"
-              className="tour-icon-button"
               onClick={toggleVoice}
               aria-pressed={voiceOn}
-              aria-label={voiceOn ? "Desligar a voz do guia" : "Ligar a voz do guia"}
-              title={voiceOn ? "Desligar a voz" : "Ligar a voz"}
             >
-              {voiceOn ? "🔊" : "🔇"}
+              {voiceOn ? "Voz ligada" : "Voz desligada"}
             </button>
           )}
         </div>
@@ -422,47 +411,60 @@ export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
         )}
         {notice && <p className="tour-notice">{notice}</p>}
 
-        <div className="tour-actions">
+        <button
+          type="button"
+          className="tour-button tour-button-primary tour-button-main"
+          onClick={() => setState((current) => nextStep(current, total))}
+        >
+          {isLast ? "Concluir" : "Próximo"}
+        </button>
+
+        {(voiceAvailable || micAvailable) && (
+          <div className="tour-actions">
+            {voiceAvailable && (
+              <button
+                type="button"
+                className="tour-button tour-button-secondary"
+                onClick={() => speak(`${step.title}. ${step.text}`)}
+              >
+                🔊 Ouvir de novo
+              </button>
+            )}
+
+            {micAvailable && (
+              <button
+                type="button"
+                className={
+                  listening
+                    ? "tour-button tour-button-mic tour-listening"
+                    : "tour-button tour-button-mic"
+                }
+                onClick={toggleMic}
+                aria-label={listening ? "Parar de ouvir" : "Falar com o guia"}
+              >
+                {listening ? "Ouvindo…" : "🎙️ Falar"}
+              </button>
+            )}
+          </div>
+        )}
+
+        <div className="tour-footer">
           <button
             type="button"
-            className="tour-button tour-button-secondary"
+            className="tour-link-button"
             onClick={() => setState((current) => prevStep(current))}
             disabled={state.index === 0}
           >
             Voltar
           </button>
-
-          {micAvailable && (
-            <button
-              type="button"
-              className={
-                listening
-                  ? "tour-button tour-button-mic tour-listening"
-                  : "tour-button tour-button-mic"
-              }
-              onClick={toggleMic}
-              aria-label={listening ? "Parar de ouvir" : "Falar com o guia"}
-            >
-              {listening ? "Ouvindo…" : "🎙️ Falar"}
-            </button>
-          )}
-
           <button
             type="button"
-            className="tour-button tour-button-primary"
-            onClick={() => setState((current) => nextStep(current, total))}
+            className="tour-skip"
+            onClick={() => setState((current) => skipTour(current))}
           >
-            {isLast ? "Concluir" : "Próximo"}
+            Pular guia
           </button>
         </div>
-
-        <button
-          type="button"
-          className="tour-skip"
-          onClick={() => setState((current) => skipTour(current))}
-        >
-          Pular guia
-        </button>
       </div>
     </div>
   );

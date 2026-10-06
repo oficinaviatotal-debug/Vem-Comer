@@ -46,9 +46,12 @@ import {
   LISTEN_DELAY_MS,
   canListen,
   canSpeak,
+  chooseNextVoice,
+  currentVoiceName,
   hear,
   speakAsync,
   stopSpeaking,
+  voiceCount,
   type Hearing,
 } from "./voiceIO";
 
@@ -58,6 +61,8 @@ type Props = {
   onSaved?: () => void;
   /** Opens the screen that lists the dishes. */
   onSeeMenu?: () => void;
+  /** Opens the tour of tables, Pix and orders: the natural next step once the menu exists. */
+  onOpenGuide?: () => void;
 };
 
 type Status = "idle" | "speaking" | "listening";
@@ -67,7 +72,7 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
 /** After this many silent turns in a row the assistant stops listening and shows how to fix the microphone. */
 const SILENT_TURNS_BEFORE_HELP = 2;
 
-export default function MenuAssistant({ companyId, onSaved, onSeeMenu }: Props) {
+export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGuide }: Props) {
   const [templates, setTemplates] = useState<MenuTemplateSummary[] | null>(null);
   const [templatesError, setTemplatesError] = useState("");
   const [flow, setFlow] = useState<FlowState>(initialFlow);
@@ -84,6 +89,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu }: Props) 
   const [priceInput, setPriceInput] = useState("");
   const [result, setResult] = useState<MenuImportResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const [voiceLabel, setVoiceLabel] = useState("");
 
   // Everything the voice loop reads lives in refs: it keeps running between renders.
   const flowRef = useRef(flow);
@@ -113,7 +119,11 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu }: Props) 
 
   useEffect(() => {
     loadTemplates();
+    prepareVoice();
+    // The phone fills its list of voices a moment after the page opens.
+    const voiceTimer = setTimeout(() => setVoiceLabel(currentVoiceName() ?? ""), 800);
     return () => {
+      clearTimeout(voiceTimer);
       // Leaving the screen silences the assistant.
       sessionRef.current += 1;
       hearingRef.current?.cancel();
@@ -231,6 +241,19 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu }: Props) 
     if (!micOnRef.current) setMicOn(true);
     micOnRef.current = true;
     void listen(session);
+  }
+
+  /** Tries the next Portuguese voice of the phone; the choice is remembered in this browser. */
+  function changeVoice() {
+    const name = chooseNextVoice();
+    if (!name) {
+      setNotice("Este celular só tem uma voz em português.");
+      return;
+    }
+    setVoiceLabel(name);
+    setVoiceOn(true);
+    voiceOnRef.current = true;
+    void say("Esta é a minha nova voz. Gostou?", false);
   }
 
   function toggleVoice() {
@@ -731,14 +754,19 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu }: Props) 
           )}
           <p className="asst-help">Em breve: fotos dos pratos e logomarca.</p>
           <div className="asst-actions">
-            <button type="button" className="btn btn-outline" onClick={() => { setResult(null); start(); }}>
-              Cadastrar mais pratos
-            </button>
+            {onOpenGuide && (
+              <button type="button" className="btn btn-primary" onClick={onOpenGuide}>
+                Continuar: mesas, Pix e pedidos
+              </button>
+            )}
             {onSeeMenu && (
-              <button type="button" className="btn btn-primary" onClick={onSeeMenu}>
+              <button type="button" className="btn btn-outline" onClick={onSeeMenu}>
                 Ver o cardápio
               </button>
             )}
+            <button type="button" className="btn btn-quiet" onClick={() => { setResult(null); start(); }}>
+              Cadastrar mais pratos
+            </button>
           </div>
         </div>
       )}
@@ -769,11 +797,17 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu }: Props) 
           >
             {voiceOn ? "Voz ligada" : "Voz desligada"}
           </button>
+          {canSpeak() && voiceCount() > 1 && (
+            <button type="button" className="btn btn-quiet btn-sm" onClick={changeVoice}>
+              Trocar voz
+            </button>
+          )}
           {status === "speaking" && (
             <button type="button" className="btn btn-quiet btn-sm" onClick={silence}>
               Parar de falar
             </button>
           )}
+          {voiceLabel && <small className="asst-voice-name">Voz: {voiceLabel}</small>}
         </div>
       )}
     </section>

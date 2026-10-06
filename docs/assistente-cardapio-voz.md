@@ -5,6 +5,9 @@ tem pouco estudo ou pouca prática com celular: o assistente pergunta em voz alt
 celular escuta sozinho a resposta (sem tocar a cada vez) e, no fim, o cardápio é
 cadastrado de uma vez pela rota descrita em `docs/cardapio-assistido.md`.
 
+Na primeira vez que o dono entra no painel sem nenhum prato cadastrado, esta aba abre
+sozinha. Ao terminar, o botão **Continuar: mesas, Pix e pedidos** abre o guia.
+
 ## Como a conversa anda
 
 1. **Tipo de negócio.** Fala ("lanchonete", "pizzaria", "boteco", "sushi"...) ou toca
@@ -45,7 +48,7 @@ cadastrado de uma vez pela rota descrita em `docs/cardapio-assistido.md`.
 - `frontend/src/assistant/assistantPrompts.ts`: o que ele fala.
 - `frontend/src/assistant/voiceIO.ts`: falar e escutar como promessas.
 - `frontend/src/assistant/MenuAssistant.tsx` e `assistant.css`: a tela.
-- `tests/assistant/*.test.mjs`: 35 testes da lógica e dos passos.
+- `tests/assistant/*.test.mjs`: testes da lógica e dos passos.
 
 ## Como foi verificado
 

@@ -41,7 +41,7 @@ export function stopSpeaking() {
  * sounds robotic, the "Google"/"Natural"/"Neural" ones sound like a person. The
  * browser's default pick is often the robotic one, so choose on purpose.
  */
-export function voiceScore(name: string, lang: string): number {
+export function voiceScore(name: string, lang: string, localService?: boolean): number {
   const code = lang.toLowerCase().replace("_", "-");
   if (!code.startsWith("pt")) return -1;
   const label = name.toLowerCase();
@@ -50,30 +50,87 @@ export function voiceScore(name: string, lang: string): number {
   if (/google/.test(label)) score += 5;
   if (/francisca|thalita|antonio|luciana|felipe|fernanda|vitoria|vitória/.test(label)) score += 3;
   if (/compact|espeak|pico/.test(label)) score -= 6;
+  // On phones the voices that are not "local" are the ones the browser streams from
+  // the network, and they sound much more natural than the ones stored on the device.
+  if (localService === false) score += 4;
   return score;
 }
 
-export function pickVoice(
-  voices: Array<{ name: string; lang: string }>
-): { name: string; lang: string } | undefined {
-  let best: { name: string; lang: string } | undefined;
-  let bestScore = 0;
-  for (const voice of voices) {
-    const score = voiceScore(voice.name, voice.lang);
-    if (score > bestScore) {
-      best = voice;
-      bestScore = score;
-    }
+export type VoiceInfo = { name: string; lang: string; localService?: boolean };
+
+/** Portuguese voices, best first. */
+export function rankVoices<T extends VoiceInfo>(voices: T[]): T[] {
+  return voices
+    .map((voice) => ({ voice, score: voiceScore(voice.name, voice.lang, voice.localService) }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((entry) => entry.voice);
+}
+
+/** The voice the person chose by name when it is still available, otherwise the best-sounding one. */
+export function pickVoice<T extends VoiceInfo>(voices: T[], preferredName?: string): T | undefined {
+  const ranked = rankVoices(voices);
+  if (preferredName) {
+    const chosen = ranked.find((voice) => voice.name === preferredName);
+    if (chosen) return chosen;
   }
-  return best;
+  return ranked[0];
+}
+
+/** The voice after `currentName` in the ranking, wrapping around. Used by the "Trocar voz" button. */
+export function nextVoiceName(voices: VoiceInfo[], currentName?: string): string | undefined {
+  const ranked = rankVoices(voices);
+  if (ranked.length === 0) return undefined;
+  const index = ranked.findIndex((voice) => voice.name === currentName);
+  return ranked[(index + 1) % ranked.length].name;
 }
 
 let chosenVoice: SpeechSynthesisVoice | undefined;
 let voicesWatched = false;
 
+const VOICE_KEY = "vc_voice_name";
+
+function savedVoiceName(): string | undefined {
+  try {
+    return window.localStorage.getItem(VOICE_KEY) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function refreshVoice() {
   if (!canSpeak()) return;
-  chosenVoice = pickVoice(window.speechSynthesis.getVoices()) as SpeechSynthesisVoice | undefined;
+  chosenVoice = pickVoice(window.speechSynthesis.getVoices(), savedVoiceName());
+}
+
+/** Name of the voice being used, to show on screen. */
+export function currentVoiceName(): string | undefined {
+  prepareVoice();
+  return chosenVoice?.name;
+}
+
+/** How many Portuguese voices this phone offers. */
+export function voiceCount(): number {
+  if (!canSpeak()) return 0;
+  return rankVoices(window.speechSynthesis.getVoices()).length;
+}
+
+/**
+ * Switches to the next Portuguese voice of the phone and remembers the choice in
+ * this browser. Returns its name, or undefined when the phone has no other voice.
+ */
+export function chooseNextVoice(): string | undefined {
+  if (!canSpeak()) return undefined;
+  const voices = window.speechSynthesis.getVoices();
+  const next = nextVoiceName(voices, chosenVoice?.name);
+  if (!next) return undefined;
+  try {
+    window.localStorage.setItem(VOICE_KEY, next);
+  } catch {
+    /* the choice only lasts until the page is closed */
+  }
+  refreshVoice();
+  return chosenVoice?.name;
 }
 
 /**
@@ -92,6 +149,9 @@ export function prepareVoice() {
     /* very old browsers: the default voice is still used */
   }
 }
+
+/** A little faster than the default: the slow, pausing delivery is what makes a voice feel robotic. */
+const SPEECH_RATE = 1.12;
 
 /**
  * Reads the text aloud, replacing anything still being read. `onDone` runs once
@@ -118,7 +178,7 @@ export function speak(text: string, onDone?: () => void) {
     synth.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "pt-BR";
-    utterance.rate = 1.05;
+    utterance.rate = SPEECH_RATE;
     utterance.pitch = 1;
     if (chosenVoice) utterance.voice = chosenVoice;
     if (onDone) {

@@ -4,9 +4,19 @@
  * microphone every time.
  */
 
-import { canListen, canSpeak, createListener, speak, stopSpeaking } from "../onboarding/speech";
+import {
+  canListen,
+  canSpeak,
+  chooseNextVoice,
+  createListener,
+  currentVoiceName,
+  speak,
+  stopSpeaking,
+  voiceCount,
+} from "../onboarding/speech";
+import { smoothForSpeech } from "./assistantLogic";
 
-export { canListen, canSpeak, stopSpeaking };
+export { canListen, canSpeak, chooseNextVoice, currentVoiceName, stopSpeaking, voiceCount };
 
 /** Pause between the end of the assistant's voice and opening the microphone, so it does not hear itself. */
 export const LISTEN_DELAY_MS = 250;
@@ -16,7 +26,7 @@ export const LISTEN_TIMEOUT_MS = 12000;
 
 /** Reads the text aloud and resolves when it ends (or at once when speech is not available). */
 export function speakAsync(text: string): Promise<void> {
-  return new Promise((resolve) => speak(text, resolve));
+  return new Promise((resolve) => speak(smoothForSpeech(text), resolve));
 }
 
 export type Hearing = {

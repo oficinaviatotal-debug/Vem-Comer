@@ -69,7 +69,7 @@ Regras que não mudam:
 | `OnboardingGuide.tsx` | Tela do guia: balão, contorno piscando, voz, microfone. Recebe só a lista de passos. |
 | `speech.ts` | Voz (síntese) e microfone (reconhecimento) em pt-BR, com proteção quando o navegador não oferece. |
 | `guideStorage.ts` | Lembra, só neste navegador, se o guia já foi mostrado e se a voz está ligada. |
-| `adminTour.ts` | O roteiro do painel do restaurante (categorias, pratos, mesas, QR, pedidos). |
+| `adminTour.ts` | O roteiro do painel do restaurante (mesas, QR, Pix, pedidos). O cardápio fica no Assistente, não no guia. |
 
 Estilos: bloco `Guided onboarding` no fim de `frontend/src/styles.css` (classes `tour-*`).
 Respeita `prefers-reduced-motion` (sem piscar, só contorno fixo).
@@ -173,3 +173,23 @@ Roda também no GitHub (`Vem Comer guided onboarding tests`).
   foram conferidos em um navegador Chromium simulando celular (390 x 844) com o
   servidor simulado; voz e microfone reais, e o toque em aparelhos de verdade,
   ainda precisam ser vistos em um celular.
+
+## Mudança de rumo (guia `admin-v3`)
+
+O guia de 18 passos pedia para **escrever** o nome da categoria e de cada prato. Isso não
+serve para dono de negócio pequeno que escreve pouco ou nada. Agora:
+
+- **Primeiro acesso sem cardápio:** o painel abre direto na aba **Assistente** (voz e
+  toque, nenhuma escrita) e o guia não abre na frente. O assistente fica em
+  `frontend/src/assistant` (ver `docs/assistente-cardapio-voz.md`).
+- **Primeiro acesso com cardápio:** abre o guia, agora com 11 passos: um passo apontando
+  para a aba Assistente, e depois mesas, QR, Pix e pedidos. O roteiro não aponta mais para
+  os campos de categoria e prato (há um teste que garante isso).
+- Ao terminar o cardápio no Assistente, o botão **Continuar: mesas, Pix e pedidos** abre o guia.
+- O cartão do guia ficou com **um botão grande** ("Próximo", largura toda) no topo dos
+  controles; "Ouvir de novo" e "Falar" ficam logo abaixo, e "Voltar" e "Pular guia" viram
+  links discretos.
+- A voz fala um pouco mais rápido (1,12) e prefere vozes de rede do celular quando existem;
+  no Assistente há o botão **Trocar voz**, que percorre as vozes em português do aparelho e
+  lembra a escolhida (neste navegador).
+

@@ -381,3 +381,13 @@ export function spokenPrice(price: string): string {
   const reais = `${Number(whole)} ${Number(whole) === 1 ? "real" : "reais"}`;
   return cents === "00" ? reais : `${reais} e ${Number(cents)} centavos`;
 }
+
+/* ------------------------------------------------------------------- voice */
+
+/**
+ * A full stop makes the phone voice stop and drop its pitch, which is much of why short
+ * sentences sound chopped. A comma keeps the rhythm; the last full stop, "?" and "!" stay.
+ */
+export function smoothForSpeech(text: string): string {
+  return text.replace(/\.\s+(?=\S)/g, ", ").replace(/,\s*,/g, ",");
+}

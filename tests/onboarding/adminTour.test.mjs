@@ -93,7 +93,7 @@ test("the guide is only offered to people who can configure the restaurant", () 
 
 test("steps the guide fills by voice point at a real field of the right kind", () => {
   const dictated = ADMIN_TOUR.filter((step) => step.dictate);
-  assert.ok(dictated.length >= 4, "the main registration steps should accept dictation");
+  assert.ok(dictated.length >= 1, "the table number step should accept dictation");
   for (const step of dictated) {
     assert.ok(step.target, `${step.id}: dictation needs a field to fill`);
     const id = step.target.slice(1);
@@ -104,6 +104,23 @@ test("steps the guide fills by voice point at a real field of the right kind", (
       `${step.id}: #${id} must be a <${tag}> for "${step.dictate}" dictation`
     );
   }
+});
+
+test("the tour never asks the owner to type a category or a dish: the Assistente does that", () => {
+  const typedMenuFields = ["#admin-menu-name", "#admin-product-name", "#admin-product-price", "#admin-product-menu"];
+  for (const step of ADMIN_TOUR) {
+    assert.ok(!typedMenuFields.includes(step.target), `${step.id} asks to type a menu field`);
+  }
+  const pointer = ADMIN_TOUR.find((step) => step.target === "#admin-tab-assistente");
+  assert.ok(pointer, "one step must point at the Assistente tab");
+  assert.equal(pointer.advanceOnClick, undefined, "pointing at it must not open it in the middle of the tour");
+  assert.match(panel, /id="admin-tab-assistente"/);
+});
+
+test("a first-time owner with no menu goes to the Assistente instead of the tour", () => {
+  assert.match(panel, /setView\("assistente"\)/);
+  assert.match(panel, /rows\.length === 0/);
+  assert.match(panel, /onOpenGuide=\{\(\) => setGuideOpen\(true\)\}/);
 });
 
 test("secrets are never dictated: the Pix key and password steps do not accept voice input", () => {

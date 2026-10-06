@@ -9,6 +9,7 @@ import {
   formatPrice,
   spokenPrice,
   stem,
+  smoothForSpeech,
 } from "../../frontend/src/assistant/assistantLogic.ts";
 
 const LANCHES = [
@@ -221,4 +222,15 @@ test("prices: how they are shown and spoken", () => {
   assert.equal(spokenPrice("20"), "20 reais");
   assert.equal(spokenPrice("1.00"), "1 real");
   assert.equal(spokenPrice("0.90"), "0 reais e 90 centavos");
+});
+
+test("speech: full stops inside the text become commas, the last one stays", () => {
+  assert.equal(
+    smoothForSpeech("Lanchonete. Lanches. Toque nos pratos que você vende. Quando acabar, diga pronto."),
+    "Lanchonete, Lanches, Toque nos pratos que você vende, Quando acabar, diga pronto."
+  );
+  assert.equal(smoothForSpeech("Pastel de carne. Quanto custa?"), "Pastel de carne, Quanto custa?");
+  assert.equal(smoothForSpeech("Anotado. Mais algum? Ou diga pronto."), "Anotado, Mais algum? Ou diga pronto.");
+  assert.equal(smoothForSpeech("R$ 18.50 reais"), "R$ 18.50 reais");
+  assert.equal(smoothForSpeech(""), "");
 });
