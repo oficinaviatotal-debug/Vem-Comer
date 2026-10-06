@@ -14,6 +14,8 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import query_db, get_db_connection
+import menu_import
+import menu_templates
 import pix
 from table_qr import qr_png_for_url
 from trusted_proxy import wrap_trusted_proxy
@@ -1289,6 +1291,95 @@ def admin_create_menu(company_id):
 
         return error_response(
             "Erro ao criar categoria",
+            e
+        )
+
+
+@app.route('/api/admin/menu/templates', methods=['GET'])
+@require_roles('OWNER', 'MANAGER')
+def admin_list_menu_templates():
+    return jsonify(menu_templates.list_templates()), 200
+
+
+@app.route('/api/admin/menu/templates/<template_id>', methods=['GET'])
+@require_roles('OWNER', 'MANAGER')
+def admin_get_menu_template(template_id):
+    template = menu_templates.get_template(template_id)
+
+    if template is None:
+        return jsonify({
+            "error": "Modelo nao encontrado"
+        }), 404
+
+    return jsonify(template), 200
+
+
+@app.route(
+    '/api/companies/<uuid:company_id>/admin/menu/import',
+    methods=['POST']
+)
+@require_roles('OWNER', 'MANAGER')
+def admin_import_menu(company_id):
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    categories, problem = menu_import.validate_payload(
+        request.get_json(silent=True)
+    )
+
+    if problem:
+        return jsonify({
+            "error": problem
+        }), 400
+
+    conn = None
+    cur = None
+
+    try:
+        conn = get_db_connection()
+
+        cur = conn.cursor(
+            cursor_factory=RealDictCursor
+        )
+
+        summary = menu_import.import_menu(cur, company_id, categories)
+
+        if summary is None:
+            conn.rollback()
+            cur.close()
+            conn.close()
+
+            return jsonify({
+                "error": "Estabelecimento nao encontrado"
+            }), 404
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        created = (
+            summary["menus_created"] + summary["products_created"]
+        ) > 0
+
+        return jsonify({
+            "message": "Cardapio cadastrado com sucesso",
+            **summary
+        }), (201 if created else 200)
+
+    except Exception as e:
+        if conn is not None and not conn.closed:
+            conn.rollback()
+
+            if cur is not None:
+                cur.close()
+
+            conn.close()
+
+        return error_response(
+            "Erro ao cadastrar o cardapio",
             e
         )
 
