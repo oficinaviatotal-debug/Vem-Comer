@@ -181,15 +181,32 @@ export default function AdminPanel({
     currentUser?.role === "OWNER" || currentUser?.role === "MANAGER";
 
   useEffect(() => {
-    // First time an owner opens the panel on this browser: offer the guide.
+    // First time an owner opens the panel on this browser. With no menu yet the
+    // owner goes straight to the Assistente (voice and touch, no typing);
+    // with a menu, the tour of tables, Pix and orders is offered.
     if (
-      isAuthenticated &&
-      currentUser?.role === "OWNER" &&
-      !hasSeenGuide(ADMIN_TOUR_ID, currentUser.id)
+      !isAuthenticated ||
+      currentUser?.role !== "OWNER" ||
+      hasSeenGuide(ADMIN_TOUR_ID, currentUser.id)
     ) {
-      setGuideOpen(true);
+      return;
     }
-  }, [isAuthenticated, currentUser?.id, currentUser?.role]);
+
+    let cancelled = false;
+    fetchProducts(companyId)
+      .then((rows) => {
+        if (cancelled) return;
+        if (Array.isArray(rows) && rows.length === 0) setView("assistente");
+        else setGuideOpen(true);
+      })
+      .catch(() => {
+        if (!cancelled) setGuideOpen(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, currentUser?.id, currentUser?.role, companyId]);
 
   async function loadOrders() {
     try {
@@ -987,6 +1004,7 @@ export default function AdminPanel({
           companyId={companyId}
           onSaved={loadProducts}
           onSeeMenu={() => setView("produtos")}
+          onOpenGuide={() => setGuideOpen(true)}
         />
       ) : view === "produtos" ? (
         <section className="adm-stack" aria-label="Produtos">

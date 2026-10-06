@@ -284,16 +284,6 @@ a {
   text-decoration: underline;
 }
 
-.tour-icon-button {
-  width: 44px;
-  height: 44px;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--cream);
-  font-size: 20px;
-  line-height: 1;
-}
-
 .tour-bar {
   height: 6px;
   margin: 6px 0 12px;
@@ -347,9 +337,21 @@ a {
 
 .tour-actions {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 8px;
+}
+
+.tour-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.tour-footer .tour-link-button:disabled {
+  opacity: .35;
+  text-decoration: none;
 }
 
 .tour-button {
@@ -373,6 +375,15 @@ a {
   color: var(--white);
 }
 
+/* The one button that moves the guide forward: full width and taller than the rest. */
+.tour-button-main {
+  display: block;
+  width: 100%;
+  min-height: 60px;
+  margin-top: 6px;
+  font-size: 20px;
+}
+
 .tour-button-secondary {
   background: var(--cream);
   color: var(--dark);
@@ -388,10 +399,8 @@ a {
 }
 
 .tour-skip {
-  display: block;
-  width: 100%;
   min-height: 44px;
-  margin-top: 4px;
+  padding: 0 10px;
   border: 0;
   background: transparent;
   color: var(--muted);

@@ -1,13 +1,17 @@
 import type { TourStep } from "./tourEngine";
 
 /** Bump the id when the script changes a lot, so owners see the new guide. */
-export const ADMIN_TOUR_ID = "admin-v2";
+export const ADMIN_TOUR_ID = "admin-v3";
 
 /**
- * Guided setup for a restaurant owner: categories, dishes, tables and QR
- * codes, in the order that makes the menu work. Every target is an element
- * id in AdminPanel.tsx; tests/onboarding/adminTour.test.mjs fails if a step
- * points to an id that no longer exists.
+ * Guided tour of a restaurant owner's panel: tables and QR codes, Pix and
+ * orders. Every target is an element id in AdminPanel.tsx;
+ * tests/onboarding/adminTour.test.mjs fails if a step points to an id that no
+ * longer exists.
+ *
+ * The menu itself is NOT part of this tour: typing category and dish names
+ * does not work for owners who barely write. The Assistente tab does that by
+ * voice and touch (see src/assistant), so the tour only points to it.
  *
  * Writing rules: short sentences, one action per step, the same words that
  * are printed on the buttons.
@@ -15,80 +19,19 @@ export const ADMIN_TOUR_ID = "admin-v2";
 export const ADMIN_TOUR: TourStep[] = [
   {
     id: "boas-vindas",
-    title: "Vamos montar o seu cardápio",
+    title: "Vamos conhecer o seu painel",
     text:
-      "Eu vou te guiar passo a passo. Você pode tocar nos botões ou falar comigo. " +
-      "Para seguir, diga próximo. Para ouvir de novo, diga repetir.",
+      "Eu mostro as mesas, o Pix e os pedidos. Pode tocar nos botões ou falar comigo. " +
+      "Para seguir, diga próximo.",
     say: "próximo",
   },
   {
-    id: "aba-categorias",
-    title: "Primeiro, as categorias",
+    id: "assistente",
+    title: "O cardápio é no Assistente",
     text:
-      "Toque em Categorias. É aqui que você separa o cardápio, " +
-      "por exemplo: Pratos, Bebidas e Sobremesas.",
-    target: "#admin-tab-categorias",
-    advanceOnClick: true,
-    say: "próximo",
-  },
-  {
-    id: "nome-categoria",
-    title: "Dê um nome à categoria",
-    text: "Escreva o nome da primeira categoria. Por exemplo: Pratos.",
-    target: "#admin-menu-name",
-    dictate: "text",
-    view: "categorias",
-  },
-  {
-    id: "salvar-categoria",
-    title: "Salve a categoria",
-    text:
-      "Toque em Adicionar Categoria. Depois repita para as outras, " +
-      "como Bebidas e Sobremesas.",
-    target: "#admin-menu-add",
-    view: "categorias",
-    advanceOnClick: true,
-  },
-  {
-    id: "aba-produtos",
-    title: "Agora, os pratos",
-    text: "Toque em Produtos. Aqui ficam os pratos e bebidas que o cliente vai ver.",
-    target: "#admin-tab-produtos",
-    advanceOnClick: true,
-  },
-  {
-    id: "nome-produto",
-    title: "Nome do prato",
-    text: "Escreva o nome do prato. Por exemplo: Combinado de 20 peças.",
-    target: "#admin-product-name",
-    dictate: "text",
-    view: "produtos",
-  },
-  {
-    id: "preco-produto",
-    title: "Preço",
-    text: "Escreva o preço, só os números. Por exemplo: 49,90.",
-    target: "#admin-product-price",
-    dictate: "price",
-    view: "produtos",
-  },
-  {
-    id: "categoria-produto",
-    title: "Escolha a categoria",
-    text: "Toque aqui e escolha a categoria do prato.",
-    target: "#admin-product-menu",
-    dictate: "choice",
-    view: "produtos",
-  },
-  {
-    id: "salvar-produto",
-    title: "Salve o prato",
-    text:
-      "Toque em Adicionar Produto. Ele já aparece no cardápio do cliente. " +
-      "Repita para cada prato.",
-    target: "#admin-product-add",
-    view: "produtos",
-    advanceOnClick: true,
+      "Para montar o cardápio, use a aba Assistente. " +
+      "Ele pergunta e você só fala ou toca. Não precisa escrever.",
+    target: "#admin-tab-assistente",
   },
   {
     id: "aba-mesas",

@@ -267,6 +267,13 @@
   background: var(--papel);
 }
 
+.asst-voice-name {
+  flex: 1 1 100%;
+  color: var(--nevoa);
+  font-size: var(--t-xs);
+  overflow-wrap: anywhere;
+}
+
 .asst-mic {
   display: inline-flex;
   align-items: center;
