@@ -50,6 +50,11 @@ services:
       TRUST_PROXY: "1"
       CORS_ORIGIN_REGEX: https://${SITE_ADDRESS}
       MAX_CONTENT_LENGTH: "1048576"
+      # só as rotas de foto aceitam corpo maior (10 MiB)
+      PHOTO_MAX_BYTES: "10485760"
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - uploads:/data/uploads
     healthcheck:
       test:
         - CMD
@@ -84,6 +89,8 @@ services:
     volumes:
       - caddy_data:/data
       - caddy_config:/config
+      # as mesmas fotos que o servidor grava; aqui o Caddy só lê (somente leitura)
+      - uploads:/srv/media:ro
     networks:
       - interna
     logging: *logs
@@ -95,6 +102,8 @@ volumes:
     name: vemcomer_caddy_data
   caddy_config:
     name: vemcomer_caddy_config
+  uploads:
+    name: vemcomer_uploads
 
 networks:
   interna:

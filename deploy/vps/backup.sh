@@ -35,12 +35,28 @@ docker exec -i "$CONT" pg_restore --list <"$tmp" >/dev/null || falha "o arquivo 
 mv "$tmp" "$final"
 trap - EXIT
 
-# apaga só os que passaram de $DIAS dias, e nunca os 3 mais novos
-mapfile -t antigos < <(ls -1t "$DEST"/vemcomer-*.dump 2>/dev/null | tail -n +4)
-for arq in "${antigos[@]}"; do
-  if [ -n "$(find "$arq" -maxdepth 0 -mtime +"$DIAS" 2>/dev/null)" ]; then
-    rm -f -- "$arq"
-  fi
+# Fotos dos pratos: o banco guarda só a chave de cada foto, os arquivos ficam no volume do servidor.
+# docker cp lê a pasta de dentro do contêiner e devolve um arquivo .tar; aqui ele é comprimido.
+fotos="$DEST/vemcomer-fotos-$stamp.tar.gz"
+fotos_tmp="$fotos.partial"
+trap 'rm -f "$fotos_tmp"' EXIT
+docker inspect vemcomer-api >/dev/null 2>&1 || falha "o servidor (vemcomer-api) não existe; não consegui copiar as fotos"
+docker cp vemcomer-api:/data/uploads - </dev/null | gzip -n >"$fotos_tmp" \
+  || falha "não consegui copiar as fotos"
+gzip -t "$fotos_tmp" || falha "o arquivo de fotos saiu quebrado"
+tar -tzf "$fotos_tmp" >/dev/null || falha "o arquivo de fotos não é válido"
+mv "$fotos_tmp" "$fotos"
+trap - EXIT
+
+# apaga só os que passaram de $DIAS dias, e nunca os 3 mais novos (do banco e das fotos, cada um na sua conta)
+for padrao in 'vemcomer-*.dump' 'vemcomer-fotos-*.tar.gz'; do
+  mapfile -t antigos < <(ls -1t "$DEST"/$padrao 2>/dev/null | tail -n +4)
+  for arq in "${antigos[@]}"; do
+    if [ -n "$(find "$arq" -maxdepth 0 -mtime +"$DIAS" 2>/dev/null)" ]; then
+      rm -f -- "$arq"
+    fi
+  done
 done
 
 printf '  backup ok: %s (%s)\n' "$final" "$(du -h "$final" | cut -f1)"
+printf '  fotos ok:  %s (%s)\n' "$fotos" "$(du -h "$fotos" | cut -f1)"

@@ -14,6 +14,8 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import query_db, get_db_connection
+import image_enhance
+import media_store
 import menu_import
 import menu_templates
 import pix
@@ -29,6 +31,11 @@ app = Flask(__name__)
 # Behind our HTTPS front door (Caddy) read the real visitor address. Off unless TRUST_PROXY=1.
 app.wsgi_app = wrap_trusted_proxy(app.wsgi_app)
 app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', '1048576'))  # 1 MiB
+# Foto de prato: so as rotas de foto aceitam corpo maior (veja allow_big_body_for_photos).
+PHOTO_MAX_BYTES = int(os.getenv('PHOTO_MAX_BYTES', str(10 * 1024 * 1024)))  # 10 MiB
+PHOTO_ENDPOINTS = {'admin_upload_product_photo'}
+# No maximo 2 fotos sendo processadas ao mesmo tempo: o processamento usa memoria e processador.
+_photo_slots = threading.BoundedSemaphore(2)
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 
@@ -52,6 +59,21 @@ CORS(app, resources={r"/*": {
 }})
 
 FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
+
+
+@app.before_request
+def allow_big_body_for_photos():
+    if request.endpoint in PHOTO_ENDPOINTS:
+        # margem para o envelope do formulario (multipart) em volta da foto
+        request.max_content_length = PHOTO_MAX_BYTES + 64 * 1024
+    elif (request.content_length or 0) > app.config['MAX_CONTENT_LENGTH']:
+        # recusa logo na porta (413) em vez de falhar la dentro da rota com erro 500
+        return jsonify({"error": "O arquivo enviado e grande demais."}), 413
+
+
+@app.errorhandler(413)
+def request_too_large(_error):
+    return jsonify({"error": "O arquivo enviado e grande demais."}), 413
 
 
 @app.after_request
@@ -440,12 +462,16 @@ def get_company_products(company_id):
     try:
         products = query_db(
             """
-            SELECT id, company_id, menu_id, name, description, price
+            SELECT id, company_id, menu_id, name, description, price, image_key
             FROM products
             WHERE company_id = %s;
             """,
             (str(company_id),)
         )
+
+        for product in products:
+            key = product.pop('image_key', None)
+            product.update(media_store.public_urls(company_id, key))
 
         return jsonify(products), 200
 
@@ -1186,7 +1212,8 @@ def admin_delete_product(product_id):
             """
             DELETE FROM products
             WHERE id = %s
-            AND company_id = %s;
+            AND company_id = %s
+            RETURNING image_key;
             """,
             (
                 str(product_id),
@@ -1194,7 +1221,9 @@ def admin_delete_product(product_id):
             )
         )
 
-        if cur.rowcount == 0:
+        removed = cur.fetchone()
+
+        if removed is None:
             conn.rollback()
             cur.close()
             conn.close()
@@ -1207,6 +1236,8 @@ def admin_delete_product(product_id):
 
         cur.close()
         conn.close()
+
+        media_store.delete_pair(company_id, removed[0])
 
         return jsonify({
             "message": "Produto removido com sucesso"
@@ -1225,6 +1256,169 @@ def admin_delete_product(product_id):
             "Erro ao deletar produto",
             e
         )
+
+
+@app.route('/api/admin/products/<uuid:product_id>/photo', methods=['POST'])
+@require_roles('OWNER', 'MANAGER')
+def admin_upload_product_photo(product_id):
+    """Recebe a foto de um prato (campo "photo"), melhora e guarda. Troca a foto antiga, se houver."""
+    company_id = request.user.get('company_id')
+    upload = request.files.get('photo')
+
+    if upload is None:
+        return jsonify({"error": "Nao recebi nenhuma foto. Tente de novo."}), 400
+
+    data = upload.read(PHOTO_MAX_BYTES + 1)
+
+    if len(data) > PHOTO_MAX_BYTES:
+        return jsonify({"error": "A foto e grande demais. Tire outra com a camera normal do celular."}), 413
+
+    if not _photo_slots.acquire(timeout=10):
+        return jsonify({"error": "O servidor esta ocupado agora. Tente de novo em alguns segundos."}), 503
+
+    try:
+        enhanced = image_enhance.enhance_photo(data)
+    except image_enhance.PhotoError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return error_response("Erro ao processar a foto", e)
+    finally:
+        _photo_slots.release()
+
+    conn = None
+    cur = None
+    key = media_store.new_key()
+    files_saved = False
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # trava a linha do prato: duas fotos chegando juntas ficam uma depois da outra
+        cur.execute(
+            """
+            SELECT image_key
+            FROM products
+            WHERE id = %s
+            AND company_id = %s
+            FOR UPDATE;
+            """,
+            (str(product_id), str(company_id))
+        )
+
+        row = cur.fetchone()
+
+        if row is None:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Produto nao encontrado"}), 404
+
+        old_key = row[0]
+
+        media_store.save_pair(company_id, key, enhanced.full, enhanced.thumb)
+        files_saved = True
+
+        cur.execute(
+            """
+            UPDATE products
+            SET image_key = %s
+            WHERE id = %s
+            AND company_id = %s;
+            """,
+            (key, str(product_id), str(company_id))
+        )
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        media_store.delete_pair(company_id, old_key)
+
+        body = {
+            "message": "Foto salva",
+            "improvements": enhanced.improvements,
+            "tips": enhanced.tips,
+        }
+        body.update(media_store.public_urls(company_id, key))
+
+        return jsonify(body), 201
+
+    except Exception as e:
+        if conn is not None and not conn.closed:
+            conn.rollback()
+
+            if cur is not None:
+                cur.close()
+
+            conn.close()
+
+        if files_saved:
+            media_store.delete_pair(company_id, key)
+
+        return error_response("Erro ao salvar a foto", e)
+
+
+@app.route('/api/admin/products/<uuid:product_id>/photo', methods=['DELETE'])
+@require_roles('OWNER', 'MANAGER')
+def admin_delete_product_photo(product_id):
+    company_id = request.user.get('company_id')
+    conn = None
+    cur = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            SELECT image_key
+            FROM products
+            WHERE id = %s
+            AND company_id = %s
+            FOR UPDATE;
+            """,
+            (str(product_id), str(company_id))
+        )
+
+        row = cur.fetchone()
+
+        if row is None:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Produto nao encontrado"}), 404
+
+        cur.execute(
+            """
+            UPDATE products
+            SET image_key = NULL
+            WHERE id = %s
+            AND company_id = %s;
+            """,
+            (str(product_id), str(company_id))
+        )
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        media_store.delete_pair(company_id, row[0])
+
+        return jsonify({"message": "Foto removida"}), 200
+
+    except Exception as e:
+        if conn is not None and not conn.closed:
+            conn.rollback()
+
+            if cur is not None:
+                cur.close()
+
+            conn.close()
+
+        return error_response("Erro ao remover a foto", e)
 
 
 @app.route(

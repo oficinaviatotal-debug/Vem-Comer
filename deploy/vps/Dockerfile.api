@@ -13,8 +13,11 @@ RUN pip install -r requirements.txt
 
 COPY backend/ ./
 
+# /data/uploads guarda as fotos dos pratos. A pasta nasce da imagem com o dono certo; o volume
+# do Docker herda isso na primeira vez que é criado.
 RUN useradd --system --no-create-home --shell /usr/sbin/nologin vemcomer \
-    && chown -R vemcomer:vemcomer /app
+    && mkdir -p /data/uploads \
+    && chown -R vemcomer:vemcomer /app /data
 USER vemcomer
 
 EXPOSE 5000

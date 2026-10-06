@@ -1,0 +1,93 @@
+# O que o dono pediu para o Vem Comer
+
+Este arquivo guarda o que o dono do projeto (GD) pediu, com as palavras dele, para que nada se perca
+entre uma conversa e outra. Cada pedido tem uma situação: **feito**, **em andamento** ou **falta**.
+Ele é a régua: antes de dizer que algo está pronto, conferimos aqui.
+
+O dono fala o texto por voz; as frases abaixo foram só limpadas (pontuação, repetições). Ele ainda vai
+passar mais material (benchmarking, conversas antigas). Quando chegar, entra aqui.
+
+## Modelo de negócio (decisivo)
+
+> "Ele comprou o sistema. Vai ter o dono do restaurante que ele mesmo vai tirar foto, ele mesmo vai
+> cadastrar. Eu sou só o dono do software, eu não vou ter gerência em nada. Estou só vendendo a solução
+> de gestão e tecnologia para ele."
+
+O dono do projeto vende uma assinatura de software (SaaS). Ele **não opera nada pelos clientes**. Logo:
+
+- O restaurante precisa se cadastrar sozinho pela internet, sem ninguém no meio (hoje o cadastro público
+  está fechado de propósito; só o administrador cria restaurante por script). **Falta.**
+- Precisa aprender a usar sozinho: o assistente explica, fala e conserta o que o dono errou.
+- Precisa de cobrança da assinatura e de período de teste. **Falta.**
+- Suporte tem de ser quase todo automático (o assistente responde; pouca coisa chega a uma pessoa).
+- Segurança e isolamento entre restaurantes têm de ser tão bons quanto os de um produto grande.
+- LGPD: o restaurante é quem decide sobre os dados dos clientes dele; o Vem Comer é o operador dos dados.
+  Termos de uso e política de privacidade precisam existir e ser aceitos no cadastro. **Falta.**
+
+## Para quem é
+
+> "Milhares de pessoas: sorveteria, pizzaria, hamburgueria, sanduicheria, cachorro-quente, carrinhos,
+> açaiteria, diversos segmentos de alimentos que fazem bilhões de entregas todos os dias. Desde o cara
+> que trabalha sozinho até o cara grande."
+
+- O ambulante que é garçom, comprador e cozinheiro ao mesmo tempo, sem CNPJ (trabalha no CPF), com
+  só o telefone na mão, sem escritório e sem computador, e às vezes sem saber escrever.
+- O restaurante grande, com 50 a 100 funcionários, muitas entregas, vários motoboys, bar com mesas
+  internas e externas, em vários andares.
+- Às vezes a mesma pessoa atende o balcão e o WhatsApp, "oi, bom dia, tem tal produto?", e demora a responder.
+
+**Regra de ouro:** "automação 100%, o máximo possível, precisar do ser humano o mínimo possível."
+Funciona para quem é analfabeto e para quem vai usar 100% das funções.
+
+## O que se espera do produto
+
+| # | Pedido (palavras do dono) | Situação |
+|---|---|---|
+| 1 | **Cadastro automatizado, com comando de voz.** O assistente conversa, o dono fala ou toca, sem digitar. | Em andamento: Assistente do cardápio (PR #19, #20). Falta testar com a voz no celular dele. |
+| 2 | **Subir foto do prato** (foto, galeria ou vídeo). | Em andamento: PR de fotos. |
+| 3 | **Melhorar a foto automaticamente, para todo mundo.** Os concorrentes sobem foto tirada da internet, sem melhoria nem personalização. | Em andamento: contraste, luz, cor e nitidez no servidor. Falta calibrar com fotos reais. |
+| 4 | **Bater uma foto do cardápio inteiro e o sistema cadastrar tudo sozinho**, com categorias (comida, bebida, sobremesa). | Falta. Precisa de IA com leitura de imagem (chave paga). |
+| 5 | **Criação de logomarca** (se não tem, o sistema pergunta cores/fachada e cria). | Falta. |
+| 6 | **Cardápio com categorias e imagem do que ele usou.** QR de mesa e link do cardápio. | Feito (cardápio, QR de mesa). Fotos: em andamento. |
+| 7 | **Cadastro com CEP; entrega roteirizada pelo CEP; a cozinha recebe o pedido.** | Falta (cozinha recebe: existe a tela de pedidos; CEP e rota: falta). |
+| 8 | **Cadastro de porção** (padronização mínima), **gerência de produtos e de custos, CMV da cozinha.** "O cara nunca teve isso." | Falta. |
+| 9 | **Entrega em grande escala:** vários motoqueiros, rotas por região, controle de produtos por motoqueiro. | Falta. |
+| 10 | **Bar e salão:** mesas internas e externas, no primeiro andar, do lado de fora; quantidade de mesas por área e por garçom. | Parcial: mesas e QR existem; áreas e garçom por área faltam. |
+| 11 | **Garçom com meta.** "Eles não têm meta." | Falta. |
+| 12 | **Sugestão na hora de vender:** "o cara já consumiu cinco doses de uísque, ofereça um prato que combina (queijo, fritas, salame, peixe)" para aumentar o ticket médio. | Falta. Regra de cuidado: sugerir comida e água; nunca empurrar mais bebida alcoólica. |
+| 13 | **Agentes de venda, marketing e psicologia** que, quando o cliente abre o link, tentam aumentar o ticket médio e a recorrência (de uma para duas vezes por semana, no mesmo horário). Ocasiões: dia a dia, família, festa, aniversário. | Falta. |
+| 14 | **Disparo de publicidade por e-mail**, uma ou duas vezes por semana, por cliente ou por região. | Falta. Só com autorização do cliente (LGPD) e opção de sair. |
+| 15 | **Alertas de gestão:** custo, onde está errando, gargalo na cozinha pela quantidade de pedidos, compra demais (vai estragar), quantos dias de estoque, vai faltar produto. | Falta. |
+| 16 | **Pix por restaurante.** | Feito (Pix estático, confirmação manual). Falta o teste real de R$ 1,00. |
+| 17 | **Atendimento no WhatsApp organizado** (o mesmo número do balcão). | Falta (a definir: API oficial do WhatsApp tem custo). |
+| 18 | **Qualidade de gestão de "um diretor que passou por cinco multinacionais em dez estados"**, levada ao Vem Comer e ao Vem Trabalhar. | Direção geral. |
+
+## Como o dono testou e o que não funcionou (guia antigo)
+
+- O botão ficava mal posicionado; a voz era muito robótica; o guia pedia para escrever.
+- Pediu "Pratos" como exemplo; o dono digitou "Bebidas" e o guia travou. Falar "bebidas" em voz alta
+  também não mudou o caminho: continuou nos pratos.
+- Conclusão do dono: para quem não sabe escrever, aquilo não é funcional. Troca: o Assistente do cardápio
+  (tocar ou falar, uma categoria por vez, sem digitar).
+
+## Cuidados que valem para tudo
+
+- Dados pessoais e e-mail de cliente: só com consentimento, com como sair (LGPD).
+- Sugestões de venda não podem manipular nem empurrar bebida alcoólica; venda de bebida alcoólica só para maior de idade.
+- Um aviso errado é pior que nenhum: só avisamos "foto escura" etc. quando a medida é segura.
+- Cada passo precisa funcionar com uma mão só, no celular, no meio da cozinha.
+
+## Ordem de trabalho proposta
+
+1. Fotos dos pratos, melhoradas (em andamento).
+2. Cadastro do restaurante pela internet, sem ajuda (e-mail confirmado, proteção contra abuso, termos e LGPD).
+3. Foto do cardápio inteiro cadastrando sozinha (precisa de chave de IA).
+4. Logomarca.
+5. Assinatura e cobrança (teste grátis, plano).
+6. Porção, custo e CMV.
+7. Entrega por CEP e região.
+8. Salão: áreas, garçom, metas, sugestão de venda.
+9. E-mail e recorrência (com consentimento).
+10. Alertas de estoque e gargalo.
+
+Em paralelo, antes de vender de verdade: teste real de Pix de R$ 1,00, domínio próprio, backup fora do servidor.
