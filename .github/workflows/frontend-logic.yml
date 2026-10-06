@@ -9,6 +9,7 @@ on:
       - "tests/onboarding/**"
       - "tests/customer/**"
       - "tests/ui/**"
+      - "tests/assistant/**"
       - ".github/workflows/frontend-logic.yml"
   push:
     branches:
@@ -30,5 +31,5 @@ jobs:
 
       # Node 22 runs TypeScript files directly, so the guide's logic and the
       # tour script are tested without installing anything.
-      - name: Run front-end logic tests (guide, customer cart and tracking, formatting, links, assets, contrast)
-        run: node --experimental-strip-types --no-warnings --test tests/onboarding/*.test.mjs tests/customer/*.test.mjs tests/ui/*.test.mjs
+      - name: Run front-end logic tests (guide, customer cart and tracking, menu assistant, formatting, links, assets, contrast)
+        run: node --experimental-strip-types --no-warnings --test tests/onboarding/*.test.mjs tests/customer/*.test.mjs tests/ui/*.test.mjs tests/assistant/*.test.mjs

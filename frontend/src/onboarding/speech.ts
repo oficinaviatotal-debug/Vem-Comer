@@ -93,9 +93,25 @@ export function prepareVoice() {
   }
 }
 
-/** Reads the text aloud, replacing anything still being read. */
-export function speak(text: string) {
-  if (!canSpeak() || !text) return;
+/**
+ * Reads the text aloud, replacing anything still being read. `onDone` runs once
+ * when the reading ends, fails, or is cut by another speak(); it also runs from a
+ * safety timer, because some phones never report the end of an utterance.
+ */
+export function speak(text: string, onDone?: () => void) {
+  let finished = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    if (timer !== undefined) clearTimeout(timer);
+    onDone?.();
+  };
+
+  if (!canSpeak() || !text) {
+    finish();
+    return;
+  }
   try {
     prepareVoice();
     const synth = window.speechSynthesis;
@@ -105,10 +121,22 @@ export function speak(text: string) {
     utterance.rate = 1.05;
     utterance.pitch = 1;
     if (chosenVoice) utterance.voice = chosenVoice;
+    if (onDone) {
+      utterance.onend = finish;
+      utterance.onerror = finish;
+      timer = setTimeout(finish, speakingTimeoutMs(text));
+    }
     synth.speak(utterance);
   } catch {
     /* some browsers refuse speech until the user taps something */
+    finish();
   }
+}
+
+/** Generous upper bound for reading a text aloud: about 3 words a second, plus a margin. */
+export function speakingTimeoutMs(text: string): number {
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  return 2500 + Math.ceil((words / 3) * 1000) * 2;
 }
 
 type RecognitionConstructor = new () => Recognition;

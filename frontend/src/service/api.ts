@@ -394,3 +394,63 @@ export async function fetchPixPreview(companyId: string): Promise<PixCode> {
   }
   return response.json();
 }
+
+/* ---- Menu assistant: ready-made menus and registering many dishes at once ---- */
+
+export type MenuTemplateSummary = {
+  id: string;
+  name: string;
+  icon: string;
+  categories: Array<{ name: string; count: number }>;
+};
+
+export type MenuTemplate = {
+  id: string;
+  name: string;
+  icon: string;
+  categories: Array<{ name: string; items: Array<{ name: string }> }>;
+};
+
+export type MenuImportInput = {
+  categories: Array<{ name: string; items: Array<{ name: string; price: string }> }>;
+};
+
+export type MenuImportResult = {
+  menus_created: number;
+  menus_reused: number;
+  products_created: number;
+  products_skipped: number;
+};
+
+async function readError(response: Response, fallback: string): Promise<HttpError> {
+  const err = await response.json().catch(() => ({}));
+  return new HttpError(err.error || fallback, response.status);
+}
+
+export async function fetchMenuTemplates(): Promise<MenuTemplateSummary[]> {
+  const response = await fetch(`${API_URL}/admin/menu/templates`, { headers: authHeaders() });
+  if (!response.ok) throw await readError(response, "Falha ao buscar os modelos de cardápio");
+  return response.json();
+}
+
+export async function fetchMenuTemplate(templateId: string): Promise<MenuTemplate> {
+  const response = await fetch(
+    `${API_URL}/admin/menu/templates/${encodeURIComponent(templateId)}`,
+    { headers: authHeaders() }
+  );
+  if (!response.ok) throw await readError(response, "Falha ao buscar o modelo de cardápio");
+  return response.json();
+}
+
+export async function importMenu(
+  companyId: string,
+  input: MenuImportInput
+): Promise<MenuImportResult> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/menu/import`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) throw await readError(response, "Falha ao cadastrar o cardápio");
+  return response.json();
+}
