@@ -65,3 +65,16 @@ O que fazemos no lugar, para crescer em volume:
 7. **Vem Comer**: cada restaurante do Vem Comer publica as vagas dele no Vem Trabalhar sem custo, e o QR da mesa leva
    candidatos e clientes; páginas de comida da cidade entram no mesmo modelo de parceria das páginas de vagas.
 
+## Banco de dados: o agente que busca (fala do GD, 06/10/2026)
+
+O GD quer um agente que monte o banco de consumidores do Vem Comer, empresas de alimentação, pessoas procurando emprego,
+estagiários e empresas contratando, e divulgue em muitos meios, tudo automático.
+
+- **Empresas (B2B)**: o agente pode mapear negócios por cidade e por atividade em dados públicos de empresas (por exemplo,
+  os dados abertos do CNPJ) para saber onde há restaurantes e lanchonetes e priorizar visita, anúncio e contato um a um.
+  Mandar e-mail ou WhatsApp em massa para esses contatos sem aceite, não: o advogado confere o que é permitido.
+- **Pessoas**: só entram pelos canais com aceite (os 14 da aba `Canais`), e cada uma escolhe por onde quer receber.
+- **Divulgação automática com aceite**: post automático de cada vaga e de cada restaurante; páginas públicas no Google
+  (vagas e cardápios); certificado com link que a pessoa compartilha; indicação com prêmio; QR nas mesas; páginas de vagas
+  e de comida parceiras; anúncios pagos por região; e-mail e WhatsApp para quem pediu.
+
