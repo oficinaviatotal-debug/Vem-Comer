@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Cadastra um restaurante e o seu dono, pelo servidor.
-# Pergunta tudo na tela. A senha não aparece e não fica guardada no histórico do terminal.
+# Pergunta tudo na tela, aceita maiúsculas e espaço sobrando (teclado de celular) e confirma antes de criar.
+# A senha não aparece e não fica guardada no histórico do terminal.
 #
 # Rode assim, direto no terminal do servidor:
 #   bash /opt/vem-comer/app/deploy/vps/criar-restaurante.sh
@@ -16,27 +17,76 @@ dominio=$(sed -n 's/^SITE_ADDRESS=//p' /opt/vem-comer/.env 2>/dev/null | head -1
 echo "Cadastro de restaurante (aperte Ctrl+C para desistir)"
 echo
 
-read -r -p "Nome do restaurante: " VC_EMPRESA
-[ -n "$VC_EMPRESA" ] && [ "${#VC_EMPRESA}" -le 120 ] || { echo "Nome do restaurante vazio ou grande demais."; exit 1; }
+# Teclado de celular: costuma pôr a primeira letra em maiúscula e um espaço no fim. Por isso
+# cada resposta tem os espaços das pontas tirados, e se algo estiver errado ele PERGUNTA DE NOVO
+# (em vez de terminar).
+tirar_espacos() {
+  local v=$1
+  v="${v#"${v%%[![:space:]]*}"}"
+  v="${v%"${v##*[![:space:]]}"}"
+  printf '%s' "$v"
+}
+minusculas() { printf '%s' "$1" | tr 'A-Z' 'a-z'; }
+como_endereco() { printf '%s' "$1" | tr 'A-Z' 'a-z' | tr ' ' '-' | tr -s '-'; }
 
-read -r -p "Endereço curto, só letras minúsculas, números e hífen (ex.: bar-do-ze): " VC_SLUG
-[[ "$VC_SLUG" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] && [ "${#VC_SLUG}" -ge 3 ] && [ "${#VC_SLUG}" -le 60 ] \
-  || { echo "Endereço curto inválido. Use de 3 a 60 caracteres: letras minúsculas, números e hífen."; exit 1; }
+val_empresa() { [ -n "$1" ] && [ "${#1}" -le 120 ]; }
+val_dono() { [ -n "$1" ] && [ "${#1}" -le 100 ]; }
+val_slug() { [[ "$1" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] && [ "${#1}" -ge 3 ] && [ "${#1}" -le 60 ]; }
+val_email() { [[ "$1" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]] && [ "${#1}" -le 200 ]; }
 
-read -r -p "Nome do dono: " VC_DONO
-[ -n "$VC_DONO" ] && [ "${#VC_DONO}" -le 100 ] || { echo "Nome do dono vazio ou grande demais."; exit 1; }
+# perguntar VARIAVEL "texto" FUNCAO_DE_AJUSTE|- FUNCAO_DE_VALIDACAO "mensagem de erro"
+perguntar() {
+  local var=$1 texto=$2 ajustar=$3 validar=$4 erro=$5 valor bruto tentativas=0
+  while :; do
+    read -r -p "$texto" bruto || { echo; echo "A entrada foi encerrada. Nada foi criado."; exit 1; }
+    valor=$(tirar_espacos "$bruto")
+    if [ "$ajustar" != "-" ]; then valor=$("$ajustar" "$valor"); fi
+    if "$validar" "$valor"; then
+      [ "$valor" = "$bruto" ] || echo "  (ajustei para: $valor)"
+      printf -v "$var" '%s' "$valor"
+      return 0
+    fi
+    echo "  $erro"
+    tentativas=$((tentativas + 1))
+    [ "$tentativas" -lt 5 ] || { echo "Muitas tentativas. Rode o comando de novo."; exit 1; }
+  done
+}
 
-read -r -p "E-mail do dono (será o login): " VC_EMAIL
-[[ "$VC_EMAIL" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]] && [ "${#VC_EMAIL}" -le 200 ] \
-  || { echo "E-mail inválido."; exit 1; }
+perguntar VC_EMPRESA "Nome do restaurante: " - val_empresa "Digite o nome do restaurante (até 120 letras)."
+perguntar VC_SLUG "Endereço curto, só letras, números e hífen (ex.: bar-do-ze): " como_endereco val_slug \
+  "Use de 3 a 60 caracteres: letras, números e hífen, sem acentos."
+perguntar VC_DONO "Nome do dono: " - val_dono "Digite o nome do dono (até 100 letras)."
+perguntar VC_EMAIL "E-mail do dono (será o login): " minusculas val_email "E-mail inválido. Exemplo: nome@dominio.com"
 
-read -r -s -p "Senha do dono (mínimo 8 caracteres, não aparece na tela): " VC_SENHA
-echo
-read -r -s -p "Repita a senha: " VC_SENHA2
-echo
-[ "${#VC_SENHA}" -ge 8 ] || { echo "A senha precisa ter pelo menos 8 caracteres."; exit 1; }
-[ "$VC_SENHA" = "$VC_SENHA2" ] || { echo "As duas senhas são diferentes."; exit 1; }
+tentativas=0
+while :; do
+  read -r -s -p "Senha do dono (mínimo 8 caracteres, não aparece na tela): " VC_SENHA || { echo; exit 1; }
+  echo
+  read -r -s -p "Repita a senha: " VC_SENHA2 || { echo; exit 1; }
+  echo
+  if [ "${#VC_SENHA}" -lt 8 ]; then
+    echo "  A senha precisa ter pelo menos 8 caracteres."
+  elif [ "$VC_SENHA" != "$VC_SENHA2" ]; then
+    echo "  As duas senhas são diferentes. Digite de novo."
+  else
+    break
+  fi
+  tentativas=$((tentativas + 1))
+  [ "$tentativas" -lt 5 ] || { echo "Muitas tentativas. Rode o comando de novo."; exit 1; }
+done
 unset VC_SENHA2
+
+echo
+echo "Confira antes de criar:"
+echo "  Restaurante:     $VC_EMPRESA"
+echo "  Endereço curto:  $VC_SLUG"
+echo "  Dono:            $VC_DONO"
+echo "  Login (e-mail):  $VC_EMAIL"
+read -r -p "Está certo? Digite s e Enter para criar (qualquer outra coisa cancela): " CONFIRMA || CONFIRMA=n
+case "$(minusculas "$(tirar_espacos "$CONFIRMA")")" in
+  s | sim) ;;
+  *) echo "Cancelado. Nada foi criado."; exit 1 ;;
+esac
 
 read -r -d '' CODIGO <<'PY' || true
 import json, os, urllib.error, urllib.request

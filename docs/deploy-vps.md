@@ -62,7 +62,9 @@ bash /opt/vem-comer/app/deploy/vps/criar-restaurante.sh
 ```
 
 Ele pergunta nome, endereço curto, dono, e-mail e senha (a senha não aparece nem fica no
-histórico) e mostra o link do painel: `https://seu.endereco/?empresa=<endereço curto>&painel=1`.
+histórico). Aceita o jeito do teclado de celular (maiúscula, espaço sobrando: ele ajusta e avisa),
+pergunta de novo se algo estiver errado, mostra um resumo para você confirmar com `s` e então
+mostra o link do painel: `https://seu.endereco/?empresa=<endereço curto>&painel=1`.
 Uma tela de cadastro com proteção contra abuso fica para depois.
 
 ## Backup
