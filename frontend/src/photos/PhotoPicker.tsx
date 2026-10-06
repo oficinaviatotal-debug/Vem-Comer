@@ -165,7 +165,14 @@ export default function PhotoPicker({ productId, productName, currentPhoto, onSa
       <div className="photo-buttons">
         <label
           htmlFor={`${ids}-camera`}
-          className={working ? "btn btn-primary photo-btn is-disabled" : "btn btn-primary photo-btn"}
+          className={[
+            "btn",
+            hasPhoto ? "btn-outline" : "btn-primary",
+            "photo-btn",
+            working ? "is-disabled" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
         >
           <span aria-hidden="true">📷</span> {hasPhoto ? "Tirar outra foto" : "Tirar foto"}
         </label>
