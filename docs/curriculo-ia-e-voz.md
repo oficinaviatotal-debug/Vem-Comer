@@ -77,6 +77,8 @@ Benchmarks trazidos pelo GD em 06/10/2026 (texto e números são dos anúncios; 
 
 | Select (anúncio colado pelo GD) | Recrutador para de ser "gestor de status": vagas, candidatos e histórico num lugar só; painel e indicadores em tempo real com prazo (SLA); admissão digital; central de WhatsApp com candidatos | **Status automático para o candidato** (recebido, em análise, entrevista, resultado), avisado pelo canal que ele escolheu; ninguém fica sem resposta. **Painel da vaga** para o gestor: candidatos em cada etapa, dias aberta, prazo de cada etapa e aviso quando passa do prazo. **Admissão digital** depois do "contratado": documentos só nessa etapa, guardados com cuidado, e em seguida a trilha de entrada do cargo. **Central de WhatsApp** depende da API oficial (custo por conversa) |
 
+| Web Gerencial, recrutamento com IA (anúncio colado pelo GD) | A contratação errada custa de novo e de novo: demissão, rescisão, novo processo, queda de produtividade | **Calculadora "quanto custa errar uma contratação"** na página pública do Vem Trabalhar: salário, dias de vaga aberta, treinamento e produtividade perdida dão uma estimativa simples (sem calcular rescisão como cálculo trabalhista; "confirme com seu contador"); serve de porta de entrada para empresas, com aceite para contato. **Indicador de contratações que ficaram** (30, 60 e 90 dias), que mostra à empresa o quanto o match acerta |
+
 Regras para os dois: número sempre do próprio sistema, com a origem; o candidato sabe que fala com um assistente e vê a
 transcrição; ninguém é eliminado automaticamente (a pessoa pode pedir revisão humana, LGPD art. 20); áudio apagado depois
 de virar texto, salvo autorização; sempre há o caminho por texto para quem não pode falar; dados de uma empresa nunca
