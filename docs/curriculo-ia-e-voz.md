@@ -56,6 +56,18 @@ Registro do que o GD trouxe (texto da V4, anúncio da gentia.tech, sites de RH) 
 afirmação de que nenhum site de RH atende do autônomo à empresa de mil funcionários é do GD; não foi verificada.
 O agente de benchmark da aba `Sistema vivo` só pesquisa e acrescenta linhas; não muda o sistema.
 
+Benchmarks trazidos pelo GD em 06/10/2026 (texto e números são dos anúncios; não verificados):
+
+| De onde | O que promete | O que vira no Vem |
+| --- | --- | --- |
+| monday.com, "Sidekick" (anúncio) | IA dentro da ferramenta, usando os dados da própria empresa, que acha, prioriza e monta plano de ação | **Gerente de bolso** no Vem Comer (pergunta por texto ou voz e "plano da semana" com as 3 ações que mais dão dinheiro, a partir de Custos, vendas e estoque); **coach do currículo** para o candidato; **assistente de recrutamento** para a empresa |
+| Quickin, "Pré-entrevista por voz feita por agente de IA" (anúncio no Instagram; diz mais de 150 mil entrevistas e 40% menos tempo do recrutador) | O candidato responde por áudio; a IA transcreve e resume para o recrutador | **Pré-entrevista por voz** antes do RH parceiro: o candidato responde por áudio (no app ou WhatsApp) às perguntas da vaga; o sistema transcreve, resume e liga às 20 + 20 perguntas do match; o RH ou a empresa escuta primeiro os que mais combinam |
+
+Regras para os dois: número sempre do próprio sistema, com a origem; o candidato sabe que fala com um assistente e vê a
+transcrição; ninguém é eliminado automaticamente (a pessoa pode pedir revisão humana, LGPD art. 20); áudio apagado depois
+de virar texto, salvo autorização; sempre há o caminho por texto para quem não pode falar; dados de uma empresa nunca
+vão para outra.
+
 ## Para o código (ordem sugerida, depois das decisões do GD)
 
 1. Cadastro de pessoa e currículo (tabelas separadas das de restaurante, mesmo login e isolamento).
