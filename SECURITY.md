@@ -32,6 +32,15 @@
 - Cost and abuse limits: 6 reads per company per hour and 300 per day for the whole server (in memory), at most 2 at the same time, at most 4 photos and 10 MiB per read; a failure on our side or the provider's does not use the owner's quota.
 - The photo is sent to Anthropic only to be read. The privacy policy and terms must say so (see `docs/cardapio-por-foto.md`).
 
+## Restaurant sign-up (public)
+- Off by default: without `SIGNUP_OPEN=1` both `GET /api/signup/status` and `POST /api/signup` answer 404 as if they did not exist. `deploy/vps/abrir-cadastro.sh` opens and closes it (one line of the `.env`, restarts only the Vem Comer web process).
+- Abuse limits, all server side: a hidden `website` field that people never fill (filled = refused), per-network limits (8 per hour, 20 per day, deliberately loose because mobile networks share addresses) and a server-wide cap of 200 new restaurants per 24 hours counted in the database (`SIGNUP_MAX_PER_DAY`). There is no CAPTCHA yet; if abuse shows up, the next steps are Cloudflare Turnstile and e-mail confirmation.
+- Input is validated and capped on the server (names, e-mail format, Brazilian phone with a real area code, password 8–128 characters and not among the most common ones). The browser repeats the same rules only to save a round trip.
+- One e-mail belongs to one account in the whole system (unique index on `lower(email)`, migration `005_cadastro_publico.sql`). Login only looks at the e-mail, so a duplicate could land on someone else's account.
+- The restaurant and its owner are created in a single transaction. The password is stored with the same hash as login and never returned. The `201` answer carries the session token with `Cache-Control: no-store`.
+- Acceptance of the terms is recorded (`terms_version`, `terms_accepted_at`); a form that shows an older version of the terms is refused with 409.
+- Not built yet: e-mail confirmation and "forgot password" (need a mail provider), CAPTCHA, trial and billing. Before opening to the public: lawyer review of the terms, a support contact in the terms page, and a real-phone test on the server (see `docs/cadastro-do-restaurante.md`).
+
 ## Before production
 1. Replace bearer-token storage in the browser with a secure session architecture using HttpOnly/Secure/SameSite cookies or an equivalent design.
 2. Move rate limiting to a shared production store so limits work across multiple application instances.

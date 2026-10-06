@@ -2,15 +2,20 @@ import { useEffect, useState } from "react";
 import "./styles.css";
 import { fetchCompanyBySlug, getToken } from "./service/api";
 import { lastCompany } from "./service/lastCompany";
-import { panelUrl, wantsPanel } from "./service/links";
+import { entryScreen, panelUrl, wantsPanel } from "./service/links";
 import AdminPanel from "./service/AdminPanel";
 import CustomerApp from "./customer/CustomerApp";
+import OwnerLinks from "./signup/OwnerLinks";
+import OwnerLogin from "./signup/OwnerLogin";
+import SignupPage from "./signup/SignupPage";
+import TermsPage from "./signup/TermsPage";
 import type { Company } from "./customer/types";
 
 /**
  * Entry point. The address decides what opens:
  *   ?empresa=<slug>&mesa=<id>      customer menu (what the table QR code opens)
  *   ?empresa=<slug>&painel=1       owner panel
+ *   ?cadastro=1 | ?entrar=1 | ?termos=1   owner sign-up, owner sign-in, terms of use
  *   nothing                        short explanation (or the panel, for a signed-in owner)
  */
 export default function App() {
@@ -47,6 +52,12 @@ export default function App() {
   }, [slug]);
 
   if (!slug) {
+    // Telas de entrada do dono (sem restaurante escolhido ainda)
+    const screen = entryScreen(location.search);
+    if (screen === "signup") return <SignupPage />;
+    if (screen === "login") return <OwnerLogin />;
+    if (screen === "terms") return <TermsPage />;
+
     return (
       <main className="adm adm-login-page">
         <section className="adm-login sheet">
@@ -60,9 +71,7 @@ export default function App() {
             </p>
           </div>
 
-          <p className="adm-lead">
-            Dono do restaurante? Abra o link do seu painel, o mesmo que termina em painel=1.
-          </p>
+          <OwnerLinks />
         </section>
       </main>
     );

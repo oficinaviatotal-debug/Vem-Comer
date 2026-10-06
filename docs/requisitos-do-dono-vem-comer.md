@@ -19,14 +19,17 @@ Cada tópico vira regra neste arquivo antes de virar tela.
 
 O dono do projeto vende uma assinatura de software (SaaS). Ele **não opera nada pelos clientes**. Logo:
 
-- O restaurante precisa se cadastrar sozinho pela internet, sem ninguém no meio (hoje o cadastro público
-  está fechado de propósito; só o administrador cria restaurante por script). **Falta.**
+- O restaurante precisa se cadastrar sozinho pela internet, sem ninguém no meio. **Construído e FECHADO**
+  (`docs/cadastro-do-restaurante.md`): a tela e o servidor existem, mas o cadastro só abre quando o
+  administrador roda `abrir-cadastro.sh abrir`. Falta, antes de abrir: revisão dos termos por advogado,
+  contato de suporte, confirmação de e-mail e "esqueci a senha" (precisam de um serviço de e-mail).
 - Precisa aprender a usar sozinho: o assistente explica, fala e conserta o que o dono errou.
 - Precisa de cobrança da assinatura e de período de teste. **Falta.**
 - Suporte tem de ser quase todo automático (o assistente responde; pouca coisa chega a uma pessoa).
 - Segurança e isolamento entre restaurantes têm de ser tão bons quanto os de um produto grande.
 - LGPD: o restaurante é quem decide sobre os dados dos clientes dele; o Vem Comer é o operador dos dados.
-  Termos de uso e política de privacidade precisam existir e ser aceitos no cadastro. **Falta.**
+  Termos de uso e política de privacidade precisam existir e ser aceitos no cadastro. **Texto preliminar
+  escrito e aceite gravado (versão e hora); falta a revisão de um advogado.**
 
 ## Para quem é
 
@@ -96,7 +99,8 @@ Funciona para quem é analfabeto e para quem vai usar 100% das funções.
 ## Ordem de trabalho proposta
 
 1. Fotos dos pratos, melhoradas (em andamento).
-2. Cadastro do restaurante pela internet, sem ajuda (e-mail confirmado, proteção contra abuso, termos e LGPD).
+2. Cadastro do restaurante pela internet, sem ajuda (construído e fechado; falta e-mail confirmado, "esqueci a
+   senha", revisão dos termos e abrir com `abrir-cadastro.sh`).
 3. Foto do cardápio inteiro cadastrando sozinha (pronta; falta ligar a chave de IA e testar com cardápios reais).
 4. Logomarca.
 5. Assinatura e cobrança (teste grátis, plano).

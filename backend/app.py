@@ -20,6 +20,7 @@ import menu_photo
 import menu_import
 import menu_templates
 import pix
+import signup
 from table_qr import qr_png_for_url
 from trusted_proxy import wrap_trusted_proxy
 
@@ -286,6 +287,153 @@ def register_company():
             "Erro interno ao cadastrar estabelecimento",
             e
         )
+
+
+# Cadastro do restaurante pela internet (veja signup.py). Fechado ate o administrador ligar
+# SIGNUP_OPEN=1 (deploy/vps/abrir-cadastro.sh). Enquanto fechado, as duas rotas respondem 404.
+signup_limiter = signup.SignupLimiter()
+
+
+@app.route('/api/signup/status', methods=['GET'])
+def signup_status():
+    return jsonify({
+        "open": signup.is_open(),
+        "terms_version": signup.TERMS_VERSION
+    }), 200
+
+
+def signup_failure(error):
+    body = {"error": error.message}
+
+    if error.field:
+        body["field"] = error.field
+
+    return jsonify(body), error.status
+
+
+@app.route('/api/signup', methods=['POST'])
+def signup_restaurant():
+    if not signup.is_open():
+        return jsonify({"error": "O cadastro ainda nao esta aberto."}), 404
+
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify({"error": "Pedido invalido."}), 400
+
+    # campo escondido na tela: so robo preenche
+    if data.get('website'):
+        return jsonify({"error": "Nao foi possivel cadastrar."}), 400
+
+    try:
+        signup_limiter.check(request.remote_addr or 'unknown')
+        clean = signup.validate(data)
+    except signup.SignupError as error:
+        return signup_failure(error)
+
+    conn = None
+    cur = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute(signup.SQL_COUNT_TODAY)
+        created_today = (cur.fetchone() or {}).get('n') or 0
+
+        if int(created_today) >= signup.max_per_day():
+            return signup_failure(signup.SignupError(
+                "Recebemos muitos cadastros hoje. Tente de novo amanha.", 429
+            ))
+
+        cur.execute(signup.SQL_EMAIL_TAKEN, (clean['email'],))
+
+        if cur.fetchone():
+            return signup_failure(signup.SignupError(
+                "Esse e-mail ja tem cadastro. Toque em Entrar.", 409, "email"
+            ))
+
+        company = None
+
+        for slug in signup.slug_candidates(clean['restaurant_name']):
+            cur.execute(
+                signup.SQL_INSERT_COMPANY,
+                (clean['restaurant_name'], slug, clean['phone'], signup.TERMS_VERSION)
+            )
+            company = cur.fetchone()
+
+            if company:
+                break
+
+        if not company:
+            conn.rollback()
+
+            return signup_failure(signup.SignupError(
+                "Nao consegui criar o endereco do restaurante. Tente um nome um pouco diferente.",
+                409,
+                "restaurant_name"
+            ))
+
+        cur.execute(
+            signup.SQL_INSERT_OWNER,
+            (
+                company['id'],
+                clean['owner_name'],
+                clean['email'],
+                generate_password_hash(clean['password'])
+            )
+        )
+
+        user = cur.fetchone()
+
+        conn.commit()
+
+        token = serializer.dumps({
+            "user_id": str(user['id']),
+            "company_id": str(company['id']),
+            "role": user['role']
+        })
+
+        response = jsonify({
+            "token": token,
+            "user": {
+                "id": user['id'],
+                "name": user['name'],
+                "email": user['email'],
+                "role": user['role'],
+                "company_id": company['id']
+            },
+            "company": company
+        })
+        response.status_code = 201
+        response.headers['Cache-Control'] = 'no-store'
+
+        return response
+
+    except psycopg2.errors.UniqueViolation:
+        # duas pessoas com o mesmo e-mail ao mesmo tempo: o indice unico segura a segunda
+        if conn is not None:
+            conn.rollback()
+
+        return signup_failure(signup.SignupError(
+            "Esse e-mail ja tem cadastro. Toque em Entrar.", 409, "email"
+        ))
+
+    except Exception as e:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+
+        return error_response("Erro interno ao cadastrar o restaurante", e)
+
+    finally:
+        if cur is not None:
+            cur.close()
+
+        if conn is not None:
+            conn.close()
 
 
 @app.route('/api/auth/login', methods=['POST'])

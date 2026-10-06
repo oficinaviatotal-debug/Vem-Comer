@@ -56,6 +56,11 @@ services:
       # leitura de cardápio por foto: só liga se a chave existir no .env (veja configurar-ia.sh)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       MENU_PHOTO_MODEL: ${MENU_PHOTO_MODEL:-}
+      # cadastro de restaurante pela internet: FECHADO até o administrador abrir (veja abrir-cadastro.sh)
+      SIGNUP_OPEN: ${SIGNUP_OPEN:-}
+      SIGNUP_MAX_PER_DAY: ${SIGNUP_MAX_PER_DAY:-}
+      SIGNUP_PER_IP_PER_HOUR: ${SIGNUP_PER_IP_PER_HOUR:-}
+      SIGNUP_PER_IP_PER_DAY: ${SIGNUP_PER_IP_PER_DAY:-}
     volumes:
       - uploads:/data/uploads
     healthcheck:
