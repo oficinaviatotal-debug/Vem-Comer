@@ -12,6 +12,10 @@ CREATE TABLE companies (
     pix_receiver_name VARCHAR(25),
     pix_city VARCHAR(15),
     logo_key VARCHAR(32),
+    owner_phone VARCHAR(20),
+    terms_version VARCHAR(20),
+    terms_accepted_at TIMESTAMPTZ,
+    signup_source VARCHAR(20),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -128,3 +132,4 @@ CREATE INDEX idx_products_company ON products(company_id);
 CREATE INDEX idx_orders_company ON orders(company_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_order_events_order ON order_events(order_id);
+CREATE UNIQUE INDEX users_email_unique ON users(lower(email));

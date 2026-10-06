@@ -1,7 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { panelUrl, tableOrderUrl, wantsPanel } from "../../frontend/src/service/links.ts";
+import {
+  entryScreen,
+  ownerLoginUrl,
+  panelUrl,
+  signupUrl,
+  tableOrderUrl,
+  termsUrl,
+  wantsPanel,
+} from "../../frontend/src/service/links.ts";
 
 const ORIGIN = "https://vemcomer.example";
 
@@ -44,4 +52,32 @@ test("wantsPanel only accepts painel=1", () => {
 
 test("a missing path falls back to the site root", () => {
   assert.equal(tableOrderUrl(ORIGIN, "", "x", "y"), `${ORIGIN}/?empresa=x&mesa=y`);
+});
+
+test("the sign-up, sign-in and terms links carry only their own flag", () => {
+  assert.equal(signupUrl(ORIGIN, "/"), `${ORIGIN}/?cadastro=1`);
+  assert.equal(ownerLoginUrl(ORIGIN, "/"), `${ORIGIN}/?entrar=1`);
+  assert.equal(termsUrl(ORIGIN, "/"), `${ORIGIN}/?termos=1`);
+  assert.equal(signupUrl(ORIGIN, ""), `${ORIGIN}/?cadastro=1`);
+});
+
+test("each entry link opens its own screen, and none of them opens the panel", () => {
+  for (const [link, screen] of [
+    [signupUrl(ORIGIN, "/"), "signup"],
+    [ownerLoginUrl(ORIGIN, "/"), "login"],
+    [termsUrl(ORIGIN, "/"), "terms"],
+  ]) {
+    const search = new URL(link).search;
+    assert.equal(entryScreen(search), screen);
+    assert.equal(wantsPanel(search), false);
+  }
+});
+
+test("entryScreen only accepts =1, ignores the rest and lets the terms win", () => {
+  assert.equal(entryScreen(""), null);
+  assert.equal(entryScreen("?cadastro=0"), null);
+  assert.equal(entryScreen("?cadastro=true"), null);
+  assert.equal(entryScreen("?empresa=x"), null);
+  assert.equal(entryScreen("?cadastro=1&termos=1"), "terms");
+  assert.equal(entryScreen("?entrar=1&cadastro=1"), "signup");
 });

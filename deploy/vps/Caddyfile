@@ -12,9 +12,9 @@
 		-Server
 	}
 
-	# Registering a restaurant is done by the administrator on the server
-	# (deploy/vps/criar-restaurante.sh), not by the public. Closed from outside until
-	# there is a safe sign-up screen.
+	# Esta rota antiga (sem proteção nenhuma) fica fechada para sempre: o administrador cria
+	# restaurantes pelo servidor (deploy/vps/criar-restaurante.sh). O cadastro pela internet usa
+	# a rota nova /api/signup, que já vem protegida e fechada até abrir-cadastro.sh abrir.
 	handle /api/auth/register-company* {
 		respond 404
 	}

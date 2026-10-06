@@ -1,3 +1,5 @@
+import type { SignupBody } from "../signup/signupLogic";
+
 export const API_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -51,6 +53,64 @@ export async function login(email: string, password: string) {
   setToken(data.token);
   localStorage.setItem(USER_KEY, JSON.stringify(data.user));
   return data.user;
+}
+
+/**
+ * O cadastro de restaurantes pela internet está aberto?
+ * "offline" = o pedido nem chegou (sem rede); "closed" = o servidor respondeu que não (ou é uma
+ * versão antiga, sem essa rota).
+ */
+export async function fetchSignupStatus(): Promise<"open" | "closed" | "offline"> {
+  try {
+    const response = await fetch(`${API_URL}/signup/status`);
+    if (!response.ok) return "closed";
+    const data = await response.json().catch(() => ({}));
+    return data.open === true ? "open" : "closed";
+  } catch {
+    return "offline";
+  }
+}
+
+/** Cadastro que o servidor recusou. `status` 0 = o pedido não chegou; `field` = campo da tela com o problema. */
+export class SignupFailure extends Error {
+  status: number;
+  field: string | null;
+
+  constructor(message: string, status: number, field: string | null) {
+    super(message);
+    this.status = status;
+    this.field = field;
+  }
+}
+
+/** Cria o restaurante e o dono e já deixa o dono entrado (mesma sessão do login). */
+export async function signupRestaurant(
+  body: SignupBody
+): Promise<{ id: string; name: string; slug: string }> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new SignupFailure("", 0, null);
+  }
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new SignupFailure(
+      typeof data.error === "string" ? data.error : "",
+      response.status,
+      typeof data.field === "string" ? data.field : null
+    );
+  }
+
+  setToken(data.token);
+  localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+  return data.company;
 }
 
 

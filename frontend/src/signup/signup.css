@@ -1,0 +1,112 @@
+/* Cadastro do restaurante, entrada do dono e termos. Usa as peças de ui.css e admin.css. */
+
+.signup {
+  /* mais largo que o login: o formulário tem vários campos */
+  max-width: 440px;
+}
+
+.signup-sub {
+  margin: 0;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+}
+
+/* campo com erro: borda e texto no vermelho de alerta */
+.field.has-error input {
+  border-color: var(--alerta);
+}
+
+.signup-error,
+.field > .signup-error {
+  margin: 0;
+  color: var(--alerta);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+/* senha + botão "Mostrar" na mesma linha */
+.signup-password {
+  display: flex;
+  gap: var(--s2);
+}
+
+.signup-password input {
+  flex: 1;
+  min-width: 0;
+}
+
+.signup-password .btn {
+  flex: none;
+  padding: 0 var(--s4);
+}
+
+/* caixa de aceite dos termos: alvo de toque grande */
+.signup-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  min-height: 48px;
+  cursor: pointer;
+}
+
+.signup-terms input {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  accent-color: var(--mata);
+}
+
+.signup-terms a {
+  color: var(--folha);
+  font-weight: 700;
+}
+
+/* armadilha de robô: fora da tela (não some com display:none, que alguns robôs reconhecem) */
+.signup-honey {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* links de entrada na tela inicial */
+.home-owner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+/* ---------- termos de uso ---------- */
+
+.terms {
+  max-width: 640px;
+  margin: 0 auto;
+  padding-top: var(--s5);
+  line-height: 1.55;
+}
+
+.terms h2 {
+  margin: var(--s5) 0 var(--s1);
+  font: 700 var(--t-lg) / 1.25 var(--font-display);
+  color: var(--folha);
+}
+
+.terms p,
+.terms li {
+  margin: var(--s2) 0;
+}
+
+.terms ul {
+  padding-left: var(--s5);
+}
+
+.terms-draft {
+  margin: var(--s4) 0 0;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-sm);
+  background: var(--sol);
+  color: var(--folha);
+  font-weight: 700;
+}
