@@ -2,14 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   applyCommand,
   nextStep,
-  parseTourCommand,
   prevStep,
   progressLabel,
+  routeSpeech,
   skipTour,
   startTour,
   type TourState,
   type TourStep,
 } from "./tourEngine";
+import { DICTATE_HINT, fillFromSpeech } from "./fillField";
 import {
   isGuideVoiceEnabled,
   setGuideVoiceEnabled,
@@ -18,6 +19,7 @@ import {
   canListen,
   canSpeak,
   createListener,
+  prepareVoice,
   speak,
   stopSpeaking,
   type Listener,
@@ -79,7 +81,8 @@ function prefersReducedMotion(): boolean {
 /**
  * Talking, blinking guide. It reads each step aloud, blinks on the exact
  * element to touch, and understands what the user says ("próximo", "voltar",
- * "repetir", "pular"). The host app only supplies the steps.
+ * "repetir", "pular"). On steps that point at a form field it also writes
+ * what the person says into that field. The host app only supplies the steps.
  */
 export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
   const total = steps.length;
@@ -89,6 +92,7 @@ export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
   const [listening, setListening] = useState(false);
   const [heard, setHeard] = useState("");
   const [notice, setNotice] = useState("");
+  const [info, setInfo] = useState("");
   const [micAvailable] = useState<boolean>(() => canListen());
   const [voiceAvailable] = useState<boolean>(() => canSpeak());
 
@@ -98,6 +102,8 @@ export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
   const onCloseRef = useRef(onClose);
   const onNavigateRef = useRef(onNavigate);
   const stateRef = useRef(state);
+  // One spoken phrase must cause one action, even if a partial and a final result both arrive.
+  const handledRef = useRef(false);
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -116,6 +122,11 @@ export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
       onCloseRef.current(state.finished);
     }
   }, [state.done, state.finished]);
+
+  // The phone loads its voices a moment late; start that now so the first step already sounds right.
+  useEffect(() => {
+    prepareVoice();
+  }, []);
 
   // Stop talking and listening when the guide goes away.
   useEffect(() => {
@@ -137,6 +148,7 @@ export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
   useEffect(() => {
     if (!step) return;
     setNotice("");
+    setInfo("");
     setHeard("");
     if (step.view) onNavigateRef.current?.(step.view);
     readStep(step);
@@ -246,21 +258,46 @@ export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
   }, []);
 
   const handleSpeech = useCallback(
-    (transcript: string) => {
+    (transcript: string, isFinal: boolean) => {
+      if (handledRef.current) return;
+      const current = steps[Math.min(stateRef.current.index, total - 1)];
+      // On a step with a field to fill, a phrase can still grow ("pronto" ... "prato do dia"),
+      // so only the final result is trusted there.
+      if (!isFinal && current?.dictate) return;
+
+      const route = routeSpeech(transcript, current?.dictate);
       setHeard(transcript);
-      const command = parseTourCommand(transcript);
-      if (command === "unknown") {
-        setNotice("Não entendi. Tente dizer: próximo, voltar, repetir ou pular.");
+
+      if (route.kind === "command") {
+        // A short command acts as soon as it is heard, without waiting for the end of the phrase.
+        handledRef.current = true;
+        if (!isFinal) listenerRef.current?.stop();
+        setNotice("");
+        setInfo("");
+        if (route.command === "repeat") {
+          readStep(current);
+          return;
+        }
+        setState((previous) => applyCommand(previous, route.command, total));
         return;
       }
+      if (!isFinal) return;
+      handledRef.current = true;
       setNotice("");
-      if (command === "repeat") {
-        readStep(steps[Math.min(stateRef.current.index, total - 1)]);
+
+      if (route.kind === "dictation" && current?.dictate) {
+        const outcome = fillFromSpeech(
+          current.target ? findTarget(current.target) : null,
+          current.dictate,
+          transcript
+        );
+        setInfo(outcome.message);
+        if (voiceOn) speak(outcome.spoken);
         return;
       }
-      setState((current) => applyCommand(current, command, total));
+      setInfo("Neste passo eu entendo: próximo, voltar, repetir ou pular.");
     },
-    [readStep, steps, total]
+    [readStep, steps, total, voiceOn]
   );
 
   const handleSpeechRef = useRef(handleSpeech);
@@ -271,7 +308,8 @@ export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
   // The listener is created once and always calls the latest handler.
   useEffect(() => {
     listenerRef.current = createListener({
-      onResult: (transcript) => handleSpeechRef.current(transcript),
+      partial: true,
+      onResult: (transcript, isFinal) => handleSpeechRef.current(transcript, isFinal),
       onStateChange: setListening,
       onError: () =>
         setNotice(
@@ -292,6 +330,8 @@ export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
     }
     stopSpeaking(); // so the microphone does not hear the guide itself
     setNotice("");
+    setInfo("");
+    handledRef.current = false;
     listenerRef.current.start();
   }
 
@@ -364,12 +404,22 @@ export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
           {step.text}
         </p>
 
-        {step.say && micAvailable && (
+        {step.dictate && micAvailable && (
+          <p className="tour-say">
+            <strong>{DICTATE_HINT[step.dictate]}</strong>
+          </p>
+        )}
+        {!step.dictate && step.say && micAvailable && (
           <p className="tour-say">
             Você pode dizer: <strong>“{step.say}”</strong>
           </p>
         )}
         {heard && <p className="tour-heard">Ouvi: “{heard}”</p>}
+        {info && (
+          <p className="tour-info" role="status">
+            {info}
+          </p>
+        )}
         {notice && <p className="tour-notice">{notice}</p>}
 
         <div className="tour-actions">

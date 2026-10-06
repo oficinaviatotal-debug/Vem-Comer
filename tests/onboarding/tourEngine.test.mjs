@@ -10,6 +10,10 @@ import {
   normalizeSpeech,
   parseTourCommand,
   applyCommand,
+  routeSpeech,
+  cleanDictatedText,
+  parseSpokenNumber,
+  matchChoice,
 } from "../../frontend/src/onboarding/tourEngine.ts";
 
 test("starts on the first step and is not done", () => {
@@ -100,4 +104,82 @@ test("applyCommand updates the state and keeps it on repeat/unknown", () => {
   assert.equal(applyCommand(s0, "repeat", 5), s0);
   assert.equal(applyCommand(s0, "unknown", 5), s0);
   assert.equal(applyCommand(s0, "skip", 5).done, true);
+});
+
+test("on a step with a field, a longer phrase is the answer, not a command", () => {
+  // "pronto" alone means next...
+  assert.deepEqual(routeSpeech("pronto", "text"), { kind: "command", command: "next" });
+  assert.deepEqual(routeSpeech("pode seguir", "text"), { kind: "command", command: "next" });
+  // ...but inside a dish name it is just a word.
+  assert.deepEqual(routeSpeech("pronto prato do dia", "text"), { kind: "dictation" });
+  assert.deepEqual(routeSpeech("Combinado de 20 peças", "text"), { kind: "dictation" });
+  assert.deepEqual(routeSpeech("pratos", "text"), { kind: "dictation" });
+});
+
+test("on a step without a field the old rules still apply", () => {
+  assert.deepEqual(routeSpeech("quero sair"), { kind: "command", command: "skip" });
+  assert.deepEqual(routeSpeech("pronto prato do dia"), { kind: "command", command: "next" });
+  assert.deepEqual(routeSpeech("pratos"), { kind: "unknown" });
+  assert.deepEqual(routeSpeech(""), { kind: "unknown" });
+  assert.deepEqual(routeSpeech("   ", "text"), { kind: "unknown" });
+});
+
+test("dictated names are tidied: capital letter, no final punctuation, no extra spaces", () => {
+  assert.equal(cleanDictatedText("pratos."), "Pratos");
+  assert.equal(cleanDictatedText("  combinado   de 20 peças , "), "Combinado de 20 peças");
+  assert.equal(cleanDictatedText("água mineral"), "Água mineral");
+  assert.equal(cleanDictatedText(""), "");
+  assert.equal(cleanDictatedText("..."), "");
+  assert.equal(cleanDictatedText("a".repeat(300)).length, 100);
+});
+
+test("spoken prices become numbers a number field accepts", () => {
+  const cases = {
+    "49,90": "49.90",
+    "R$ 49,90": "49.90",
+    "49.90": "49.90",
+    "49 e 90": "49.90",
+    "25": "25",
+    "vinte e cinco reais": "25",
+    "quarenta e nove e noventa": "49.90",
+    "cento e vinte e cinco": "125",
+    "vinte reais e cinquenta": "20.50",
+    "vinte reais e cinco": "20.05",
+    "6,5": "6.50",
+    "seis vírgula cinco": "6.50",
+    "um real": "1",
+  };
+  for (const [said, expected] of Object.entries(cases)) {
+    assert.equal(parseSpokenNumber(said), expected, said);
+  }
+});
+
+test("a price that is not clean is refused instead of guessed", () => {
+  for (const said of ["", "quero uma coca", "mil", "99999999999", "49,905", "um dois três quatro"]) {
+    assert.equal(parseSpokenNumber(said), null, said);
+  }
+});
+
+test("a whole number (table) takes digits or words and refuses cents", () => {
+  assert.equal(parseSpokenNumber("mesa cinco", false), "5");
+  assert.equal(parseSpokenNumber("12", false), "12");
+  assert.equal(parseSpokenNumber("vinte e um", false), "21");
+  assert.equal(parseSpokenNumber("5,5", false), null);
+  assert.equal(parseSpokenNumber("49 e 90", false), null);
+});
+
+test("choosing a category by voice tolerates plurals and extra words", () => {
+  const labels = ["Pratos", "Bebidas", "Sobremesas"];
+  assert.equal(matchChoice("pratos", labels), 0);
+  assert.equal(matchChoice("bebida", labels), 1);
+  assert.equal(matchChoice("Sobremesas.", labels), 2);
+  assert.equal(matchChoice("os pratos", labels), 0);
+  assert.equal(matchChoice("lanches", labels), -1);
+  assert.equal(matchChoice("", labels), -1);
+});
+
+test("an ambiguous category is not chosen for the person", () => {
+  const labels = ["Pratos quentes", "Pratos frios"];
+  assert.equal(matchChoice("pratos", labels), -1);
+  assert.equal(matchChoice("pratos frios", labels), 1);
 });

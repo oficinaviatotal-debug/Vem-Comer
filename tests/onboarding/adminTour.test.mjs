@@ -90,3 +90,26 @@ test("the guide is only offered to people who can configure the restaurant", () 
   // Auto-open is reserved for the owner and only once per browser.
   assert.match(panel, /hasSeenGuide\(ADMIN_TOUR_ID, currentUser\.id\)/);
 });
+
+test("steps the guide fills by voice point at a real field of the right kind", () => {
+  const dictated = ADMIN_TOUR.filter((step) => step.dictate);
+  assert.ok(dictated.length >= 4, "the main registration steps should accept dictation");
+  for (const step of dictated) {
+    assert.ok(step.target, `${step.id}: dictation needs a field to fill`);
+    const id = step.target.slice(1);
+    const tag = step.dictate === "choice" ? "select" : "input";
+    assert.match(
+      panel,
+      new RegExp(`<${tag}\\s[^>]*?id="${id}"`),
+      `${step.id}: #${id} must be a <${tag}> for "${step.dictate}" dictation`
+    );
+  }
+});
+
+test("secrets are never dictated: the Pix key and password steps do not accept voice input", () => {
+  for (const id of ["chave-pix", "salvar-pix"]) {
+    const step = ADMIN_TOUR.find((item) => item.id === id);
+    assert.ok(step, id);
+    assert.equal(step.dictate, undefined, `${id} must stay keyboard-only`);
+  }
+});

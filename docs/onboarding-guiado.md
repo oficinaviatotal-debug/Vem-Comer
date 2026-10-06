@@ -23,11 +23,49 @@ escuta sozinho.
 Sem voz ou sem microfone (alguns navegadores não têm), o guia continua
 funcionando só com texto e botões.
 
+### Falar o que vai no campo
+
+Nos passos que apontam para um campo (nome da categoria, nome do prato, preço,
+categoria do prato, número da mesa) o balão diz "Toque em Falar e diga ...". Quem
+fala não precisa digitar: o guia escreve no campo, como se tivesse sido digitado,
+e confirma em voz alta e na tela ("Escrevi: Pratos. Se estiver certo, toque em
+Próximo.").
+
+| Tipo (`dictate`) | O que entende | Exemplo |
+| --- | --- | --- |
+| `text` | Qualquer frase; vira "Primeira letra maiúscula", sem ponto final | "combinado de 20 peças" |
+| `price` | Dígitos ou palavras; devolve com ponto para o campo numérico | "quarenta e nove e noventa", "49,90", "vinte reais e cinquenta" |
+| `integer` | Número inteiro, recusa centavos | "mesa cinco" |
+| `choice` | Uma opção da lista, ignorando plural e palavras a mais | "bebida" escolhe "Bebidas" |
+
+Regras que não mudam:
+
+- Nos passos com campo, só uma frase de **uma ou duas palavras** conta como comando
+  ("próximo", "pode seguir"). Frases maiores são a resposta do campo, então
+  "pronto prato do dia" não avança o guia.
+- Preço ou número que não ficou limpo **não é adivinhado**: o campo fica como estava
+  e o guia pede de novo com um exemplo.
+- Categoria ambígua ("pratos" quando há "Pratos quentes" e "Pratos frios") não é
+  escolhida pela pessoa; ela toca na lista.
+- **Nunca por voz**: chave Pix e senha. Esses passos não têm `dictate`, e um teste
+  automático garante isso.
+
+### Rapidez e voz
+
+- Comandos curtos ("pular", "voltar") agem assim que são ouvidos, sem esperar o
+  silêncio que encerra a frase. Em passos com campo o guia espera o fim da frase,
+  porque uma palavra solta ("pronto") pode ser o começo do nome do prato.
+- A voz é escolhida de propósito: português do Brasil, preferindo vozes "Google",
+  "Natural" ou "Neural" às vozes simples do sistema (`voiceScore` em `speech.ts`).
+  O Chrome carrega a lista de vozes depois da página; o guia espera por ela em vez
+  de usar a voz padrão. O ritmo é 1,05.
+
 ## Peças (em `frontend/src/onboarding/`)
 
 | Arquivo | Função |
 | --- | --- |
 | `tourEngine.ts` | Lógica pura: passos, progresso, interpretação do que foi falado. Sem navegador, testável no Node. |
+| `fillField.ts` | Escreve o que foi falado no campo apontado (texto, preço, número, opção de lista). Só DOM, sem React. |
 | `OnboardingGuide.tsx` | Tela do guia: balão, contorno piscando, voz, microfone. Recebe só a lista de passos. |
 | `speech.ts` | Voz (síntese) e microfone (reconhecimento) em pt-BR, com proteção quando o navegador não oferece. |
 | `guideStorage.ts` | Lembra, só neste navegador, se o guia já foi mostrado e se a voz está ligada. |
@@ -124,6 +162,13 @@ Roda também no GitHub (`Vem Comer guided onboarding tests`).
 - Alguns navegadores só liberam a voz depois de um toque. Se o guia abrir sozinho
   logo após recarregar a página, ele pode ficar mudo no primeiro passo; por isso
   o balão tem o botão **Ouvir de novo**, que sempre funciona com um toque.
+- A qualidade da voz depende das vozes instaladas no celular. O guia escolhe a melhor
+  em português, mas se o aparelho só tem a voz simples do sistema ela continua sendo
+  robótica. O passo seguinte, se isso incomodar, é tocar áudios gravados com voz
+  profissional (sem demora e igual em qualquer celular); isso exige um serviço de voz.
+- A demora de um comando falado em celular real ainda não foi medida: o ajuste acima
+  tira a espera pelo fim da frase, mas o tempo do reconhecimento do próprio celular
+  não está nas nossas mãos.
 - Os testes automáticos cobrem a lógica e o roteiro. O piscar e o posicionamento
   foram conferidos em um navegador Chromium simulando celular (390 x 844) com o
   servidor simulado; voz e microfone reais, e o toque em aparelhos de verdade,
