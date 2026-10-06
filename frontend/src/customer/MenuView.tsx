@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { mediaUrl } from "../service/api";
 import { formatMoney } from "../service/format";
 import { quantityOf, type CartLine } from "./cart";
 import type { MenuGroup } from "./menuGroups";
@@ -59,35 +60,50 @@ export default function MenuView({ groups, cart, query, search, onAdd, onLess }:
           <ul className="cust-items">
             {group.items.map((product) => {
               const quantity = quantityOf(cart, product.id);
+              const photo = mediaUrl(product.thumb_url);
               return (
-                <li className="cust-item" key={product.id}>
-                  <div className="leader-row">
-                    <h3 className="cust-item-name">{product.name}</h3>
-                    <span className="leader" aria-hidden="true" />
-                    <span className="money">{formatMoney(product.price)}</span>
+                <li className={photo ? "cust-item has-photo" : "cust-item"} key={product.id}>
+                  <div className="cust-item-text">
+                    <div className="leader-row">
+                      <h3 className="cust-item-name">{product.name}</h3>
+                      <span className="leader" aria-hidden="true" />
+                      <span className="money">{formatMoney(product.price)}</span>
+                    </div>
+
+                    {product.description && <p className="cust-item-desc">{product.description}</p>}
+
+                    <div className="cust-qty" id={product.id === firstId ? "cust-first-add" : undefined}>
+                      {quantity === 0 ? (
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          onClick={() => onAdd(product)}
+                          aria-label={`Adicionar ${product.name}`}
+                        >
+                          Adicionar
+                        </button>
+                      ) : (
+                        <QuantityStepper
+                          label={product.name}
+                          quantity={quantity}
+                          onMore={() => onAdd(product)}
+                          onLess={() => onLess(product.id)}
+                        />
+                      )}
+                    </div>
                   </div>
 
-                  {product.description && <p className="cust-item-desc">{product.description}</p>}
-
-                  <div className="cust-qty" id={product.id === firstId ? "cust-first-add" : undefined}>
-                    {quantity === 0 ? (
-                      <button
-                        type="button"
-                        className="btn btn-outline btn-sm"
-                        onClick={() => onAdd(product)}
-                        aria-label={`Adicionar ${product.name}`}
-                      >
-                        Adicionar
-                      </button>
-                    ) : (
-                      <QuantityStepper
-                        label={product.name}
-                        quantity={quantity}
-                        onMore={() => onAdd(product)}
-                        onLess={() => onLess(product.id)}
-                      />
-                    )}
-                  </div>
+                  {photo && (
+                    <img
+                      className="cust-item-photo"
+                      src={photo}
+                      alt=""
+                      width={112}
+                      height={84}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  )}
                 </li>
               );
             })}

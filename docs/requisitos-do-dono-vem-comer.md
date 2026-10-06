@@ -61,6 +61,7 @@ Funciona para quem é analfabeto e para quem vai usar 100% das funções.
 | 16 | **Pix por restaurante.** | Feito (Pix estático, confirmação manual). Falta o teste real de R$ 1,00. |
 | 17 | **Atendimento no WhatsApp organizado** (o mesmo número do balcão). | Falta (a definir: API oficial do WhatsApp tem custo). |
 | 18 | **Qualidade de gestão de "um diretor que passou por cinco multinacionais em dez estados"**, levada ao Vem Comer e ao Vem Trabalhar. | Direção geral. |
+| 19 | **Ser encontrado** (benchmark: ferramentas que otimizam o site para o Google e para as respostas de IA). Cada restaurante precisa de uma página pública que robôs e IAs entendam: nome, endereço, horário, cardápio com preço e foto (dados estruturados schema.org), prévia bonita ao colar o link no WhatsApp, mapa do site. | Falta. Hoje o cardápio é montado por JavaScript no celular; robôs que não rodam JavaScript veem pouco. Exige servir a página já pronta (pré-renderizada) para cada restaurante. |
 
 ## Como o dono testou e o que não funcionou (guia antigo)
 
@@ -89,5 +90,6 @@ Funciona para quem é analfabeto e para quem vai usar 100% das funções.
 8. Salão: áreas, garçom, metas, sugestão de venda.
 9. E-mail e recorrência (com consentimento).
 10. Alertas de estoque e gargalo.
+11. Página pública de cada restaurante pronta para Google, IA e WhatsApp (pré-renderizada, dados estruturados).
 
 Em paralelo, antes de vender de verdade: teste real de Pix de R$ 1,00, domínio próprio, backup fora do servidor.

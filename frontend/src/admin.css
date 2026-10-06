@@ -209,6 +209,29 @@
   gap: var(--s2);
 }
 
+/* A dish row with a small photo, and room for the photo picker underneath. */
+.adm-row-photo {
+  flex-wrap: wrap;
+}
+
+.adm-row-photo .adm-row-main {
+  flex: 1 1 8rem;
+}
+
+.adm-thumb {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 54px;
+  border-radius: var(--r-sm);
+  object-fit: cover;
+  background: var(--papel-2);
+}
+
+.adm-row-photo-picker {
+  flex: 1 1 100%;
+  padding-top: var(--s3);
+}
+
 .adm-row.is-off {
   opacity: .55;
 }

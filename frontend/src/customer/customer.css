@@ -147,6 +147,28 @@
   border-bottom: 1px solid var(--linha);
 }
 
+/* With a photo: text on the left, a small 4:3 picture on the right (like the menus people already know). */
+.cust-item.has-photo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.cust-item-text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.cust-item-photo {
+  flex: 0 0 auto;
+  width: 112px;
+  height: 84px;
+  border-radius: var(--r-sm);
+  object-fit: cover;
+  background: var(--papel-2);
+}
+
 .cust-item:last-child {
   border-bottom: 0;
 }

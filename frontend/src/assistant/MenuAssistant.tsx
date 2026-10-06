@@ -9,6 +9,7 @@ import {
   type MenuTemplateSummary,
 } from "../service/api";
 import { parseSpokenNumber } from "../onboarding/tourEngine";
+import PhotoSession from "../photos/PhotoSession";
 import { prepareVoice } from "../onboarding/speech";
 import {
   formatPrice,
@@ -89,6 +90,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
   const [priceInput, setPriceInput] = useState("");
   const [result, setResult] = useState<MenuImportResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const [photosOn, setPhotosOn] = useState(false);
   const [voiceLabel, setVoiceLabel] = useState("");
 
   // Everything the voice loop reads lives in refs: it keeps running between renders.
@@ -268,6 +270,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
   function start() {
     prepareVoice();
     setStarted(true);
+    setPhotosOn(false);
     commit(initialFlow());
     setNotice("");
     setProblem("");
@@ -743,7 +746,17 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
         </div>
       )}
 
-      {flow.step === "done" && (
+      {flow.step === "done" && photosOn && (
+        <PhotoSession
+          companyId={companyId}
+          voice={voiceOn}
+          onChanged={onSaved}
+          onBack={() => setPhotosOn(false)}
+          onSeeMenu={onSeeMenu}
+        />
+      )}
+
+      {flow.step === "done" && !photosOn && (
         <div className="sheet asst-done">
           <h3>Cardápio cadastrado</h3>
           {result && (
@@ -752,10 +765,21 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
               {result.products_skipped > 0 ? `, ${result.products_skipped} já existiam` : ""}.
             </p>
           )}
-          <p className="asst-help">Em breve: fotos dos pratos e logomarca.</p>
+          <p className="asst-help">Foto ajuda o cliente a escolher. Em breve: logomarca.</p>
           <div className="asst-actions">
+            <button
+              id="assistant-photos"
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                silence();
+                setPhotosOn(true);
+              }}
+            >
+              Colocar fotos nos pratos
+            </button>
             {onOpenGuide && (
-              <button type="button" className="btn btn-primary" onClick={onOpenGuide}>
+              <button type="button" className="btn btn-outline" onClick={onOpenGuide}>
                 Continuar: mesas, Pix e pedidos
               </button>
             )}

@@ -1,0 +1,166 @@
+/*
+ * Dish photo picker. Big buttons, one thing at a time: the person may be standing in
+ * a kitchen with one free hand. Colors, type and spacing come from the tokens in styles.css.
+ */
+
+.photo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+/* The file inputs are covered by the big buttons (labels); they stay in the page for the phone's camera. */
+.photo-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  opacity: 0;
+}
+
+.photo-current,
+.photo-empty,
+.photo-compare img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r-md);
+  object-fit: cover;
+  background: var(--papel-2);
+}
+
+.photo-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--linha-forte);
+  font-size: 3rem;
+}
+
+.photo-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3);
+}
+
+.photo-compare figure {
+  margin: 0;
+}
+
+.photo-compare figcaption {
+  margin-top: var(--s1);
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  text-align: center;
+}
+
+.photo-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.photo-btn {
+  min-height: 60px;
+  font-size: var(--t-lg);
+}
+
+.photo-btn.is-disabled {
+  opacity: .5;
+  pointer-events: none;
+}
+
+.photo-input:focus-visible + .photo-btn,
+.photo-btn:focus-within {
+  outline: 3px solid var(--brasa-viva);
+  outline-offset: 2px;
+}
+
+.photo-help {
+  margin: 0;
+}
+
+.photo-working {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin: 0;
+  color: var(--folha);
+  font-weight: 700;
+}
+
+.photo-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--linha-forte);
+  border-top-color: var(--mata);
+  border-radius: 50%;
+  animation: photo-spin .9s linear infinite;
+}
+
+@keyframes photo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-spinner {
+    animation-duration: 3s;
+  }
+}
+
+.photo-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.photo-saved {
+  margin: 0;
+  color: var(--mata);
+  font-weight: 700;
+}
+
+.photo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photo-chips li {
+  padding: var(--s1) var(--s3);
+  border-radius: var(--r-pill);
+  background: var(--papel-2);
+  color: var(--folha);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.photo-tip {
+  margin: 0;
+  padding: var(--s3);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+  color: var(--tinta);
+  font-size: var(--t-sm);
+}
+
+/* One dish at a time, after the menu was registered. */
+.photo-session-name {
+  margin: 0;
+  font: 700 var(--t-2xl) / 1.15 var(--font-display);
+  color: var(--folha);
+}
+
+.photo-session-progress {
+  margin: 0;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
