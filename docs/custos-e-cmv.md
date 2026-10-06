@@ -14,7 +14,8 @@ Aba **Custos** do painel (só dono e gerente):
    por porção (embalagem, gás). O custo aparece enquanto ele digita.
 3. Vê, em cada prato, uma frase só: "Custa R$ 7,43 e vende por R$ 25,00: CMV de 29,7%, dentro da meta
    de 35%." Quando passa da meta, a frase diz o preço que deixaria o prato na meta.
-4. No topo, o **CMV dos últimos 30 dias** pelas vendas e quanto das vendas já tinha ficha.
+4. No topo, o **CMV dos últimos 30 dias** pelos pedidos que a cozinha aceitou (em preparo ou concluídos; pedido
+   abandonado não conta) e quanto dessas vendas já tinha ficha.
 
 A lista mostra primeiro os pratos com custo alto, depois os de atenção, depois os sem ficha.
 
@@ -29,6 +30,8 @@ A lista mostra primeiro os pratos com custo alto, depois os de atenção, depois
 - Preço sugerido = custo ÷ meta, arredondado para cima no centavo (o mesmo cálculo do exemplo do Sebrae:
   prato de R$ 4 com meta de 30% → cerca de R$ 13,30).
 - Prato sem ficha tem custo **desconhecido**, não zero.
+- "1.000" sem vírgula é lido como mil (jeito brasileiro); "0,250" e "0.250" são decimais. A tela manda os
+  números já convertidos, como número, para não haver dúvida no servidor.
 
 ## O que fica guardado (`database/migrations/006_custos.sql`)
 
@@ -37,7 +40,8 @@ A lista mostra primeiro os pratos com custo alto, depois os de atenção, depois
 - `product_ingredients`: a ficha técnica (quanto de cada insumo vai numa porção).
 - `products.portion` e `products.extra_cost`.
 - `order_items.unit_cost`: o custo do prato **no momento do pedido**. Assim o CMV de um mês antigo não muda
-  quando o frango encarece. Se a conta falhar, o pedido segue sem custo (nunca trava o cliente).
+  quando o frango encarece. Se a conta falhar, ou der um custo absurdo (erro de digitação), o pedido segue sem
+  custo: a conta do custo nunca trava o cliente. Uma ficha com porção acima de R$ 100.000 é recusada.
 - `companies.cmv_target`: a meta do restaurante.
 
 ## Segurança

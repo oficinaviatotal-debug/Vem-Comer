@@ -217,9 +217,9 @@ export default function CostsPanel({ companyId }: Props) {
         companyId,
         {
           name: ingredient.name.trim(),
-          quantity: String(parseDecimal(ingredient.quantity) ?? ""),
+          quantity: parseDecimal(ingredient.quantity) ?? 0,
           unit: ingredient.unit,
-          price: String(parseDecimal(ingredient.price) ?? ""),
+          price: parseDecimal(ingredient.price) ?? 0,
         },
         editingIngredient?.id,
       );

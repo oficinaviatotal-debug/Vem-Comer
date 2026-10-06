@@ -32,6 +32,10 @@ test("numbers typed the Brazilian way", () => {
   assert.equal(parseDecimal("abc"), null);
   assert.equal(parseDecimal("-3"), null);
   assert.equal(parseDecimal("1.2.3"), null);
+  assert.equal(parseDecimal("1.000"), 1000);
+  assert.equal(parseDecimal("2.500"), 2500);
+  assert.equal(parseDecimal("0.250"), 0.25);
+  assert.equal(parseDecimal("1.5"), 1.5);
 });
 
 test("units convert to what the database keeps", () => {
@@ -65,6 +69,9 @@ test("stored quantity goes back to the friendliest edit unit", () => {
   assert.deepEqual(toInput(1500, "ml"), { quantity: "1,5", unit: "l" });
   assert.deepEqual(toInput(12, "un"), { quantity: "12", unit: "un" });
   assert.deepEqual(toInput(2500000, "g"), { quantity: "2500", unit: "kg" });
+  // not whole grams: stays in grams so saving again keeps the exact number
+  assert.deepEqual(toInput(2267.96, "g"), { quantity: "2267,96", unit: "g" });
+  assert.deepEqual(toInput(1234.5, "ml"), { quantity: "1234,5", unit: "ml" });
 });
 
 test("live cost of the recipe card matches the server's example", () => {
@@ -134,10 +141,10 @@ test("recipe problems and payload", () => {
   assert.match(recipeProblem(lines, "abc"), /Outros custos/);
   assert.deepEqual(recipePayload(" 1 pessoa ", "1,50", lines), {
     portion: "1 pessoa",
-    extra_cost: "1.5",
+    extra_cost: 1.5,
     items: [
-      { ingredient_id: "a", quantity: "250", unit: "g" },
-      { ingredient_id: "b", quantity: "0.2", unit: "kg" },
+      { ingredient_id: "a", quantity: 250, unit: "g" },
+      { ingredient_id: "b", quantity: 0.2, unit: "kg" },
     ],
   });
 });

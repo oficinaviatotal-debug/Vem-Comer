@@ -12,6 +12,11 @@ class ParseNumberTests(unittest.TestCase):
         self.assertEqual(costing.parse_number("0,250", "Qtd"), Decimal("0.250"))
         self.assertEqual(costing.parse_number(18.9, "Preço"), Decimal("18.9"))
         self.assertEqual(costing.parse_number(2, "Qtd"), Decimal("2"))
+        # sem virgula, "1.000" e mil no Brasil; "0.250" continua decimal
+        self.assertEqual(costing.parse_number("1.000", "Qtd"), Decimal("1000"))
+        self.assertEqual(costing.parse_number("2.500", "Qtd"), Decimal("2500"))
+        self.assertEqual(costing.parse_number("0.250", "Qtd"), Decimal("0.250"))
+        self.assertEqual(costing.parse_number("1.5", "Qtd"), Decimal("1.5"))
 
     def test_rejects_text_negative_bool_and_infinite(self):
         for bad in ("abc", "-1", True, None, "inf", "NaN", [], {}):
@@ -86,6 +91,11 @@ class CostTests(unittest.TestCase):
     def test_sebrae_example(self):
         # Exemplo do Sebrae: prato de R$ 4 com meta de 30% -> cerca de R$ 13,30
         self.assertEqual(costing.suggested_price(Decimal("4"), 30), Decimal("13.34"))
+
+    def test_storable_cost(self):
+        self.assertEqual(costing.storable_cost(Decimal("7.43")), Decimal("7.43"))
+        self.assertIsNone(costing.storable_cost(None))
+        self.assertIsNone(costing.storable_cost(Decimal("189000000.00")))
 
     def test_target(self):
         self.assertEqual(costing.normalize_target("35"), 35)

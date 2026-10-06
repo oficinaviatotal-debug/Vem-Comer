@@ -8,6 +8,7 @@ Palavras usadas aqui:
 - CMV do prato: custo da porcao dividido pelo preco de venda, em %. Ex.: custo R$ 8, preco R$ 25 = 32%.
 - meta de CMV: o maximo que o dono aceita. Comeca em 35% (o Sebrae cita 25% a 35% para restaurante).
 """
+import re
 from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal, InvalidOperation
 
 # Unidade que o dono fala -> (unidade guardada no banco, quantas unidades guardadas cabem em 1).
@@ -34,6 +35,10 @@ MAX_PACKAGE_PRICE = Decimal('100000')
 MAX_LINE_QTY = Decimal('100000')        # 100 kg numa porcao ja e erro de digitacao
 MAX_EXTRA_COST = Decimal('10000')
 MAX_RECIPE_LINES = 40
+# Custo de uma porcao acima disso e erro de digitacao (ex.: embalagem de "1 g" por R$ 18.900).
+MAX_PORTION_COST = Decimal('100000')
+# Maior valor que cabe em order_items.unit_cost (numeric(10,2)).
+MAX_STORED_COST = Decimal('99999999.99')
 
 CENT = Decimal('0.01')
 
@@ -53,6 +58,9 @@ def parse_number(value, label, allow_zero=True, maximum=None):
         if ',' in text:
             # formato brasileiro: ponto separa milhar, virgula separa centavos
             text = text.replace('.', '').replace(',', '.')
+        elif re.fullmatch(r'[1-9]\d{0,2}(\.\d{3})+', text):
+            # "1.000" ou "2.500" sem virgula: no Brasil o ponto aqui e de milhar
+            text = text.replace('.', '')
     else:
         raise CostError(f"{label}: escreva um numero.")
     try:
@@ -137,6 +145,13 @@ def product_cost(lines, extra_cost=0):
         return None
     total = sum((line_cost(q, pq, pp) for q, pq, pp in lines), Decimal('0')) + extra
     return money(total)
+
+
+def storable_cost(cost):
+    """O custo que pode ir para o pedido: None se e desconhecido ou grande demais para ser real."""
+    if cost is None or Decimal(cost) > MAX_STORED_COST:
+        return None
+    return cost
 
 
 def cmv_percent(cost, price):

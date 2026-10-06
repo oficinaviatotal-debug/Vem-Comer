@@ -509,12 +509,13 @@ export type CostView = {
   };
 };
 
-export type IngredientInput = { name: string; quantity: string; unit: string; price: string };
+/** Numbers travel as JSON numbers (never "1.234" as text). */
+export type IngredientInput = { name: string; quantity: number; unit: string; price: number };
 
 export type RecipeInput = {
   portion: string;
-  extra_cost: string;
-  items: Array<{ ingredient_id: string; quantity: string; unit: string }>;
+  extra_cost: number;
+  items: Array<{ ingredient_id: string; quantity: number; unit: string }>;
 };
 
 export async function fetchCosts(companyId: string): Promise<CostView> {

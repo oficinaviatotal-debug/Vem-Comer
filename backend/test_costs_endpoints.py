@@ -158,6 +158,8 @@ class CostsViewTests(unittest.TestCase):
         self.assertEqual(chicken["unit_cost"], 0.0189)
         self.assertEqual(body["period"]["cmv"], 29.7)
         self.assertEqual(body["period"]["coverage"], 86)
+        sold_query = next(sql for sql, _ in query.calls if "FROM order_items" in sql)
+        self.assertIn("o.status IN ('em preparo', 'concluido')", sold_query)
         # Toda consulta e presa ao restaurante do login.
         for sql, args in query.calls:
             self.assertEqual(args[0], COMPANY_ID, sql)
@@ -358,6 +360,29 @@ class RecipeTests(unittest.TestCase):
         update = next(params for sql, params in executed if sql.startswith("UPDATE products"))
         self.assertEqual(update, ("1 pessoa", Decimal("1.50"), PRODUCT_ID, COMPANY_ID))
 
+    def test_absurd_portion_cost_is_refused(self):
+        conn = FakeConnection([
+            ("FROM products p", {"id": PRODUCT_ID, "price": Decimal("25.00"), "cmv_target": 35}),
+            ("FROM ingredients", [{"id": CHICKEN_ID, "name": "Frango", "unit": "g",
+                                   "package_qty": Decimal("1.000"), "package_price": Decimal("18900.00")}]),
+        ])
+        body = {"items": [{"ingredient_id": CHICKEN_ID, "quantity": "10", "unit": "kg"}]}
+        with patch.object(backend_app, "get_db_connection", return_value=conn):
+            response = self.client.put(self.route, json=body, headers=auth())
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(conn.committed)
+        self.assertFalse(any("DELETE FROM product_ingredients" in sql for sql in conn.sql()))
+
+    def test_ingredients_are_locked_while_the_recipe_is_saved(self):
+        conn = FakeConnection([
+            ("FROM products p", {"id": PRODUCT_ID, "price": Decimal("25.00"), "cmv_target": 35}),
+            ("FROM ingredients", INGREDIENT_ROWS),
+        ])
+        with patch.object(backend_app, "get_db_connection", return_value=conn):
+            self.client.put(self.route, json=self.body, headers=auth())
+        ingredient_query = next(sql for sql in conn.sql() if "FROM ingredients" in sql)
+        self.assertIn("FOR SHARE", ingredient_query)
+
     def test_empty_recipe_clears_it(self):
         conn = FakeConnection([("FROM products p", {"id": PRODUCT_ID, "price": Decimal("25.00"), "cmv_target": 35})])
         with patch.object(backend_app, "get_db_connection", return_value=conn):
@@ -385,6 +410,16 @@ class OrderUnitCostTests(unittest.TestCase):
         self.assertIsNone(costs[JUICE_ID])
         self.assertEqual(cursor.executed[0][0], "SAVEPOINT unit_costs;")
         self.assertEqual(cursor.executed[1][1], (COMPANY_ID, sorted([PRODUCT_ID, JUICE_ID])))
+
+    def test_absurd_cost_is_left_empty_instead_of_breaking_the_order(self):
+        # "1 g por R$ 18.900" e 10 kg na ficha: custo de R$ 189 milhoes nao cabe em order_items.unit_cost
+        cursor = ScriptedCursor([
+            ("FROM products p", [
+                {"product_id": PRODUCT_ID, "extra_cost": Decimal("0"), "quantity": Decimal("10000"),
+                 "package_qty": Decimal("1"), "package_price": Decimal("18900.00")},
+            ]),
+        ])
+        self.assertEqual(backend_app.order_unit_costs(cursor, COMPANY_ID, [PRODUCT_ID]), {PRODUCT_ID: None})
 
     def test_failure_never_blocks_the_order(self):
         cursor = ScriptedCursor([("FROM products p", RuntimeError("coluna nao existe"))])

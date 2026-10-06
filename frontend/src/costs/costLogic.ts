@@ -48,6 +48,8 @@ export function parseDecimal(text: string | number | null | undefined): number |
   let clean = String(text ?? "").replace(/R\$/g, "").replace(/\s/g, "");
   if (!clean) return null;
   if (clean.includes(",")) clean = clean.replace(/\./g, "").replace(",", ".");
+  // "1.000" or "2.500" with no comma: in Brazil the dot here separates thousands.
+  else if (/^[1-9]\d{0,2}(\.\d{3})+$/.test(clean)) clean = clean.replace(/\./g, "");
   if (!/^\d*\.?\d+$|^\d+\.$/.test(clean)) return null;
   const value = Number(clean);
   return Number.isFinite(value) ? value : null;
@@ -72,10 +74,14 @@ export function formatQuantity(quantity: number, unit: BaseUnit): string {
   return `${number(3).format(quantity)} ${unit}`;
 }
 
-/** A stored quantity back in the friendliest unit, for an edit field: 1000 g -> "1" kg. */
+/**
+ * A stored quantity back in the friendliest unit, for an edit field: 1000 g -> "1" kg.
+ * Only whole grams (or millilitres) move to kg (or L), so saving again never changes the number.
+ */
 export function toInput(quantity: number, base: BaseUnit): { quantity: string; unit: InputUnit } {
-  if (base === "g" && quantity >= 1000) return { quantity: decimalText(quantity / 1000), unit: "kg" };
-  if (base === "ml" && quantity >= 1000) return { quantity: decimalText(quantity / 1000), unit: "l" };
+  const whole = Number.isInteger(round(quantity, 3));
+  if (base === "g" && quantity >= 1000 && whole) return { quantity: decimalText(quantity / 1000), unit: "kg" };
+  if (base === "ml" && quantity >= 1000 && whole) return { quantity: decimalText(quantity / 1000), unit: "l" };
   return { quantity: decimalText(quantity), unit: base === "un" ? "un" : base };
 }
 
@@ -243,14 +249,17 @@ export function recipeProblem(lines: RecipeDraftLine[], extra: string): string {
   return "";
 }
 
-/** What the server expects in PUT .../recipe. */
+/**
+ * What the server expects in PUT .../recipe. Numbers go as JSON numbers, never as text,
+ * so "1.234" can never be read as one thousand on the other side.
+ */
 export function recipePayload(portion: string, extra: string, lines: RecipeDraftLine[]) {
   return {
     portion: portion.trim(),
-    extra_cost: extra.trim() ? String(parseDecimal(extra) ?? 0) : "0",
+    extra_cost: extra.trim() ? parseDecimal(extra) ?? 0 : 0,
     items: lines.map((line) => ({
       ingredient_id: line.ingredientId,
-      quantity: String(parseDecimal(line.quantity) ?? ""),
+      quantity: parseDecimal(line.quantity) ?? 0,
       unit: line.unit,
     })),
   };

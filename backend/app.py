@@ -2959,19 +2959,23 @@ def order_unit_costs(cur, company_id, product_ids):
             pass
         return {}
 
-    lines = {}
-    extras = {}
-    for row in rows:
-        pid = str(row['product_id'])
-        extras[pid] = row.get('extra_cost') or 0
-        lines.setdefault(pid, [])
-        if row.get('quantity') is not None and row.get('package_qty') is not None:
-            lines[pid].append((row['quantity'], row['package_qty'], row['package_price']))
+    try:
+        lines = {}
+        extras = {}
+        for row in rows:
+            pid = str(row['product_id'])
+            extras[pid] = row.get('extra_cost') or 0
+            lines.setdefault(pid, [])
+            if row.get('quantity') is not None and row.get('package_qty') is not None:
+                lines[pid].append((row['quantity'], row['package_qty'], row['package_price']))
 
-    return {
-        pid: costing.product_cost(pid_lines, extras.get(pid, 0))
-        for pid, pid_lines in lines.items()
-    }
+        # Custo absurdo (erro de digitacao) nao cabe no pedido e nunca pode travar a venda: fica vazio.
+        return {
+            pid: costing.storable_cost(costing.product_cost(pid_lines, extras.get(pid, 0)))
+            for pid, pid_lines in lines.items()
+        }
+    except Exception:
+        return {}
 
 
 def build_cost_view(target, ingredient_rows, product_rows, line_rows, sold_rows):
@@ -3095,6 +3099,7 @@ def load_cost_view(company_id):
         FROM order_items oi
         JOIN orders o ON o.id = oi.order_id
         WHERE o.company_id = %s
+        AND o.status IN ('em preparo', 'concluido')
         AND o.created_at >= now() - make_interval(days => %s);
         """,
         (str(company_id), COST_PERIOD_DAYS)
@@ -3368,7 +3373,8 @@ def admin_save_recipe(company_id, product_id):
                 SELECT id, unit, package_qty, package_price
                 FROM ingredients
                 WHERE company_id = %s
-                AND id::text = ANY(%s);
+                AND id::text = ANY(%s)
+                FOR SHARE;
                 """,
                 (str(company_id), ids)
             )
@@ -3376,6 +3382,14 @@ def admin_save_recipe(company_id, product_id):
 
         try:
             lines = costing.recipe_lines(items, {iid: row['unit'] for iid, row in known.items()})
+            cost = costing.product_cost(
+                ((qty, known[iid]['package_qty'], known[iid]['package_price']) for iid, qty in lines),
+                extra_cost
+            )
+            if cost is not None and cost > costing.MAX_PORTION_COST:
+                raise costing.CostError(
+                    "O custo da porcao passou de R$ 100.000. Confira o tamanho da embalagem e as quantidades."
+                )
         except costing.CostError as error:
             _close_quietly(conn, cur)
             return jsonify({"error": str(error)}), 400
@@ -3406,10 +3420,6 @@ def admin_save_recipe(company_id, product_id):
 
         target = int(product.get('cmv_target') or costing.DEFAULT_TARGET)
         price = Decimal(product.get('price') or 0)
-        cost = costing.product_cost(
-            ((qty, known[iid]['package_qty'], known[iid]['package_price']) for iid, qty in lines),
-            extra_cost
-        )
         return jsonify({
             "message": "Ficha salva",
             "cost": _num(cost),
