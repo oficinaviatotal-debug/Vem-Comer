@@ -10,6 +10,17 @@ export const MAX_SEND_SIDE = 1600;
 /** JPEG quality of the photo sent to the server (the server makes the final WebP). */
 export const SEND_QUALITY = 0.9;
 
+/**
+ * A photo of a whole menu is read by an AI, and small print needs more pixels than a dish does:
+ * the longest side stays at 2400 px (the server keeps up to 2576). Still a JPEG of about 1 MB.
+ */
+export const MENU_SEND_SIDE = 2400;
+export const MENU_SEND_QUALITY = 0.85;
+
+/** How many pages of one menu can be sent at once, and how much they may weigh together (the server takes 10 MiB). */
+export const MENU_MAX_PHOTOS = 4;
+export const MENU_MAX_TOTAL_BYTES = 9 * 1024 * 1024;
+
 /** How many moments of a video are looked at to find the best one. */
 export const VIDEO_SAMPLES = 8;
 

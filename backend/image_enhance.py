@@ -197,3 +197,24 @@ def enhance_photo(data: bytes) -> EnhancedPhoto:
         improvements=melhorias,
         tips=dicas,
     )
+
+
+# ---------------------------------------------------------------------------
+# Foto de cardápio (para a IA ler as letras): sem melhorias de "comida", só endireitar e reduzir.
+
+READ_MAX_SIDE = 2576      # acima disso a IA reduz sozinha; mandar mais só deixa o envio lento
+READ_MIN_SIDE = 600       # abaixo disso as letras não dá para ler
+
+
+def prepare_for_reading(data: bytes) -> bytes:
+    """Foto de cardápio pronta para a IA ler: em pé, RGB, lado maior até 2576 px, JPEG sem EXIF."""
+    im = _load(_open(data))
+    if min(im.size) < READ_MIN_SIDE:
+        raise PhotoError("A foto está pequena demais para eu ler as letras. Chegue mais perto do cardápio e tire de novo.")
+    longest = max(im.size)
+    if longest > READ_MAX_SIDE:
+        scale = READ_MAX_SIDE / longest
+        im = im.resize((max(1, round(im.width * scale)), max(1, round(im.height * scale))), Image.LANCZOS)
+    saida = io.BytesIO()
+    im.save(saida, "JPEG", quality=85, optimize=True)  # sem exif=: nada de dados escondidos
+    return saida.getvalue()

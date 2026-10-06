@@ -478,6 +478,36 @@ export async function uploadProductPhoto(productId: string, photo: Blob): Promis
   return response.json();
 }
 
+/** What this server can do for the menu. Any failure means "not available": the screen then uses the ready-made lists. */
+export async function fetchMenuCapabilities(): Promise<{ photo_menu: boolean }> {
+  try {
+    const response = await fetch(`${API_URL}/admin/menu/capabilities`, { headers: authHeaders() });
+    if (!response.ok) return { photo_menu: false };
+    const body = await response.json();
+    return { photo_menu: body?.photo_menu === true };
+  } catch {
+    return { photo_menu: false };
+  }
+}
+
+/**
+ * Sends the photos of a menu (JPEGs made by photos/photoFiles) to be read.
+ * Returns what the server answered, untouched: menuPhotoLogic.normalizeReading checks it.
+ */
+export async function readMenuPhotos(photos: Blob[], signal?: AbortSignal): Promise<unknown> {
+  const form = new FormData();
+  photos.forEach((photo, index) => form.append("photos", photo, `cardapio-${index + 1}.jpg`));
+  // No Content-Type here: the browser writes it, with the boundary the server needs.
+  const response = await fetch(`${API_URL}/admin/menu/parse-photo`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: form,
+    signal,
+  });
+  if (!response.ok) throw await readError(response, "Não consegui ler o cardápio.");
+  return response.json();
+}
+
 export async function deleteProductPhoto(productId: string): Promise<void> {
   const response = await fetch(`${API_URL}/admin/products/${productId}/photo`, {
     method: "DELETE",

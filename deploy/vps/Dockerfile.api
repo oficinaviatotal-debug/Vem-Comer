@@ -25,4 +25,4 @@ EXPOSE 5000
 # No access log on purpose: URLs here carry ?tracking_token=..., which must not land in the logs.
 # One worker with threads on purpose: the login limiter keeps its counters in memory,
 # so a single process keeps the limit honest. Raise workers only after moving it to the database.
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "8", "--timeout", "30", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "8", "--timeout", "120", "app:app"]

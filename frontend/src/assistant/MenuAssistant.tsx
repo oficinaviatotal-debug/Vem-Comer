@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import "../ui.css";
 import "./assistant.css";
 import {
+  fetchMenuCapabilities,
   fetchMenuTemplate,
   fetchMenuTemplates,
   importMenu,
@@ -10,6 +11,7 @@ import {
 } from "../service/api";
 import { parseSpokenNumber } from "../onboarding/tourEngine";
 import PhotoSession from "../photos/PhotoSession";
+import MenuPhotoStep from "./MenuPhotoStep";
 import { prepareVoice } from "../onboarding/speech";
 import {
   formatPrice,
@@ -31,18 +33,31 @@ import {
   nextCategory,
   previousCategory,
   removeItem,
+  renameItem,
   selectedInCategory,
   selectedItems,
   setCurrentPrice,
   setStep,
   skipCategory,
   skipCurrentPrice,
+  startFromParsed,
   startFromTemplate,
+  startPhoto,
   toggleAllInCategory,
   toggleItem,
   type FlowState,
+  type ParsedMenu,
 } from "./assistantFlow";
-import { BUSINESS_QUESTION, MORE_OR_DONE, progressText, promptFor } from "./assistantPrompts";
+import {
+  CHOOSE_TYPE_QUESTION,
+  MORE_OR_DONE,
+  PHOTO_NOT_AVAILABLE,
+  PHOTO_STEP_HINT,
+  READING_NOTICE,
+  progressText,
+  promptFor,
+} from "./assistantPrompts";
+import { readingIntro, wantsPhoto } from "./menuPhotoLogic";
 import {
   LISTEN_DELAY_MS,
   canListen,
@@ -76,6 +91,8 @@ const SILENT_TURNS_BEFORE_HELP = 2;
 export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGuide }: Props) {
   const [templates, setTemplates] = useState<MenuTemplateSummary[] | null>(null);
   const [templatesError, setTemplatesError] = useState("");
+  /** null while the server is still being asked whether it can read a photo of a menu. */
+  const [photoMenu, setPhotoMenu] = useState<boolean | null>(null);
   const [flow, setFlow] = useState<FlowState>(initialFlow);
   const [started, setStarted] = useState(false);
   const [voiceOn, setVoiceOn] = useState(canSpeak());
@@ -96,6 +113,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
   // Everything the voice loop reads lives in refs: it keeps running between renders.
   const flowRef = useRef(flow);
   const templatesRef = useRef(templates);
+  const photoMenuRef = useRef(false);
   const voiceOnRef = useRef(voiceOn);
   const micOnRef = useRef(micOn);
   const sessionRef = useRef(0);
@@ -121,10 +139,17 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
 
   useEffect(() => {
     loadTemplates();
+    let alive = true;
+    void fetchMenuCapabilities().then((capabilities) => {
+      if (!alive) return;
+      photoMenuRef.current = capabilities.photo_menu;
+      setPhotoMenu(capabilities.photo_menu);
+    });
     prepareVoice();
     // The phone fills its list of voices a moment after the page opens.
     const voiceTimer = setTimeout(() => setVoiceLabel(currentVoiceName() ?? ""), 800);
     return () => {
+      alive = false;
       clearTimeout(voiceTimer);
       // Leaving the screen silences the assistant.
       sessionRef.current += 1;
@@ -220,8 +245,10 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
     setUnclear([]);
     setPriceInput("");
     setProblem("");
-    const question = promptFor(next, intro);
-    void say(before ? `${before} ${question}` : question, next.step !== "saving" && next.step !== "done");
+    const question = promptFor(next, intro, photoMenuRef.current);
+    // On the photo screen the hands are busy with the camera: the assistant speaks but does not listen by itself.
+    const listenAfter = next.step !== "saving" && next.step !== "done" && next.step !== "photo";
+    void say(before ? `${before} ${question}` : question, listenAfter);
   }
 
   function tapMic() {
@@ -275,7 +302,28 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
     setNotice("");
     setProblem("");
     setUnclear([]);
-    void say(BUSINESS_QUESTION);
+    void say(promptFor(initialFlow(), false, photoMenuRef.current));
+  }
+
+  function openPhoto() {
+    if (busy) return;
+    setProblem("");
+    go(startPhoto());
+  }
+
+  function backToTypes() {
+    commit(initialFlow());
+    setProblem("");
+    void say(CHOOSE_TYPE_QUESTION);
+  }
+
+  /** The server read the photos: all dishes come in, and only the missing prices are asked. */
+  function handleRead(parsed: ParsedMenu): boolean {
+    const next = startFromParsed(parsed);
+    if (next.categories.length === 0) return false;
+    setNotice("");
+    go(next, readingIntro(parsed));
+    return true;
   }
 
   async function chooseType(templateId: string) {
@@ -436,21 +484,48 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
   function handleType(text: string) {
     const options = (templatesRef.current ?? []).map((t) => ({ id: t.id, name: t.name }));
     const id = matchBusinessType(text, options);
+    if (wantsPhoto(text)) {
+      if (photoMenuRef.current) return openPhoto();
+      if (!id) {
+        void say(PHOTO_NOT_AVAILABLE, false);
+        return;
+      }
+    }
     if (id) {
       void chooseType(id);
       return;
     }
     if (parseAssistantCommand(text) === "repeat") {
-      void say(BUSINESS_QUESTION);
+      void say(promptFor(flowRef.current, false, photoMenuRef.current));
       return;
     }
     void say("Não entendi. Toque no tipo do seu negócio, ou fale de novo.");
+  }
+
+  /** On the photo screen the owner can still say the type of business, or go back. */
+  function handlePhotoStep(text: string) {
+    const options = (templatesRef.current ?? []).map((t) => ({ id: t.id, name: t.name }));
+    const id = matchBusinessType(text, options);
+    if (id) {
+      void chooseType(id);
+      return;
+    }
+    switch (parseAssistantCommand(text)) {
+      case "back":
+        return backToTypes();
+      case "repeat":
+        return void say(promptFor(flowRef.current), false);
+      default:
+        void say(PHOTO_STEP_HINT, false);
+    }
   }
 
   function handleHeard(text: string) {
     switch (flowRef.current.step) {
       case "type":
         return handleType(text);
+      case "photo":
+        return handlePhotoStep(text);
       case "pick":
         return handlePick(text);
       case "prices":
@@ -491,8 +566,9 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
       <section className="sheet asst" aria-label="Assistente do cardápio">
         <h2>Assistente do cardápio</h2>
         <p className="asst-lead">
-          Eu pergunto, você fala. Escolhe o tipo do seu negócio, marca os pratos que vende e diz o
-          preço de cada um. No fim, o cardápio fica pronto de uma vez.
+          Eu pergunto, você fala. Se você já tem um cardápio, tire uma foto e eu cadastro. Se não tem,
+          escolha o tipo do seu negócio, marque os pratos que vende e diga o preço de cada um. No fim, o
+          cardápio fica pronto de uma vez.
         </p>
         {unsupported && (
           <p className="asst-help">
@@ -512,10 +588,10 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
             id="assistant-start"
             type="button"
             className="btn btn-primary btn-block asst-start"
-            disabled={templates === null}
+            disabled={templates === null || photoMenu === null}
             onClick={start}
           >
-            {templates === null ? "Carregando…" : "Começar"}
+            {templates === null || photoMenu === null ? "Carregando…" : "Começar"}
           </button>
         )}
       </section>
@@ -537,6 +613,25 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
       {notice && <p className="asst-notice">{notice}</p>}
       {problem && <p className="msg-error">{problem}</p>}
 
+      {flow.step === "type" && photoMenu && (
+        <>
+          <button
+            id="assistant-photo-menu"
+            type="button"
+            className="asst-photo-card"
+            disabled={busy}
+            onClick={openPhoto}
+          >
+            <span className="asst-type-icon" aria-hidden="true">📷</span>
+            <span className="asst-photo-card-text">
+              <strong>Já tenho um cardápio pronto</strong>
+              <small>Tire uma foto e eu cadastro tudo</small>
+            </span>
+          </button>
+          <p className="asst-or">Se não tiver, escolha o tipo do seu negócio:</p>
+        </>
+      )}
+
       {flow.step === "type" && (
         <div className="asst-types" role="group" aria-label="Tipo de negócio">
           {(templates ?? []).map((template) => (
@@ -552,6 +647,14 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
             </button>
           ))}
         </div>
+      )}
+
+      {flow.step === "photo" && (
+        <MenuPhotoStep
+          onRead={handleRead}
+          onBack={backToTypes}
+          onReading={() => void say(READING_NOTICE, false)}
+        />
       )}
 
       {flow.step === "pick" && category && (
@@ -701,8 +804,23 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
                 <h4>{cat.name}</h4>
                 <ul>
                   {rows.map(({ item, itemIndex }) => (
-                    <li key={`${item.name}-${itemIndex}`}>
-                      <span className="asst-review-name">{item.name}</span>
+                    <li key={`${item.name}-${itemIndex}`} className={item.custom ? "is-editable" : undefined}>
+                      {item.custom ? (
+                        <input
+                          aria-label={`Nome do prato ${item.name}`}
+                          className="asst-review-name-input"
+                          maxLength={150}
+                          defaultValue={item.name}
+                          key={item.name}
+                          onBlur={(event) => {
+                            const next = renameItem(flowRef.current, categoryIndex, itemIndex, event.target.value);
+                            if (next === flowRef.current) event.target.value = item.name;
+                            else commit(next);
+                          }}
+                        />
+                      ) : (
+                        <span className="asst-review-name">{item.name}</span>
+                      )}
                       <input
                         aria-label={`Preço de ${item.name}`}
                         className="asst-review-price"

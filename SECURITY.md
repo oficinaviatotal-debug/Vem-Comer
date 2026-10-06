@@ -25,6 +25,13 @@
 - Responses include basic security headers against content sniffing, framing, and unsafe referrer leakage.
 - Production CORS must be restricted to the real application origin.
 
+## Menu reading by photo
+- `POST /api/admin/menu/parse-photo` needs an OWNER or MANAGER token. It stores nothing: the photos live in memory while they are read and the answer goes back to the screen, which saves through the normal import route.
+- The AI key lives only in the server environment (`ANTHROPIC_API_KEY`, set with `deploy/vps/configurar-ia.sh`: hidden prompt, tested before saving, `.env` mode 600, never in arguments, logs, responses or the browser). A rejected key, a provider error or a crash never returns the provider's text or the key to the browser.
+- Text inside a photo is data, not instructions: the model may only call one tool, and its answer is cleaned and capped on the server (known fields only, short names, valid prices, at most 30 categories and 300 dishes) and checked again in the browser. Names are shown as text by React, never as HTML.
+- Cost and abuse limits: 6 reads per company per hour and 300 per day for the whole server (in memory), at most 2 at the same time, at most 4 photos and 10 MiB per read; a failure on our side or the provider's does not use the owner's quota.
+- The photo is sent to Anthropic only to be read. The privacy policy and terms must say so (see `docs/cardapio-por-foto.md`).
+
 ## Before production
 1. Replace bearer-token storage in the browser with a secure session architecture using HttpOnly/Secure/SameSite cookies or an equivalent design.
 2. Move rate limiting to a shared production store so limits work across multiple application instances.

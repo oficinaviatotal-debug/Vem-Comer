@@ -5,6 +5,10 @@
  *
  *   type -> pick (one category at a time) -> prices (one dish at a time)
  *        -> review -> saving -> done
+ *
+ * A menu that already exists on paper takes the other road: the owner photographs it and
+ * the server reads it (the screen does that, outside this file).
+ *   type -> photo -> (prices, only the dishes the reading could not price) -> review -> saving -> done
  */
 
 import { normalizeSpeech } from "../onboarding/tourEngine.ts";
@@ -28,10 +32,21 @@ export type DraftItem = {
 
 export type DraftCategory = { name: string; items: DraftItem[] };
 
-export type Step = "type" | "pick" | "prices" | "review" | "saving" | "done";
+export type Step = "type" | "photo" | "pick" | "prices" | "review" | "saving" | "done";
+
+/** Where the dishes came from: a ready-made list of the business type, or a photo of the owner's own menu. */
+export type Source = "template" | "photo";
+
+/** What the server read from the photos of a menu (already cleaned by menuPhotoLogic). Price is "18.50" or "". */
+export type ParsedMenu = {
+  readable: boolean;
+  categories: Array<{ name: string; items: Array<{ name: string; price: string }> }>;
+  notes: string;
+};
 
 export type FlowState = {
   step: Step;
+  source: Source;
   templateName: string;
   categories: DraftCategory[];
   categoryIndex: number;
@@ -42,12 +57,45 @@ export type FlowState = {
 export const MAX_ITEM_NAME = 150;
 
 export function initialFlow(): FlowState {
-  return { step: "type", templateName: "", categories: [], categoryIndex: 0, priceCursor: 0 };
+  return { step: "type", source: "template", templateName: "", categories: [], categoryIndex: 0, priceCursor: 0 };
+}
+
+/** The screen where the owner photographs the menu. */
+export function startPhoto(): FlowState {
+  return { ...initialFlow(), step: "photo" };
+}
+
+/**
+ * The dishes the server read, all selected (the owner takes out what is not sold). Dishes the reading
+ * gave no price for are asked one by one; if none is missing the flow goes straight to the review.
+ */
+export function startFromParsed(parsed: ParsedMenu): FlowState {
+  const categories: DraftCategory[] = [];
+  for (const category of parsed.categories) {
+    const items: DraftItem[] = [];
+    for (const item of category.items) {
+      const name = cleanItemName(item.name);
+      if (!name || items.some((other) => key(other.name) === key(name))) continue;
+      items.push({ name, selected: true, custom: true, price: normalizePrice(item.price) ?? "" });
+    }
+    const title = cleanItemName(category.name);
+    if (title && items.length > 0) categories.push({ name: title, items });
+  }
+  const base: FlowState = {
+    step: "pick",
+    source: "photo",
+    templateName: "Cardápio da foto",
+    categories,
+    categoryIndex: 0,
+    priceCursor: 0,
+  };
+  return startPrices(base);
 }
 
 export function startFromTemplate(template: TemplateFull): FlowState {
   return {
     step: "pick",
+    source: "template",
     templateName: template.name,
     categoryIndex: 0,
     priceCursor: 0,
@@ -265,6 +313,11 @@ export function setCurrentPrice(state: FlowState, rawPrice: string): FlowState {
   if (!price || !current) return state;
 
   const updated = withItem(state, current.categoryIndex, current.itemIndex, (item) => ({ ...item, price }));
+  if (state.source === "photo") {
+    // the photo already gave most prices: go to the next dish that still has none
+    const next = selectedItems(updated).findIndex((item, index) => index > state.priceCursor && !item.price);
+    return next < 0 ? { ...updated, step: "review", priceCursor: 0 } : { ...updated, priceCursor: next };
+  }
   const total = selectedItems(updated).length;
   const cursor = state.priceCursor + 1;
   return cursor >= total ? { ...updated, step: "review", priceCursor: 0 } : { ...updated, priceCursor: cursor };
@@ -281,11 +334,25 @@ export function skipCurrentPrice(state: FlowState): FlowState {
   }));
   const total = selectedItems(updated).length;
   if (total === 0) return { ...updated, step: "pick", categoryIndex: 0, priceCursor: 0 };
+  if (state.source === "photo") {
+    const next = selectedItems(updated).findIndex((item, index) => index >= state.priceCursor && !item.price);
+    return next < 0 ? { ...updated, step: "review", priceCursor: 0 } : { ...updated, priceCursor: next };
+  }
   return state.priceCursor >= total ? { ...updated, step: "review", priceCursor: 0 } : updated;
 }
 
 /** Goes back one dish. From the review it returns to the last dish. */
 export function backOnePrice(state: FlowState): FlowState {
+  if (state.source === "photo") {
+    // only the dishes that were missing a price are asked; before the first one, the list of dishes is the way back
+    if (state.step === "prices") {
+      const picked = selectedItems(state);
+      for (let index = state.priceCursor - 1; index >= 0; index -= 1) {
+        if (!picked[index].price) return { ...state, priceCursor: index };
+      }
+    }
+    return { ...state, step: "pick", categoryIndex: 0 };
+  }
   if (state.step === "review") {
     const total = selectedItems(state).length;
     return { ...state, step: "prices", priceCursor: Math.max(0, total - 1) };
@@ -304,6 +371,19 @@ export function editPrice(state: FlowState, categoryIndex: number, itemIndex: nu
 /** Takes a dish off the menu from the review screen. */
 export function removeItem(state: FlowState, categoryIndex: number, itemIndex: number): FlowState {
   return withItem(state, categoryIndex, itemIndex, (item) => ({ ...item, selected: false, price: "" }));
+}
+
+/**
+ * Fixes the name of a dish the owner typed, said or had read from a photo. Ready-made dishes keep their name.
+ * An empty name, or one the category already has, changes nothing.
+ */
+export function renameItem(state: FlowState, categoryIndex: number, itemIndex: number, rawName: string): FlowState {
+  const name = cleanItemName(rawName);
+  const category = state.categories[categoryIndex];
+  const item = category?.items[itemIndex];
+  if (!name || !item || !item.custom || name === item.name) return state;
+  if (category.items.some((other, index) => index !== itemIndex && key(other.name) === key(name))) return state;
+  return withItem(state, categoryIndex, itemIndex, (current) => ({ ...current, name }));
 }
 
 /* --------------------------------------------------------------- saving */

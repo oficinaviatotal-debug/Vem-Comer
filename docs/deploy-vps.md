@@ -67,6 +67,17 @@ pergunta de novo se algo estiver errado, mostra um resumo para você confirmar c
 mostra o link do painel: `https://seu.endereco/?empresa=<endereço curto>&painel=1`.
 Uma tela de cadastro com proteção contra abuso fica para depois.
 
+### Ligar a leitura de cardápio por foto (opcional)
+
+Precisa de uma chave de API da Anthropic (conta paga). Rode no terminal do servidor:
+
+```
+bash /opt/vem-comer/app/deploy/vps/configurar-ia.sh
+```
+
+A chave é digitada escondida e guardada só no `.env` do servidor. Para desligar, `... configurar-ia.sh --remover`.
+Detalhes, custos e privacidade: `docs/cardapio-por-foto.md`.
+
 ## Backup
 
 - Todo dia às 03:30 (Brasília) o timer `vem-comer-backup` roda `backup.sh`: faz o dump do banco,
