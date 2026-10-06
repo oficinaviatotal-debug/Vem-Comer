@@ -227,6 +227,40 @@
   font-weight: 600;
 }
 
+/* A dish the owner typed, said or had read from a photo can be renamed: name on its own row. */
+.asst-review-group li.is-editable {
+  grid-template-columns: minmax(0, 1fr) auto;
+  row-gap: var(--s1);
+  padding-bottom: var(--s3);
+  border-bottom: 1px solid var(--linha);
+}
+
+.asst-review-group li.is-editable:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.asst-review-name-input {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--s3);
+  border: 2px solid var(--linha-forte);
+  border-radius: var(--r-sm);
+  background: #fff;
+  color: var(--tinta);
+  font: 600 var(--t-md) / 1.2 var(--font-ui);
+}
+
+.asst-review-name-input:focus {
+  border-color: var(--mata);
+}
+
+.asst-review-group li.is-editable .asst-review-price {
+  max-width: 9rem;
+  justify-self: start;
+}
+
 .asst-review-price {
   width: 100%;
   min-height: 48px;
@@ -310,4 +344,107 @@
   .asst-mic.is-listening {
     animation: none;
   }
+}
+
+
+/* The first choice when this server can read a photo of a menu: bigger than the type cards. */
+.asst-photo-card {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 88px;
+  padding: var(--s3) var(--s4);
+  border: 2px solid var(--mata);
+  border-radius: var(--r-md);
+  background: var(--comanda);
+  color: var(--folha);
+  text-align: left;
+  cursor: pointer;
+}
+
+.asst-photo-card:hover:not(:disabled),
+.asst-photo-card:focus-visible {
+  border-color: var(--brasa-viva);
+}
+
+.asst-photo-card:disabled {
+  opacity: .5;
+  cursor: wait;
+}
+
+.asst-photo-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.asst-photo-card-text strong {
+  font: 700 var(--t-lg) / 1.2 var(--font-ui);
+}
+
+.asst-photo-card-text small {
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+}
+
+.asst-or {
+  margin: 0;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+/* Photographing the menu. */
+.asst-photo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.asst-photo h3 {
+  margin: 0;
+  font: 700 var(--t-xl) / 1.2 var(--font-display);
+  color: var(--folha);
+}
+
+.asst-pages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.asst-pages li {
+  position: relative;
+}
+
+.asst-pages img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--r-md);
+  object-fit: cover;
+  background: var(--papel-2);
+}
+
+.asst-page-remove {
+  position: absolute;
+  top: var(--s2);
+  right: var(--s2);
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .65);
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.asst-page-remove:disabled {
+  opacity: .5;
 }

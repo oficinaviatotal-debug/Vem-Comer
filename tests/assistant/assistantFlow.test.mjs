@@ -227,3 +227,217 @@ test("the payload has only selected dishes with a price and no empty category", 
   });
   assert.deepEqual(importPayload(fresh()), { categories: [] });
 });
+
+/* ------------------------------------------------------ menu read from a photo */
+
+import {
+  startPhoto,
+  startFromParsed,
+  renameItem,
+} from "../../frontend/src/assistant/assistantFlow.ts";
+import {
+  promptFor,
+  progressText,
+  PHOTO_FIRST_QUESTION,
+  PHOTO_QUESTION,
+  BUSINESS_QUESTION,
+} from "../../frontend/src/assistant/assistantPrompts.ts";
+
+const PARSED = {
+  readable: true,
+  notes: "",
+  categories: [
+    { name: "Pizzas", items: [{ name: "Calabresa", price: "52.00" }, { name: "Mussarela", price: "" }, { name: "Portuguesa", price: "55.00" }] },
+    { name: "Bebidas", items: [{ name: "Coca-Cola 2L", price: "" }, { name: "Guaraná", price: "9.50" }] },
+  ],
+};
+const parsedFlow = () => startFromParsed(PARSED);
+
+test("the photo step starts from nothing", () => {
+  const state = startPhoto();
+  assert.equal(state.step, "photo");
+  assert.equal(state.source, "template");
+  assert.equal(state.categories.length, 0);
+});
+
+test("a read menu has every dish selected and goes to the missing prices", () => {
+  const state = parsedFlow();
+  assert.equal(state.source, "photo");
+  assert.equal(state.step, "prices");
+  assert.equal(selectedItems(state).length, 5);
+  assert.ok(selectedItems(state).every((item) => state.categories[item.categoryIndex].items[item.itemIndex].custom));
+  assert.equal(currentPriceItem(state).name, "Mussarela");
+  assert.deepEqual(missingPrices(state).map((item) => item.name), ["Mussarela", "Coca-Cola 2L"]);
+});
+
+test("a read menu with every price goes straight to the review", () => {
+  const state = startFromParsed({
+    readable: true, notes: "",
+    categories: [{ name: "A", items: [{ name: "X", price: "10.00" }, { name: "Y", price: "12.50" }] }],
+  });
+  assert.equal(state.step, "review");
+});
+
+test("only the dishes without a price are asked, in order, then the review", () => {
+  let state = parsedFlow();
+  state = setCurrentPrice(state, "49,90");
+  assert.equal(state.step, "prices");
+  assert.equal(currentPriceItem(state).name, "Coca-Cola 2L"); // skipped Portuguesa, which had a price
+  state = setCurrentPrice(state, "12");
+  assert.equal(state.step, "review");
+  assert.equal(missingPrices(state).length, 0);
+  assert.equal(importPayload(state).categories[0].items.find((i) => i.name === "Mussarela").price, "49.90");
+  assert.equal(importPayload(state).categories[0].items.find((i) => i.name === "Calabresa").price, "52.00"); // untouched
+});
+
+test("an unusable price changes nothing in a read menu", () => {
+  const state = parsedFlow();
+  assert.equal(setCurrentPrice(state, "grátis"), state);
+});
+
+test("taking out the dish being asked moves to the next missing one, or to the review", () => {
+  let state = parsedFlow();
+  state = skipCurrentPrice(state); // Mussarela out
+  assert.equal(state.step, "prices");
+  assert.equal(currentPriceItem(state).name, "Coca-Cola 2L");
+  assert.equal(selectedItems(state).length, 4);
+  state = skipCurrentPrice(state); // Coca-Cola out
+  assert.equal(state.step, "review");
+  assert.deepEqual(names(state), ["Calabresa", "Portuguesa", "Guaraná"]);
+});
+
+test("taking out the only missing dish at the end of the list goes to the review", () => {
+  const state = startFromParsed({
+    readable: true, notes: "",
+    categories: [{ name: "A", items: [{ name: "X", price: "10.00" }, { name: "Y", price: "" }] }],
+  });
+  assert.equal(currentPriceItem(state).name, "Y");
+  const after = skipCurrentPrice(state);
+  assert.equal(after.step, "review");
+  assert.deepEqual(names(after), ["X"]);
+});
+
+test("taking out every dish goes back to the list", () => {
+  let state = startFromParsed({
+    readable: true, notes: "",
+    categories: [{ name: "A", items: [{ name: "X", price: "" }] }],
+  });
+  state = skipCurrentPrice(state);
+  assert.equal(state.step, "pick");
+  assert.equal(selectedItems(state).length, 0);
+});
+
+test("back from a missing price goes to the previous missing one, then to the list of dishes", () => {
+  let state = parsedFlow();
+  state = setCurrentPrice(state, "49,90");
+  assert.equal(currentPriceItem(state).name, "Coca-Cola 2L");
+  // Mussarela now has a price, so there is no earlier missing dish: back opens the list
+  const back = backOnePrice(state);
+  assert.equal(back.step, "pick");
+  assert.equal(back.categoryIndex, 0);
+
+  const fresh2 = parsedFlow();
+  assert.equal(backOnePrice(fresh2).step, "pick");
+});
+
+test("back from the review of a read menu opens the list of dishes", () => {
+  let state = startFromParsed({
+    readable: true, notes: "",
+    categories: [{ name: "A", items: [{ name: "X", price: "10.00" }] }],
+  });
+  assert.equal(state.step, "review");
+  state = backOnePrice(state);
+  assert.equal(state.step, "pick");
+  assert.equal(state.source, "photo");
+});
+
+test("from the list of dishes the owner can add a dish and go on to the review", () => {
+  let state = backOnePrice(startFromParsed({
+    readable: true, notes: "",
+    categories: [{ name: "A", items: [{ name: "X", price: "10.00" }] }],
+  }));
+  state = addItem(state, 0, "pão de queijo").state;
+  assert.deepEqual(names(state), ["X", "Pão de queijo"]);
+  state = nextCategory(state); // last category: asks the price of what has none
+  assert.equal(state.step, "prices");
+  assert.equal(currentPriceItem(state).name, "Pão de queijo");
+  state = setCurrentPrice(state, "6");
+  assert.equal(state.step, "review");
+  assert.equal(summary(state).items, 2);
+});
+
+test("names and categories read from the photo are cleaned, duplicates and empties dropped", () => {
+  const state = startFromParsed({
+    readable: true, notes: "",
+    categories: [
+      { name: "  lanches  ", items: [{ name: " x-burguer ", price: "20.00" }, { name: "X-BURGUER", price: "21.00" }, { name: "  ", price: "5.00" }] },
+      { name: "Vazia", items: [] },
+      { name: "", items: [{ name: "Perdido", price: "1.00" }] },
+    ],
+  });
+  assert.deepEqual(state.categories.map((c) => c.name), ["Lanches"]);
+  assert.deepEqual(state.categories[0].items.map((i) => i.name), ["X-burguer"]);
+  assert.equal(state.categories[0].items[0].price, "20.00");
+});
+
+test("a bad price coming from outside is dropped, not saved", () => {
+  const state = startFromParsed({
+    readable: true, notes: "",
+    categories: [{ name: "A", items: [{ name: "X", price: "-5" }, { name: "Y", price: "abc" }, { name: "Z", price: "7.5" }] }],
+  });
+  assert.deepEqual(state.categories[0].items.map((i) => i.price), ["", "", "7.50"]);
+  assert.equal(state.step, "prices");
+});
+
+test("renaming a dish from the review fixes the reading", () => {
+  let state = startFromParsed({
+    readable: true, notes: "",
+    categories: [{ name: "A", items: [{ name: "Calabrsa", price: "10.00" }, { name: "Mussarela", price: "11.00" }] }],
+  });
+  state = renameItem(state, 0, 0, "  calabresa ");
+  assert.equal(state.categories[0].items[0].name, "Calabresa");
+  assert.equal(state.categories[0].items[0].price, "10.00");
+});
+
+test("renaming refuses empty names, duplicates and ready-made dishes", () => {
+  const state = startFromParsed({
+    readable: true, notes: "",
+    categories: [{ name: "A", items: [{ name: "Calabresa", price: "10.00" }, { name: "Mussarela", price: "11.00" }] }],
+  });
+  assert.equal(renameItem(state, 0, 0, "   "), state);
+  assert.equal(renameItem(state, 0, 0, "mussarela"), state);
+  assert.equal(renameItem(state, 0, 0, "Calabresa"), state);
+  assert.equal(renameItem(state, 5, 0, "X"), state);
+  const templated = toggleItem(fresh(), 0, 0);
+  assert.equal(renameItem(templated, 0, 0, "Outro nome"), templated);
+});
+
+test("the old road is unchanged: ready-made dishes are asked in order, even if they already have a price", () => {
+  let state = fresh();
+  state = toggleItem(toggleItem(toggleItem(state, 0, 0), 0, 1), 0, 2);
+  state = startPrices(state);
+  assert.equal(state.source, "template");
+  state = setCurrentPrice(state, "10");
+  assert.equal(currentPriceItem(state).name, "X-Salada");
+});
+
+test("prompts and progress for the photo road", () => {
+  assert.equal(promptFor(initialFlow()), BUSINESS_QUESTION);
+  assert.equal(promptFor(initialFlow(), false, true), PHOTO_FIRST_QUESTION);
+  assert.match(PHOTO_FIRST_QUESTION, /cardápio pronto/);
+  assert.equal(promptFor(startPhoto()), PHOTO_QUESTION);
+  assert.equal(progressText(startPhoto()), "Passo 1 de 3 · Foto do cardápio");
+
+  const state = parsedFlow();
+  assert.equal(promptFor(state, true), "Faltam alguns preços que não consegui ler. Mussarela. Quanto custa?");
+  assert.equal(promptFor(state, false), "Mussarela. Quanto custa?");
+  assert.equal(progressText(state), "Passo 2 de 3 · Preços que faltam · faltam 2");
+  assert.equal(progressText(setCurrentPrice(state, "40")), "Passo 2 de 3 · Preços que faltam · falta 1");
+  const review = setCurrentPrice(setCurrentPrice(state, "40"), "9");
+  assert.equal(progressText(review), "Passo 3 de 3 · Conferir");
+  assert.match(promptFor(review), /São 5 pratos/);
+
+  const list = backOnePrice(review);
+  assert.match(promptFor(list), /Estes são os pratos que li/);
+  assert.match(progressText(list), /^Pratos · Pizzas \(1 de 2\)$/);
+});

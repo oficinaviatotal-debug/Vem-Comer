@@ -7,6 +7,8 @@
 import {
   MAX_SEND_SIDE,
   MAX_VIDEO_SECONDS,
+  MENU_SEND_QUALITY,
+  MENU_SEND_SIDE,
   SCORE_WIDTH,
   SEND_QUALITY,
   bestIndex,
@@ -21,12 +23,12 @@ const CANNOT_OPEN_PHOTO =
 const CANNOT_OPEN_VIDEO =
   "Não consegui abrir esse vídeo aqui. Grave de novo pela câmera, ou tire uma foto.";
 
-function canvasToJpeg(canvas: HTMLCanvasElement): Promise<Blob> {
+function canvasToJpeg(canvas: HTMLCanvasElement, quality = SEND_QUALITY): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error(CANNOT_OPEN_PHOTO))),
       "image/jpeg",
-      SEND_QUALITY
+      quality
     );
   });
 }
@@ -56,10 +58,10 @@ async function openBitmap(file: Blob): Promise<{ source: CanvasImageSource; widt
 }
 
 /** A photo, shrunk to what the menu can use and saved as JPEG. Makes uploads fast on mobile data. */
-export async function prepareImage(file: Blob): Promise<Blob> {
+export async function prepareImage(file: Blob, maxSide = MAX_SEND_SIDE, quality = SEND_QUALITY): Promise<Blob> {
   const opened = await openBitmap(file);
   try {
-    const size = fitWithin(opened.width, opened.height, MAX_SEND_SIDE);
+    const size = fitWithin(opened.width, opened.height, maxSide);
     if (size.width === 0) throw new Error(CANNOT_OPEN_PHOTO);
     const canvas = document.createElement("canvas");
     canvas.width = size.width;
@@ -67,10 +69,18 @@ export async function prepareImage(file: Blob): Promise<Blob> {
     const context = canvas.getContext("2d");
     if (!context) throw new Error(CANNOT_OPEN_PHOTO);
     context.drawImage(opened.source, 0, 0, size.width, size.height);
-    return await canvasToJpeg(canvas);
+    return await canvasToJpeg(canvas, quality);
   } finally {
     opened.close();
   }
+}
+
+/** One page of a whole menu: bigger than a dish photo, so the small print stays readable for the AI. */
+export async function prepareMenuPage(file: File): Promise<Blob> {
+  if (fileKind(file) !== "image") {
+    throw new Error("Esse arquivo não é uma foto. Tire uma foto do cardápio.");
+  }
+  return prepareImage(file, MENU_SEND_SIDE, MENU_SEND_QUALITY);
 }
 
 function waitFor(target: HTMLVideoElement, event: string, ms: number): Promise<void> {
