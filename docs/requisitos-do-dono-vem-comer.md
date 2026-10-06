@@ -46,7 +46,7 @@ Funciona para quem é analfabeto e para quem vai usar 100% das funções.
 | 1 | **Cadastro automatizado, com comando de voz.** O assistente conversa, o dono fala ou toca, sem digitar. | Em andamento: Assistente do cardápio (PR #19, #20). Falta testar com a voz no celular dele. |
 | 2 | **Subir foto do prato** (foto, galeria ou vídeo). | Em andamento: PR de fotos. |
 | 3 | **Melhorar a foto automaticamente, para todo mundo.** Os concorrentes sobem foto tirada da internet, sem melhoria nem personalização. | Em andamento: contraste, luz, cor e nitidez no servidor. Falta calibrar com fotos reais. |
-| 4 | **Bater uma foto do cardápio inteiro e o sistema cadastrar tudo sozinho**, com categorias (comida, bebida, sobremesa). | Falta. Precisa de IA com leitura de imagem (chave paga). |
+| 4 | **Bater uma foto do cardápio inteiro e o sistema cadastrar tudo sozinho**, com categorias (comida, bebida, sobremesa). | Em andamento: tela, servidor e script da chave prontos e testados com IA simulada (`docs/cardapio-por-foto.md`). Falta: chave de IA paga e teste com cardápios reais. |
 | 5 | **Criação de logomarca** (se não tem, o sistema pergunta cores/fachada e cria). | Falta. |
 | 6 | **Cardápio com categorias e imagem do que ele usou.** QR de mesa e link do cardápio. | Feito (cardápio, QR de mesa). Fotos: em andamento. |
 | 7 | **Cadastro com CEP; entrega roteirizada pelo CEP; a cozinha recebe o pedido.** | Falta (cozinha recebe: existe a tela de pedidos; CEP e rota: falta). |
@@ -88,7 +88,7 @@ Funciona para quem é analfabeto e para quem vai usar 100% das funções.
 
 1. Fotos dos pratos, melhoradas (em andamento).
 2. Cadastro do restaurante pela internet, sem ajuda (e-mail confirmado, proteção contra abuso, termos e LGPD).
-3. Foto do cardápio inteiro cadastrando sozinha (precisa de chave de IA).
+3. Foto do cardápio inteiro cadastrando sozinha (pronta; falta ligar a chave de IA e testar com cardápios reais).
 4. Logomarca.
 5. Assinatura e cobrança (teste grátis, plano).
 6. Porção, custo e CMV.
