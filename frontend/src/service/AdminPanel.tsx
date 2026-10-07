@@ -49,6 +49,7 @@ import {
 import { tableOrderUrl as buildTableUrl } from "./links";
 import { rememberCompany } from "./lastCompany";
 import MenuAssistant from "../assistant/MenuAssistant";
+import CostsPanel from "../costs/CostsPanel";
 import "../ui.css";
 import "../admin.css";
 
@@ -106,6 +107,7 @@ type AdminView =
   | "pedidos"
   | "assistente"
   | "produtos"
+  | "custos"
   | "categorias"
   | "dashboard"
   | "usuarios"
@@ -117,6 +119,7 @@ const ADMIN_VIEWS: string[] = [
   "pedidos",
   "assistente",
   "produtos",
+  "custos",
   "categorias",
   "dashboard",
   "usuarios",
@@ -790,6 +793,19 @@ export default function AdminPanel({
           Produtos
         </button>
 
+        {(currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") && (
+          <button
+            id="admin-tab-custos"
+            type="button"
+            className={tabClass("custos")}
+            aria-current={view === "custos" ? "page" : undefined}
+            onClick={() => setView("custos")}
+          >
+            Custos
+          </button>
+        )}
+
         <button
           id="admin-tab-categorias"
           type="button"
@@ -859,7 +875,11 @@ export default function AdminPanel({
         )}
       </nav>
 
-      {view === "dashboard" ? (
+      {view === "custos" &&
+      (currentUser?.role === "OWNER" ||
+        currentUser?.role === "MANAGER") ? (
+        <CostsPanel companyId={companyId} />
+      ) : view === "dashboard" ? (
         <section className="sheet" aria-label="Resumo">
           <h2>Resumo</h2>
 

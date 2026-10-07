@@ -1,0 +1,148 @@
+/* "Custos" tab: recipe card per dish, CMV chip and the ingredient list. */
+
+.chip-alto {
+  background: var(--alerta);
+  color: #fff;
+}
+
+.cost-row {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.cost-row-main {
+  display: flex;
+  flex: 1 1 12rem;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.cost-price {
+  font-weight: 700;
+  color: var(--folha);
+}
+
+.cost-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s3);
+}
+
+.cost-target .field {
+  flex: 0 1 12rem;
+}
+
+.cost-editor {
+  display: flex;
+  flex: 1 1 100%;
+  flex-direction: column;
+  gap: var(--s4);
+  padding: var(--s4);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-md);
+  background: var(--papel);
+}
+
+.cost-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Name on its own line on a phone; quantity, unit, cost and "Tirar" share the next one. */
+.cost-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto;
+  gap: var(--s2) var(--s3);
+  align-items: end;
+  padding-bottom: var(--s3);
+  border-bottom: 1px dashed var(--linha);
+}
+
+.cost-line-name {
+  grid-column: 1 / -1;
+}
+
+.cost-line-cost {
+  min-width: 4.5rem;
+  padding-bottom: 12px;
+  font-weight: 700;
+  text-align: right;
+  color: var(--folha);
+}
+
+.cost-total {
+  margin: 0;
+  font-weight: 700;
+  color: var(--folha);
+}
+
+.cost-pack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s3);
+}
+
+.cost-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+}
+
+@media (min-width: 640px) {
+  .cost-line {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto auto;
+  }
+
+  .cost-line-name {
+    grid-column: auto;
+  }
+}
+
+.cost-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.cost-form > h2 {
+  margin: 0;
+  font: 700 var(--t-xl) / 1.2 var(--font-display);
+  color: var(--folha);
+}
+
+.cost-voice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding-bottom: var(--s3);
+  border-bottom: 1px dashed var(--linha);
+}
+
+.cost-voice-btn {
+  align-self: flex-start;
+}
+
+.cost-heard {
+  margin: 0;
+  font-style: italic;
+  color: var(--folha);
+}
+
+.cost-heard-note {
+  margin: 0;
+}
+
+.cost-yield {
+  font-size: var(--t-sm);
+  color: var(--mata);
+  font-weight: 700;
+}
+
+.cost-ranking {
+  counter-reset: none;
+}
