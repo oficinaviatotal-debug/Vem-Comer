@@ -43,6 +43,9 @@ REQUEST_TIMEOUT_SECONDS = 12
 
 PER_COMPANY_PER_HOUR = int(os.getenv("VOZ_POR_HORA", "400"))
 CHARS_PER_DAY = int(os.getenv("VOZ_CARACTERES_POR_DIA", "300000"))
+# Frases com nome de prato se acumulam: acima disto (~1 GB de áudio), os arquivos mais antigos saem.
+MAX_FILES = int(os.getenv("VOZ_MAX_ARQUIVOS", "50000"))
+PRUNE_EVERY = 200  # confere o tamanho da pasta a cada tantas frases novas
 
 GOOGLE_URL = os.getenv("VOZ_GOOGLE_URL", "https://texttospeech.googleapis.com/v1/text:synthesize")
 GOOGLE_DEFAULT_VOICE = "pt-BR-Neural2-B"
@@ -134,6 +137,43 @@ def _write_atomic(path: str, data: bytes) -> None:
     finally:
         if os.path.exists(tmp):
             os.remove(tmp)
+
+
+_writes = 0
+_prune_lock = threading.Lock()
+
+
+def prune(max_files: int | None = None) -> int:
+    """Apaga os áudios mais antigos quando a pasta passa do limite (fica com 90% dele). Devolve quantos saíram.
+
+    Apagar é seguro: se a frase voltar, ela é gerada de novo (e paga de novo, uma vez).
+    """
+    limit = MAX_FILES if max_files is None else max_files
+    folder = _voice_dir()
+    try:
+        entries = [entry for entry in os.scandir(folder) if entry.is_file() and entry.name.endswith(".mp3")]
+    except FileNotFoundError:
+        return 0
+    if len(entries) <= limit:
+        return 0
+    entries.sort(key=lambda entry: entry.stat().st_mtime)
+    removed = 0
+    for entry in entries[: len(entries) - int(limit * 0.9)]:
+        try:
+            os.remove(entry.path)
+            removed += 1
+        except OSError:
+            pass
+    return removed
+
+
+def _after_write() -> None:
+    global _writes
+    with _prune_lock:
+        _writes += 1
+        due = _writes % PRUNE_EVERY == 0
+    if due:
+        prune()
 
 
 # ----------------------------------------------------------------------------- limites
@@ -262,4 +302,5 @@ def speech_url(raw_text, company_id: str) -> str:
             limiter.refund(company_id, len(text))
         raise
     _write_atomic(path, audio)
+    _after_write()
     return public_url(key)

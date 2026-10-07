@@ -65,6 +65,7 @@ services:
       VOZ_ELEVENLABS_MODELO: ${VOZ_ELEVENLABS_MODELO:-}
       VOZ_POR_HORA: ${VOZ_POR_HORA:-400}
       VOZ_CARACTERES_POR_DIA: ${VOZ_CARACTERES_POR_DIA:-300000}
+      VOZ_MAX_ARQUIVOS: ${VOZ_MAX_ARQUIVOS:-50000}
       # cadastro de restaurante pela internet: FECHADO até o administrador abrir (veja abrir-cadastro.sh)
       SIGNUP_OPEN: ${SIGNUP_OPEN:-}
       SIGNUP_MAX_PER_DAY: ${SIGNUP_MAX_PER_DAY:-}

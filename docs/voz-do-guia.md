@@ -28,6 +28,8 @@ voz do celular sem perceber.
 - Limites: 400 frases por restaurante por hora e 300 mil caracteres por dia no servidor todo
   (`VOZ_POR_HORA`, `VOZ_CARACTERES_POR_DIA`). Passou disso, volta a voz do celular.
 - Frase de até 400 caracteres. A chave fica só no `.env` do servidor, nunca vai para o navegador.
+- A pasta de áudios tem teto (`VOZ_MAX_ARQUIVOS`, padrão 50 mil, ~1 GB): passou disso, os mais antigos
+  saem. Se uma frase apagada voltar, ela é gerada de novo.
 - Testado só com o provedor simulado (`backend/test_voice_tts.py`). Falta ouvir com a chave real.
 
 ### Provedores (preços das páginas oficiais em 07/10/2026; confirmar antes de assinar)

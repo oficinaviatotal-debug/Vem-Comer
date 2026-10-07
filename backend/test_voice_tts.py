@@ -185,5 +185,27 @@ class SpeechUrlTests(unittest.TestCase):
         self.assertEqual(os.listdir(os.path.join(self.tmp.name, "voz")).__len__(), 1)
 
 
+class PruneTests(unittest.TestCase):
+    def test_oldest_files_go_when_the_folder_is_over_the_limit(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(media_store, "UPLOAD_DIR", tmp):
+            folder = os.path.join(tmp, "voz")
+            os.makedirs(folder)
+            for index in range(12):
+                path = os.path.join(folder, f"{index:040x}.mp3")
+                with open(path, "wb") as fh:
+                    fh.write(MP3)
+                os.utime(path, (1000 + index, 1000 + index))
+            self.assertEqual(voice_tts.prune(max_files=20), 0)
+            self.assertEqual(voice_tts.prune(max_files=10), 3)  # fica com 9 (90% do limite)
+            left = sorted(os.listdir(folder))
+            self.assertEqual(len(left), 9)
+            self.assertNotIn(f"{0:040x}.mp3", left)  # os mais antigos saíram
+            self.assertIn(f"{11:040x}.mp3", left)
+
+    def test_no_folder_yet(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(media_store, "UPLOAD_DIR", tmp):
+            self.assertEqual(voice_tts.prune(max_files=1), 0)
+
+
 if __name__ == "__main__":
     unittest.main()

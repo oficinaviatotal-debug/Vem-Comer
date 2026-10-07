@@ -534,7 +534,10 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
 
   function handleSpeak(text: string, fromKeyboard = false) {
     const listenAfter = !fromKeyboard;
-    if (wantsPhoto(text) && photoMenuRef.current) return openPhoto();
+    if (wantsPhoto(text) && !soundsLikeMenu(text)) {
+      if (photoMenuRef.current) return openPhoto();
+      return void say("Ainda não leio foto de cardápio por aqui. Continue falando os pratos com o preço.", listenAfter);
+    }
 
     const removal = parseRemoval(text);
     if (removal) {
