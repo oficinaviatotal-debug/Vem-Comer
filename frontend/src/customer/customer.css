@@ -23,8 +23,8 @@
   position: sticky;
   top: 0;
   z-index: 30;
-  background: var(--papel);
-  border-bottom: 1px solid var(--linha);
+  background: var(--comanda);
+  box-shadow: 0 1px 0 var(--linha), 0 6px 16px rgba(27, 67, 50, .06);
 }
 
 .cust-bar {
@@ -34,15 +34,30 @@
   min-height: 64px;
 }
 
+/* The restaurant's own logo, in a round white badge so any logo reads on the page. */
+.cust-logo {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 2px;
+  border: 1px solid var(--linha);
+  border-radius: 50%;
+  background: #fff;
+  object-fit: contain;
+}
+
+/* Up to two lines: a long name no longer gets cut to "Bistrô Sab...". */
 .cust-name {
+  display: -webkit-box;
   flex: 1;
   min-width: 0;
   margin: 0;
   overflow: hidden;
   color: var(--folha);
-  font: 700 var(--t-xl) / 1.15 var(--font-display);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font: 700 var(--t-lg) / 1.15 var(--font-display);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .cust-table {
@@ -70,16 +85,17 @@
   flex: none;
   min-height: 44px;
   padding: 0 var(--s4);
-  border: 2px solid var(--linha-forte);
-  border-radius: var(--r-sm);
-  background: var(--comanda);
+  border: 2px solid transparent;
+  border-radius: var(--r-pill);
+  background: var(--papel-2);
   color: var(--folha);
   font: 700 var(--t-sm) / 1 var(--font-ui);
   cursor: pointer;
 }
 
 .cust-chips button:hover {
-  border-color: var(--folha);
+  background: var(--folha);
+  color: #fff;
 }
 
 /* ---------- Menu ---------- */
@@ -114,6 +130,25 @@
   margin: 0;
 }
 
+.cust-search .field input {
+  min-height: 52px;
+  padding: 0 var(--s4);
+  border-color: var(--linha);
+  border-radius: var(--r-pill);
+  box-shadow: var(--sombra-folha);
+}
+
+.cust-search .voice-command-button {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--mata);
+}
+
+.cust-search .voice-command-button.listening {
+  background: var(--alerta);
+}
+
 .cust-search .voice-command-text {
   display: none;
 }
@@ -130,25 +165,35 @@
 
 .cust-group > h2 {
   margin: 0;
-  padding-bottom: var(--s2);
-  border-bottom: 2px dashed var(--linha-forte);
+  padding-left: var(--s3);
+  border-left: 6px solid var(--brasa-viva);
+  border-radius: 3px;
   color: var(--folha);
   font: 700 var(--t-2xl) / 1.1 var(--font-display);
 }
 
 .cust-items {
-  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin: var(--s3) 0 0;
   padding: 0;
   list-style: none;
 }
 
+/* A dish is a card. On top: the text and, when there is one, a square picture. Below: price and add button. */
 .cust-item {
-  padding: var(--s4) 0;
-  border-bottom: 1px solid var(--linha);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s3);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-md);
+  background: var(--comanda);
+  box-shadow: var(--sombra-folha);
 }
 
-/* With a photo: text on the left, a small 4:3 picture on the right (like the menus people already know). */
-.cust-item.has-photo {
+.cust-item-main {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -156,21 +201,17 @@
 }
 
 .cust-item-text {
-  min-width: 0;
   flex: 1 1 auto;
+  min-width: 0;
 }
 
 .cust-item-photo {
   flex: 0 0 auto;
-  width: 112px;
-  height: 84px;
+  width: 96px;
+  height: 96px;
   border-radius: var(--r-sm);
   object-fit: cover;
   background: var(--papel-2);
-}
-
-.cust-item:last-child {
-  border-bottom: 0;
 }
 
 .cust-item-name {
@@ -180,29 +221,40 @@
   font: 700 var(--t-lg) / 1.25 var(--font-ui);
 }
 
-.cust-item .money {
-  color: var(--folha);
-  font-size: var(--t-lg);
-}
-
+/* The whole description stays visible: it often says what is in the dish. */
 .cust-item-desc {
   max-width: 60ch;
   margin: var(--s1) 0 0;
   color: var(--nevoa);
+  font-size: var(--t-sm);
+  line-height: 1.4;
+}
+
+/* Price on the left, the add button (or the - 2 +) on the right, across the whole card. */
+.cust-item-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.cust-item .money {
+  color: var(--mata);
+  font-size: var(--t-xl);
 }
 
 /* Hugs the button so the guide's blinking ring marks exactly what to touch. */
 .cust-qty {
   display: flex;
   width: fit-content;
-  margin: var(--s3) 0 0 auto;
+  margin-left: auto;
 }
 
 .cust-step {
   display: inline-flex;
   align-items: center;
   border: 2px solid var(--mata);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-pill);
   background: var(--comanda);
 }
 
@@ -294,16 +346,16 @@
   margin: 0 auto;
   padding: 0 var(--s4);
   border: 0;
-  border-radius: var(--r-md);
+  border-radius: var(--r-pill);
   background: var(--brasa);
-  box-shadow: 0 8px 24px rgba(18, 59, 43, .3);
+  box-shadow: 0 8px 24px rgba(27, 67, 50, .3);
   color: #fff;
   font: 700 var(--t-md) / 1 var(--font-ui);
   cursor: pointer;
 }
 
 .cust-cartbar:hover {
-  background: #A93709;
+  background: #A93A00;
 }
 
 .cust-cartbar-count {

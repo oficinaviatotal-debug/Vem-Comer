@@ -91,6 +91,9 @@ services:
     build:
       context: ../..
       dockerfile: deploy/vps/Dockerfile.web
+      args:
+        # opcional: endereco do Vem Trabalhar para o botao "Trabalhe aqui" (vazio = sem o botao)
+        VITE_VEM_TRABALHAR_URL: ${VITE_VEM_TRABALHAR_URL:-}
     image: vemcomer-web:local
     container_name: vemcomer-web
     restart: unless-stopped

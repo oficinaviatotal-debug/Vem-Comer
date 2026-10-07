@@ -33,7 +33,7 @@
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #A93709;
+  background: #A93A00;
 }
 
 .btn-mata {
@@ -42,7 +42,20 @@
 }
 
 .btn-mata:hover:not(:disabled) {
-  background: #175830;
+  background: #245A28;
+}
+
+/* "Adicionar" on a dish: a green pill that fills in on touch. */
+.btn-add {
+  border-color: var(--mata);
+  border-radius: var(--r-pill);
+  background: var(--comanda);
+  color: var(--mata);
+}
+
+.btn-add:hover:not(:disabled) {
+  background: var(--mata);
+  color: #fff;
 }
 
 .btn-outline {
@@ -217,7 +230,7 @@
 
 /* The shadow lives on the wrapper: a mask would clip it away. */
 .comanda-wrap {
-  filter: drop-shadow(0 1px 1px rgba(18, 59, 43, .12)) drop-shadow(0 6px 12px rgba(18, 59, 43, .08));
+  filter: drop-shadow(0 1px 1px rgba(27, 67, 50, .12)) drop-shadow(0 6px 12px rgba(27, 67, 50, .08));
 }
 
 .comanda-wrap.is-done {

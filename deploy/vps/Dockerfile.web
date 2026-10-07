@@ -10,6 +10,9 @@ COPY frontend/ ./
 # The browser talks to the same address that served the page, under /api.
 ARG VITE_API_URL=/api
 ENV VITE_API_URL=$VITE_API_URL
+# Endereco do Vem Trabalhar para o botao "Trabalhe aqui" da tela da mesa. Vazio = o botao nao aparece.
+ARG VITE_VEM_TRABALHAR_URL=
+ENV VITE_VEM_TRABALHAR_URL=$VITE_VEM_TRABALHAR_URL
 # The server also runs other services: keep the build's memory small.
 ENV NODE_OPTIONS=--max-old-space-size=1024
 # Type checking (tsc) runs in CI (.github/workflows/frontend-build.yml). Here only Vite builds,

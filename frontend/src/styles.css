@@ -28,19 +28,19 @@
 
 :root {
   /* Color. Contrast checked against WCAG AA (text >= 4.5:1). */
-  --folha: #123B2B;      /* deep green: ink on light, dark surfaces (12.5:1 with white) */
-  --mata: #1E6B3C;       /* brand green: positive states (6.5:1 with white) */
-  --brasa: #C2410C;      /* action orange for filled buttons (5.2:1 with white) */
+  --folha: #1B4332;      /* brand dark green (apoio escuro): ink on light, dark surfaces (10.8:1 on --papel) */
+  --mata: #2E7032;       /* brand green (verde principal): positive states (6.0:1 with white) */
+  --brasa: #C74700;      /* action orange for filled buttons, the logo orange darkened to pass AA (4.9:1 with white) */
   --brasa-viva: #FF6F00; /* logo orange: highlights, focus, never text */
-  --papel: #F4F5EF;      /* page */
-  --papel-2: #E7EADF;    /* sunken areas, chips */
+  --papel: #FFFBF5;      /* page, a warm white */
+  --papel-2: #FAE9D2;    /* brand cream (apoio): sunken areas, chips (--nevoa keeps 4.7:1 on it) */
   --comanda: #FFFFFF;    /* the order slip and sheets */
   --sol: #FFC83A;        /* attention (8:1 with --folha) */
   --tinta: #1B2A22;      /* body text */
   --nevoa: #5D6B63;      /* secondary text (5.1:1 on --papel) */
   --alerta: #B42318;     /* errors, destructive (6.6:1 with white) */
-  --linha: rgba(18, 59, 43, .16);
-  --linha-forte: rgba(18, 59, 43, .38);
+  --linha: rgba(27, 67, 50, .16);
+  --linha-forte: rgba(27, 67, 50, .38);
 
   /* Type */
   --font-display: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
@@ -64,7 +64,7 @@
   --r-sm: 10px;   /* fields and buttons */
   --r-md: 16px;   /* sheets and slips */
   --r-pill: 999px; /* chips only */
-  --sombra-folha: 0 1px 2px rgba(18, 59, 43, .08), 0 8px 24px rgba(18, 59, 43, .08);
+  --sombra-folha: 0 1px 2px rgba(27, 67, 50, .08), 0 8px 24px rgba(27, 67, 50, .08);
 
   /* Names the first version of the pages already used. Kept so older
      rules keep working while screens are redesigned one by one. */
