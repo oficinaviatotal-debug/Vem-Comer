@@ -171,6 +171,27 @@ export async function fetchTable(companyId: string, tableId: string) {
   return response.json();
 }
 
+/** Mesa viva: o cliente chama o garçom, pede a conta, água ou limpeza (sem login). */
+export async function createTableCall(companyId: string, tableId: string, kind: string) {
+  const response = await fetch(`${API_URL}/companies/${companyId}/tables/${tableId}/calls`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kind }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new HttpError(err.error || "Falha ao chamar", response.status);
+  }
+  return response.json();
+}
+
+/** O cliente confere se a chamada dele já foi atendida. */
+export async function fetchTableCall(companyId: string, tableId: string, callId: string) {
+  const response = await fetch(`${API_URL}/companies/${companyId}/tables/${tableId}/calls/${callId}`);
+  if (!response.ok) throw new HttpError("Falha ao buscar a chamada", response.status);
+  return response.json();
+}
+
 export async function fetchProducts(companyId: string) {
   const response = await fetch(`${API_URL}/companies/${companyId}/products`);
   if (!response.ok) throw new Error("Falha ao buscar produtos");
@@ -346,6 +367,27 @@ export async function fetchTables(companyId: string) {
     headers: authHeaders(),
   });
   if (!response.ok) throw new Error("Falha ao buscar mesas");
+  return response.json();
+}
+
+/** Painel: as chamadas abertas das mesas (mais antiga primeiro). */
+export async function fetchTableCalls(companyId: string) {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/table-calls`, {
+    headers: authHeaders(),
+  });
+  if (response.status === 401) expireSession();
+  if (!response.ok) throw new Error("Falha ao buscar as chamadas das mesas");
+  return response.json();
+}
+
+/** Painel: Atender. Fecha a chamada e guarda a hora e quem atendeu. */
+export async function answerTableCall(companyId: string, callId: string) {
+  const response = await fetch(`${API_URL}/companies/${companyId}/admin/table-calls/${callId}/answer`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  if (response.status === 401) expireSession();
+  if (!response.ok) throw new Error("Falha ao atender a chamada");
   return response.json();
 }
 

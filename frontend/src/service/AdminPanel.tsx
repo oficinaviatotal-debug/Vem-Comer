@@ -53,6 +53,7 @@ import { tableOrderUrl as buildTableUrl } from "./links";
 import { rememberCompany } from "./lastCompany";
 import MenuAssistant from "../assistant/MenuAssistant";
 import CostsPanel from "../costs/CostsPanel";
+import CallsBar from "../mesa/CallsBar";
 import "../ui.css";
 import "../admin.css";
 
@@ -793,6 +794,8 @@ export default function AdminPanel({
           </p>
         )}
       </div>
+
+      <CallsBar companyId={companyId} />
 
       <nav className="adm-tabs" aria-label="Seções do painel">
         <button

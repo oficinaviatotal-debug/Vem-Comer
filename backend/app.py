@@ -33,6 +33,7 @@ import menu_import
 import menu_templates
 import pix
 import signup
+import table_calls
 from table_qr import qr_png_for_url
 from trusted_proxy import wrap_trusted_proxy
 
@@ -661,6 +662,89 @@ def get_table(company_id, table_id):
             "Erro ao buscar mesa",
             e
         )
+
+
+# Mesa viva (veja table_calls.py): o cliente chama o garcom pela tela da mesa, sem login.
+table_call_limiter = table_calls.Limiter()
+
+
+@app.route('/api/companies/<uuid:company_id>/tables/<uuid:table_id>/calls', methods=['POST'])
+def create_table_call(company_id, table_id):
+    """Chamar garcom, pedir a conta, agua ou limpeza. Tocar de novo num pedido aberto so sobe o contador."""
+    try:
+        kind = table_calls.normalize_kind(request.get_json(silent=True))
+        table_call_limiter.check_ip(request.remote_addr or 'unknown')
+    except table_calls.CallError as error:
+        return jsonify({"error": error.message}), error.status
+
+    conn = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute(table_calls.SQL_TABLE, (str(table_id), str(company_id)))
+
+        if not cur.fetchone():
+            return jsonify({"error": "Mesa nao encontrada"}), 404
+
+        table_call_limiter.check_table(str(table_id))
+
+        cur.execute(
+            table_calls.SQL_OPEN_SAME,
+            (str(company_id), str(table_id), kind, table_calls.OPEN_WINDOW_MINUTES)
+        )
+        open_call = cur.fetchone()
+
+        if open_call:
+            cur.execute(
+                table_calls.SQL_BUMP,
+                (table_calls.MAX_REPEATS, str(open_call['id']), str(company_id))
+            )
+            conn.commit()
+            return jsonify(table_calls.public_view(open_call, already=True)), 200
+
+        cur.execute(table_calls.SQL_INSERT, (str(company_id), str(table_id), kind))
+        created = cur.fetchone()
+        conn.commit()
+
+        return jsonify(table_calls.public_view(created, already=False)), 201
+
+    except table_calls.CallError as error:
+        return jsonify({"error": error.message}), error.status
+    except Exception as e:
+        if conn is not None:
+            conn.rollback()
+        return error_response("Nao foi possivel avisar o atendente. Chame com a mao.", e)
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route('/api/companies/<uuid:company_id>/tables/<uuid:table_id>/calls/<uuid:call_id>', methods=['GET'])
+def get_table_call(company_id, table_id, call_id):
+    """O cliente confere se a chamada dele ja foi atendida. So o tipo e o andamento, nada de dado de gente."""
+    conn = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            table_calls.SQL_PUBLIC_STATUS,
+            (str(call_id), str(company_id), str(table_id))
+        )
+        row = cur.fetchone()
+
+        if not row:
+            return jsonify({"error": "Chamada nao encontrada"}), 404
+
+        return jsonify(table_calls.public_view(row)), 200
+
+    except Exception as e:
+        return error_response("Erro ao buscar a chamada", e)
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 @app.route('/api/companies/<uuid:company_id>/users', methods=['GET'])
@@ -2513,6 +2597,86 @@ def admin_get_tables(company_id):
             "Erro ao buscar mesas",
             e
         )
+
+
+@app.route(
+    '/api/companies/<uuid:company_id>/admin/table-calls',
+    methods=['GET']
+)
+@require_auth
+def admin_list_table_calls(company_id):
+    """As chamadas abertas das mesas, a mais antiga primeiro. Qualquer pessoa da equipe do restaurante ve."""
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    conn = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            table_calls.SQL_LIST_OPEN,
+            (str(company_id), table_calls.OPEN_WINDOW_MINUTES)
+        )
+        rows = cur.fetchall() or []
+
+        return jsonify([table_calls.admin_view(row) for row in rows]), 200
+
+    except Exception as e:
+        return error_response("Erro ao buscar as chamadas das mesas", e)
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route(
+    '/api/companies/<uuid:company_id>/admin/table-calls/<uuid:call_id>/answer',
+    methods=['POST']
+)
+@require_auth
+def admin_answer_table_call(company_id, call_id):
+    """Atender: fecha a chamada e guarda a hora e quem atendeu (o tempo ate aqui vira a meta do garcom)."""
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    conn = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            table_calls.SQL_ANSWER,
+            (request.user.get('user_id'), str(call_id), str(company_id))
+        )
+        answered = cur.fetchone()
+
+        if answered:
+            conn.commit()
+            return jsonify({
+                "ok": True,
+                "already": False,
+                "seconds_to_answer": answered['seconds_to_answer']
+            }), 200
+
+        # Nao fechou agora: ou outra pessoa ja atendeu (tudo certo) ou a chamada nao e deste restaurante.
+        cur.execute(table_calls.SQL_EXISTS, (str(call_id), str(company_id)))
+
+        if cur.fetchone():
+            return jsonify({"ok": True, "already": True}), 200
+
+        return jsonify({"error": "Chamada nao encontrada"}), 404
+
+    except Exception as e:
+        if conn is not None:
+            conn.rollback()
+        return error_response("Nao foi possivel marcar como atendida", e)
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 TABLE_QR_MAX_URL_LENGTH = 500

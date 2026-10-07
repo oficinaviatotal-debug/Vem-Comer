@@ -32,6 +32,7 @@ import type { Company, Menu, OrderView, PaymentMethod, Product } from "./types";
 import CartSheet from "./CartSheet";
 import MenuView, { CategoryChips } from "./MenuView";
 import OrderTracking from "./OrderTracking";
+import TableHub from "../mesa/TableHub";
 
 type Props = {
   company: Company;
@@ -41,7 +42,10 @@ type Props = {
 };
 
 type Load = "loading" | "ready" | "error";
-type Screen = "menu" | "tracking";
+type Screen = "menu" | "tracking" | "table";
+
+/** Endereço do Vem Trabalhar para o botão "Trabalhe aqui" da tela da mesa. Sem ele, o botão não aparece. */
+const JOBS_URL = import.meta.env.VITE_VEM_TRABALHAR_URL as string | undefined;
 
 /** Search only helps once the menu is long enough to scroll. */
 const SEARCH_FROM = 8;
@@ -65,7 +69,12 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   const [voiceHint, setVoiceHint] = useState("");
 
   const [orders, setOrders] = useState<RememberedOrder[]>(() => orderMemory.list(company.slug, tableId));
-  const [screen, setScreen] = useState<Screen>(() => (orders.length ? "tracking" : "menu"));
+  // Quem lê o QR da mesa cai na tela da mesa (chamar garçom, cardápio, conta); quem já pediu, no acompanhamento.
+  const [screenState, setScreen] = useState<Screen>(() =>
+    orders.length ? "tracking" : tableId ? "table" : "menu"
+  );
+  // Mesa que não existe: sem tela da mesa, vai direto ao cardápio (o aviso de "mesa não encontrada" já aparece lá).
+  const screen: Screen = screenState === "table" && (!tableId || tableLost) ? "menu" : screenState;
   const [statusById, setStatusById] = useState<Record<string, string>>({});
   const [payById, setPayById] = useState<Record<string, string>>({});
   const [, setRated] = useState(0);
@@ -274,9 +283,22 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   const banner = latest && latestStatus ? customerStatus(latestStatus, tableNumber) : null;
 
   const tableChip = tableId ? (
-    <span className={tableLost ? "chip cust-table cust-table-lost" : "chip chip-wait cust-table"}>
-      {tableNumber ? `Mesa ${tableNumber}` : tableLost ? "Mesa não encontrada" : "Mesa…"}
-    </span>
+    tableLost ? (
+      <span className="chip cust-table cust-table-lost">Mesa não encontrada</span>
+    ) : (
+      <button
+        type="button"
+        className="chip chip-wait cust-table cust-table-btn"
+        aria-label={tableNumber ? `Mesa ${tableNumber}: chamar o garçom` : "Chamar o garçom"}
+        onClick={() => {
+          setSheetOpen(false);
+          setScreen("table");
+          window.scrollTo({ top: 0 });
+        }}
+      >
+        {tableNumber ? `Mesa ${tableNumber}` : "Mesa…"}
+      </button>
+    )
   ) : null;
 
   return (
@@ -305,7 +327,19 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
       </header>
 
       <main className="cust-wrap cust-main">
-        {screen === "tracking" ? (
+        {screen === "table" && tableId ? (
+          <TableHub
+            companyId={company.id}
+            slug={company.slug}
+            tableId={tableId}
+            tableNumber={tableNumber}
+            jobsUrl={JOBS_URL}
+            onSeeMenu={() => {
+              setScreen("menu");
+              window.scrollTo({ top: 0 });
+            }}
+          />
+        ) : screen === "tracking" ? (
           <>
             <h2 className="cust-page-title">Acompanhe o seu pedido</h2>
             {orders.map((order) => (
