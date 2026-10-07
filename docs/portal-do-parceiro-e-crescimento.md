@@ -76,7 +76,8 @@ estagiários e empresas contratando, e divulgue em muitos meios, tudo automátic
 - **Pessoas**: só entram pelos canais com aceite (os 14 da aba `Canais`), e cada uma escolhe por onde quer receber.
 - **Divulgação automática com aceite**: post automático de cada vaga e de cada restaurante; páginas públicas no Google
   (vagas e cardápios); certificado com link que a pessoa compartilha; indicação com prêmio; QR nas mesas; páginas de vagas
-  e de comida parceiras; anúncios pagos por região; e-mail e WhatsApp para quem pediu.
+  e de comida parceiras; anúncios pagos por região; e-mail e WhatsApp para quem pediu; canal de vagas por cidade no WhatsApp (a
+  pessoa entra pelo link); aula aberta mensal com inscrição; materiais grátis (as 20 perguntas, a ficha de CMV) com aceite.
 
 ### Mais dois posts trazidos pelo GD (06/10/2026), casos de teste da vaga por foto
 
@@ -89,3 +90,13 @@ estagiários e empresas contratando, e divulgue em muitos meios, tudo automátic
   oficial (o Vem não recebe a inscrição, leva até ela), com aviso antes do fim do prazo para quem combina. Editais públicos
   podem ser lidos pelo agente nas páginas oficiais, que existem para ser divulgadas.
 
+### Mais três posts (06/10/2026)
+
+- **Grupos de vagas no WhatsApp por estado** (página de vagas): pede o número por mensagem direta. O nosso jeito é o canal
+  de vagas por cidade, em que a pessoa entra sozinha pelo link e os números não ficam visíveis para os outros.
+- **Atendente no horário noturno** (rede de lanchonetes, repostado por página de vagas): caso de teste dos benefícios
+  (trilha de carreira, academia, descontos em faculdades, vale-transporte) e do requisito legal "maior de 18".
+- **Banco de talentos de estagiários** (clínica): caso de teste do tipo de vaga "estágio" e do banco de talentos com
+  aceite. O post pede currículo por e-mail com o título da vaga; a vaga por foto guarda esse "como se candidatar".
+
+Detalhes de cada um na tabela de benchmark de `docs/curriculo-ia-e-voz.md`.
