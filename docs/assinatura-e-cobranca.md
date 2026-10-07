@@ -28,7 +28,11 @@ Estes preços **substituem** os antigos (candidato R$ 15; empresa com 2 vagas gr
 
 ## Vem Comer (restaurante)
 
-Preço **ainda não definido**. A mesma mecânica (semana grátis, depois Pix) serve; falta o valor.
+Preço inicial (GD, 07/10/2026): **R$ 190 por restaurante por mês**, só pelo uso da plataforma. O restaurante cobra os clientes dele; o GD
+não cobra venda nem fica com parte do dinheiro dele. Vence no dia do mês em que o restaurante entrou, e **quem não paga bloqueia no dia
+seguinte** (entrou dia 5, vence todo dia 5, no dia 6 não funciona). Estratégia de entrada: ser a opção mais barata nos 3 primeiros meses
+e subir o preço aos poucos para os próximos que entrarem. Detalhes e proposta de engenharia no item 66 de
+`docs/requisitos-do-dono-vem-comer.md`. Falta decidir o preço de lançamento dos 3 primeiros meses e se há semana grátis.
 
 ## Cobrança por Pix: como vai ser
 
@@ -61,7 +65,7 @@ Preço **ainda não definido**. A mesma mecânica (semana grátis, depois Pix) s
 1. O R$ 80 do candidato é **por mês** ou pago **uma vez**? (o GD falou em "acessos mensais"; tratado como mensal até dizer o contrário)
 2. O currículo **básico por voz, vídeo ou foto** para quem nunca trabalhou continua **grátis** (requisito 35) e os R$ 80 são
    do pacote completo, ou tudo é pago?
-3. Preço do **Vem Comer**.
+3. Preço de lançamento do **Vem Comer** nos 3 primeiros meses (o preço inicial é R$ 190) e se há semana grátis.
 4. Qual **CNPJ** recebe e qual **PSP** (taxas, CPF ou CNPJ).
 5. O que precisa estar funcionando em **13/10**.
 
