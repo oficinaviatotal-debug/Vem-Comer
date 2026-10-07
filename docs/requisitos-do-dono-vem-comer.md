@@ -98,9 +98,12 @@ Funciona para quem é analfabeto e para quem vai usar 100% das funções.
 | 45 | **Conta da mesa pelo QR, junto com o garçom:** o cliente lê o QR da mesa, abre a conta e pede comida e bebida. O cupom sai na cozinha (comida), no balcão (bebida) e no caixa. O garçom lê o mesmo QR da mesa e lança o que pediram a ele; tudo cai na mesma conta. | Em parte: QR por mesa e pedido pelo cliente existem; falta a conta aberta da mesa, o lançamento do garçom, a separação cozinha/balcão por categoria e a impressão. |
 | 46 | **Taxa de serviço (10%) opcional, conforme a cidade e o estado:** um botão liga ou desliga; quando ligada, aparece como opcional, com o nome que o restaurante escolher, sem entrar sozinha no total; no caixa e no app do garçom fica marcado se o cliente pagou ou não. | Falta. O texto na conta e as regras locais o advogado confere. |
 | 47 | **Fechamento e conciliação do caixa:** quando sobra ou falta dinheiro, o sistema compara pedidos, pagamentos, taxas e trocos e aponta o lançamento mais provável do erro (por exemplo, taxa paga e não marcada, troco anotado errado, pedido em dinheiro sem baixa), com o grau de certeza. | Falta. É uma indicação para o dono conferir, nunca uma acusação a um funcionário. |
+| 48 | **Mesa com situação de verdade:** livre → ocupada (conta aberta) → conta pedida → paga → **aguardando limpeza** → livre. Paga não libera a mesa: o cliente pode continuar sentado (dia de festa, fila na porta). Alerta no painel e no app do garçom para mesas paradas, vazias ou esperando limpeza. O garçom limpa, toca "Mesa limpa", acomoda as pessoas novas e abre outra conta. | Falta. |
+| 49 | **Conta paga e o cliente fica: "pago até aqui".** A conta paga é encerrada (baixa no caixa e no estoque) e uma conta nova começa a partir daquele momento, na mesma mesa, com o aviso "continua na mesa com uma conta nova". Na tela e no cupom: "pago até aqui; daqui para a frente, conta nova". Acaba com o "eu já paguei / não paguei". | Falta. |
+| 50 | **Um aplicativo só, com acesso por papel:** a senha do garçom só abre as mesas (abrir, pedir, fechar) e, onde o garçom recebe, o recebimento. Cada pagamento registra **quem recebeu** (garçom ou caixa), com a forma (Pix, cartão, dinheiro), para a auditoria e a conciliação do item 47. | Em parte: os papéis já existem no login (dono, gerente, garçom, caixa, cozinha, entregador); faltam as telas do garçom e o registro de quem recebeu. |
 
 Os itens 31 a 37 vêm do benchmark (`docs/benchmark-ecossistema.md`, seção 9) e nenhum entra no RC de 13/10.
-Os itens 38 a 47 são falas do GD de 07/10/2026.
+Os itens 38 a 50 são falas do GD de 07/10/2026.
 
 ## Como o dono testou e o que não funcionou (guia antigo)
 
