@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "../ui.css";
 import "./customer.css";
-import { createOrder, fetchMenus, fetchPaymentOptions, fetchProducts, fetchTable } from "../service/api";
+import "../logo/logo.css";
+import { createOrder, fetchMenus, fetchPaymentOptions, fetchProducts, fetchTable, mediaUrl } from "../service/api";
 import { formatMoney, shortOrderCode } from "../service/format";
 import OnboardingGuide from "../onboarding/OnboardingGuide";
 import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
@@ -283,6 +284,9 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
       <header className="cust-top">
         <div className="cust-wrap">
           <div className="cust-bar">
+            {mediaUrl(company.logo_thumb_url) && (
+              <img className="cust-logo" src={mediaUrl(company.logo_thumb_url)} alt="" width={40} height={40} />
+            )}
             <h1 className="cust-name">{company.name}</h1>
             {tableChip}
             {screen === "menu" && load === "ready" && products.length > 0 && (

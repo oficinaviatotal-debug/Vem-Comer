@@ -15,6 +15,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import query_db, get_db_connection
 import image_enhance
+import logo_image
 import media_store
 import menu_photo
 import menu_import
@@ -35,7 +36,9 @@ app.wsgi_app = wrap_trusted_proxy(app.wsgi_app)
 app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', '1048576'))  # 1 MiB
 # Foto de prato: so as rotas de foto aceitam corpo maior (veja allow_big_body_for_photos).
 PHOTO_MAX_BYTES = int(os.getenv('PHOTO_MAX_BYTES', str(10 * 1024 * 1024)))  # 10 MiB
-PHOTO_ENDPOINTS = {'admin_upload_product_photo', 'admin_parse_menu_photo'}
+PHOTO_ENDPOINTS = {'admin_upload_product_photo', 'admin_parse_menu_photo', 'admin_upload_company_logo'}
+# Logomarca: o celular ja manda reduzida (ate ~1 MiB); acima disso nao e logomarca.
+LOGO_MAX_BYTES = int(os.getenv('LOGO_MAX_BYTES', str(4 * 1024 * 1024)))  # 4 MiB
 # No maximo 2 fotos sendo processadas ao mesmo tempo: o processamento usa memoria e processador.
 _photo_slots = threading.BoundedSemaphore(2)
 # Leitura de cardapio por foto: cada uma segura uma linha de execucao por ate ~1 minuto esperando a IA.
@@ -500,12 +503,22 @@ def login():
         )
 
 
+def public_company(row):
+    """Dados do restaurante que qualquer cliente pode ver. A chave sorteada da logomarca nunca sai:
+    sai so o endereco publico (ou None, se o restaurante ainda nao tem logomarca)."""
+    company = dict(row)
+    urls = media_store.public_urls(company.get('id'), company.pop('logo_key', None))
+    company['logo_url'] = urls['image_url']
+    company['logo_thumb_url'] = urls['thumb_url']
+    return company
+
+
 @app.route('/api/companies/<uuid:company_id>', methods=['GET'])
 def get_company(company_id):
     try:
         company = query_db(
             """
-            SELECT id, name, slug
+            SELECT id, name, slug, logo_key
             FROM companies
             WHERE id = %s;
             """,
@@ -518,7 +531,7 @@ def get_company(company_id):
                 "error": "Estabelecimento não encontrado"
             }), 404
 
-        return jsonify(company), 200
+        return jsonify(public_company(company)), 200
 
     except Exception as e:
         return error_response(
@@ -532,7 +545,7 @@ def get_company_by_slug(slug):
     try:
         company = query_db(
             """
-            SELECT id, name, slug
+            SELECT id, name, slug, logo_key
             FROM companies
             WHERE slug = %s;
             """,
@@ -545,7 +558,7 @@ def get_company_by_slug(slug):
                 "error": "Estabelecimento não encontrado"
             }), 404
 
-        return jsonify(company), 200
+        return jsonify(public_company(company)), 200
 
     except Exception as e:
         return error_response(
@@ -1571,6 +1584,164 @@ def admin_delete_product_photo(product_id):
             conn.close()
 
         return error_response("Erro ao remover a foto", e)
+
+
+@app.route('/api/admin/company/logo', methods=['POST'])
+@require_roles('OWNER', 'MANAGER')
+def admin_upload_company_logo():
+    """Recebe a logomarca (campo "logo"), prepara e guarda. Troca a logomarca antiga, se houver."""
+    company_id = request.user.get('company_id')
+    upload = request.files.get('logo')
+
+    if upload is None:
+        return jsonify({"error": "Nao recebi nenhuma imagem. Tente de novo."}), 400
+
+    data = upload.read(LOGO_MAX_BYTES + 1)
+
+    if len(data) > LOGO_MAX_BYTES:
+        return jsonify({"error": "A imagem e grande demais. Escolha uma menor."}), 413
+
+    if not _photo_slots.acquire(timeout=10):
+        return jsonify({"error": "O servidor esta ocupado agora. Tente de novo em alguns segundos."}), 503
+
+    try:
+        prepared = logo_image.prepare_logo(data)
+    except logo_image.LogoError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return error_response("Erro ao processar a logomarca", e)
+    finally:
+        _photo_slots.release()
+
+    conn = None
+    cur = None
+    key = media_store.new_key()
+    files_saved = False
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # trava a linha do restaurante: duas logomarcas chegando juntas ficam uma depois da outra
+        cur.execute(
+            """
+            SELECT logo_key
+            FROM companies
+            WHERE id = %s
+            FOR UPDATE;
+            """,
+            (str(company_id),)
+        )
+
+        row = cur.fetchone()
+
+        if row is None:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Estabelecimento nao encontrado"}), 404
+
+        old_key = row[0]
+
+        media_store.save_pair(company_id, key, prepared.full, prepared.thumb)
+        files_saved = True
+
+        cur.execute(
+            """
+            UPDATE companies
+            SET logo_key = %s
+            WHERE id = %s;
+            """,
+            (key, str(company_id))
+        )
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        media_store.delete_pair(company_id, old_key)
+
+        urls = media_store.public_urls(company_id, key)
+
+        return jsonify({
+            "message": "Logomarca salva",
+            "logo_url": urls["image_url"],
+            "logo_thumb_url": urls["thumb_url"],
+        }), 201
+
+    except Exception as e:
+        if conn is not None and not conn.closed:
+            conn.rollback()
+
+            if cur is not None:
+                cur.close()
+
+            conn.close()
+
+        if files_saved:
+            media_store.delete_pair(company_id, key)
+
+        return error_response("Erro ao salvar a logomarca", e)
+
+
+@app.route('/api/admin/company/logo', methods=['DELETE'])
+@require_roles('OWNER', 'MANAGER')
+def admin_delete_company_logo():
+    company_id = request.user.get('company_id')
+    conn = None
+    cur = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            SELECT logo_key
+            FROM companies
+            WHERE id = %s
+            FOR UPDATE;
+            """,
+            (str(company_id),)
+        )
+
+        row = cur.fetchone()
+
+        if row is None:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Estabelecimento nao encontrado"}), 404
+
+        cur.execute(
+            """
+            UPDATE companies
+            SET logo_key = NULL
+            WHERE id = %s;
+            """,
+            (str(company_id),)
+        )
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        media_store.delete_pair(company_id, row[0])
+
+        return jsonify({"message": "Logomarca removida"}), 200
+
+    except Exception as e:
+        if conn is not None and not conn.closed:
+            conn.rollback()
+
+            if cur is not None:
+                cur.close()
+
+            conn.close()
+
+        return error_response("Erro ao remover a logomarca", e)
 
 
 @app.route(

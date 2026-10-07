@@ -576,6 +576,35 @@ export async function deleteProductPhoto(productId: string): Promise<void> {
   if (!response.ok) throw await readError(response, "Não consegui remover a foto.");
 }
 
+export type LogoResult = {
+  message: string;
+  /** Paths like "/media/<company>/<key>.webp". Use mediaUrl() to show them. */
+  logo_url: string | null;
+  logo_thumb_url: string | null;
+};
+
+/** Sends the restaurant's logo (a PNG made by logo/logoFiles, or the owner's own file). Replaces the old one, if any. */
+export async function uploadCompanyLogo(logo: Blob, filename: string): Promise<LogoResult> {
+  const form = new FormData();
+  form.append("logo", logo, filename);
+  // No Content-Type here: the browser writes it, with the boundary the server needs.
+  const response = await fetch(`${API_URL}/admin/company/logo`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: form,
+  });
+  if (!response.ok) throw await readError(response, "Não consegui enviar a logomarca.");
+  return response.json();
+}
+
+export async function deleteCompanyLogo(): Promise<void> {
+  const response = await fetch(`${API_URL}/admin/company/logo`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw await readError(response, "Não consegui remover a logomarca.");
+}
+
 /**
  * Full address of a photo the server returned ("/media/..."). Anything that is not one of our
  * own photo paths gives an empty string, so a strange value can never end up in an <img>.

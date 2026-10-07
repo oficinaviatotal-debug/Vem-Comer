@@ -1,0 +1,165 @@
+/*
+ * Criador de logomarca. Botões grandes, uma escolha por vez, feito para o dedão num celular pequeno.
+ * Cores, letras e espaços vêm dos tokens de styles.css.
+ */
+
+.logo-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.logo-food-icon {
+  display: block;
+  width: 64px;
+  height: 64px;
+}
+
+.logo-maker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.logo-steps {
+  margin: 0;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.logo-question {
+  margin: 0;
+  font: 700 var(--t-xl) / 1.2 var(--font-display);
+  color: var(--folha);
+}
+
+.logo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.logo-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3);
+}
+
+.logo-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--s1);
+  min-height: 112px;
+  padding: var(--s2) var(--s1);
+  border: 2px solid var(--linha-forte);
+  border-radius: var(--r-md);
+  background: var(--comanda);
+  color: var(--folha);
+  font: 700 .82rem / 1.15 var(--font-ui);
+  overflow-wrap: anywhere;
+  text-align: center;
+  cursor: pointer;
+}
+
+.logo-pick[aria-checked="true"] {
+  border-color: var(--mata);
+  background: #E6F4EA;
+  box-shadow: 0 0 0 2px var(--mata);
+}
+
+.logo-pick:focus-visible {
+  outline: 3px solid var(--brasa-viva);
+  outline-offset: 2px;
+}
+
+.logo-pick-guess {
+  color: var(--mata);
+  font-size: .72rem;
+}
+
+.logo-swatch {
+  display: block;
+  width: 52px;
+  height: 52px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--linha-forte);
+}
+
+.logo-pick-model {
+  min-height: 0;
+  padding: var(--s2);
+}
+
+.logo-pick-model .logo-canvas {
+  border-radius: var(--r-sm);
+}
+
+.logo-live {
+  width: 132px;
+  margin: 0 auto;
+}
+
+.logo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.logo-actions .btn {
+  min-height: 56px;
+  font-size: var(--t-lg);
+}
+
+.logo-current {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.logo-current img {
+  display: block;
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+  border-radius: var(--r-md);
+  background: var(--papel-2);
+}
+
+.logo-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  opacity: 0;
+}
+
+.logo-pick-label.is-disabled,
+.logo-actions .is-disabled {
+  opacity: .5;
+  pointer-events: none;
+}
+
+/* A logomarca ao lado do nome do restaurante, na tela do cliente. */
+.cust-logo {
+  display: block;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-pick {
+    transition: none;
+  }
+}

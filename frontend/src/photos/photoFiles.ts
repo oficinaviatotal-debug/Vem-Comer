@@ -34,7 +34,7 @@ function canvasToJpeg(canvas: HTMLCanvasElement, quality = SEND_QUALITY): Promis
 }
 
 /** Opens a photo with its rotation already applied (a phone held sideways must come out upright). */
-async function openBitmap(file: Blob): Promise<{ source: CanvasImageSource; width: number; height: number; close: () => void }> {
+export async function openBitmap(file: Blob): Promise<{ source: CanvasImageSource; width: number; height: number; close: () => void }> {
   if (typeof createImageBitmap === "function") {
     try {
       const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
