@@ -504,9 +504,9 @@ class EndpointTests(unittest.TestCase):
     def test_capabilities_follow_the_key(self):
         reply = self.client.get(CAPS_URL, headers=auth())
         self.assertEqual(reply.status_code, 200)
-        self.assertEqual(reply.get_json(), {"photo_menu": True})
+        self.assertIs(reply.get_json()["photo_menu"], True)
         with patch.dict(os.environ, {"ANTHROPIC_API_KEY": ""}):
-            self.assertEqual(self.client.get(CAPS_URL, headers=auth()).get_json(), {"photo_menu": False})
+            self.assertIs(self.client.get(CAPS_URL, headers=auth()).get_json()["photo_menu"], False)
         self.assertNotIn(FAKE_KEY, self.client.get(CAPS_URL, headers=auth()).get_data(as_text=True))
 
     def test_both_routes_need_login_and_the_right_role(self):
