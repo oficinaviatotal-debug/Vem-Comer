@@ -18,8 +18,8 @@ decisão do GD, e eu nunca junto PR.
 
 | Dia | Vem Comer | Vem Trabalhar | Do GD |
 |---|---|---|---|
-| 07/10 (qua) | Requisitos 66 e 67, matriz de capacidade, imagens guardadas. Reforma visual: cores da marca, cardápio do cliente e tela da mesa. | Nada hoje. | Dizer se o catálogo de restaurantes entra. Juntar o PR #33. |
-| 08/10 (qui) | Reforma visual: carrinho e acompanhamento do pedido. Opções por item: banco de dados e API. | Levantar o que existe e o que falta; juntar o PR #2 se estiver certo. | Mandar a logomarca como arquivo (PNG com fundo transparente ou SVG). |
+| 07/10 (qua) | Requisitos 66 a 68, matriz de capacidade, imagens guardadas. Reforma visual do cliente feita: cores da marca, cardápio, tela da mesa, carrinho e acompanhamento (fotos de tela conferidas a 390 e 320 px). | Nada hoje. | Juntar o PR #33. (O catálogo de restaurantes ficou para depois de 3 meses.) |
+| 08/10 (qui) | Reforma visual: conferir o painel do dono em foto de tela depois da troca de cores (ainda não olhei). Opções por item: banco de dados e API. | Levantar o que existe e o que falta; juntar o PR #2 se estiver certo. | Mandar a logomarca como arquivo (PNG com fundo transparente ou SVG). |
 | 09/10 (sex) | Opções por item: telas do cliente e do painel, voz e foto lendo as opções. | O que couber. | Testar o cardápio falado no celular. |
 | 10/10 (sáb) | Entrega: tipo do pedido, endereço, taxa por região do CEP e retirada. | O que couber. | Confirmar as faixas do motoqueiro e quem paga a taxa. |
 | 11/10 (dom) | Entrega: painel com "pronto" e "saiu para entrega". Horário de funcionamento e esgotado em um toque. | O que couber. | |
