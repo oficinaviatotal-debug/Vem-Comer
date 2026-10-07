@@ -12,6 +12,7 @@ import {
 import { parseSpokenNumber } from "../onboarding/tourEngine";
 import PhotoSession from "../photos/PhotoSession";
 import MenuPhotoStep from "./MenuPhotoStep";
+import ConfirmButton from "../service/ConfirmButton";
 import { prepareVoice } from "../onboarding/speech";
 import {
   formatPrice,
@@ -23,16 +24,19 @@ import {
 } from "./assistantLogic";
 import {
   addItem,
+  addSpokenMenu,
   applySpoken,
   backOnePrice,
   currentCategory,
   currentPriceItem,
   editPrice,
+  finishSpeak,
   importPayload,
   initialFlow,
   nextCategory,
   previousCategory,
   removeItem,
+  removeSpoken,
   renameItem,
   selectedInCategory,
   selectedItems,
@@ -43,6 +47,7 @@ import {
   startFromParsed,
   startFromTemplate,
   startPhoto,
+  startSpeak,
   toggleAllInCategory,
   toggleItem,
   type FlowState,
@@ -54,10 +59,16 @@ import {
   PHOTO_NOT_AVAILABLE,
   PHOTO_STEP_HINT,
   READING_NOTICE,
+  SPEAK_MORE,
+  SPEAK_NOT_UNDERSTOOD,
+  TYPE_NOT_UNDERSTOOD,
   progressText,
   promptFor,
+  spokenFeedback,
 } from "./assistantPrompts";
 import { readingIntro, wantsPhoto } from "./menuPhotoLogic";
+import { guessCategory, parseRemoval, parseSpokenMenu, soundsLikeMenu, type SpokenMenu } from "./spokenMenu";
+import { normalizeSpeech } from "../onboarding/tourEngine";
 import {
   LISTEN_DELAY_MS,
   canListen,
@@ -66,6 +77,7 @@ import {
   currentVoiceName,
   hear,
   speakAsync,
+  setNaturalVoice,
   stopSpeaking,
   voiceCount,
   type Hearing,
@@ -105,6 +117,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
   const [unclear, setUnclear] = useState<string[]>([]);
   const [otherName, setOtherName] = useState("");
   const [priceInput, setPriceInput] = useState("");
+  const [typedMenu, setTypedMenu] = useState("");
   const [result, setResult] = useState<MenuImportResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [photosOn, setPhotosOn] = useState(false);
@@ -120,6 +133,8 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
   const hearingRef = useRef<Hearing | null>(null);
   const silentTurnsRef = useRef(0);
   const savingRef = useRef(false);
+  /** The heading said last on the speaking screen ("de bebida..."): the next phrases stay in it. */
+  const headingRef = useRef("");
   /** True while the notice on screen is only "I did not hear anything", which is stale once the screen moves on. */
   const silenceNoticeRef = useRef(false);
   templatesRef.current = templates;
@@ -144,6 +159,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
       if (!alive) return;
       photoMenuRef.current = capabilities.photo_menu;
       setPhotoMenu(capabilities.photo_menu);
+      setNaturalVoice(capabilities.natural_voice);
     });
     prepareVoice();
     // The phone fills its list of voices a moment after the page opens.
@@ -481,6 +497,104 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
     }
   }
 
+  /* ------------------------------------------------------- saying the menu */
+
+  function openSpeak() {
+    if (busy) return;
+    setProblem("");
+    setTypedMenu("");
+    headingRef.current = "";
+    go(startSpeak());
+  }
+
+  /** Puts what was said (or typed) on the list and answers in a few words. */
+  function takeSpokenMenu(menu: SpokenMenu, base: FlowState, listenAfter: boolean, opening = false) {
+    const applied = addSpokenMenu(base, menu);
+    commit(applied.state);
+    setUnclear(menu.unclear);
+    const unclearNote = menu.unclear.length > 0 ? " Uma parte eu não separei, está na tela." : "";
+    const feedback = (spokenFeedback(applied) || "Esses já estavam anotados.") + unclearNote;
+    if (menu.finished) {
+      finishSpeaking(feedback);
+      return;
+    }
+    void say(opening ? `${feedback} ${SPEAK_MORE}` : feedback, listenAfter);
+  }
+
+  /** "Pronto": the prices that were not said, then the review. */
+  function finishSpeaking(before = "") {
+    const next = finishSpeak(flowRef.current);
+    if (next.step === "speak") {
+      void say("Ainda não anotei nenhum prato. Fale o nome e o preço, por exemplo: X-tudo, 25 reais.");
+      return;
+    }
+    headingRef.current = "";
+    go(next, before);
+  }
+
+  function handleSpeak(text: string, fromKeyboard = false) {
+    const listenAfter = !fromKeyboard;
+    if (wantsPhoto(text) && photoMenuRef.current) return openPhoto();
+
+    const removal = parseRemoval(text);
+    if (removal) {
+      const outcome = removeSpoken(flowRef.current, removal);
+      if (outcome.removed) {
+        commit(outcome.state);
+        void say(`Tirei ${outcome.removed}.`, listenAfter);
+      } else {
+        void say(`Não achei ${removal} na lista.`, listenAfter);
+      }
+      return;
+    }
+
+    const headingBefore = headingRef.current;
+    const menu = parseSpokenMenu(text, headingBefore);
+    headingRef.current = menu.heading;
+    if (menu.dishes.length > 0 || menu.lonePrice) {
+      takeSpokenMenu(menu, flowRef.current, listenAfter);
+      return;
+    }
+
+    const command = parseAssistantCommand(text);
+    const said = normalizeSpeech(text);
+    if (menu.finished || command === "next" || command === "no" || /cadastr|salv|confirm/.test(said)) {
+      return finishSpeaking();
+    }
+    if (command === "back") return backToTypes();
+    if (command === "repeat") return void say(promptFor(flowRef.current), listenAfter);
+    if (command === "confirm") return void say(`Pode falar. ${SPEAK_MORE}`, listenAfter);
+    if (menu.unclear.length > 0) {
+      setUnclear(menu.unclear);
+      return void say("Não consegui separar os pratos. Fale cada um com o preço, ou toque na tela.", listenAfter);
+    }
+    if (menu.heading && menu.heading !== headingBefore) {
+      return void say(`Certo, ${menu.heading}. Pode falar.`, listenAfter);
+    }
+    void say(SPEAK_NOT_UNDERSTOOD, listenAfter);
+  }
+
+  function submitTypedMenu() {
+    const text = typedMenu.trim();
+    if (!text) return;
+    setTypedMenu("");
+    setNotice(`Você escreveu: “${text}”`);
+    handleSpeak(text, true);
+  }
+
+  /** A piece that was not separated, added as one dish without price (the price is asked later). */
+  function addUnclearAsDish(text: string) {
+    const menu: SpokenMenu = {
+      dishes: [{ name: text, price: "", category: guessCategory(text), categorySaid: false }],
+      unclear: [],
+      finished: false,
+      lonePrice: "",
+      heading: headingRef.current,
+    };
+    commit(addSpokenMenu(flowRef.current, menu).state);
+    setUnclear((current) => current.filter((value) => value !== text));
+  }
+
   function handleType(text: string) {
     const options = (templatesRef.current ?? []).map((t) => ({ id: t.id, name: t.name }));
     const id = matchBusinessType(text, options);
@@ -491,6 +605,13 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
         return;
       }
     }
+    // "x-tudo 25, coca 6" right on the first screen: that is the menu, not a type of business
+    if (soundsLikeMenu(text)) {
+      const menu = parseSpokenMenu(text);
+      headingRef.current = menu.heading;
+      takeSpokenMenu(menu, startSpeak(), true, true);
+      return;
+    }
     if (id) {
       void chooseType(id);
       return;
@@ -499,7 +620,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
       void say(promptFor(flowRef.current, false, photoMenuRef.current));
       return;
     }
-    void say("Não entendi. Toque no tipo do seu negócio, ou fale de novo.");
+    void say(TYPE_NOT_UNDERSTOOD);
   }
 
   /** On the photo screen the owner can still say the type of business, or go back. */
@@ -526,6 +647,8 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
         return handleType(text);
       case "photo":
         return handlePhotoStep(text);
+      case "speak":
+        return handleSpeak(text);
       case "pick":
         return handlePick(text);
       case "prices":
@@ -566,9 +689,9 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
       <section className="sheet asst" aria-label="Assistente do cardápio">
         <h2>Assistente do cardápio</h2>
         <p className="asst-lead">
-          Eu pergunto, você fala. Se você já tem um cardápio, tire uma foto e eu cadastro. Se não tem,
-          escolha o tipo do seu negócio, marque os pratos que vende e diga o preço de cada um. No fim, o
-          cardápio fica pronto de uma vez.
+          Fale os pratos com o preço, do seu jeito, e eu anoto tudo de uma vez. Se você já tem um cardápio
+          pronto, tire uma foto. Ou escolha o tipo do seu negócio e marque os pratos. No fim, você confere e o
+          cardápio fica pronto.
         </p>
         {unsupported && (
           <p className="asst-help">
@@ -613,6 +736,22 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
       {notice && <p className="asst-notice">{notice}</p>}
       {problem && <p className="msg-error">{problem}</p>}
 
+      {flow.step === "type" && (
+        <button
+          id="assistant-speak-menu"
+          type="button"
+          className="asst-photo-card asst-speak-card"
+          disabled={busy}
+          onClick={openSpeak}
+        >
+          <span className="asst-type-icon" aria-hidden="true">🎤</span>
+          <span className="asst-photo-card-text">
+            <strong>Falar o meu cardápio</strong>
+            <small>Diga os pratos com o preço. Eu anoto.</small>
+          </span>
+        </button>
+      )}
+
       {flow.step === "type" && photoMenu && (
         <>
           <button
@@ -628,9 +767,10 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
               <small>Tire uma foto e eu cadastro tudo</small>
             </span>
           </button>
-          <p className="asst-or">Se não tiver, escolha o tipo do seu negócio:</p>
         </>
       )}
+
+      {flow.step === "type" && <p className="asst-or">Ou escolha o tipo do seu negócio e marque os pratos:</p>}
 
       {flow.step === "type" && (
         <div className="asst-types" role="group" aria-label="Tipo de negócio">
@@ -646,6 +786,102 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
               <span>{template.name}</span>
             </button>
           ))}
+        </div>
+      )}
+
+      {flow.step === "speak" && (
+        <div className="sheet asst-speak">
+          {picked.length === 0 ? (
+            <p className="asst-help">
+              Exemplo: “X-tudo 25 reais, X-salada 22, de bebida Coca lata 6”. Pode falar vários de uma vez,
+              e corrigir depois: “o X-tudo é 26”, “tira a Coca”.
+            </p>
+          ) : (
+            flow.categories.map((cat, categoryIndex) => {
+              const rows = cat.items
+                .map((item, itemIndex) => ({ item, itemIndex }))
+                .filter(({ item }) => item.selected);
+              if (rows.length === 0) return null;
+              return (
+                <div key={cat.name} className="asst-review-group">
+                  <h4>{cat.name}</h4>
+                  <ul>
+                    {rows.map(({ item, itemIndex }) => (
+                      <li key={`${item.name}-${itemIndex}`}>
+                        <span className="asst-review-name">{item.name}</span>
+                        <span className={item.price ? "money" : "asst-missing"}>
+                          {item.price ? formatPrice(item.price) : "sem preço"}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-quiet btn-sm"
+                          aria-label={`Tirar ${item.name}`}
+                          onClick={() => commit(removeItem(flow, categoryIndex, itemIndex))}
+                        >
+                          Tirar
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })
+          )}
+
+          {unclear.length > 0 && (
+            <div className="asst-unclear">
+              <p>Não separei isto. Se for um prato só, toque para adicionar:</p>
+              <div className="asst-chips">
+                {unclear.map((text) => (
+                  <button key={text} type="button" className="asst-chip" onClick={() => addUnclearAsDish(text)}>
+                    + {text}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <form
+            className="asst-other"
+            onSubmit={(event) => {
+              event.preventDefault();
+              submitTypedMenu();
+            }}
+          >
+            <label className="field">
+              <span>Ou escreva</span>
+              <input
+                id="assistant-typed-menu"
+                value={typedMenu}
+                maxLength={500}
+                autoComplete="off"
+                placeholder="X-tudo 25, Coca lata 6"
+                onChange={(event) => setTypedMenu(event.target.value)}
+              />
+            </label>
+            <button type="submit" className="btn btn-outline" disabled={!typedMenu.trim()}>
+              Anotar
+            </button>
+          </form>
+
+          <div className="asst-actions">
+            {picked.length === 0 ? (
+              <button type="button" className="btn btn-quiet" onClick={backToTypes}>
+                Voltar
+              </button>
+            ) : (
+              <ConfirmButton label="Recomeçar" confirmLabel="Toque de novo para apagar a lista" onConfirm={backToTypes} />
+            )}
+            <button
+              id="assistant-speak-done"
+              type="button"
+              className="btn btn-primary"
+              disabled={picked.length === 0}
+              onClick={() => finishSpeaking()}
+            >
+              {`Pronto, conferir (${picked.length})`}
+            </button>
+          </div>
         </div>
       )}
 

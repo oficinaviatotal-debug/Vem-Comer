@@ -17,6 +17,7 @@ from db import query_db, get_db_connection
 import image_enhance
 import media_store
 import menu_photo
+import voice_tts
 import menu_import
 import menu_templates
 import pix
@@ -1663,8 +1664,31 @@ def admin_get_menu_template(template_id):
 @app.route('/api/admin/menu/capabilities', methods=['GET'])
 @require_roles('OWNER', 'MANAGER')
 def admin_menu_capabilities():
-    """Diz para a tela o que este servidor sabe fazer (hoje: ler cardapio por foto)."""
-    return jsonify({"photo_menu": menu_photo.is_configured()}), 200
+    """Diz para a tela o que este servidor sabe fazer: ler cardapio por foto e falar com voz natural."""
+    return jsonify({
+        "photo_menu": menu_photo.is_configured(),
+        "natural_voice": voice_tts.is_configured(),
+    }), 200
+
+
+@app.route('/api/admin/voz', methods=['POST'])
+@require_roles('OWNER', 'MANAGER')
+def admin_natural_voice():
+    """Devolve o endereco do audio de uma frase do guia em voz natural (gera e guarda na primeira vez).
+
+    Qualquer falha devolve erro curto: a tela fala com a voz do proprio celular.
+    """
+    company_id = request.user.get('company_id')
+    body = request.get_json(silent=True) or {}
+
+    try:
+        url = voice_tts.speech_url(body.get('text'), str(company_id))
+    except voice_tts.VoiceError as e:
+        return jsonify({"error": e.message}), e.status
+    except Exception as e:
+        return error_response("Erro ao preparar a voz", e)
+
+    return jsonify({"url": url}), 200
 
 
 @app.route('/api/admin/menu/parse-photo', methods=['POST'])

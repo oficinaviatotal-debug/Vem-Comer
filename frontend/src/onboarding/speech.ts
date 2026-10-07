@@ -4,6 +4,8 @@
  * and buttons only.
  */
 
+import { currentVoiceTier, type VoiceTier } from "../voice/voiceQuality.ts";
+
 type RecognitionResult = ArrayLike<{ transcript?: string }> & { isFinal?: boolean };
 
 type RecognitionEvent = {
@@ -41,7 +43,7 @@ export function stopSpeaking() {
  * sounds robotic, the "Google"/"Natural"/"Neural" ones sound like a person. The
  * browser's default pick is often the robotic one, so choose on purpose.
  */
-export function voiceScore(name: string, lang: string, localService?: boolean): number {
+export function voiceScore(name: string, lang: string, localService?: boolean, tier: VoiceTier = "plena"): number {
   const code = lang.toLowerCase().replace("_", "-");
   if (!code.startsWith("pt")) return -1;
   const label = name.toLowerCase();
@@ -52,34 +54,43 @@ export function voiceScore(name: string, lang: string, localService?: boolean): 
   if (/compact|espeak|pico/.test(label)) score -= 6;
   // On phones the voices that are not "local" are the ones the browser streams from
   // the network, and they sound much more natural than the ones stored on the device.
-  if (localService === false) score += 4;
+  // On 2G they make every sentence wait for the network, so the stored voice wins there.
+  if (localService === false) score += tier === "leve" ? -12 : 4;
   return score;
 }
 
 export type VoiceInfo = { name: string; lang: string; localService?: boolean };
 
-/** Portuguese voices, best first. */
-export function rankVoices<T extends VoiceInfo>(voices: T[]): T[] {
+/** Portuguese voices, best first, for the connection tier. */
+export function rankVoices<T extends VoiceInfo>(voices: T[], tier: VoiceTier = "plena"): T[] {
   return voices
-    .map((voice) => ({ voice, score: voiceScore(voice.name, voice.lang, voice.localService) }))
+    .map((voice) => ({ voice, score: voiceScore(voice.name, voice.lang, voice.localService, tier) }))
     .filter((entry) => entry.score > 0)
     .sort((a, b) => b.score - a.score)
     .map((entry) => entry.voice);
 }
 
-/** The voice the person chose by name when it is still available, otherwise the best-sounding one. */
-export function pickVoice<T extends VoiceInfo>(voices: T[], preferredName?: string): T | undefined {
-  const ranked = rankVoices(voices);
+/**
+ * The voice the person chose by name when it is still available, otherwise the best-sounding one.
+ * On 2G a chosen network voice gives way to the best stored one (the choice stays saved for later).
+ */
+export function pickVoice<T extends VoiceInfo>(
+  voices: T[],
+  preferredName?: string,
+  tier: VoiceTier = "plena"
+): T | undefined {
+  const ranked = rankVoices(voices, tier);
   if (preferredName) {
     const chosen = ranked.find((voice) => voice.name === preferredName);
-    if (chosen) return chosen;
+    const stored = ranked.some((voice) => voice.localService !== false);
+    if (chosen && !(tier === "leve" && chosen.localService === false && stored)) return chosen;
   }
   return ranked[0];
 }
 
 /** The voice after `currentName` in the ranking, wrapping around. Used by the "Trocar voz" button. */
-export function nextVoiceName(voices: VoiceInfo[], currentName?: string): string | undefined {
-  const ranked = rankVoices(voices);
+export function nextVoiceName(voices: VoiceInfo[], currentName?: string, tier: VoiceTier = "plena"): string | undefined {
+  const ranked = rankVoices(voices, tier);
   if (ranked.length === 0) return undefined;
   const index = ranked.findIndex((voice) => voice.name === currentName);
   return ranked[(index + 1) % ranked.length].name;
@@ -100,7 +111,7 @@ function savedVoiceName(): string | undefined {
 
 function refreshVoice() {
   if (!canSpeak()) return;
-  chosenVoice = pickVoice(window.speechSynthesis.getVoices(), savedVoiceName());
+  chosenVoice = pickVoice(window.speechSynthesis.getVoices(), savedVoiceName(), currentVoiceTier());
 }
 
 /** Name of the voice being used, to show on screen. */
@@ -112,7 +123,7 @@ export function currentVoiceName(): string | undefined {
 /** How many Portuguese voices this phone offers. */
 export function voiceCount(): number {
   if (!canSpeak()) return 0;
-  return rankVoices(window.speechSynthesis.getVoices()).length;
+  return rankVoices(window.speechSynthesis.getVoices(), currentVoiceTier()).length;
 }
 
 /**
@@ -122,7 +133,7 @@ export function voiceCount(): number {
 export function chooseNextVoice(): string | undefined {
   if (!canSpeak()) return undefined;
   const voices = window.speechSynthesis.getVoices();
-  const next = nextVoiceName(voices, chosenVoice?.name);
+  const next = nextVoiceName(voices, chosenVoice?.name, currentVoiceTier());
   if (!next) return undefined;
   try {
     window.localStorage.setItem(VOICE_KEY, next);
@@ -173,7 +184,7 @@ export function speak(text: string, onDone?: () => void) {
     return;
   }
   try {
-    prepareVoice();
+    prepareVoice(); // also picks again: the connection may have changed since the last sentence
     const synth = window.speechSynthesis;
     synth.cancel();
     const utterance = new SpeechSynthesisUtterance(text);

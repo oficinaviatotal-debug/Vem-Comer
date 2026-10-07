@@ -539,14 +539,38 @@ export async function uploadProductPhoto(productId: string, photo: Blob): Promis
 }
 
 /** What this server can do for the menu. Any failure means "not available": the screen then uses the ready-made lists. */
-export async function fetchMenuCapabilities(): Promise<{ photo_menu: boolean }> {
+export type MenuCapabilities = { photo_menu: boolean; natural_voice: boolean };
+
+export async function fetchMenuCapabilities(): Promise<MenuCapabilities> {
+  const off: MenuCapabilities = { photo_menu: false, natural_voice: false };
   try {
     const response = await fetch(`${API_URL}/admin/menu/capabilities`, { headers: authHeaders() });
-    if (!response.ok) return { photo_menu: false };
+    if (!response.ok) return off;
     const body = await response.json();
-    return { photo_menu: body?.photo_menu === true };
+    return { photo_menu: body?.photo_menu === true, natural_voice: body?.natural_voice === true };
   } catch {
-    return { photo_menu: false };
+    return off;
+  }
+}
+
+/**
+ * The address of a sentence in the server's natural voice (made and kept on the first request), or
+ * null on any failure: the caller then speaks with the phone's voice. `signal` cuts a slow answer.
+ */
+export async function fetchNaturalVoiceUrl(text: string, signal?: AbortSignal): Promise<string | null> {
+  try {
+    const response = await fetch(`${API_URL}/admin/voz`, {
+      method: "POST",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+      signal,
+    });
+    if (!response.ok) return null;
+    const body = await response.json();
+    const url = typeof body?.url === "string" ? body.url : "";
+    return /^\/media\/voz\/[0-9a-f]{40}\.mp3$/.test(url) ? url : null;
+  } catch {
+    return null;
   }
 }
 

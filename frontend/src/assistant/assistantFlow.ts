@@ -9,10 +9,14 @@
  * A menu that already exists on paper takes the other road: the owner photographs it and
  * the server reads it (the screen does that, outside this file).
  *   type -> photo -> (prices, only the dishes the reading could not price) -> review -> saving -> done
+ *
+ * The quickest road is to say the menu: "x-tudo 25, x-salada 22, coca lata 6" (spokenMenu.ts reads it).
+ *   type -> speak (as many phrases as needed) -> (prices that were not said) -> review -> saving -> done
  */
 
 import { normalizeSpeech } from "../onboarding/tourEngine.ts";
 import { normalizePrice, type SpokenItems } from "./assistantLogic.ts";
+import type { SpokenMenu } from "./spokenMenu.ts";
 
 export type TemplateFull = {
   id: string;
@@ -32,10 +36,13 @@ export type DraftItem = {
 
 export type DraftCategory = { name: string; items: DraftItem[] };
 
-export type Step = "type" | "photo" | "pick" | "prices" | "review" | "saving" | "done";
+export type Step = "type" | "photo" | "speak" | "pick" | "prices" | "review" | "saving" | "done";
 
-/** Where the dishes came from: a ready-made list of the business type, or a photo of the owner's own menu. */
-export type Source = "template" | "photo";
+/**
+ * Where the dishes came from: a ready-made list of the business type, a photo of the owner's own
+ * menu, or the owner saying it. Photo and speech bring their own dishes, with most prices.
+ */
+export type Source = "template" | "photo" | "speech";
 
 /** What the server read from the photos of a menu (already cleaned by menuPhotoLogic). Price is "18.50" or "". */
 export type ParsedMenu = {
@@ -52,6 +59,8 @@ export type FlowState = {
   categoryIndex: number;
   /** Position in the list of selected dishes while the prices are being asked. */
   priceCursor: number;
+  /** Speech only: the last dish said, so a price said after a pause ("... 25") goes to it. */
+  lastSaid?: { categoryIndex: number; itemIndex: number };
 };
 
 export const MAX_ITEM_NAME = 150;
@@ -64,6 +73,17 @@ export function initialFlow(): FlowState {
 export function startPhoto(): FlowState {
   return { ...initialFlow(), step: "photo" };
 }
+
+/** The screen where the owner says the dishes with their prices. */
+export function startSpeak(): FlowState {
+  return { ...initialFlow(), step: "speak", source: "speech", templateName: "Cardápio falado" };
+}
+
+/** The owner brought the dishes (photo or speech): only the missing prices are asked. */
+const ownDishes = (state: FlowState) => state.source !== "template";
+
+/** Where "back" lands before the first price: the list of dishes of that road. */
+const dishesStep = (state: FlowState): Step => (state.source === "speech" ? "speak" : "pick");
 
 /**
  * The dishes the server read, all selected (the owner takes out what is not sold). Dishes the reading
@@ -300,7 +320,7 @@ export function skipCategory(state: FlowState): FlowState {
 /** Starts asking prices at the first dish that has none. Stays on "pick" when nothing is selected. */
 export function startPrices(state: FlowState): FlowState {
   const picked = selectedItems(state);
-  if (picked.length === 0) return { ...state, step: "pick" };
+  if (picked.length === 0) return { ...state, step: dishesStep(state) };
   const first = picked.findIndex((item) => !item.price);
   if (first < 0) return { ...state, step: "review" };
   return { ...state, step: "prices", priceCursor: first };
@@ -313,8 +333,8 @@ export function setCurrentPrice(state: FlowState, rawPrice: string): FlowState {
   if (!price || !current) return state;
 
   const updated = withItem(state, current.categoryIndex, current.itemIndex, (item) => ({ ...item, price }));
-  if (state.source === "photo") {
-    // the photo already gave most prices: go to the next dish that still has none
+  if (ownDishes(state)) {
+    // the photo or the speech already gave most prices: go to the next dish that still has none
     const next = selectedItems(updated).findIndex((item, index) => index > state.priceCursor && !item.price);
     return next < 0 ? { ...updated, step: "review", priceCursor: 0 } : { ...updated, priceCursor: next };
   }
@@ -333,8 +353,8 @@ export function skipCurrentPrice(state: FlowState): FlowState {
     price: "",
   }));
   const total = selectedItems(updated).length;
-  if (total === 0) return { ...updated, step: "pick", categoryIndex: 0, priceCursor: 0 };
-  if (state.source === "photo") {
+  if (total === 0) return { ...updated, step: dishesStep(state), categoryIndex: 0, priceCursor: 0 };
+  if (ownDishes(state)) {
     const next = selectedItems(updated).findIndex((item, index) => index >= state.priceCursor && !item.price);
     return next < 0 ? { ...updated, step: "review", priceCursor: 0 } : { ...updated, priceCursor: next };
   }
@@ -343,7 +363,7 @@ export function skipCurrentPrice(state: FlowState): FlowState {
 
 /** Goes back one dish. From the review it returns to the last dish. */
 export function backOnePrice(state: FlowState): FlowState {
-  if (state.source === "photo") {
+  if (ownDishes(state)) {
     // only the dishes that were missing a price are asked; before the first one, the list of dishes is the way back
     if (state.step === "prices") {
       const picked = selectedItems(state);
@@ -351,7 +371,7 @@ export function backOnePrice(state: FlowState): FlowState {
         if (!picked[index].price) return { ...state, priceCursor: index };
       }
     }
-    return { ...state, step: "pick", categoryIndex: 0 };
+    return { ...state, step: dishesStep(state), categoryIndex: 0 };
   }
   if (state.step === "review") {
     const total = selectedItems(state).length;
@@ -408,4 +428,106 @@ export function importPayload(state: FlowState): ImportPayload {
 
 export function setStep(state: FlowState, step: Step): FlowState {
   return { ...state, step };
+}
+
+/* ---------------------------------------------------------------- speech */
+
+export type SpokenResult = {
+  state: FlowState;
+  /** Dishes that are new on the list. */
+  added: Array<{ name: string; price: string }>;
+  /** Dishes that were already on the list and got a (new) price. */
+  priced: Array<{ name: string; price: string }>;
+};
+
+/** The dish anywhere on the list with this name (same words, any accent or plural). */
+function findDish(state: FlowState, name: string): { categoryIndex: number; itemIndex: number } | null {
+  const wanted = key(name);
+  for (let c = 0; c < state.categories.length; c += 1) {
+    const i = state.categories[c].items.findIndex((item) => key(item.name) === wanted);
+    if (i >= 0) return { categoryIndex: c, itemIndex: i };
+  }
+  return null;
+}
+
+/**
+ * Adds what the owner said. A dish said again with a price gets that price ("não, o x-tudo é 26");
+ * a price said alone goes to the last dish said without one.
+ */
+export function addSpokenMenu(state: FlowState, menu: SpokenMenu): SpokenResult {
+  let next = state;
+  const added: SpokenResult["added"] = [];
+  const priced: SpokenResult["priced"] = [];
+
+  if (menu.lonePrice && next.lastSaid) {
+    const { categoryIndex, itemIndex } = next.lastSaid;
+    const item = next.categories[categoryIndex]?.items[itemIndex];
+    if (item && item.selected && !item.price) {
+      next = withItem(next, categoryIndex, itemIndex, (current) => ({ ...current, price: menu.lonePrice }));
+      priced.push({ name: item.name, price: menu.lonePrice });
+    }
+  }
+
+  for (const dish of menu.dishes) {
+    const name = cleanItemName(dish.name);
+    if (!name) continue;
+    const price = normalizePrice(dish.price) ?? "";
+    const found = findDish(next, name);
+    if (found) {
+      const item = next.categories[found.categoryIndex].items[found.itemIndex];
+      next = withItem(next, found.categoryIndex, found.itemIndex, (current) => ({
+        ...current,
+        selected: true,
+        price: price || current.price,
+      }));
+      if (price && price !== item.price) priced.push({ name: item.name, price });
+      else if (!item.selected) added.push({ name: item.name, price: price || item.price });
+      next = { ...next, lastSaid: found };
+      continue;
+    }
+    const categoryName = cleanItemName(dish.category) || "Pratos";
+    let categoryIndex = next.categories.findIndex((category) => key(category.name) === key(categoryName));
+    if (categoryIndex < 0) {
+      next = { ...next, categories: [...next.categories, { name: categoryName, items: [] }] };
+      categoryIndex = next.categories.length - 1;
+    }
+    const itemIndex = next.categories[categoryIndex].items.length;
+    next = {
+      ...next,
+      categories: next.categories.map((category, c) =>
+        c !== categoryIndex
+          ? category
+          : { ...category, items: [...category.items, { name, selected: true, custom: true, price }] }
+      ),
+      lastSaid: { categoryIndex, itemIndex },
+    };
+    added.push({ name, price });
+  }
+  return { state: next, added, priced };
+}
+
+/** "Tira a coca": takes the dish off the list. Returns the same state when no dish has that name. */
+export function removeSpoken(state: FlowState, rawName: string): { state: FlowState; removed: string } {
+  const wanted = key(rawName);
+  if (!wanted) return { state, removed: "" };
+  let found = findDish(state, rawName);
+  if (!found) {
+    // "tira a coca" when the list has "Coca lata": the only dish that starts with those words
+    const matches: Array<{ categoryIndex: number; itemIndex: number }> = [];
+    state.categories.forEach((category, categoryIndex) =>
+      category.items.forEach((item, itemIndex) => {
+        if (item.selected && ` ${key(item.name)} `.includes(` ${wanted} `)) matches.push({ categoryIndex, itemIndex });
+      })
+    );
+    if (matches.length === 1) found = matches[0];
+  }
+  if (!found) return { state, removed: "" };
+  const item = state.categories[found.categoryIndex].items[found.itemIndex];
+  if (!item.selected) return { state, removed: "" };
+  return { state: removeItem(state, found.categoryIndex, found.itemIndex), removed: item.name };
+}
+
+/** "Pronto": the prices that were not said are asked one by one, then the review. */
+export function finishSpeak(state: FlowState): FlowState {
+  return startPrices({ ...state, categoryIndex: 0, priceCursor: 0 });
 }

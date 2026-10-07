@@ -172,6 +172,9 @@ const UNITS: Record<string, number> = {
   oitocentos: 800, novecentos: 900,
 };
 
+/** Every number word parseSpokenNumber understands ("vinte", "cinco", "cem"...), without accents. */
+export const NUMBER_WORDS: ReadonlySet<string> = new Set(Object.keys(UNITS));
+
 /** Words that may sit around a number ("mesa cinco", "vinte reais") without changing it. */
 const NUMBER_FILLERS = new Set([
   "e", "com", "de", "o", "a", "reais", "real", "rs", "r", "centavos", "centavo",
