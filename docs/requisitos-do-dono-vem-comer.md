@@ -95,9 +95,12 @@ Funciona para quem é analfabeto e para quem vai usar 100% das funções.
 | 42 | **Entrega com motoqueiro:** o caixa libera o pedido por região; o motoqueiro leva e recebe por Pix, cartão ou dinheiro. Dinheiro fica "em aberto" no caixa em nome do motoqueiro (pedido nº, troco para quanto) até o acerto. Na entrega, o cliente passa o **código** que recebeu (e-mail ou tela do pedido) e o motoqueiro registra pelo app do motoqueiro ou por WhatsApp; o sistema guarda o tempo de cada entrega e a eficiência de cada motoqueiro. | Falta (detalha os itens 7 e 9). Regiões por CEP e bairro, cadastradas pelo restaurante com a taxa de cada uma, sem pagar serviço de mapa. App do motoqueiro: página leve com PIN. |
 | 43 | **Voz conforme o aparelho e a internet:** no 2G, a voz do próprio celular; no 3G, 4G e 5G, a melhor voz disponível (frases gravadas e voz natural do servidor). Sempre a mais rápida e a mais fácil. | Em andamento (07/10/2026). |
 | 44 | **Visual de ponta:** intuitivo, fácil de ler e de usar, bonito, com abas bem divididas; benchmark do que há de mais novo e ideia própria. | Em andamento (07/10/2026). |
+| 45 | **Conta da mesa pelo QR, junto com o garçom:** o cliente lê o QR da mesa, abre a conta e pede comida e bebida. O cupom sai na cozinha (comida), no balcão (bebida) e no caixa. O garçom lê o mesmo QR da mesa e lança o que pediram a ele; tudo cai na mesma conta. | Em parte: QR por mesa e pedido pelo cliente existem; falta a conta aberta da mesa, o lançamento do garçom, a separação cozinha/balcão por categoria e a impressão. |
+| 46 | **Taxa de serviço (10%) opcional, conforme a cidade e o estado:** um botão liga ou desliga; quando ligada, aparece como opcional, com o nome que o restaurante escolher, sem entrar sozinha no total; no caixa e no app do garçom fica marcado se o cliente pagou ou não. | Falta. O texto na conta e as regras locais o advogado confere. |
+| 47 | **Fechamento e conciliação do caixa:** quando sobra ou falta dinheiro, o sistema compara pedidos, pagamentos, taxas e trocos e aponta o lançamento mais provável do erro (por exemplo, taxa paga e não marcada, troco anotado errado, pedido em dinheiro sem baixa), com o grau de certeza. | Falta. É uma indicação para o dono conferir, nunca uma acusação a um funcionário. |
 
 Os itens 31 a 37 vêm do benchmark (`docs/benchmark-ecossistema.md`, seção 9) e nenhum entra no RC de 13/10.
-Os itens 38 a 44 são falas do GD de 07/10/2026.
+Os itens 38 a 47 são falas do GD de 07/10/2026.
 
 ## Como o dono testou e o que não funcionou (guia antigo)
 
