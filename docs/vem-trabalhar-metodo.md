@@ -41,6 +41,9 @@ usa a mesma peça da entrega por CEP do Vem Comer.
 - Certificado é de curso livre. Diploma técnico ou superior só instituição credenciada emite: o Vem Trabalhar
   faz o link, o aluno e o match. Conferir credenciamento antes de fechar com a escola.
 - Curso livre não precisa de MEC (palavra do GD); confirmar com advogado antes de abrir.
+- **Por enquanto, a escola própria só faz curso livre** (decisão do GD, 07/10/2026). Todo curso que depende do MEC
+  (técnico, graduação, pós, extensão com certificado de faculdade) fica, no começo, com os parceiros. O GD vai estudar
+  os benchmarks e ligar para essas instituições para saber quais cursos delas têm ligação com o MEC.
 - **Meta: 200 cursos livres nossos por região** (decisão do GD, 06/10/2026), podendo repetir entre regiões.
   Catálogo na aba `Catálogo por região`: 120 do núcleo nacional (os 71 que já existiam + 49 novos) e 80 de cada região,
   394 cursos diferentes no total. São ideias; cada um ainda precisa ser escrito, revisado por quem conhece o ofício e
