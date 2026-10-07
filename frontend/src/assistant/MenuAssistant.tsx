@@ -69,8 +69,10 @@ import {
 } from "./assistantPrompts";
 import { readingIntro, wantsPhoto } from "./menuPhotoLogic";
 import { guessCategory, parseRemoval, parseSpokenMenu, soundsLikeMenu, type SpokenMenu } from "./spokenMenu";
+import { priceDoubt } from "./priceCheck";
 import { normalizeSpeech } from "../onboarding/tourEngine";
 import {
+  DICTATION_PATIENCE_MS,
   LISTEN_DELAY_MS,
   canListen,
   canSpeak,
@@ -100,6 +102,19 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
 
 /** After this many silent turns in a row the assistant stops listening and shows how to fix the microphone. */
 const SILENT_TURNS_BEFORE_HELP = 2;
+
+/** Under a dish whose price looks like a hearing mistake: points it out, never changes it. */
+function PriceHint({ name, price }: { name: string; price: string }) {
+  const doubt = price ? priceDoubt(name, price) : null;
+  if (!doubt) return null;
+  return (
+    <span className="asst-price-hint" role="note">
+      {doubt.maybe
+        ? `Confira: ${formatPrice(price)}? Era ${formatPrice(doubt.maybe)}?`
+        : `Confira: ${formatPrice(price)} está certo?`}
+    </span>
+  );
+}
 
 export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGuide }: Props) {
   const [templates, setTemplates] = useState<MenuTemplateSummary[] | null>(null);
@@ -198,10 +213,14 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
     }
     setStatus("listening");
     setHeard("");
+    // Saying the menu is a dictation: the owner pauses to think of the next dish, and the phone closes
+    // the microphone at the first pause. Here the assistant waits for a real silence before answering.
+    const dictating = flowRef.current.step === "speak";
     const hearing = hear({
       onPartial: (text) => {
         if (session === sessionRef.current) setHeard(text);
       },
+      patienceMs: dictating ? DICTATION_PATIENCE_MS : undefined,
     });
     hearingRef.current = hearing;
     const transcript = await hearing.result;
@@ -733,7 +752,13 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
         <p>{prompt || promptFor(flow)}</p>
         {status === "speaking" && <small>Falando…</small>}
         {status === "listening" && (
-          <small className="asst-listening">{heard ? `Ouvindo: ${heard}` : "Ouvindo… pode falar."}</small>
+          <small className="asst-listening">
+            {heard
+              ? `Ouvindo: ${heard}`
+              : flow.step === "speak"
+                ? "Ouvindo… pode falar com pausas, eu espero."
+                : "Ouvindo… pode falar."}
+          </small>
         )}
       </div>
 
@@ -824,6 +849,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
                         >
                           Tirar
                         </button>
+                        <PriceHint name={item.name} price={item.price} />
                       </li>
                     ))}
                   </ul>
@@ -1081,6 +1107,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
                       >
                         Tirar
                       </button>
+                      <PriceHint name={item.name} price={item.price} />
                     </li>
                   ))}
                 </ul>

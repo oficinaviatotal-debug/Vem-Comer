@@ -29,6 +29,25 @@ número que é parte do nome ("Coca 2 litros", "Pizza quatro queijos", "Açaí 5
 conversa sem preço ("agora vou falar as bebidas", "bom dia") não vira prato; lista longa sem preço
 aparece como "não separei isto" para o dono tocar. Detalhes em `frontend/src/assistant/spokenMenu.ts`.
 
+### O que o primeiro teste no celular mostrou (GD, 07/10/2026) e o que mudou
+
+O GD falou o cardápio num celular de verdade pela primeira vez e apareceram três problemas:
+
+1. **O assistente cortava no meio.** O celular fecha o microfone na primeira pausa (cerca de 1,5 s) e o
+   assistente já respondia "Anotei...", falando por cima do dono. Agora, na tela de falar o cardápio, ele
+   **espera 3 segundos de silêncio de verdade** antes de fechar a frase e **reabre o microfone sozinho** nas
+   pausas, juntando tudo o que foi dito. A tela mostra "Ouvindo… pode falar com pausas, eu espero" e as
+   palavras aparecem conforme ele fala. Nas perguntas curtas ("sim", "pronto", um preço) nada mudou: a
+   primeira frase fechada é a resposta. A regra está em `hearing.ts`, com teste usando um microfone falso.
+2. **Conversa virava prato.** "Vamos lá x-tudo 25" virava o prato "Vamos lá x-tudo", "Vamos fazer 55" virava
+   um prato de R$ 55 e "unidade se for o combo 3" virava um prato de R$ 3. Agora as palavras de abertura
+   ("vamos lá", "vou falar", "bora", "o próximo é"...) saem do nome, conversa com número e sem prato é
+   ignorada, e frase de preço condicional ("unidade se for o combo") não vira prato.
+3. **Preço absurdo passava.** Coca lata saiu R$ 300,00 (provavelmente um "3,00" mal ouvido). O sistema
+   **nunca muda o preço sozinho**, mas agora marca o prato com "Confira: R$ 300,00? Era R$ 3,00?" na lista e
+   na conferência, e a voz avisa: "Confira o preço de Coca lata: 300 reais. Era 3 reais? Para corrigir, diga o
+   nome e o preço." O teto de cada tipo (bebida R$ 80, lanche R$ 120, prato R$ 400...) está em `priceCheck.ts`.
+
 A voz que responde é escolhida pela internet do celular (`docs/voz-do-guia.md`).
 
 ## Como a conversa anda (pelo tipo de negócio)
@@ -72,12 +91,15 @@ A voz que responde é escolhida pela internet do celular (`docs/voz-do-guia.md`)
 - `frontend/src/assistant/assistantFlow.ts`: os passos como funções puras.
 - `frontend/src/assistant/assistantPrompts.ts`: o que ele fala.
 - `frontend/src/assistant/voiceIO.ts`: falar e escutar como promessas.
+- `frontend/src/assistant/hearing.ts`: a escuta (pergunta curta ou ditado com pausas), sem depender do navegador.
+- `frontend/src/assistant/priceCheck.ts`: preço que parece erro de ouvido.
 - `frontend/src/assistant/MenuAssistant.tsx` e `assistant.css`: a tela.
 - `tests/assistant/*.test.mjs`: testes da lógica e dos passos.
 
 ## Como foi verificado
 
-- Testes automáticos da lógica e dos passos (35).
+- Testes automáticos da lógica e dos passos (35), mais 29 do ditado com pausas, da conversa que virava prato e do
+  preço absurdo (07/10/2026).
 - Conversa completa num navegador Chromium simulando celular (390 x 844), com a voz
   simulada: tipo de negócio, três categorias por voz, nove preços por voz, cadastro; e
   outro roteiro só por toque (digitar preço inválido, corrigir preço na conferência,
@@ -89,7 +111,12 @@ A voz que responde é escolhida pela internet do celular (`docs/voz-do-guia.md`)
   reconhecimento de voz do Chrome no Android (tempo de resposta, abrir o microfone sem
   um toque a cada resposta, qualidade das vozes) precisa ser visto num aparelho.
 - O tempo entre o fim da fala e a resposta depende do reconhecimento do próprio
-  celular (em geral 1 a 2 segundos depois do silêncio).
+  celular (em geral 1 a 2 segundos depois do silêncio). Na tela de falar o cardápio o assistente soma 3
+  segundos de espera própria. **O ditado com pausas ainda não foi testado num celular**: a lógica está testada
+  com um microfone falso, mas o Chrome do Android pode tocar o som de "microfone ligado" a cada reabertura.
+  Se incomodar, o próximo passo é testar o modo contínuo do navegador.
+- A ficha técnica por voz (painel de Custos) também fala frases longas e ainda usa a escuta antiga, que fecha
+  na primeira pausa.
 - A voz natural do servidor está pronta mas desligada até escolher o provedor
   (`docs/voz-do-guia.md`); até lá, a voz é a do celular.
 - Falar uma lista de pratos **sem preço** e sem pausa ("coxinha pastel empada quibe") não dá para

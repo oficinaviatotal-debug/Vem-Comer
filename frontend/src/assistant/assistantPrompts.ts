@@ -12,6 +12,7 @@ import {
   type SpokenResult,
 } from "./assistantFlow.ts";
 import { spokenPrice } from "./assistantLogic.ts";
+import { priceDoubt } from "./priceCheck.ts";
 
 export const BUSINESS_QUESTION =
   "Vamos montar o seu cardápio. Fale os pratos com o preço, por exemplo: X-tudo, 25 reais. Ou diga o tipo do seu negócio: lanchonete, pizzaria, restaurante, bar, açaí, padaria, churrasco ou japonês.";
@@ -49,6 +50,13 @@ export function spokenFeedback(result: Pick<SpokenResult, "added" | "priced">): 
   }
   for (const dish of priced.slice(0, 2)) parts.push(`${dish.name}, ${spokenPrice(dish.price)}.`);
   if (priced.length > 2) parts.push(`E mais ${priced.length - 2} preços.`);
+  // A price that looks like a hearing mistake ("300" for a canned soda): say it, never change it.
+  const doubtful = [...added, ...priced].find((dish) => dish.price && priceDoubt(dish.name, dish.price));
+  if (doubtful) {
+    const maybe = priceDoubt(doubtful.name, doubtful.price)?.maybe;
+    const asking = maybe ? ` Era ${spokenPrice(maybe)}?` : "";
+    parts.push(`Confira o preço de ${doubtful.name}: ${spokenPrice(doubtful.price)}.${asking} Para corrigir, diga o nome e o preço.`);
+  }
   return parts.join(" ");
 }
 
