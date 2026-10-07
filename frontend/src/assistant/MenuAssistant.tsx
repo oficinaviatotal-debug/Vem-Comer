@@ -13,6 +13,7 @@ import { parseSpokenNumber } from "../onboarding/tourEngine";
 import PhotoSession from "../photos/PhotoSession";
 import MenuPhotoStep from "./MenuPhotoStep";
 import ConfirmButton from "../service/ConfirmButton";
+import FeedbackAsk from "../feedback/FeedbackAsk";
 import { prepareVoice } from "../onboarding/speech";
 import {
   formatPrice,
@@ -1122,7 +1123,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
               {result.products_skipped > 0 ? `, ${result.products_skipped} já existiam` : ""}.
             </p>
           )}
-          <p className="asst-help">Foto ajuda o cliente a escolher. Em breve: logomarca.</p>
+          <p className="asst-help">Foto ajuda o cliente a escolher.</p>
           <div className="asst-actions">
             <button
               id="assistant-photos"
@@ -1149,6 +1150,12 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
               Cadastrar mais pratos
             </button>
           </div>
+          <FeedbackAsk
+            context={
+              flow.source === "speech" ? "cardapio_falado" : flow.source === "photo" ? "cardapio_foto" : "cardapio_modelo"
+            }
+            title="Como foi montar o cardápio?"
+          />
         </div>
       )}
 

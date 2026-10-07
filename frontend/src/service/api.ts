@@ -696,6 +696,20 @@ export async function fetchMenuCapabilities(): Promise<MenuCapabilities> {
   }
 }
 
+/** Sends the "Como foi?" answer. True when it was saved. */
+export async function sendFeedback(payload: { context: string; rating: number; comment: string }): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/admin/feedback`, {
+      method: "POST",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * The address of a sentence in the server's natural voice (made and kept on the first request), or
  * null on any failure: the caller then speaks with the phone's voice. `signal` cuts a slow answer.

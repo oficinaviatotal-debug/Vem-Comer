@@ -28,6 +28,7 @@ import logo_image
 import media_store
 import menu_photo
 import voice_tts
+import feedback
 import menu_import
 import menu_templates
 import pix
@@ -1878,6 +1879,43 @@ def admin_natural_voice():
         return error_response("Erro ao preparar a voz", e)
 
     return jsonify({"url": url}), 200
+
+
+@app.route('/api/admin/feedback', methods=['POST'])
+@require_auth
+def admin_feedback():
+    """Guarda o "Como foi?" do fim de uma tarefa: rostinho (1 a 3) e, se a pessoa quis, o que melhorar."""
+    company_id = request.user.get('company_id')
+    user_id = request.user.get('user_id')
+
+    try:
+        context, rating, comment = feedback.normalize(request.get_json(silent=True))
+        feedback.limiter.check(f"{company_id}:{user_id}")
+    except feedback.FeedbackError as e:
+        return jsonify({"error": str(e)}), 400
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO feedback (company_id, user_id, context, rating, comment)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (company_id, user_id, context, rating, comment or None),
+        )
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        if conn is not None:
+            conn.rollback()
+        return error_response("Nao foi possivel guardar a resposta", e)
+    finally:
+        if conn is not None:
+            conn.close()
+
+    return jsonify({"ok": True}), 201
 
 
 @app.route('/api/admin/menu/parse-photo', methods=['POST'])
