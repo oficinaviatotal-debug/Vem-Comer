@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import "./mesa.css";
 import { createTableCall, fetchTableCall, HttpError } from "../service/api";
 import {
@@ -24,6 +24,48 @@ type Props = {
   jobsUrl?: string;
   onSeeMenu: () => void;
 };
+
+/** Little line icons so each button is recognised at a glance, even by someone who reads slowly. */
+const CALL_ICONS: Record<CallKind, ReactNode> = {
+  garcom: (
+    <>
+      <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6" />
+      <path d="M10 19a2 2 0 0 0 4 0" />
+    </>
+  ),
+  conta: (
+    <>
+      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" />
+      <path d="M9 8h6M9 12h6" />
+    </>
+  ),
+  agua: <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" />,
+  limpeza: (
+    <>
+      <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" />
+      <path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z" />
+    </>
+  ),
+};
+
+function CallIcon({ kind }: { kind: CallKind }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="24"
+      height="24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      focusable="false"
+      aria-hidden="true"
+    >
+      {CALL_ICONS[kind]}
+    </svg>
+  );
+}
 
 function browserStorage() {
   try {
@@ -133,6 +175,9 @@ export default function TableHub({ companyId, slug, tableId, tableNumber, jobsUr
         aria-busy={busy}
         onClick={() => void call(option.kind)}
       >
+        <span className="mesa-call-icon">
+          <CallIcon kind={option.kind} />
+        </span>
         <span className="mesa-call-label">{busy ? "Avisando…" : state.label}</span>
         {size === "big" && <span className="mesa-call-note">{state.note}</span>}
       </button>

@@ -59,7 +59,31 @@
 }
 
 .mesa-call-big {
-  min-height: 104px;
+  justify-content: flex-start;
+  min-height: 132px;
+}
+
+/* The small requests (water, cleaning) sit in a row: icon, then the word. */
+.mesa-call-small {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.mesa-call-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--papel-2);
+  color: var(--mata);
+}
+
+.mesa-call-small .mesa-call-icon {
+  width: 36px;
+  height: 36px;
 }
 
 .mesa-call-label {
@@ -91,6 +115,11 @@
   color: var(--folha);
 }
 
+.mesa-call.is-called .mesa-call-icon {
+  background: rgba(255, 255, 255, .6);
+  color: var(--folha);
+}
+
 /* atendido: verde, discreto */
 .mesa-call.is-answered {
   border-color: var(--mata);
@@ -98,6 +127,11 @@
 
 .mesa-call.is-answered .mesa-call-label {
   color: var(--mata);
+}
+
+.mesa-call.is-answered .mesa-call-icon {
+  background: var(--mata);
+  color: #fff;
 }
 
 .mesa-live {

@@ -63,20 +63,32 @@ export default function MenuView({ groups, cart, query, search, onAdd, onLess }:
               const photo = mediaUrl(product.thumb_url);
               return (
                 <li className={photo ? "cust-item has-photo" : "cust-item"} key={product.id}>
-                  <div className="cust-item-text">
-                    <div className="leader-row">
+                  <div className="cust-item-main">
+                    <div className="cust-item-text">
                       <h3 className="cust-item-name">{product.name}</h3>
-                      <span className="leader" aria-hidden="true" />
-                      <span className="money">{formatMoney(product.price)}</span>
+                      {product.description && <p className="cust-item-desc">{product.description}</p>}
                     </div>
 
-                    {product.description && <p className="cust-item-desc">{product.description}</p>}
+                    {photo && (
+                      <img
+                        className="cust-item-photo"
+                        src={photo}
+                        alt=""
+                        width={96}
+                        height={96}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    )}
+                  </div>
 
+                  <div className="cust-item-foot">
+                    <span className="money">{formatMoney(product.price)}</span>
                     <div className="cust-qty" id={product.id === firstId ? "cust-first-add" : undefined}>
                       {quantity === 0 ? (
                         <button
                           type="button"
-                          className="btn btn-outline btn-sm"
+                          className="btn btn-add btn-sm"
                           onClick={() => onAdd(product)}
                           aria-label={`Adicionar ${product.name}`}
                         >
@@ -92,18 +104,6 @@ export default function MenuView({ groups, cart, query, search, onAdd, onLess }:
                       )}
                     </div>
                   </div>
-
-                  {photo && (
-                    <img
-                      className="cust-item-photo"
-                      src={photo}
-                      alt=""
-                      width={112}
-                      height={84}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  )}
                 </li>
               );
             })}
