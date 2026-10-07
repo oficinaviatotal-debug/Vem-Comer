@@ -1,0 +1,561 @@
+<title>Operador de Caixa: Troco Certo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one lesson as a phone-first stepper (7 steps), bottom action bar, the counter scene drawn in SVG. */
+:root {
+  --bg: #F4F7FB;
+  --card: #FFFFFF;
+  --ink: #0B2545;
+  --muted: #4A5A6E;
+  --line: rgba(11, 37, 69, .12);
+  --brand: #1E5AA8;
+  --brand-2: #174C90;
+  --bright: #3B82F6;
+  --sky: #E8F0FB;
+  --sun: #FFC83A;
+  --sun-ink: #5C4200;
+  --ok: #1E6B3C;
+  --ok-bg: #E6F4EA;
+  --bad: #B42318;
+  --bad-bg: #FDECEA;
+  --note-10: #D9E8D2;
+  --note-5: #E6D8EE;
+  --note-2: #D3E4F2;
+  --coin: #E9D7A6;
+  --scene-bg: #E8F0FB; /* the drawing keeps its own light ground in both themes */
+  --shadow: 0 1px 2px rgba(11, 37, 69, .06), 0 16px 30px -20px rgba(11, 37, 69, .45);
+  --font-display: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+  --font-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0A1424; --card: #111E33; --ink: #E6EDF8; --muted: #A7B4C8; --line: rgba(230, 237, 248, .14);
+    --brand: #5B95E6; --brand-2: #3E7BD3; --bright: #7FB0F5; --sky: #16294A; --sun: #FFC83A; --sun-ink: #2B2000;
+    --ok: #7BD49A; --ok-bg: #12301F; --bad: #FF8A80; --bad-bg: #3A1513;
+    --note-10: #2C4425; --note-5: #3B2C48; --note-2: #23384D; --coin: #4A3F20;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 16px 30px -20px rgba(0, 0, 0, .8);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0A1424; --card: #111E33; --ink: #E6EDF8; --muted: #A7B4C8; --line: rgba(230, 237, 248, .14);
+  --brand: #5B95E6; --brand-2: #3E7BD3; --bright: #7FB0F5; --sky: #16294A; --sun: #FFC83A; --sun-ink: #2B2000;
+  --ok: #7BD49A; --ok-bg: #12301F; --bad: #FF8A80; --bad-bg: #3A1513;
+  --note-10: #2C4425; --note-5: #3B2C48; --note-2: #23384D; --coin: #4A3F20;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 16px 30px -20px rgba(0, 0, 0, .8);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 var(--font-body);
+  padding-inline: 16px;
+}
+.wrap { max-width: 560px; margin: 0 auto; padding-block: 16px 112px; display: flex; flex-direction: column; gap: 16px; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h1 { font-size: 1.75rem; line-height: 1.1; }
+h2 { font-size: 1.375rem; line-height: 1.15; }
+p { margin: 0; }
+button { font: inherit; }
+:focus-visible { outline: 3px solid var(--bright); outline-offset: 2px; }
+
+.top { display: flex; align-items: center; gap: 10px; }
+.mark { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: linear-gradient(160deg, #3A7BD5, #1E5AA8 55%, #174C90); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 8px 16px -8px rgba(30,90,168,.8); flex: 0 0 auto; }
+.brand { display: flex; flex-direction: column; line-height: 1.2; }
+.brand strong { font-family: var(--font-display); font-size: 1.05rem; }
+.brand span { font-size: .8rem; color: var(--muted); letter-spacing: .02em; }
+
+.course { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-size: .75rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--brand); }
+.meta { font-size: .9rem; color: var(--muted); }
+
+.steps { display: flex; gap: 6px; flex-wrap: wrap; padding: 0; margin: 0; list-style: none; }
+.steps button {
+  border: 1px solid var(--line); background: var(--card); color: var(--muted);
+  border-radius: 999px; padding: 6px 11px; font-size: .8rem; font-weight: 600; cursor: pointer; min-height: 32px;
+}
+.steps button[aria-current="step"] { background: var(--brand); border-color: var(--brand-2); color: #fff; }
+.steps button.done { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.kind { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--brand); background: var(--sky); border-radius: 999px; padding: 4px 10px; }
+
+.guide { display: flex; gap: 12px; align-items: flex-start; }
+.guide .face { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%; background: var(--sun); color: var(--sun-ink); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; }
+.bubble { background: var(--sky); border-radius: 4px 16px 16px 16px; padding: 10px 14px; font-size: .95rem; }
+
+.btn {
+  min-height: 48px; border-radius: 12px; padding: 0 18px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+}
+.btn-primary { background: linear-gradient(180deg, #2A6CC4, #1E5AA8); border-color: #174C90; color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 2px 0 #143F78, 0 10px 18px -12px rgba(30,90,168,.9); }
+.btn-primary:disabled { opacity: .5; cursor: default; }
+.btn-ghost { background: transparent; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* video placeholder */
+.video { position: relative; border-radius: 14px; overflow: hidden; background: linear-gradient(170deg, #12305C, #0B2545); aspect-ratio: 16 / 9; max-width: 100%; }
+.video svg { width: 100%; height: 100%; display: block; }
+.caption { position: absolute; left: 12px; right: 12px; bottom: 10px; color: #fff; font-weight: 600; font-size: .95rem; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.slide-coin { animation: slide 2.4s ease-in-out infinite alternate; }
+@keyframes slide { from { transform: translateX(0); } to { transform: translateX(48px); } }
+@media (prefers-reduced-motion: reduce) { .slide-coin { animation: none; } }
+
+.reading p + p { margin-top: 10px; }
+.reading strong { color: var(--brand); }
+
+/* scene */
+.scene { border-radius: 14px; background: var(--scene-bg); overflow: hidden; }
+.scene svg { width: 100%; height: auto; display: block; }
+.spot { cursor: pointer; }
+.spot circle.ring { fill: transparent; stroke: transparent; stroke-width: 3; }
+.spot:hover circle.ring, .spot:focus circle.ring { stroke: var(--bright); }
+.spot.found-bad circle.ring { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 12%, transparent); }
+.spot.found-ok circle.ring { stroke: var(--ok); fill: color-mix(in srgb, var(--ok) 12%, transparent); }
+
+.feedback { border-radius: 12px; padding: 10px 14px; font-weight: 600; }
+.feedback.ok { background: var(--ok-bg); color: var(--ok); }
+.feedback.bad { background: var(--bad-bg); color: var(--bad); }
+.feedback.info { background: var(--sky); color: var(--ink); }
+
+/* change maker */
+.ticket { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; text-align: center; }
+.ticket div { border: 1px dashed var(--line); border-radius: 12px; padding: 8px 4px; }
+.ticket small { display: block; font-size: .75rem; color: var(--muted); }
+.ticket b { font-family: var(--font-display); font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.money { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.cash {
+  min-height: 56px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer;
+  font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 6px 12px -10px rgba(0,0,0,.6);
+}
+.cash.n10 { background: var(--note-10); }
+.cash.n5 { background: var(--note-5); }
+.cash.n2 { background: var(--note-2); }
+.cash.coin { background: var(--coin); border-radius: 999px; }
+.tray { min-height: 64px; border-radius: 12px; border: 1px solid var(--line); padding: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tray:empty::before { content: "Toque nas notas e moedas para montar o troco."; color: var(--muted); font-size: .9rem; }
+.chipcash { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 4px 10px; font-weight: 600; cursor: pointer; font-variant-numeric: tabular-nums; }
+.sum { font-family: var(--font-display); font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+
+textarea { width: 100%; min-height: 110px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 12px; font: inherit; resize: vertical; }
+label.field { display: flex; flex-direction: column; gap: 6px; font-weight: 600; }
+input[type="text"] { min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 0 12px; font: inherit; }
+
+.quiz { display: flex; flex-direction: column; gap: 8px; }
+.option { text-align: left; min-height: 52px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 10px 14px; cursor: pointer; font-weight: 500; }
+.option.right { border-color: var(--ok); background: var(--ok-bg); color: var(--ok); font-weight: 700; }
+.option.wrong { border-color: var(--bad); background: var(--bad-bg); color: var(--bad); }
+.score { font-size: .9rem; color: var(--muted); }
+
+.cert { border-radius: 16px; padding: 22px 18px; background: var(--card); border: 2px solid var(--brand); box-shadow: inset 0 0 0 6px var(--sky); text-align: center; display: flex; flex-direction: column; gap: 6px; }
+.cert .who { font-family: var(--font-display); font-size: 1.5rem; min-height: 2rem; overflow-wrap: anywhere; }
+.cert small { color: var(--muted); }
+
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+  background: color-mix(in srgb, var(--card) 92%, transparent); border-top: 1px solid var(--line);
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  backdrop-filter: blur(8px);
+}
+.bar .inner { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px; }
+.note { font-size: .85rem; color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="mark" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18L18 5"/><path d="M9 5h9v9"/></svg>
+    </div>
+    <div class="brand"><strong>Vem Trabalhar · Escola</strong><span>Venha aprender</span></div>
+  </header>
+
+  <section class="course" aria-labelledby="course-title">
+    <span class="eyebrow">Curso livre · Operador de caixa · 8 horas</span>
+    <h1 id="course-title">Lição 3: troco certo, cliente tranquilo</h1>
+    <p class="meta">Uns 15 minutos. Dá para parar e voltar quando quiser.</p>
+  </section>
+
+  <ol class="steps" id="steps" aria-label="Partes da lição"></ol>
+
+  <main id="stage" aria-live="polite"></main>
+
+  <p class="note">Esta é uma lição de exemplo, para mostrar o jeito dos cursos do Vem Trabalhar. O vídeo ainda é um rascunho animado. A prova final do curso não elimina ninguém: quem não passa refaz com perguntas novas.</p>
+</div>
+
+<nav class="bar" aria-label="Avançar na lição">
+  <div class="inner">
+    <button type="button" class="btn btn-ghost" id="back">Voltar</button>
+    <button type="button" class="btn btn-primary" id="next">Próximo</button>
+  </div>
+</nav>
+
+<script>
+(function () {
+  var STEPS = ["Vídeo", "Leia ou ouça", "Desenho", "Monte o troco", "Reflexão", "Teste", "Certificado"];
+  var state = { step: 0, done: {}, sceneFound: {}, tray: [], changeOk: false, reflection: "", quiz: null, name: "" };
+
+  var stage = document.getElementById("stage");
+  var stepsEl = document.getElementById("steps");
+  var backBtn = document.getElementById("back");
+  var nextBtn = document.getElementById("next");
+
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (key) {
+        if (key === "text") node.textContent = attrs[key];
+        else if (key === "class") node.className = attrs[key];
+        else if (key.indexOf("on") === 0) node.addEventListener(key.slice(2), attrs[key]);
+        else node.setAttribute(key, attrs[key]);
+      });
+    }
+    (children || []).forEach(function (child) {
+      if (child) node.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
+    });
+    return node;
+  }
+
+  function svg(markup) {
+    var holder = document.createElement("div");
+    holder.innerHTML = markup;
+    return holder.firstElementChild;
+  }
+
+  function brl(cents) {
+    return "R$ " + (cents / 100).toFixed(2).replace(".", ",");
+  }
+
+  function speak(text) {
+    try {
+      if (!("speechSynthesis" in window)) return false;
+      window.speechSynthesis.cancel();
+      var utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "pt-BR";
+      utter.rate = 0.95;
+      window.speechSynthesis.speak(utter);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function guide(text) {
+    return el("div", { class: "guide" }, [
+      el("div", { class: "face", "aria-hidden": "true", text: "C" }),
+      el("p", { class: "bubble" }, [el("strong", { text: "Dona Cida, caixa há 20 anos: " }), text])
+    ]);
+  }
+
+  function card(kind, title, children) {
+    return el("section", { class: "card" }, [el("span", { class: "kind", text: kind }), el("h2", { text: title })].concat(children));
+  }
+
+  /* ---------- 1. video ---------- */
+  var CAPTIONS = [
+    "O cliente comprou R$ 37,50 e pagou com R$ 50,00.",
+    "Diga em voz alta: recebi cinquenta reais.",
+    "Conte o troco a partir do valor da compra: 37,50… 40… 50.",
+    "Entregue contando de novo, na frente do cliente."
+  ];
+  var captionTimer = null;
+
+  function stepVideo() {
+    var caption = el("p", { class: "caption", text: CAPTIONS[0] });
+    var index = 0;
+    var box = el("div", { class: "video", role: "img", "aria-label": "Rascunho animado do vídeo: um caixa contando o troco" }, [
+      svg('<svg viewBox="0 0 320 180" aria-hidden="true"><rect x="40" y="96" width="240" height="60" rx="10" fill="#1E5AA8"/><rect x="58" y="70" width="90" height="34" rx="6" fill="#0B2545" stroke="#3B82F6"/><text x="103" y="92" fill="#7FB0F5" font-size="13" text-anchor="middle" font-family="sans-serif">37,50</text><rect x="180" y="62" width="70" height="36" rx="5" fill="#D9E8D2"/><text x="215" y="85" fill="#0B2545" font-size="14" text-anchor="middle" font-family="sans-serif" font-weight="700">R$ 50</text><g class="slide-coin"><circle cx="76" cy="132" r="11" fill="#E9D7A6"/><circle cx="102" cy="132" r="11" fill="#E9D7A6"/><rect x="122" y="121" width="40" height="22" rx="4" fill="#E6D8EE"/></g></svg>'),
+      caption
+    ]);
+    if (captionTimer) clearInterval(captionTimer);
+    captionTimer = setInterval(function () {
+      index = (index + 1) % CAPTIONS.length;
+      caption.textContent = CAPTIONS[index];
+    }, 3200);
+    return card("Vídeo curto", "Como contar o troco sem errar", [
+      box,
+      el("div", { class: "row" }, [
+        el("button", { type: "button", class: "btn", onclick: function () { if (!speak(CAPTIONS.join(" "))) this.textContent = "Áudio indisponível neste aparelho"; }, text: "Ouvir a narração" })
+      ]),
+      guide("Contar a partir do valor da compra é o jeito mais seguro. A gente vai treinar já, já.")
+    ]);
+  }
+
+  /* ---------- 2. reading ---------- */
+  var READING = [
+    "Quando o cliente paga, a primeira coisa é dizer em voz alta quanto recebeu: “recebi cinquenta reais”. Assim os dois ouvem o mesmo número e ninguém se confunde depois.",
+    "Para montar o troco, comece no valor da compra e vá somando até chegar no que o cliente deu. Compra de 37,50 e nota de 50: 37,50 mais 50 centavos dá 38; mais 2 dá 40; mais 10 dá 50. O troco é 12,50.",
+    "Entregue o troco contando de novo, na frente do cliente, e só depois guarde a nota na gaveta. Gaveta aberta só enquanto você está usando."
+  ];
+
+  function stepReading() {
+    var text = el("div", { class: "reading" }, READING.map(function (paragraph) { return el("p", { text: paragraph }); }));
+    return card("Leia ou ouça", "Três hábitos do troco certo", [
+      text,
+      el("div", { class: "row" }, [
+        el("button", { type: "button", class: "btn", onclick: function () { if (!speak(READING.join(" "))) this.textContent = "Áudio indisponível neste aparelho"; }, text: "Ouvir o texto" })
+      ])
+    ]);
+  }
+
+  /* ---------- 3. drawing ---------- */
+  var SPOTS = [
+    { id: "drawer", x: 92, y: 152, bad: true, say: "Certo: a gaveta está aberta e a caixa saiu de perto. Gaveta aberta só enquanto você usa." },
+    { id: "note", x: 236, y: 106, bad: true, say: "Certo: a nota do cliente ficou no balcão, longe dele. Diga o valor e segure a nota até entregar o troco." },
+    { id: "receipt", x: 168, y: 72, bad: false, say: "Esse está certo: o cupom impresso com o valor da compra ajuda a conferir." },
+    { id: "sign", x: 286, y: 44, bad: false, say: "Esse está certo: a plaquinha com as formas de pagamento evita confusão." }
+  ];
+
+  function stepScene() {
+    var found = state.sceneFound;
+    var feedback = el("p", { class: "feedback info", text: "Toque nos círculos. Ache os 2 erros." });
+    var markup = '<svg viewBox="0 0 340 210" role="group" aria-label="Desenho de um caixa de loja">' +
+      '<rect x="0" y="0" width="340" height="210" fill="none"/>' +
+      '<rect x="20" y="120" width="300" height="70" rx="10" fill="#B9CDEA" stroke="#1E5AA8" stroke-width="1.5"/>' +
+      '<rect x="56" y="140" width="80" height="34" rx="4" fill="#F5F8FC" stroke="#1E5AA8"/>' +
+      '<rect x="62" y="150" width="68" height="34" rx="3" fill="#E9D7A6" stroke="#8A6D1F"/>' +
+      '<rect x="146" y="58" width="44" height="58" rx="4" fill="#F5F8FC" stroke="#1E5AA8"/>' +
+      '<line x1="152" y1="70" x2="184" y2="70" stroke="#4A5A6E"/><line x1="152" y1="78" x2="184" y2="78" stroke="#4A5A6E"/><line x1="152" y1="86" x2="176" y2="86" stroke="#4A5A6E"/>' +
+      '<rect x="214" y="96" width="46" height="22" rx="3" fill="#D9E8D2" stroke="#2E7032"/>' +
+      '<rect x="262" y="24" width="50" height="38" rx="4" fill="#FFC83A" stroke="#8A6D1F"/>' +
+      '<text x="287" y="40" font-size="8" text-anchor="middle" fill="#0B2545" font-family="sans-serif">Pix</text><text x="287" y="52" font-size="8" text-anchor="middle" fill="#0B2545" font-family="sans-serif">Cartão</text>' +
+      '<circle cx="300" cy="102" r="12" fill="#E8D5C4"/><rect x="288" y="114" width="24" height="10" rx="3" fill="#6B8FC2"/>' +
+      '<text x="250" y="200" font-size="9" fill="#0B2545" font-family="sans-serif">A caixa foi buscar troco</text>' +
+      SPOTS.map(function (spot) {
+        var cls = found[spot.id] ? (spot.bad ? " found-bad" : " found-ok") : "";
+        return '<g class="spot' + cls + '" data-id="' + spot.id + '" tabindex="0" role="button" aria-label="Ponto do desenho"><circle class="ring" cx="' + spot.x + '" cy="' + spot.y + '" r="22"/><circle cx="' + spot.x + '" cy="' + spot.y + '" r="6" fill="#3B82F6"/></g>';
+      }).join("") +
+      "</svg>";
+    var scene = el("div", { class: "scene" }, [svg(markup)]);
+
+    function choose(id) {
+      var spot = SPOTS.filter(function (s) { return s.id === id; })[0];
+      if (!spot) return;
+      found[id] = true;
+      var group = scene.querySelector('[data-id="' + id + '"]');
+      if (group) group.setAttribute("class", "spot " + (spot.bad ? "found-bad" : "found-ok"));
+      var errors = SPOTS.filter(function (s) { return s.bad && found[s.id]; }).length;
+      feedback.className = "feedback " + (spot.bad ? "ok" : "info");
+      feedback.textContent = spot.say + (errors === 2 ? " Você achou os 2 erros!" : "");
+      if (errors === 2) state.done[2] = true;
+      renderSteps();
+    }
+    scene.addEventListener("click", function (event) {
+      var group = event.target.closest ? event.target.closest(".spot") : null;
+      if (group) choose(group.getAttribute("data-id"));
+    });
+    scene.addEventListener("keydown", function (event) {
+      if ((event.key === "Enter" || event.key === " ") && event.target.getAttribute && event.target.getAttribute("data-id")) {
+        event.preventDefault();
+        choose(event.target.getAttribute("data-id"));
+      }
+    });
+    return card("Converse com o desenho", "O que está errado neste caixa?", [
+      guide("Olhe com calma. Tem coisa certa e coisa errada no desenho."),
+      scene,
+      feedback
+    ]);
+  }
+
+  /* ---------- 4. change maker ---------- */
+  var MONEY = [
+    { v: 1000, label: "R$ 10", cls: "n10" }, { v: 500, label: "R$ 5", cls: "n5" }, { v: 200, label: "R$ 2", cls: "n2" },
+    { v: 100, label: "R$ 1", cls: "coin" }, { v: 50, label: "50 ¢", cls: "coin" }, { v: 25, label: "25 ¢", cls: "coin" }
+  ];
+  var PRICE = 3750, PAID = 5000;
+
+  function stepChange() {
+    var tray = el("div", { class: "tray", "aria-label": "Troco montado" });
+    var sum = el("span", { class: "sum" });
+    var feedback = el("p", { class: "feedback info", text: "O troco certo é o que falta da compra até o valor pago." });
+
+    function total() { return state.tray.reduce(function (a, b) { return a + b; }, 0); }
+    function paint() {
+      tray.textContent = "";
+      state.tray.forEach(function (value, index) {
+        tray.appendChild(el("button", { type: "button", class: "chipcash", "aria-label": "Tirar " + brl(value), onclick: function () { state.tray.splice(index, 1); paint(); }, text: brl(value) + " ×" }));
+      });
+      sum.textContent = "Troco montado: " + brl(total());
+    }
+    var grid = el("div", { class: "money" }, MONEY.map(function (m) {
+      return el("button", { type: "button", class: "cash " + m.cls, "aria-label": "Pôr " + m.label, onclick: function () { if (state.tray.length < 20) { state.tray.push(m.v); paint(); } }, text: m.label });
+    }));
+    function check() {
+      var need = PAID - PRICE;
+      var got = total();
+      if (got === need) {
+        state.changeOk = true; state.done[3] = true;
+        feedback.className = "feedback ok";
+        feedback.textContent = "Isso! " + brl(need) + " de troco. Agora entregue contando de novo, na frente do cliente.";
+      } else if (got < need) {
+        feedback.className = "feedback bad";
+        feedback.textContent = "Está faltando " + brl(need - got) + ". Conte a partir de 37,50 até chegar em 50.";
+      } else {
+        feedback.className = "feedback bad";
+        feedback.textContent = "Passou " + brl(got - need) + ". Toque numa nota ou moeda do troco para tirar.";
+      }
+      renderSteps();
+    }
+    paint();
+    return card("Atividade de toque", "Monte o troco", [
+      el("div", { class: "ticket" }, [
+        el("div", {}, [el("small", { text: "Compra" }), el("b", { text: brl(PRICE) })]),
+        el("div", {}, [el("small", { text: "Cliente pagou" }), el("b", { text: brl(PAID) })]),
+        el("div", {}, [el("small", { text: "Troco" }), el("b", { text: "?" })])
+      ]),
+      grid, tray,
+      el("div", { class: "row" }, [sum]),
+      el("div", { class: "row" }, [
+        el("button", { type: "button", class: "btn btn-primary", onclick: check, text: "Conferir o troco" }),
+        el("button", { type: "button", class: "btn", onclick: function () { state.tray = []; paint(); }, text: "Recomeçar" })
+      ]),
+      feedback
+    ]);
+  }
+
+  /* ---------- 5. reflection ---------- */
+  function stepReflection() {
+    var area = el("textarea", { id: "reflexao", "aria-label": "Sua resposta" });
+    area.value = state.reflection;
+    var model = el("p", { class: "feedback info", hidden: "" , text: "Muita gente lembra da vergonha de ter que voltar para reclamar. O caixa que conta em voz alta e entrega contando evita esse constrangimento para os dois lados." });
+    area.addEventListener("input", function () { state.reflection = area.value; });
+    return card("Para pensar", "Lembre de uma vez que você recebeu troco errado", [
+      guide("Como você se sentiu? O que a pessoa do caixa poderia ter feito diferente? Pode escrever ou falar pelo microfone do teclado."),
+      area,
+      el("p", { class: "note", text: "O que você escreve aqui fica só com você." }),
+      el("div", { class: "row" }, [
+        el("button", { type: "button", class: "btn", onclick: function () { model.hidden = false; state.done[4] = true; renderSteps(); }, text: "Ver o que outras pessoas pensaram" })
+      ]),
+      model
+    ]);
+  }
+
+  /* ---------- 6. quiz with retest ---------- */
+  var POOL = [
+    [
+      { q: "Compra de R$ 23,00. O cliente paga com R$ 50,00. Qual o troco?", o: ["R$ 27,00", "R$ 23,00", "R$ 37,00", "R$ 33,00"], a: 0, why: "De 23 até 50 faltam 27: 23 mais 7 dá 30, mais 20 dá 50." },
+      { q: "Compra de R$ 18,50. O cliente paga com R$ 20,00. Qual o troco?", o: ["R$ 2,50", "R$ 1,50", "R$ 1,00", "R$ 0,50"], a: 1, why: "De 18,50 até 20 faltam 1,50: mais 50 centavos dá 19, mais 1 dá 20." }
+    ],
+    [
+      { q: "O cliente pagou com uma nota de R$ 100. O que fazer primeiro?", o: ["Guardar logo na gaveta", "Dizer em voz alta: recebi cem reais", "Dar o troco sem contar, para ser rápido"], a: 1, why: "Falar o valor recebido evita qualquer dúvida depois." },
+      { q: "Você vai entregar o troco. Qual o jeito certo?", o: ["Contando de novo, na frente do cliente", "Deixando no balcão", "Entregando junto com a sacola, sem falar"], a: 0, why: "Contar na frente do cliente mostra que está certo e passa confiança." }
+    ],
+    [
+      { q: "A gaveta do caixa deve ficar…", o: ["Aberta, para ganhar tempo", "Fechada quando você não está usando", "Encostada, sem trancar"], a: 1, why: "Gaveta aberta sem ninguém por perto é risco para você e para a loja." },
+      { q: "Um colega pede para você trocar uma nota da gaveta “rapidinho”. O certo é…", o: ["Trocar sem registrar", "Seguir a regra da loja e registrar", "Pegar o dinheiro de outro caixa"], a: 1, why: "Toda saída de dinheiro do caixa segue a regra da loja e fica registrada." }
+    ]
+  ];
+
+  function stepQuiz() {
+    if (!state.quiz) state.quiz = { index: 0, variant: 0, right: 0, answered: false, picked: -1, retests: 0 };
+    var quiz = state.quiz;
+    if (quiz.index >= POOL.length) {
+      state.done[5] = true;
+      return card("Teste rápido", "Você acertou as 3!", [
+        el("p", { class: "feedback ok", text: quiz.retests === 0 ? "De primeira. Muito bem." : "Com " + quiz.retests + " reteste(s). É assim que se aprende: errar, entender e acertar." }),
+        guide("No fim do curso tem a prova final. Ela não elimina: serve para dar o seu certificado.")
+      ]);
+    }
+    var item = POOL[quiz.index][quiz.variant % POOL[quiz.index].length];
+    var feedback = el("p", { class: "feedback info", hidden: "" });
+    var list = el("div", { class: "quiz", role: "group", "aria-label": "Respostas" });
+    item.o.forEach(function (text, i) {
+      var cls = "option";
+      if (quiz.answered && i === item.a && quiz.picked === item.a) cls += " right";
+      if (quiz.answered && i === quiz.picked && i !== item.a) cls += " wrong";
+      list.appendChild(el("button", { type: "button", class: cls, onclick: function () {
+        if (quiz.answered) return;
+        quiz.answered = true; quiz.picked = i;
+        render();
+      }, text: text }));
+    });
+    var actions = el("div", { class: "row" });
+    if (quiz.answered) {
+      feedback.hidden = false;
+      if (quiz.picked === item.a) {
+        feedback.className = "feedback ok";
+        feedback.textContent = "Certo! " + item.why;
+        actions.appendChild(el("button", { type: "button", class: "btn btn-primary", onclick: function () {
+          quiz.index += 1; quiz.variant = 0; quiz.answered = false; quiz.picked = -1; render();
+        }, text: quiz.index + 1 < POOL.length ? "Próxima pergunta" : "Ver resultado" }));
+      } else {
+        feedback.className = "feedback bad";
+        feedback.textContent = "Ainda não. " + item.why + " Vamos tentar uma parecida.";
+        actions.appendChild(el("button", { type: "button", class: "btn btn-primary", onclick: function () {
+          quiz.variant += 1; quiz.retests += 1; quiz.answered = false; quiz.picked = -1; render();
+        }, text: "Fazer o reteste" }));
+      }
+    }
+    return card("Teste rápido", item.q, [
+      el("p", { class: "score", text: "Pergunta " + (quiz.index + 1) + " de " + POOL.length + (quiz.variant > 0 ? " · reteste" : "") }),
+      list, feedback, actions
+    ]);
+  }
+
+  /* ---------- 7. certificate ---------- */
+  function stepCert() {
+    var input = el("input", { type: "text", id: "nome", autocomplete: "name", placeholder: "Seu nome completo", maxlength: "60" });
+    input.value = state.name;
+    var who = el("p", { class: "who", text: state.name || "Seu nome aqui" });
+    input.addEventListener("input", function () { state.name = input.value; who.textContent = input.value || "Seu nome aqui"; });
+    state.done[6] = true;
+    return card("Exemplo de certificado", "Assim fica o seu certificado", [
+      el("label", { class: "field", for: "nome" }, ["Como seu nome deve aparecer", input]),
+      el("div", { class: "cert" }, [
+        el("small", { text: "Vem Trabalhar · Escola" }),
+        el("p", { class: "eyebrow", text: "Certificado de curso livre" }),
+        who,
+        el("p", { text: "concluiu o curso Operador de caixa, com 8 horas." }),
+        el("small", { text: "Código de conferência: VT-0000-EXEMPLO" })
+      ]),
+      el("p", { class: "note", text: "Certificado de curso livre, não é diploma técnico. Ele entra sozinho no seu currículo do Vem Trabalhar." })
+    ]);
+  }
+
+  var VIEWS = [stepVideo, stepReading, stepScene, stepChange, stepReflection, stepQuiz, stepCert];
+
+  function renderSteps() {
+    stepsEl.textContent = "";
+    STEPS.forEach(function (name, i) {
+      var b = el("button", { type: "button", onclick: function () { go(i); }, text: (i + 1) + ". " + name });
+      if (i === state.step) b.setAttribute("aria-current", "step");
+      else if (state.done[i]) b.className = "done";
+      stepsEl.appendChild(el("li", {}, [b]));
+    });
+  }
+
+  function render() {
+    if (state.step !== 0 && captionTimer) { clearInterval(captionTimer); captionTimer = null; }
+    stage.textContent = "";
+    stage.appendChild(VIEWS[state.step]());
+    if (state.step <= 1) state.done[state.step] = true;
+    backBtn.disabled = state.step === 0;
+    nextBtn.textContent = state.step === STEPS.length - 1 ? "Começar de novo" : "Próximo";
+    renderSteps();
+  }
+
+  function go(i) {
+    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+    state.step = Math.max(0, Math.min(STEPS.length - 1, i));
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  backBtn.addEventListener("click", function () { go(state.step - 1); });
+  nextBtn.addEventListener("click", function () {
+    if (state.step === STEPS.length - 1) {
+      state = { step: 0, done: {}, sceneFound: {}, tray: [], changeOk: false, reflection: "", quiz: null, name: state.name };
+      render();
+      return;
+    }
+    go(state.step + 1);
+  });
+
+  render();
+})();
+</script>
