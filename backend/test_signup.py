@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import unittest
 from unittest.mock import patch
 
@@ -300,6 +301,8 @@ class SignupRouteTests(unittest.TestCase):
         self.assertEqual(body["user"]["company_id"], COMPANY_ID)
 
         token = backend_app.serializer.loads(body["token"])
+        login_at = token.pop("login_at")
+        self.assertAlmostEqual(login_at, time.time(), delta=5)  # hora do login com senha: limite da renovacao
         self.assertEqual(token, {"user_id": USER_ID, "company_id": COMPANY_ID, "role": "OWNER"})
 
         self.assertEqual(connection.committed, 1)
