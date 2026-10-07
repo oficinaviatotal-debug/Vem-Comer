@@ -34,7 +34,7 @@ quantos dias faltam.
 Vem Comer:
 
 - [ ] Reforma visual: cardápio do cliente, tela da mesa, carrinho e acompanhamento
-- [ ] Opções por item (tamanho, adicionais, observação)
+- [ ] Opções por item (tamanho, adicionais, observação): servidor pronto em 08/10 (PR aberto), faltam as telas e a voz
 - [ ] Entrega: tipo do pedido, endereço, taxa por região, estados "pronto" e "saiu para entrega"
 - [ ] Assinatura de R$ 190: pagamento no primeiro dia, vencimento e bloqueio no dia seguinte
 - [ ] Horário de funcionamento e esgotado em um toque

@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 import time
 import threading
@@ -24,6 +25,7 @@ from costs_view import (  # noqa: F401 (cost_since e build_cost_view tambem sao 
     order_unit_costs,
 )
 import image_enhance
+import item_options
 import logo_image
 import media_store
 import menu_photo
@@ -786,9 +788,17 @@ def get_company_products(company_id):
             (str(company_id),)
         )
 
+        # Tamanho, adicionais e "sem cebola": os grupos de escolha de cada prato (so opcao ligada).
+        groups = item_options.groups_by_product(
+            query_db(item_options.GROUP_ROWS_FOR_COMPANY, (str(company_id),))
+        )
+
         for product in products:
             key = product.pop('image_key', None)
             product.update(media_store.public_urls(company_id, key))
+            product['option_groups'] = item_options.public_view(
+                groups.get(str(product['id']), [])
+            )
 
         return jsonify(products), 200
 
@@ -955,6 +965,14 @@ def create_company_order(company_id):
             ):
                 return invalid_order("Produto ou quantidade invalida")
 
+            try:
+                selected_options = item_options.parse_selected(
+                    item.get('options')
+                )
+                item_note = item_options.clean_note(item.get('note'))
+            except item_options.OptionError as option_error:
+                return invalid_order(option_error.message)
+
             cur.execute(
                 """
                 SELECT id, price
@@ -974,15 +992,32 @@ def create_company_order(company_id):
             if not product:
                 return invalid_order("Produto indisponivel")
 
-            item_total = product['price'] * quantity
+            # O preco de cada item e o do prato mais o das opcoes, conferido aqui:
+            # o valor que o celular calculou nunca vale.
+            try:
+                picked = item_options.resolve(
+                    item_options.fetch_groups(
+                        cur,
+                        company_id,
+                        product['id']
+                    ),
+                    selected_options
+                )
+            except item_options.OptionError as option_error:
+                return invalid_order(option_error.message)
+
+            unit_price = product['price'] + picked.delta
+            item_total = unit_price * quantity
             total += item_total
 
             order_items.append(
                 (
                     product['id'],
                     quantity,
-                    product['price'],
-                    item_total
+                    unit_price,
+                    item_total,
+                    json.dumps(picked.chosen, ensure_ascii=False),
+                    item_note
                 )
             )
 
@@ -1029,7 +1064,14 @@ def create_company_order(company_id):
             [item[0] for item in order_items]
         )
 
-        for product_id, quantity, unit_price, item_total in order_items:
+        for (
+            product_id,
+            quantity,
+            unit_price,
+            item_total,
+            chosen_options,
+            item_note
+        ) in order_items:
             cur.execute(
                 """
                 INSERT INTO order_items (
@@ -1038,9 +1080,11 @@ def create_company_order(company_id):
                     quantity,
                     unit_price,
                     total,
-                    unit_cost
+                    unit_cost,
+                    options,
+                    note
                 )
-                VALUES (%s, %s, %s, %s, %s, %s);
+                VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s);
                 """,
                 (
                     str(order_id),
@@ -1048,7 +1092,9 @@ def create_company_order(company_id):
                     quantity,
                     unit_price,
                     item_total,
-                    unit_costs.get(str(product_id))
+                    unit_costs.get(str(product_id)),
+                    chosen_options,
+                    item_note
                 )
             )
 
@@ -1205,6 +1251,8 @@ def get_order(order_id):
                 oi.quantity,
                 oi.unit_price,
                 oi.total,
+                oi.options,
+                oi.note,
                 p.name
             FROM order_items oi
             JOIN products p
@@ -1279,7 +1327,9 @@ def get_admin_orders(company_id):
                                 'name', p.name,
                                 'quantity', oi.quantity,
                                 'unit_price', oi.unit_price,
-                                'total', oi.total
+                                'total', oi.total,
+                                'options', oi.options,
+                                'note', oi.note
                             )
                             ORDER BY p.name
                         )
@@ -1580,6 +1630,126 @@ def admin_delete_product(product_id):
 
         return error_response(
             "Erro ao deletar produto",
+            e
+        )
+
+
+@app.route('/api/admin/products/<uuid:product_id>/options', methods=['GET'])
+@require_roles('OWNER', 'MANAGER')
+def admin_get_product_options(product_id):
+    """Os grupos de escolha do prato (tamanho, adicionais...), com as opcoes desligadas tambem."""
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute(
+            """
+            SELECT id
+            FROM products
+            WHERE id = %s
+            AND company_id = %s;
+            """,
+            (str(product_id), str(company_id))
+        )
+
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+
+            return jsonify({
+                "error": "Produto nao encontrado"
+            }), 404
+
+        groups = item_options.fetch_groups(cur, company_id, product_id)
+
+        cur.close()
+        conn.close()
+
+        return jsonify({"groups": groups}), 200
+
+    except Exception as e:
+        if conn is not None and not conn.closed:
+            if cur is not None:
+                cur.close()
+
+            conn.close()
+
+        return error_response(
+            "Erro ao buscar as opcoes do produto",
+            e
+        )
+
+
+@app.route('/api/admin/products/<uuid:product_id>/options', methods=['PUT'])
+@require_roles('OWNER', 'MANAGER')
+def admin_save_product_options(product_id):
+    """Troca os grupos de escolha do prato pelos que o painel mandou. Lista vazia tira todas as opcoes."""
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+
+        try:
+            groups = item_options.normalize_groups(
+                request.get_json(silent=True)
+            )
+        except item_options.OptionError as option_error:
+            return jsonify({"error": option_error.message}), option_error.status
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Trava a linha do prato: dois toques ao mesmo tempo no painel nao misturam os grupos.
+        cur.execute(
+            """
+            SELECT id
+            FROM products
+            WHERE id = %s
+            AND company_id = %s
+            FOR UPDATE;
+            """,
+            (str(product_id), str(company_id))
+        )
+
+        if not cur.fetchone():
+            conn.rollback()
+            cur.close()
+            conn.close()
+
+            return jsonify({
+                "error": "Produto nao encontrado"
+            }), 404
+
+        item_options.save_groups(cur, company_id, product_id, groups)
+        saved = item_options.fetch_groups(cur, company_id, product_id)
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "message": "Opcoes salvas",
+            "groups": saved
+        }), 200
+
+    except Exception as e:
+        if conn is not None and not conn.closed:
+            conn.rollback()
+
+            if cur is not None:
+                cur.close()
+
+            conn.close()
+
+        return error_response(
+            "Erro ao salvar as opcoes do produto",
             e
         )
 
