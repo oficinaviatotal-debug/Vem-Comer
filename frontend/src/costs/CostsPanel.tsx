@@ -50,6 +50,7 @@ import {
 } from "./costLogic";
 import { mergeSpokenLines, parseRecipeSpeech } from "./recipeSpeech";
 import "./costs.css";
+import FeedbackAsk from "../feedback/FeedbackAsk";
 
 type Props = {
   companyId: string;
@@ -94,6 +95,8 @@ export default function CostsPanel({ companyId }: Props) {
   const [view, setView] = useState<CostView | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [notice, setNotice] = useState("");
+  /** A recipe was saved in this visit: the "Como foi?" shows up under the notice. */
+  const [recipeSaved, setRecipeSaved] = useState(false);
 
   const [target, setTarget] = useState("");
   const [targetError, setTargetError] = useState("");
@@ -276,6 +279,7 @@ export default function CostsPanel({ companyId }: Props) {
       );
       closeRecipe();
       setNotice(`Ficha de ${product.name} salva.`);
+      setRecipeSaved(true);
       await reload();
     } catch (err) {
       setRecipeError(err instanceof Error ? err.message : "Não consegui salvar a ficha do prato.");
@@ -433,6 +437,7 @@ export default function CostsPanel({ companyId }: Props) {
             {notice}
           </p>
         )}
+        {recipeSaved && <FeedbackAsk context="custos" title="Como foi montar a ficha do prato?" />}
       </div>
 
       <div className="sheet">

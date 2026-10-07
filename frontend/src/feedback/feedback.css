@@ -1,0 +1,92 @@
+/* "Como foi?": discreto, linha fina, nunca maior que o próximo passo. */
+.como-foi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  padding: var(--s3);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-md);
+  background: var(--comanda);
+}
+
+.como-foi-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.como-foi-title {
+  margin: 0;
+  color: var(--folha);
+  font-weight: 700;
+}
+
+.como-foi-close {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--nevoa);
+  font-size: var(--t-xl);
+  cursor: pointer;
+}
+
+.como-foi-faces {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s2);
+}
+
+.como-foi-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: var(--s2);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-sm);
+  background: var(--papel);
+  color: var(--tinta);
+  cursor: pointer;
+}
+
+.como-foi-face span {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.como-foi-face small {
+  color: var(--nevoa);
+  font-size: var(--t-xs);
+}
+
+.como-foi-face:focus-visible,
+.como-foi-face:hover {
+  border-color: var(--brasa-viva);
+}
+
+.como-foi-comment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.como-foi-comment textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.como-foi-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s2);
+}
+
+.como-foi-thanks {
+  margin: 0;
+  color: var(--mata);
+  font-weight: 600;
+}

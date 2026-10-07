@@ -5,6 +5,7 @@ import ConfirmButton from "../service/ConfirmButton";
 import { deleteCompanyLogo, fetchCompany, mediaUrl, uploadCompanyLogo } from "../service/api";
 import LogoMaker from "./LogoMaker";
 import { prepareLogoFile } from "./logoFiles";
+import FeedbackAsk from "../feedback/FeedbackAsk";
 
 type Props = {
   companyId: string;
@@ -160,6 +161,7 @@ export default function LogoPanel({ companyId }: Props) {
             {done}
           </p>
         )}
+        {done.startsWith("Logomarca salva") && <FeedbackAsk context="logomarca" title="Como foi fazer a logomarca?" />}
         <p className="adm-muted">Dica: uma logomarca com o fundo transparente (PNG) fica melhor no cardápio.</p>
       </div>
     </section>
