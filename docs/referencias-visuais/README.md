@@ -26,8 +26,10 @@ Vem Comer, o que a prancha mostra:
 - Cartaz de QR da mesa "Faça seu pedido aqui" e e-mail "As melhores ofertas da sua região!".
 - Quatro QR codes: clientes, restaurantes, compra do sistema e divulgação geral.
 
-**Pergunta aberta para o GD:** o início da prancha busca "restaurantes na sua região", como um catálogo de vários
-restaurantes. O Vem Comer de hoje é o cardápio de cada restaurante, sem catálogo geral. O catálogo entra ou não?
+**Decidido pelo GD (07/10, 13:27):** a busca "restaurantes na sua região" **não entra agora**. Cada restaurante divulga o próprio
+link (WhatsApp, pessoas, QR na loja) e ele abre a loja dele. O catálogo geral só entra numa primeira atualização, depois de 3
+meses e de mais de 100 restaurantes, bares e sorveterias por região (item 68 dos requisitos). Esta prancha vale, por enquanto,
+pelas cores, pelos cartões, pelos chips e pelos materiais; a página inicial de catálogo fica de fora.
 
 ## 3. `vem-comer-identidade-visual.jpg`
 
