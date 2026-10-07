@@ -448,3 +448,25 @@
 .asst-page-remove:disabled {
   opacity: .5;
 }
+
+/* Saying the menu: the quickest road, so it comes first and carries the brand color. */
+.asst-speak-card {
+  border-color: var(--brasa-viva);
+}
+
+.asst-speak {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.asst-speak .asst-review-group li {
+  grid-template-columns: 1fr auto auto;
+}
+
+/* A dish said without a price: the assistant asks it after "pronto". */
+.asst-missing {
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+  font-style: italic;
+}

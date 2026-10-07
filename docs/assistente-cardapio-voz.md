@@ -8,7 +8,30 @@ cadastrado de uma vez pela rota descrita em `docs/cardapio-assistido.md`.
 Na primeira vez que o dono entra no painel sem nenhum prato cadastrado, esta aba abre
 sozinha. Ao terminar, o botão **Continuar: mesas, Pix e pedidos** abre o guia.
 
-## Como a conversa anda
+## Falar o cardápio (o caminho mais rápido, desde 07/10/2026)
+
+Pedido do GD: o guia antigo pedia "próximo, voltar, pular" e travava com frase normal ("eu já tenho um
+cardápio e quero mandar uma foto" virou nome de categoria). Agora o primeiro cartão é **Falar o meu
+cardápio**, e o dono fala do jeito dele:
+
+- "X-tudo 25 reais, X-salada 22 e de bebida Coca lata 6" → três pratos com preço, em Lanches e Bebidas.
+- Pode falar em várias frases. "De bebida", "pizzas:", "na parte de lanches" mudam a categoria e ela
+  vale para as frases seguintes. Sem categoria falada, o sistema adivinha pelo prato (Coca é bebida,
+  X- é lanche, coxinha é salgado) e o dono confere no fim.
+- Corrigir falando: "não, o X-tudo é 26" troca o preço; "tira a Coca" tira da lista. Prato falado sem
+  preço fica "sem preço" e o preço dito logo depois ("vinte e cinco") vai para ele.
+- "Pronto" (ou "só isso", "acabou") pergunta só os preços que faltaram e vai para a conferência.
+- Dá também para escrever no campo "Ou escreva" ("X-tudo 25, Coca 6"): o mesmo entendimento.
+- Na primeira tela, uma frase com prato e preço já entra direto nesse caminho; "foto" abre a foto.
+
+Regras que não mudam: preço que não for um número limpo fica vazio e é perguntado (nunca chutado);
+número que é parte do nome ("Coca 2 litros", "Pizza quatro queijos", "Açaí 500 ml") não vira preço;
+conversa sem preço ("agora vou falar as bebidas", "bom dia") não vira prato; lista longa sem preço
+aparece como "não separei isto" para o dono tocar. Detalhes em `frontend/src/assistant/spokenMenu.ts`.
+
+A voz que responde é escolhida pela internet do celular (`docs/voz-do-guia.md`).
+
+## Como a conversa anda (pelo tipo de negócio)
 
 1. **Tipo de negócio.** Fala ("lanchonete", "pizzaria", "boteco", "sushi"...) ou toca
    num dos 8 cartões grandes. Apelidos comuns funcionam (marmitaria, sorveteria,
@@ -42,6 +65,8 @@ sozinha. Ao terminar, o botão **Continuar: mesas, Pix e pedidos** abre o guia.
 
 ## Arquivos
 
+- `frontend/src/assistant/spokenMenu.ts`: entender o cardápio falado (prato e preço juntos,
+  categorias, correções).
 - `frontend/src/assistant/assistantLogic.ts`: entender a fala (pratos, tipo de negócio,
   comandos, preços).
 - `frontend/src/assistant/assistantFlow.ts`: os passos como funções puras.
@@ -65,9 +90,10 @@ sozinha. Ao terminar, o botão **Continuar: mesas, Pix e pedidos** abre o guia.
   um toque a cada resposta, qualidade das vozes) precisa ser visto num aparelho.
 - O tempo entre o fim da fala e a resposta depende do reconhecimento do próprio
   celular (em geral 1 a 2 segundos depois do silêncio).
-- A voz é a do celular. Se o aparelho só tiver a voz simples do sistema, ela continua
-  robótica; áudio gravado profissional exigiria um serviço pago.
-- Falar o cardápio inteiro de uma vez ("meus pratos são A, B, C...") para pratos que
-  **não** estão no modelo precisa de um modelo de linguagem (serviço pago). Hoje o
-  assistente cobre isso com os modelos prontos e com o toque para adicionar.
+- A voz natural do servidor está pronta mas desligada até escolher o provedor
+  (`docs/voz-do-guia.md`); até lá, a voz é a do celular.
+- Falar uma lista de pratos **sem preço** e sem pausa ("coxinha pastel empada quibe") não dá para
+  separar com segurança: aparece como "não separei isto". Com o preço depois de cada prato, separa.
+- A categoria adivinhada pode errar para pratos fora do dicionário (vai para "Pratos"); o dono vê
+  na conferência.
 - Ainda não há foto, melhoria de imagem nem logomarca: são as próximas etapas.

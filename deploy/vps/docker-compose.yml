@@ -56,6 +56,16 @@ services:
       # leitura de cardápio por foto: só liga se a chave existir no .env (veja configurar-ia.sh)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       MENU_PHOTO_MODEL: ${MENU_PHOTO_MODEL:-}
+      # voz natural do guia: só liga com provedor e chave no .env (veja docs/voz-do-guia.md); sem isso, a voz do celular
+      VOZ_PROVEDOR: ${VOZ_PROVEDOR:-}
+      VOZ_GOOGLE_CHAVE: ${VOZ_GOOGLE_CHAVE:-}
+      VOZ_GOOGLE_VOZ: ${VOZ_GOOGLE_VOZ:-}
+      VOZ_ELEVENLABS_CHAVE: ${VOZ_ELEVENLABS_CHAVE:-}
+      VOZ_ELEVENLABS_VOZ: ${VOZ_ELEVENLABS_VOZ:-}
+      VOZ_ELEVENLABS_MODELO: ${VOZ_ELEVENLABS_MODELO:-}
+      VOZ_POR_HORA: ${VOZ_POR_HORA:-400}
+      VOZ_CARACTERES_POR_DIA: ${VOZ_CARACTERES_POR_DIA:-300000}
+      VOZ_MAX_ARQUIVOS: ${VOZ_MAX_ARQUIVOS:-50000}
       # cadastro de restaurante pela internet: FECHADO até o administrador abrir (veja abrir-cadastro.sh)
       SIGNUP_OPEN: ${SIGNUP_OPEN:-}
       SIGNUP_MAX_PER_DAY: ${SIGNUP_MAX_PER_DAY:-}
