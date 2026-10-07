@@ -31,3 +31,11 @@ The system should be able to represent processes, SOPs, checklists, workflows, t
 
 ## Success definition
 The system continuously becomes faster, simpler, more compatible, more resilient and more useful without creating uncontrolled complexity.
+
+## Change levels and God Mode (owner, 07/10/2026)
+The intelligence lives inside the ecosystem and learns from its own data; outside sources are used only for acquisition and benchmarking.
+- Level 1, act and tell: content and configuration changes that are reversible (message wording and order, send times, alert thresholds, lesson questions, small screen tweaks that do not change the path). The system applies them and reports in a daily briefing.
+- Level 2, ask the establishment owner: prices, promotions, discounts, coupons, campaigns that use the owner's customer base, posts before publishing. One tap to approve.
+- Level 3, God Mode (the software owner decides): changes of method (matching, scoring, commission rules), plan prices, legal and privacy text, money flows, a new sending channel, new costs, personal data, and any code in production. The card shows the reason in data, what changes, the risk, and Approve / No / Talk to me, also by voice.
+- Code is never rewritten in production by the system itself: it proposes a pull request with tests, the owner approves and merges, and a rollback is ready.
+- A reviewer agent gives each proposal a "how ready is it" score before it reaches whoever decides. Every module has an expiry date; anything past three months without review goes into the briefing.
