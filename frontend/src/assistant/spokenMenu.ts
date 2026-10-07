@@ -119,7 +119,18 @@ const LEAD = new Set([
   "vendemos", "quero", "queria", "cadastrar", "cadastra", "coloca", "colocar", "coloque", "bota", "botar",
   "adicionar", "adiciona", "anota", "anotar", "meu", "minha", "meus", "minhas", "no", "na", "cardapio",
   "nao", "isso", "outro", "outra", "tipo", "sim", "ok", "olha", "bom", "ta", "pronto",
+  // "vamos lá, x-tudo 25", "vou falar o x-tudo", "vamos fazer o x-salada 22": talk before the dish
+  "vamos", "vamo", "bora", "vou", "vai", "falar", "fala", "falo", "fazer", "faz", "seguinte", "primeiro",
+  "proximo", "proxima",
 ]);
+
+/**
+ * A piece that starts with one of these is talk about a price, never a dish: "unidade se for o combo 3"
+ * is the price of the same drink inside a combo. It is left out instead of becoming a strange dish.
+ */
+const PRICE_TALK_START = new Set(["unidade", "unidades", "un"]);
+/** "se for o combo", "se tiver", "se quiser": a condition, not a dish. */
+const CONDITION_WORD = "se";
 
 /** Words that close a dish before its price: "x-tudo que custa", "coca sai a", "o x-salada é". */
 const TRAIL = new Set([
@@ -481,6 +492,8 @@ export function parseSpokenMenu(transcript: string, currentCategory = ""): Spoke
       return;
     }
     if (!price && words.some((word) => NOT_A_DISH.has(word))) return;
+    // Talk about a price ("unidade se for o combo 3"): not a dish, even with a number after it.
+    if (PRICE_TALK_START.has(words[0]) || words.includes(CONDITION_WORD)) return;
     const name = tidyDishName(text);
     dishes.push({ name, price, category: heading || guessCategory(name), categorySaid: Boolean(heading) });
   };
@@ -524,6 +537,8 @@ export function parseSpokenMenu(transcript: string, currentCategory = ""): Spoke
       !run.hasCurrency &&
       run.numEnd < total &&
       next &&
+      // "x-tudo 25 unidade se for o combo 3": that "unidade" opens talk about a price, it is not a measure
+      !(PRICE_TALK_START.has(next.norm) && tokens[run.numEnd + 1]?.norm === CONDITION_WORD) &&
       (MEASURES.has(next.norm) || (COUNTED.has(next.norm) && (quantityOf(tokenized, run) ?? MAX_COUNTED + 1) <= MAX_COUNTED))
     ) {
       index = run.numEnd;

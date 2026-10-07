@@ -242,7 +242,8 @@ export type Listener = {
 export function createListener(handlers: {
   onResult: (transcript: string, isFinal: boolean) => void;
   onStateChange: (listening: boolean) => void;
-  onError: () => void;
+  /** `code` is the recognizer's own ("no-speech", "not-allowed"...), when it gave one. */
+  onError: (code?: string) => void;
   partial?: boolean;
 }): Listener | null {
   const Constructor = recognitionConstructor();
@@ -259,7 +260,7 @@ export function createListener(handlers: {
     handlers.onStateChange(false);
     // "aborted" is just the user tapping stop; not worth a warning.
     const code = (event as { error?: string } | null)?.error;
-    if (code !== "aborted") handlers.onError();
+    if (code !== "aborted") handlers.onError(code);
   };
   recognition.onresult = (event) => {
     const results = event.results;

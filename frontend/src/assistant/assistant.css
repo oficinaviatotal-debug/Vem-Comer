@@ -470,3 +470,11 @@
   font-size: var(--t-sm);
   font-style: italic;
 }
+
+/* A price that looks like a hearing mistake ("300" for a canned soda): one line under the dish. */
+.asst-price-hint {
+  grid-column: 1 / -1;
+  color: var(--brasa);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}

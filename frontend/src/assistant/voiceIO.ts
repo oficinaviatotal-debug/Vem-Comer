@@ -23,14 +23,17 @@ import {
 import { fetchNaturalVoiceUrl } from "../service/api";
 import { currentVoiceTier, serverVoiceBudgetMs, usesNaturalVoice } from "../voice/voiceQuality";
 import { smoothForSpeech } from "./assistantLogic";
+import { LISTEN_TIMEOUT_MS as HEAR_TIMEOUT_MS, startHearing, type HearOptions, type Hearing } from "./hearing.ts";
 
 export { canListen, chooseNextVoice, currentVoiceName, voiceCount };
 
 /** Pause between the end of the assistant's voice and opening the microphone, so it does not hear itself. */
 export const LISTEN_DELAY_MS = 250;
 
-/** Give up on an answer after this long without any words. */
-export const LISTEN_TIMEOUT_MS = 12000;
+/** Give up on an answer after this long without any words (the rule lives in hearing.ts). */
+export const LISTEN_TIMEOUT_MS = HEAR_TIMEOUT_MS;
+export { DICTATION_PATIENCE_MS } from "./hearing.ts";
+export type { Hearing } from "./hearing.ts";
 
 /* ------------------------------------------------------------ natural voice */
 
@@ -150,70 +153,11 @@ export async function speakAsync(text: string): Promise<void> {
 
 /* ----------------------------------------------------------------- listening */
 
-export type Hearing = {
-  /** The final words, or null when nothing was heard, the microphone failed, or it was cancelled. */
-  result: Promise<string | null>;
-  cancel: () => void;
-};
-
 /**
- * Opens the microphone for one answer. `onPartial` receives the words while
- * the person is still talking, so the screen can show them right away.
+ * Opens the microphone for one answer. `onPartial` receives the words while the person is still
+ * talking, so the screen can show them right away. With `patienceMs` it listens to a whole
+ * dictation: pauses do not end it, only that much silence does (see hearing.ts).
  */
-export function hear(handlers: {
-  onPartial?: (text: string) => void;
-  timeoutMs?: number;
-}): Hearing {
-  let settle: (value: string | null) => void = () => {};
-  const result = new Promise<string | null>((resolve) => {
-    settle = resolve;
-  });
-
-  let settled = false;
-  let lastWords = "";
-  let timer: ReturnType<typeof setTimeout> | undefined;
-
-  const finish = (value: string | null) => {
-    if (settled) return;
-    settled = true;
-    if (timer !== undefined) clearTimeout(timer);
-    settle(value);
-  };
-
-  const listener = createListener({
-    partial: true,
-    onResult: (transcript, isFinal) => {
-      lastWords = transcript;
-      handlers.onPartial?.(transcript);
-      if (isFinal) {
-        finish(transcript.trim() || null);
-        listener?.stop();
-      }
-    },
-    // The microphone closes by itself after the last words: use what was heard.
-    onStateChange: (listening) => {
-      if (!listening) finish(lastWords.trim() || null);
-    },
-    onError: () => finish(null),
-  });
-
-  if (!listener) {
-    finish(null);
-    return { result, cancel: () => {} };
-  }
-
-  timer = setTimeout(() => {
-    finish(lastWords.trim() || null);
-    listener.stop();
-  }, handlers.timeoutMs ?? LISTEN_TIMEOUT_MS);
-
-  listener.start();
-
-  return {
-    result,
-    cancel: () => {
-      finish(null);
-      listener.stop();
-    },
-  };
+export function hear(options: HearOptions = {}): Hearing {
+  return startHearing(createListener, options);
 }
