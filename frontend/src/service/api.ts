@@ -39,6 +39,41 @@ function authHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/** The panel listens to this to go back to the login screen when the login is over. */
+export const SESSION_EXPIRED_EVENT = "vc-sessao-expirada";
+
+/** How often an open panel renews the login (each one lasts 8 hours on the server). */
+export const SESSION_REFRESH_MS = 20 * 60 * 1000;
+
+/** Forgets the login and tells the panel to show the login screen. */
+export function expireSession() {
+  const hadToken = Boolean(getToken());
+  logout();
+  if (hadToken && typeof window !== "undefined") window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+}
+
+/**
+ * Renews the login while the panel is in use. "expired" also sends the panel to the login screen;
+ * "offline" changes nothing (the next try may work).
+ */
+export async function refreshSession(): Promise<"ok" | "expired" | "offline"> {
+  if (!getToken()) return "expired";
+  try {
+    const response = await fetch(`${API_URL}/auth/refresh`, { method: "POST", headers: authHeaders() });
+    if (response.status === 401) {
+      expireSession();
+      return "expired";
+    }
+    if (!response.ok) return "offline";
+    const data = await response.json();
+    if (typeof data?.token === "string" && data.token) setToken(data.token);
+    if (data?.user) localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+    return "ok";
+  } catch {
+    return "offline";
+  }
+}
+
 export async function login(email: string, password: string) {
   const response = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
@@ -202,7 +237,8 @@ export async function fetchAdminOrders(companyId: string) {
   const response = await fetch(`${API_URL}/companies/${companyId}/admin/orders`, {
     headers: authHeaders(),
   });
-  if (!response.ok) throw new Error("Falha ao buscar pedidos do paines");
+  if (response.status === 401) expireSession();
+  if (!response.ok) throw new Error("Falha ao buscar pedidos do painel");
   return response.json();
 }
 
@@ -626,6 +662,8 @@ export type MenuImportResult = {
 };
 
 async function readError(response: Response, fallback: string): Promise<HttpError> {
+  // a login that is over sends the panel back to the login screen, instead of an error that never goes away
+  if (response.status === 401) expireSession();
   const err = await response.json().catch(() => ({}));
   return new HttpError(err.error || fallback, response.status);
 }

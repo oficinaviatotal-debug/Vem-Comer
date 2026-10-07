@@ -63,7 +63,9 @@ if not SECRET_KEY:
     )
 
 serializer = URLSafeTimedSerializer(SECRET_KEY)
-TOKEN_MAX_AGE_SECONDS = 60 * 60 * 8  # 8 horas
+TOKEN_MAX_AGE_SECONDS = 60 * 60 * 8  # 8 horas por token; o painel renova enquanto esta em uso
+# Mesmo renovando, depois deste tempo do login a pessoa entra de novo com a senha.
+SESSION_MAX_SECONDS = int(os.getenv("SESSION_MAX_DAYS", "30")) * 86400
 
 CORS_ORIGIN_REGEX = os.getenv(
     'CORS_ORIGIN_REGEX',
@@ -404,7 +406,8 @@ def signup_restaurant():
         token = serializer.dumps({
             "user_id": str(user['id']),
             "company_id": str(company['id']),
-            "role": user['role']
+            "role": user['role'],
+            "login_at": int(time.time())
         })
 
         response = jsonify({
@@ -492,7 +495,8 @@ def login():
         token = serializer.dumps({
             "user_id": str(user['id']),
             "company_id": str(user['company_id']),
-            "role": user['role']
+            "role": user['role'],
+            "login_at": int(time.time())
         })
 
         return jsonify({
@@ -511,6 +515,59 @@ def login():
             "Erro interno ao autenticar",
             e
         )
+
+
+@app.route('/api/auth/refresh', methods=['POST'])
+@require_auth
+def refresh_session():
+    """Troca um login ainda valido por um novo, enquanto o painel esta em uso.
+
+    Assim ninguem e deslogado no meio do expediente. Nao renova: depois de SESSION_MAX_SECONDS desde
+    o login com senha, ou quando a pessoa foi desativada ou mudou de restaurante.
+    """
+    claims = request.user
+    now = int(time.time())
+    login_at = claims.get('login_at')
+
+    if isinstance(login_at, bool) or not isinstance(login_at, int) or login_at > now + 60:
+        login_at = now  # login de antes desta versao: o prazo comeca a contar agora
+
+    if now - login_at > SESSION_MAX_SECONDS:
+        return jsonify({"error": "Sessao expirada"}), 401
+
+    try:
+        user = query_db(
+            """
+            SELECT id, company_id, name, email, role
+            FROM users
+            WHERE id = %s AND active = TRUE;
+            """,
+            (claims.get('user_id'),),
+            one=True
+        )
+    except Exception as e:
+        return error_response("Erro ao renovar o acesso", e)
+
+    if not user or str(user['company_id']) != str(claims.get('company_id')):
+        return jsonify({"error": "Sessao expirada"}), 401
+
+    token = serializer.dumps({
+        "user_id": str(user['id']),
+        "company_id": str(user['company_id']),
+        "role": user['role'],
+        "login_at": login_at
+    })
+
+    return jsonify({
+        "token": token,
+        "user": {
+            "id": user['id'],
+            "name": user['name'],
+            "email": user['email'],
+            "role": user['role'],
+            "company_id": user['company_id']
+        }
+    }), 200
 
 
 def public_company(row):

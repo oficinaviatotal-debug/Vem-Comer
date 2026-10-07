@@ -12,6 +12,9 @@ import {
   logout,
   getToken,
   getUser,
+  refreshSession,
+  SESSION_EXPIRED_EVENT,
+  SESSION_REFRESH_MS,
   fetchUsers,
   createUser,
   deactivateUser,
@@ -149,6 +152,10 @@ export default function AdminPanel({
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  /** Shown on the login screen when the login was over (not a mistake of the person). */
+  const [sessionNotice, setSessionNotice] = useState("");
+  const userEmailRef = useRef(currentUser?.email ?? "");
+  userEmailRef.current = currentUser?.email ?? userEmailRef.current;
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -240,6 +247,7 @@ export default function AdminPanel({
 
       setIsAuthenticated(true);
       setCurrentUser(getUser());
+      setSessionNotice("");
       rememberCompany(companySlug);
     } catch (err) {
       setLoginError(
@@ -247,6 +255,35 @@ export default function AdminPanel({
       );
     }
   }
+
+  // A login that is over goes straight to the login screen (any screen can notice it).
+  useEffect(() => {
+    function onExpired() {
+      setCurrentUser(null);
+      setIsAuthenticated(false);
+      setLoginPassword("");
+      if (userEmailRef.current) setLoginEmail(userEmailRef.current);
+      setSessionNotice("Seu acesso terminou. Entre de novo para continuar de onde parou.");
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+  }, []);
+
+  // While the panel is open the login renews itself, so nobody is logged out in the middle of a shift.
+  // Checking right away also catches a login that ended while the phone was closed.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void refreshSession();
+    const timer = window.setInterval(() => void refreshSession(), SESSION_REFRESH_MS);
+    function onVisible() {
+      if (document.visibilityState === "visible") void refreshSession();
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     async function pollOrders() {
@@ -608,6 +645,12 @@ export default function AdminPanel({
               onChange={(e) => setLoginPassword(e.target.value)}
             />
           </label>
+
+          {sessionNotice && !loginError && (
+            <p className="msg-ok" role="status">
+              {sessionNotice}
+            </p>
+          )}
 
           {loginError && (
             <p className="msg-error" role="alert">
