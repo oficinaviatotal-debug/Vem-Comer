@@ -258,7 +258,11 @@ class PublicProductsTests(unittest.TestCase):
             {"id": "p2", "company_id": COMPANY_ID, "menu_id": None, "name": "Suco",
              "description": "", "price": 6, "image_key": None},
         ]
-        with patch.object(backend_app, "query_db", return_value=rows):
+        def fake(sql, params=(), one=False):
+            # a segunda busca da rota traz as opcoes por item (nenhuma neste teste)
+            return rows if "FROM products" in sql else []
+
+        with patch.object(backend_app, "query_db", side_effect=fake):
             response = backend_app.app.test_client().get(f"/api/companies/{COMPANY_ID}/products")
         self.assertEqual(response.status_code, 200)
         first, second = response.get_json()

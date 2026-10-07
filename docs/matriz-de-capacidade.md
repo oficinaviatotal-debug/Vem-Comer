@@ -11,8 +11,8 @@ Situações: **Pronto**, **Em PR** (feito, esperando o GD juntar), **Em parte**,
 
 - O Vem Comer já faz o pedido na mesa pelo QR, o painel de pedidos, o Pix do próprio restaurante, o custo do prato e
   o CMV, o cardápio por voz e por foto, a foto do prato melhorada sozinha, a logomarca e a chamada de garçom (PR #33).
-- **Não faz ainda**: entrega (endereço, taxa, motoqueiro), opções por item (tamanho, adicionais, sabor, observação),
-  venda por peso, horário de funcionamento, cobrança e bloqueio da assinatura, impressão, telas de garçom e cozinha,
+- **Não faz ainda**: entrega (endereço, taxa, motoqueiro), opções por item na tela (o servidor já guarda tamanho,
+  adicionais e observação, mas ainda não há onde o cliente escolher nem onde o dono montar), venda por peso, horário de funcionamento, cobrança e bloqueio da assinatura, impressão, telas de garçom e cozinha,
   caixa com conciliação, cupom e fidelidade, notificação.
 - **Para sorveteria e açaí a distância é maior**: o produto tem um preço só e a quantidade é um número inteiro. Não dá
   para vender "açaí de 500 ml com 3 complementos" nem "sorvete por quilo".
@@ -28,7 +28,7 @@ Situações: **Pronto**, **Em PR** (feito, esperando o GD juntar), **Em parte**,
 | Pix que cai direto na conta do restaurante | Pronto | Só com a chave do próprio restaurante (`pix-restaurante.md`). |
 | Acompanhar o pedido (cliente) e o painel de pedidos (dono) | Em parte | Os estados são só "em preparo" e "concluído". Faltam "pronto" e "saiu para entrega". |
 | Chamar garçom, pedir a conta, água, limpeza | Em PR | PR #33 (Mesa viva). |
-| Opções por item: tamanho, adicionais, sabor, "sem cebola", meio a meio | Falta | `products` tem um preço; `order_items` não guarda opção nem observação. |
+| Opções por item: tamanho, adicionais, sabor, "sem cebola", meio a meio | Em parte | Servidor pronto (08/10): grupos de escolha por prato, preço recalculado, cópia no pedido e observação de até 140 letras (`opcoes-por-item.md`). Faltam as telas (cliente e painel) e a voz, previstas para 09/10. Meio a meio não entrou. |
 | Venda por peso e por montagem (açaí, sorvete, marmita) | Falta | A quantidade é inteira. O custo conhece "quilo"; o pedido não. |
 | Entrega: endereço, taxa por região, retirada, motoqueiro | Falta | `orders` sem endereço, tipo e taxa. Detalha os itens 42, 56 e 62. |
 | Horário de funcionamento e "loja fechada" no cardápio | Falta | A tabela `business_hours` existe, mas nada a usa. |
@@ -80,7 +80,7 @@ sozinhas.
 ## Ordem proposta
 
 1. **Opções e observação por item**: grupos de escolha (uma, várias com limite, com preço a mais). Destrava lanchonete,
-   pizzaria e açaí de copo.
+   pizzaria e açaí de copo. *Servidor pronto em 08/10; faltam as telas.*
 2. **Entrega**: tipo do pedido, endereço, taxa por região do CEP, retirada e estados "pronto" e "saiu para entrega".
 3. **Peso**: preço por quilo com o peso informado no balcão. Destrava a sorveteria por quilo.
 4. **Horário de funcionamento e esgotado**: pequenos, e o cliente sente na hora.
