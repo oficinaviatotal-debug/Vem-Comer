@@ -56,3 +56,16 @@ test("the voice search keeps only what the person wants to find", () => {
   assert.equal(searchTextFromVoice("Procurar temaki"), "temaki");
   assert.equal(searchTextFromVoice("pudim"), "pudim");
 });
+
+test("a delivery order that is ready says it goes to the address, not 'retire no balcão'", () => {
+  assert.match(customerStatus(STATUS_DONE, null, "entrega").hint, /endereço/);
+  assert.match(customerStatus(STATUS_DONE, null, "retirada").hint, /balcão/);
+  assert.match(customerStatus(STATUS_DONE, 7, "entrega").hint, /mesa 7/);
+});
+
+test("the sentences the server says about delivery are shown as they are", () => {
+  const minimum = "O pedido mínimo para Centro é R$ 20,00. Adicione mais itens ou escolha retirar.";
+  assert.equal(orderErrorMessage(minimum, "entrega"), minimum);
+  assert.match(orderErrorMessage(minimum), /Não deu para enviar/, "no delivery chosen: the old text");
+  assert.match(orderErrorMessage("Produto inválido", "entrega"), /item saiu do cardápio/);
+});

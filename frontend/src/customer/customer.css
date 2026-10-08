@@ -914,3 +914,64 @@
   display: flex;
   gap: var(--s2);
 }
+
+/* ---------- Pickup and delivery ---------- */
+
+.cust-delivery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+}
+
+.cust-delivery h3 {
+  margin: 0;
+  color: var(--folha);
+  font-size: var(--t-md, 1rem);
+}
+
+.cust-addr-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--s3);
+}
+
+.cust-addr-row .field {
+  min-width: 0;
+}
+
+.cust-hint {
+  margin: 0;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+}
+
+.cust-quote {
+  margin: 0;
+  padding: var(--s3);
+  border-radius: var(--r-sm);
+  font-weight: 700;
+}
+
+.cust-quote.is-ok {
+  border: 1px solid var(--mata);
+  color: var(--mata);
+}
+
+.cust-quote.is-no {
+  border: 1px solid var(--alerta);
+  color: var(--alerta);
+}
+
+.cust-subtotal {
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+}
+
+.cust-handling {
+  margin: 0 0 var(--s3);
+  overflow-wrap: anywhere;
+}
