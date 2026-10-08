@@ -59,6 +59,13 @@ export type OrderView = {
   payment_method?: string;
   /** "PENDING" until the restaurant confirms the money arrived, then "PAID". */
   payment_status?: string;
+  /** "mesa", "retirada", "entrega" or "balcao" (an order from before delivery existed is "balcao"). */
+  order_type?: string;
+  /** What the server added to the total for delivery; the total above already has it. */
+  delivery_fee?: number | string | null;
+  delivery_zone?: string | null;
+  delivery_address?: Record<string, unknown> | null;
+  customer_phone?: string | null;
 };
 
 export type PaymentMethod = "pix" | "cartao" | "dinheiro";

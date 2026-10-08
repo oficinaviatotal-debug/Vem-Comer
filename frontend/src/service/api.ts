@@ -210,7 +210,9 @@ export async function createOrder(
   items: unknown[],
   paymentMethod: string,
   paymentChange: number,
-  tableId?: string | null
+  tableId?: string | null,
+  /** Pickup or delivery: the type, the address and the phone. The server decides the fee, not the phone. */
+  handling?: { order_type?: string; address?: Record<string, string>; phone?: string }
 ) {
   const response = await fetch(`${API_URL}/companies/${companyId}/orders`, {
     method: "POST",
@@ -222,7 +224,8 @@ export async function createOrder(
       items,
       payment_method: paymentMethod,
       payment_change: paymentChange,
-      table_id: tableId || null
+      table_id: tableId || null,
+      ...(handling ?? {})
     }),
   });
   if (!response.ok) {
