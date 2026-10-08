@@ -1251,6 +1251,7 @@ export default function AdminPanel({
                       <ProductOptionsEditor
                         productId={product.id}
                         productName={product.name}
+                        price={product.price}
                         onSaved={() => loadProducts()}
                       />
                     </div>

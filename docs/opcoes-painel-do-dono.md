@@ -17,6 +17,32 @@ opções é outro pedido (feat/opcoes-cliente) e não depende deste.
 6. **Remover grupo** pede dois toques (igual a remover prato).
 7. Na lista de pratos aparece o selo verde "2 grupos de opções" nos pratos que têm opção à venda.
 
+## Falar as opções (sem digitar)
+
+O botão **Falar as opções** (aparece quando o celular sabe escutar) abre o microfone com a mesma paciência do
+cardápio falado: pausa para pensar não corta, só uns 3 segundos de silêncio terminam, ou o dono toca em **Pronto**.
+O que foi dito vira grupos na tela. **Nada é salvo**: a tela mostra "Você disse", "Entendi" e o dono confere e toca
+em Salvar opções.
+
+Exemplo, tudo numa fala só:
+`tamanho pequeno, médio mais 5, grande mais 10. adicionais bacon 4, ovo 2 e meio. sem cebola`
+
+O que a fala entende:
+- **Grupos**: tamanho, adicionais (extra, complemento), tirar/retirar/"sem ..." (vira "Sem cebola"), sabor, borda,
+  molho, recheio, cobertura, calda, massa, ponto da carne. Fala solta sem tipo, sem preço e sem ser tamanho não vira
+  opção: a tela pede "diga antes o tipo".
+- **Preço**: "mais 5", "+5", "5 reais a mais", "bacon 4", "R$ 4,50", "dois e cinquenta", "dois e meio", "cada um 3
+  reais" (vale para todas as opções do grupo que ainda não têm preço).
+- **Tamanho com número solto** ("grande 50"): se for pelo menos o preço do prato, é o preço total (50 menos o preço
+  do prato vira o acréscimo); muito abaixo do preço do prato ("grande 10" num prato de R$ 28,50), é acréscimo; no meio,
+  a tela **não chuta**: deixa sem preço e avisa. Errar isso é cobrar errado de todo cliente.
+- Medidas ficam no nome ("300 ml", "4 fatias"). Conversa antes do tipo ("a pizza tem tamanho...") é ignorada.
+- Falar de novo **soma** ao que já está na tela: opção que já existe mantém o "Acabou" e só troca o preço se um preço
+  novo foi dito. Nunca passa de 8 grupos e 30 opções.
+
+Lógica pura em `frontend/src/service/spokenOptions.ts` (+ `groupFrom` e `mergeGroups` em `optionsDraft.ts`); 31 testes
+em `tests/ui/spokenOptions.test.mjs`.
+
 ## O que a tela confere antes de enviar (as mesmas regras do servidor)
 
 Nome do grupo e da opção preenchidos (até 60 letras), sem repetir nome, pelo menos uma opção por grupo, no
@@ -37,10 +63,13 @@ opções (não dá para exigir 3 escolhas num grupo de 2). O servidor confere de
 
 Painel real com respostas simuladas do servidor, em 390 e 320 de largura, sem rolagem horizontal: criar com
 modelos, erro em português, salvar (o envio saiu com os preços e o "Acabou" certos), reabrir prato com opções,
-remover grupo com dois toques. **Falta ver num celular de verdade** e com o servidor real na VPS.
+remover grupo com dois toques, e a fala (com um microfone de mentira): ouvindo, "Pronto" antes do silêncio, somar a
+grupo existente, cancelar, fala sem sentido. **Falta ouvir num celular de verdade** (o reconhecimento de voz do
+Android é o que decide o quanto a fala sai limpa) e com o servidor real na VPS.
 
 ## O que ainda não faz
 
-- Falar ou fotografar as opções (cadastro por voz, foto e arquivo ainda só lê prato e preço): 09/10.
+- Fotografar o cardápio e já ler tamanhos e adicionais (a leitura por foto e por arquivo ainda só lê prato e preço).
+- Dizer as opções no cadastro do cardápio inteiro (hoje se fala dentro de cada prato).
 - Copiar as opções de um prato para outro (ex.: todas as pizzas com os mesmos tamanhos).
 - Custo da opção na ficha técnica / CMV, e meio a meio.

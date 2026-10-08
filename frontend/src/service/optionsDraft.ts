@@ -221,3 +221,62 @@ export function groupsBadge(count: number | null | undefined): string {
   if (total <= 0) return "";
   return total === 1 ? "1 grupo de opções" : `${total} grupos de opções`;
 }
+
+const sameName = (text: string) =>
+  text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** A group made from a list (what was said out loud), with each price in cents. */
+export function groupFrom(parts: {
+  name: string;
+  min: number;
+  max: number;
+  items: { name: string; cents: number }[];
+}): DraftGroup {
+  return fitGroup({
+    uid: nextUid(),
+    name: parts.name,
+    min: parts.min,
+    max: parts.max,
+    items: parts.items.map((item) => newItem(item.name, item.cents > 0 ? priceToInput(item.cents / 100) : "")),
+  });
+}
+
+/**
+ * Puts groups said out loud next to what is already on the screen. A group with the same name receives the
+ * options it does not have yet; an option already there keeps its "Acabou" and takes the new price only if one
+ * was said; the rest are added as new groups. Never goes past the limits.
+ */
+export function mergeGroups(current: DraftGroup[], added: DraftGroup[]): DraftGroup[] {
+  const result = current.map((group) => ({ ...group, items: [...group.items] }));
+  for (const incoming of added) {
+    const target = result.find((group) => sameName(group.name) === sameName(incoming.name));
+    if (!target) {
+      if (result.length < LIMITS.groups) result.push({ ...incoming, items: [...incoming.items] });
+      continue;
+    }
+    const known = new Set(target.items.map((item) => sameName(item.name)));
+    // An option still empty (a ready-made group waiting for its first name) gives its place to the first new one.
+    target.items = target.items.filter((item) => item.name.trim() !== "" || item.id);
+    for (const item of incoming.items) {
+      if (known.has(sameName(item.name))) {
+        // Said again with a price: that is the new price. Said again with none: nothing to change.
+        const there = target.items.find((other) => sameName(other.name) === sameName(item.name));
+        if (there && item.price !== "" && there.price !== item.price) {
+          target.items = target.items.map((other) => (other === there ? { ...other, price: item.price } : other));
+        }
+        continue;
+      }
+      if (target.items.length >= LIMITS.items) continue;
+      known.add(sameName(item.name));
+      target.items.push(item);
+    }
+    Object.assign(target, fitGroup(target));
+  }
+  return result;
+}
+

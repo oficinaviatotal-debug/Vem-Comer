@@ -1,12 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchProductOptions, saveProductOptions } from "./api";
 import ConfirmButton from "./ConfirmButton";
+import { canListen, hear, DICTATION_PATIENCE_MS, type Hearing } from "../assistant/voiceIO";
+import { parseSpokenOptions, SPOKEN_OPTIONS_HELP } from "./spokenOptions";
 import {
   LIMITS,
   STARTERS,
   blankItem,
   fitGroup,
   fromApi,
+  groupFrom,
+  mergeGroups,
   sentence,
   starter,
   toPayload,
@@ -19,6 +23,8 @@ import {
 type Props = {
   productId: string;
   productName: string;
+  /** The dish price: a size said as "grande 50" is read against it. */
+  price: number;
   /** The options were saved: the dish list refreshes its "N grupos de opções" label. */
   onSaved: () => void;
 };
@@ -37,13 +43,21 @@ function range(from: number, to: number): number[] {
  * Ready-made groups (Tamanho, Adicionais, Retirar) mean almost no typing; the sentence under each group says
  * what the customer will be asked.
  */
-export default function ProductOptionsEditor({ productId, productName, onSaved }: Props) {
+export default function ProductOptionsEditor({ productId, productName, price, onSaved }: Props) {
   const [load, setLoad] = useState<Load>("loading");
   const [groups, setGroups] = useState<DraftGroup[]>([]);
   const [saved, setSaved] = useState("");
   const [saving, setSaving] = useState(false);
   const [problems, setProblems] = useState<string[]>([]);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // Saying the options: the words as they come, and what was understood once the owner stops
+  const [listening, setListening] = useState(false);
+  const [heard, setHeard] = useState("");
+  const [spoken, setSpoken] = useState<{ said: string; lines: string[]; notes: string[] } | null>(null);
+  const hearingRef = useRef<Hearing | null>(null);
+  const heardRef = useRef("");
+  const micAvailable = canListen();
 
   const snapshot = (list: DraftGroup[]) => JSON.stringify(toPayload(list));
 
@@ -65,6 +79,9 @@ export default function ProductOptionsEditor({ productId, productName, onSaved }
     void open();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId]);
+
+  // Closing the editor (or opening another dish) turns the microphone off
+  useEffect(() => () => hearingRef.current?.cancel(), []);
 
   const dirty = useMemo(() => load === "ready" && snapshot(groups) !== saved, [groups, saved, load]);
 
@@ -108,6 +125,55 @@ export default function ProductOptionsEditor({ productId, productName, onSaved }
     if (groups.length >= LIMITS.groups) return;
     change([...groups, starter(kind)]);
   };
+
+  /** What was said becomes groups on the screen. Nothing is saved: the owner checks and taps "Salvar opções". */
+  function understand(said: string) {
+    const parsed = parseSpokenOptions(said, Math.round((Number(price) || 0) * 100));
+    if (parsed.groups.length === 0) {
+      setSpoken({ said, lines: [], notes: parsed.notes });
+      return;
+    }
+    change(mergeGroups(groups, parsed.groups.map(groupFrom)));
+    setSpoken({ said, lines: parsed.lines, notes: parsed.notes });
+  }
+
+  async function listen() {
+    if (hearingRef.current) return;
+    setSpoken(null);
+    setHeard("");
+    heardRef.current = "";
+    setListening(true);
+    const hearing = hear({
+      patienceMs: DICTATION_PATIENCE_MS,
+      onPartial: (text) => {
+        heardRef.current = text;
+        setHeard(text);
+      },
+    });
+    hearingRef.current = hearing;
+    const said = await hearing.result;
+    if (hearingRef.current !== hearing) return; // cancelled or replaced meanwhile
+    hearingRef.current = null;
+    setListening(false);
+    understand((said ?? heardRef.current).trim());
+  }
+
+  /** "Pronto": use the words heard so far instead of waiting for the silence. */
+  function finishListening() {
+    const hearing = hearingRef.current;
+    if (!hearing) return;
+    hearingRef.current = null;
+    hearing.cancel();
+    setListening(false);
+    understand(heardRef.current.trim());
+  }
+
+  function cancelListening() {
+    hearingRef.current?.cancel();
+    hearingRef.current = null;
+    setListening(false);
+    setHeard("");
+  }
 
   async function save() {
     const found = validate(groups);
@@ -163,12 +229,69 @@ export default function ProductOptionsEditor({ productId, productName, onSaved }
     <div className="opt-ed" aria-label={`Opções de ${productName}`}>
       {groups.length === 0 ? (
         <p className="adm-muted">
-          Este prato não tem opções. Toque em um modelo para começar. Os nomes são só sugestões, é só mudar.
+          {micAvailable
+            ? "Este prato não tem opções. Fale como o cliente vai escolher ou toque em um modelo. Os nomes são só sugestões, é só mudar."
+            : "Este prato não tem opções. Toque em um modelo para começar. Os nomes são só sugestões, é só mudar."}
         </p>
       ) : (
         <p className="adm-muted">
           O cliente escolhe antes de pedir. O preço de cada opção soma no prato. Se algo acabar, toque em Tem e vira Acabou.
         </p>
+      )}
+
+      {micAvailable &&
+        (listening ? (
+          <div className="opt-ed-listen" role="status" aria-live="polite">
+            <strong>Estou ouvindo…</strong>
+            <p>{heard || "Pode falar. Ex.: tamanho pequeno, médio mais 5, grande mais 10. Adicionais bacon 4. Sem cebola."}</p>
+            <div className="opt-ed-actions">
+              <button type="button" className="btn btn-primary btn-sm" onClick={finishListening}>
+                Pronto
+              </button>
+              <button type="button" className="btn btn-outline btn-sm" onClick={cancelListening}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button type="button" className="btn btn-mata" onClick={() => void listen()}>
+            <span aria-hidden="true">🎙️</span> Falar as opções
+          </button>
+        ))}
+
+      {spoken && !listening && (
+        <div className="opt-ed-heard" role="status">
+          {spoken.said && (
+            <p>
+              <strong>Você disse:</strong> “{spoken.said}”
+            </p>
+          )}
+          {spoken.lines.length > 0 ? (
+            <>
+              <p>
+                <strong>Entendi:</strong>
+              </p>
+              <ul>
+                {spoken.lines.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+              <p>Confira abaixo e toque em Salvar opções. Ainda não foi salvo.</p>
+            </>
+          ) : (
+            <p className="msg-error">{spoken.said ? "Não entendi nenhuma opção." : "Não ouvi nada."} {SPOKEN_OPTIONS_HELP}</p>
+          )}
+          {spoken.notes.length > 0 && (
+            <ul className="opt-ed-notes">
+              {spoken.notes.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          )}
+          <button type="button" className="btn btn-quiet btn-sm" onClick={() => setSpoken(null)}>
+            Fechar aviso
+          </button>
+        </div>
       )}
 
       {groups.map((group, index) => {
