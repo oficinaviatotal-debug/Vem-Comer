@@ -32,6 +32,7 @@ import { ADMIN_TOUR, ADMIN_TOUR_ID } from "../onboarding/adminTour";
 import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
 import ConfirmButton from "./ConfirmButton";
 import PixSettingsPanel from "./PixSettingsPanel";
+import DeliveryPanel from "./DeliveryPanel";
 import LogoPanel from "../logo/LogoPanel";
 import { adminPaymentChip, canConfirmPayment } from "../customer/payment";
 import {
@@ -117,7 +118,8 @@ type AdminView =
   | "usuarios"
   | "mesas"
   | "pagamento"
-  | "marca";
+  | "marca"
+  | "entrega";
 
 const ADMIN_VIEWS: string[] = [
   "pedidos",
@@ -130,6 +132,7 @@ const ADMIN_VIEWS: string[] = [
   "mesas",
   "pagamento",
   "marca",
+  "entrega",
 ];
 
 function isAdminView(value: string): value is AdminView {
@@ -872,6 +875,19 @@ export default function AdminPanel({
           Mesas
         </button>
 
+        {(currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") && (
+          <button
+            id="admin-tab-entrega"
+            type="button"
+            className={tabClass("entrega")}
+            aria-current={view === "entrega" ? "page" : undefined}
+            onClick={() => setView("entrega")}
+          >
+            Entrega
+          </button>
+        )}
+
         <button
           id="admin-tab-dashboard"
           type="button"
@@ -980,6 +996,10 @@ export default function AdminPanel({
         (currentUser?.role === "OWNER" ||
           currentUser?.role === "MANAGER") ? (
         <LogoPanel companyId={companyId} />
+      ) : view === "entrega" &&
+        (currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") ? (
+        <DeliveryPanel />
       ) : view === "usuarios" && currentUser?.role === "OWNER" ? (
         <section className="adm-stack" aria-label="Equipe">
           <form
