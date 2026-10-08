@@ -69,7 +69,7 @@ No pedido, três campos novos, todos opcionais:
   tabela `delivery_zones`; colunas `accepts_pickup` e `delivery_paused` em `companies`; `order_type`, `delivery_fee`,
   `delivery_zone`, `delivery_address` (jsonb) e `customer_phone` em `orders`. Pedidos que já existem: com mesa viram
   `mesa`, os outros ficam `balcao`.
-- Regras e SQL em `backend/delivery.py`; rotas em `backend/app.py`. 29 + 28 testes (`test_delivery.py`,
+- Regras e SQL em `backend/delivery.py`; rotas em `backend/app.py`. 29 + 29 testes (`test_delivery.py`,
   `test_delivery_endpoint.py`).
 
 ## Privacidade (LGPD)
