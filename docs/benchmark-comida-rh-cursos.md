@@ -139,6 +139,16 @@ Hoje à noite, com o computador do GD ligado, faço a segunda passada abrindo as
   - cartões;
   - responder falando.
 
+**Como o curso se vende: capacitação de ponta a ponta (visto pelo GD, 08/10)**
+- *Peça de divulgação de um curso de capacitação, que parece ser da área da saúde (fundo de clínica, logomarca com coração; o nome da marca ficou escondido pelo dedo na foto):* a frase de venda é "capacitação completa une o conhecimento técnico e o atendimento humanizado", e o fechamento é "Entre em contato", com o botão do WhatsApp na própria peça.
+- **O que a frase ensina:** o curso não se vende só pela técnica; o que fecha a venda é a técnica **mais** o atendimento humano, e o contato é uma conversa de WhatsApp, não um formulário.
+- **Vem, na parceria dos cursos:**
+  - cada trilha tem duas pernas juntas: a **técnica** do ofício (cozinha, caixa, salão, entrega) e o **atendimento** (receber, ouvir, resolver reclamação, falar com o cliente);
+  - o certificado mostra as duas, e o Vem Trabalhar usa as duas na nota do match;
+  - o "Entre em contato" da página do curso abre o WhatsApp do parceiro com a mensagem pronta, como na peça;
+  - o parceiro que dá o curso entra com o nome e a marca dele, e o aluno aprovado aparece para os restaurantes do Vem Comer que estão contratando.
+- **Fonte ainda sem nome.** Peça a marca e o contato do parceiro antes de citar. O telefone que aparece na peça não foi copiado para este arquivo porque o repositório é público; ele fica na conversa.
+
 **Como fica a lição do Vem**
 1. Uma situação real em 20 segundos, com imagem ou vídeo curto. Exemplo: "o cliente pagou com R$ 50 uma conta de R$ 37".
 2. Um ensinamento de cada vez, para ler ou ouvir, com desenho.
