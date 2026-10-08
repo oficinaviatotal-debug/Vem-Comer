@@ -27,6 +27,8 @@ import {
   mediaUrl,
 } from "./api";
 import PhotoPicker from "../photos/PhotoPicker";
+import ProductOptionsEditor from "./ProductOptionsEditor";
+import { groupsBadge } from "./optionsDraft";
 import OnboardingGuide from "../onboarding/OnboardingGuide";
 import { ADMIN_TOUR, ADMIN_TOUR_ID } from "../onboarding/adminTour";
 import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
@@ -86,6 +88,8 @@ type Product = {
   menu_id: string;
   thumb_url?: string | null;
   image_url?: string | null;
+  /** Groups the customer is asked about (size, extras); only what is on sale. */
+  option_groups?: unknown[] | null;
 };
 
 type Menu = {
@@ -167,6 +171,7 @@ export default function AdminPanel({
 
   const [products, setProducts] = useState<Product[]>([]);
   const [photoFor, setPhotoFor] = useState<string | null>(null);
+  const [optionsFor, setOptionsFor] = useState<string | null>(null);
   const [menus, setMenus] = useState<Menu[]>([]);
   const [users, setUsers] = useState<StaffUser[]>([]);
 
@@ -1202,6 +1207,9 @@ export default function AdminPanel({
                     {menuName(product.menu_id) && (
                       <span className="chip">{menuName(product.menu_id)}</span>
                     )}
+                    {groupsBadge(product.option_groups?.length) && (
+                      <span className="chip chip-done">{groupsBadge(product.option_groups?.length)}</span>
+                    )}
                   </div>
 
                   <div className="adm-row-side">
@@ -1209,8 +1217,22 @@ export default function AdminPanel({
                     <button
                       type="button"
                       className="btn btn-outline btn-sm"
+                      aria-expanded={optionsFor === product.id}
+                      onClick={() => {
+                        setPhotoFor(null);
+                        setOptionsFor(optionsFor === product.id ? null : product.id);
+                      }}
+                    >
+                      {optionsFor === product.id ? "Fechar" : "Opções"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
                       aria-expanded={photoFor === product.id}
-                      onClick={() => setPhotoFor(photoFor === product.id ? null : product.id)}
+                      onClick={() => {
+                        setOptionsFor(null);
+                        setPhotoFor(photoFor === product.id ? null : product.id);
+                      }}
                     >
                       {photoFor === product.id
                         ? "Fechar"
@@ -1223,6 +1245,16 @@ export default function AdminPanel({
                       onConfirm={() => handleDeleteProduct(product.id)}
                     />
                   </div>
+
+                  {optionsFor === product.id && (
+                    <div className="adm-row-photo-picker">
+                      <ProductOptionsEditor
+                        productId={product.id}
+                        productName={product.name}
+                        onSaved={() => loadProducts()}
+                      />
+                    </div>
+                  )}
 
                   {photoFor === product.id && (
                     <div className="adm-row-photo-picker">
