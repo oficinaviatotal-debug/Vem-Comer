@@ -71,6 +71,10 @@ No pedido, três campos novos, todos opcionais:
   `mesa`, os outros ficam `balcao`.
 - Regras e SQL em `backend/delivery.py`; rotas em `backend/app.py`. 29 + 29 testes (`test_delivery.py`,
   `test_delivery_endpoint.py`).
+- Conferido em um Postgres 16 de verdade (08/10): o esquema mais as migrações 002 a 011 rodam duas vezes sem erro;
+  salvar, ler e apagar regiões (inclusive lista vazia e regiões de outra empresa), gravar pedido de entrega, pedido
+  antigo caindo em `balcao` com taxa 0, e as travas (tipo inválido, taxa negativa, região sem CEP) recusam o que
+  deveriam. O CI não tem Postgres, então isso foi feito à mão e não roda sozinho.
 
 ## Privacidade (LGPD)
 
