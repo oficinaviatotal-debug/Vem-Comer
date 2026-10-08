@@ -1,5 +1,7 @@
 /** Shapes the customer screens share. They mirror what the API returns. */
 
+import type { OptionGroup } from "./options";
+
 export type Company = {
   id: string;
   name: string;
@@ -19,6 +21,8 @@ export type Product = {
   /** Paths like "/media/<company>/<key>.webp"; null when the dish has no photo. Use mediaUrl() to show them. */
   image_url?: string | null;
   thumb_url?: string | null;
+  /** Size, extras and the like the customer chooses before ordering; missing or empty for a plain dish. */
+  option_groups?: OptionGroup[];
 };
 
 export type Menu = {
@@ -27,12 +31,21 @@ export type Menu = {
   active?: boolean;
 };
 
+/** What the server copied into the order when the customer chose (name and price of that moment). */
+export type OrderItemOption = {
+  group?: string;
+  name: string;
+  price?: number | string;
+};
+
 export type OrderItem = {
   product_id?: string;
   name: string;
   quantity: number;
   unit_price?: number | string;
   total: number | string;
+  options?: OrderItemOption[] | null;
+  note?: string | null;
 };
 
 /** What GET /api/orders/<id> returns for the customer's own order. */

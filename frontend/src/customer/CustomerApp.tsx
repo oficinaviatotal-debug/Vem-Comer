@@ -8,12 +8,17 @@ import OnboardingGuide from "../onboarding/OnboardingGuide";
 import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
 import VoiceCommandButton from "../voice/VoiceCommandButton";
 import {
+  addConfigured,
   addToCart,
   cartCount,
   cartTotalCents,
   cashProblem,
   decrementItem,
+  incrementLine,
+  lineKey,
   parseMoneyInput,
+  replaceLine,
+  setLineNote,
   toOrderItems,
   type CartLine,
 } from "./cart";
@@ -26,11 +31,13 @@ import {
   searchTextFromVoice,
 } from "./labels";
 import { groupProducts } from "./menuGroups";
+import { groupsOf, isUnavailable, selectionFromChosen, type Selection } from "./options";
 import { orderMemory, type RememberedOrder } from "./orderMemory";
 import { effectiveMethod, orderPaymentView } from "./payment";
 import type { Company, Menu, OrderView, PaymentMethod, Product } from "./types";
 import CartSheet from "./CartSheet";
 import MenuView, { CategoryChips } from "./MenuView";
+import OptionsSheet, { type OptionsPick } from "./OptionsSheet";
 import OrderTracking from "./OrderTracking";
 import TableHub from "../mesa/TableHub";
 
@@ -58,6 +65,12 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   const [tableLost, setTableLost] = useState(false);
 
   const [cart, setCart] = useState<CartLine[]>([]);
+  // The dish whose choices (size, extras...) are open, and the cart line being changed when there is one.
+  const [picking, setPicking] = useState<{
+    product: Product;
+    editKey?: string;
+    initial?: { selection: Selection; note: string; quantity: number };
+  } | null>(null);
   const [query, setQuery] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [name, setName] = useState(() => orderMemory.loadName());
@@ -156,9 +169,54 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
     setCart((current) => addToCart(current, product));
   }, []);
 
-  const less = useCallback((id: string) => {
-    setCart((current) => decrementItem(current, id));
+  const less = useCallback((key: string) => {
+    setCart((current) => decrementItem(current, key));
   }, []);
+
+  const more = useCallback((key: string) => {
+    setCart((current) => incrementLine(current, key));
+  }, []);
+
+  const changeNote = useCallback((key: string, note: string) => {
+    setCart((current) => setLineNote(current, key, note));
+  }, []);
+
+  const choose = useCallback((product: Product) => {
+    if (isUnavailable(product)) return;
+    setPicking({ product });
+  }, []);
+
+  function confirmPick(pick: OptionsPick) {
+    if (!picking) return;
+    const { product, editKey } = picking;
+    setCart((current) =>
+      editKey ? replaceLine(current, editKey, product, pick) : addConfigured(current, product, pick)
+    );
+    setPicking(null);
+  }
+
+  /** The dish of a cart line, as long as it is still on the menu with the same option groups. */
+  const productOf = useCallback(
+    (line: CartLine) => {
+      const product = products.find((candidate) => candidate.id === line.id);
+      return product && groupsOf(product).length > 0 && !isUnavailable(product) ? product : null;
+    },
+    [products]
+  );
+
+  function editLine(line: CartLine) {
+    const product = productOf(line);
+    if (!product) return;
+    setPicking({
+      product,
+      editKey: lineKey(line),
+      initial: {
+        selection: selectionFromChosen(groupsOf(product), line.options ?? []),
+        note: line.note ?? "",
+        quantity: line.quantity,
+      },
+    });
+  }
 
   function closeSheet() {
     setSheetOpen(false);
@@ -405,6 +463,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
                 query={query}
                 onAdd={add}
                 onLess={less}
+                onChoose={choose}
                 search={
                   products.length >= SEARCH_FROM ? (
                     <div className="cust-search">
@@ -467,10 +526,22 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
           onPaid={setPaid}
           sending={sending}
           error={sendError}
-          onMore={add}
+          onMore={more}
           onLess={less}
+          onNote={changeNote}
+          onEdit={editLine}
+          canEdit={(line) => productOf(line) !== null}
           onSend={() => void send()}
           onClose={closeSheet}
+        />
+      )}
+
+      {picking && (
+        <OptionsSheet
+          product={picking.product}
+          initial={picking.initial}
+          onConfirm={confirmPick}
+          onClose={() => setPicking(null)}
         />
       )}
 
