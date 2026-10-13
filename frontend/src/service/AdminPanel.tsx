@@ -47,6 +47,8 @@ import { suggestedTopic } from "./helpLogic";
 import { useOwnerPlan } from "./useOwnerPlan";
 import { bannerOf, hasPlanTab, viewAllowed } from "./subscriptionView";
 import LogoPanel from "../logo/LogoPanel";
+import { alertDevice } from "./alertDevice";
+import { knownOrderIds, newOrders, wantsNewOrderAlert } from "./newOrders";
 import CourierHome from "../courier/CourierHome";
 import CourierPanel from "../courier/CourierPanel";
 import CashSettlement from "../courier/CashSettlement";
@@ -212,7 +214,8 @@ export default function AdminPanel({
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const lastOrderCountRef = useRef<number | null>(null);
+  /** The orders the screen already knew at the last check; null until the first one answers (opening makes no noise). */
+  const knownOrdersRef = useRef<Set<string> | null>(null);
   const [showNewOrderAlert, setShowNewOrderAlert] = useState(false);
 
   const [view, setView] = useState<AdminView>("pedidos");
@@ -386,14 +389,14 @@ export default function AdminPanel({
 
         setOrders(currentOrders);
 
-        if (
-          lastOrderCountRef.current !== null &&
-          currentOrders.length > lastOrderCountRef.current
-        ) {
+        // By order number, not by how many there are: the server sends only the latest 200, so the count stops
+        // growing in a restaurant with a long history and the alert would never come.
+        if (newOrders(knownOrdersRef.current, currentOrders).length > 0) {
           setShowNewOrderAlert(true);
+          if (wantsNewOrderAlert(currentUser?.role)) alertDevice("order");
         }
 
-        lastOrderCountRef.current = currentOrders.length;
+        knownOrdersRef.current = knownOrderIds(currentOrders);
       } catch (err) {
         console.error(err);
       } finally {

@@ -3,6 +3,8 @@ import "../ui.css";
 import "./courier.css";
 import { HttpError } from "../service/api";
 import { formatTime, shortOrderCode } from "../service/format";
+import { alertDevice } from "../service/alertDevice";
+import { knownOrderIds, newOrders } from "../service/newOrders";
 import { maskPhone } from "../customer/delivery";
 import { deliverOrder, fetchCourierOrders, pickUpOrder } from "./courierApi";
 import {
@@ -44,11 +46,16 @@ export default function CourierPanel({ companyId }: Props) {
   const [note, setNote] = useState<Note | null>(null);
   const [locked, setLocked] = useState<string[]>([]);
   const alive = useRef(true);
+  /** The deliveries waiting to be taken at the last check; null until the first one (opening makes no noise). */
+  const knownReady = useRef<Set<string> | null>(null);
 
   async function reload() {
     try {
       const rows = await fetchCourierOrders(companyId);
       if (!alive.current) return;
+      const waiting = groupOrders(rows).ready;
+      if (newOrders(knownReady.current, waiting).length > 0) alertDevice("ready");
+      knownReady.current = knownOrderIds(waiting);
       setOrders(rows);
       setProblem("");
     } catch (error) {

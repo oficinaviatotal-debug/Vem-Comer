@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./mesa.css";
 import { answerTableCall, fetchTableCalls } from "../service/api";
+import { alertDevice } from "../service/alertDevice";
 import {
   barTitle,
   becameUrgent,
@@ -15,34 +16,6 @@ import {
 export const PANEL_POLL_MS = 6000;
 
 type Props = { companyId: string };
-
-function alertDevice(urgent: boolean) {
-  try {
-    navigator.vibrate?.(urgent ? [300, 120, 300, 120, 300] : [200, 100, 200]);
-  } catch {
-    /* sem vibração neste aparelho */
-  }
-  try {
-    const Ctx: typeof AudioContext | undefined =
-      window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.value = urgent ? 880 : 660;
-    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.45);
-    osc.onended = () => void ctx.close();
-  } catch {
-    /* o navegador pode bloquear som antes do primeiro toque: tudo bem, a tela avisa do mesmo jeito */
-  }
-}
 
 /**
  * O aviso das mesas que estão chamando, no topo do painel: "Mesa 4 chama o garçom, há 2 min" e o botão
@@ -64,9 +37,9 @@ export default function CallsBar({ companyId }: Props) {
       const urgent = becameUrgent(urgencies.current, next);
       if (arrived.length > 0) {
         setFresh(new Set(arrived.map((call) => call.id)));
-        alertDevice(arrived.some((call) => call.urgency === "urgent"));
+        alertDevice(arrived.some((call) => call.urgency === "urgent") ? "urgent" : "call");
       } else if (urgent.length > 0) {
-        alertDevice(true);
+        alertDevice("urgent");
       }
       known.current = new Set(next.map((call) => call.id));
       urgencies.current = new Map(next.map((call) => [call.id, call.urgency]));
