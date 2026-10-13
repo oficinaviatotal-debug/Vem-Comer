@@ -47,6 +47,8 @@ services:
       DATABASE_URL: postgresql://vemcomer_app:${APP_DB_PASSWORD:?APP_DB_PASSWORD is missing in the .env file}@db:5432/vemcomer
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is missing in the .env file}
       FLASK_DEBUG: "false"
+      # versão (início do commit) que está no ar; o instalador define; aparece em /api/health
+      VEM_VERSION: ${VEM_VERSION:-manual}
       TRUST_PROXY: "1"
       CORS_ORIGIN_REGEX: https://${SITE_ADDRESS}
       MAX_CONTENT_LENGTH: "1048576"

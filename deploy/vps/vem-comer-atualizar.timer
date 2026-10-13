@@ -1,0 +1,12 @@
+[Unit]
+Description=Confere a cada 10 minutos se ha versao nova do Vem Comer
+
+[Timer]
+# primeira conferencia 2 minutos depois de ligar; depois, 10 minutos depois do fim de cada conferencia
+OnActiveSec=2min
+OnBootSec=5min
+OnUnitInactiveSec=10min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

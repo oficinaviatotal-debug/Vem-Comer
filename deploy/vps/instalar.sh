@@ -16,6 +16,7 @@
 #   VEM_DOMINIO  endereço do site (guardado no .env; se faltar, usa o que já está lá)
 #   VEM_RAMO     ramo do GitHub a instalar (padrão: main)
 #   VEM_REPO     endereço do repositório, começando com https:// (só mude para testes)
+#   VEM_COMMIT   instala exatamente este commit (40 letras/números); usado pelo atualizador automático
 
 set -Eeuo pipefail
 
@@ -80,7 +81,17 @@ main() {
   [[ "$RAMO" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]] || falhar "VEM_RAMO inválido: use só letras, números, ponto, barra, hífen e sublinhado."
   [[ "$REPO" =~ ^(https://|file:///)[A-Za-z0-9._~:/@%+-]+$ ]] || falhar "VEM_REPO inválido: precisa começar com https:// (ou file:/// em testes)."
 
+  local COMMIT="${VEM_COMMIT:-}"
+  [ -z "$COMMIT" ] || [[ "$COMMIT" =~ ^[0-9a-f]{40}$ ]] || falhar "VEM_COMMIT inválido: precisa ter 40 letras/números (0-9, a-f)."
+
   trap 'printf "\n  PAROU no passo: %s (linha %s).\n  Nada do runtime da ChatGPT foi tocado. Tire um print desta tela.\n" "$PASSO_ATUAL" "$LINENO" >&2' ERR
+
+  # Uma instalação por vez: se o atualizador automático estiver no meio de uma rodada, esta espera (até 15 min).
+  # Quando é o próprio atualizador que chama este script, ele já segura a trava (VEM_SOB_ATUALIZADOR=1).
+  if [ "$SO_CHECAR" -eq 0 ] && [ -z "${VEM_SOB_ATUALIZADOR:-}" ] && command -v flock >/dev/null 2>&1; then
+    exec 8>/var/lock/vem-comer-atualizar.lock
+    flock -w 900 8 || falhar "Outra atualização está rodando há mais de 15 minutos. Espere ela terminar e rode de novo."
+  fi
 
   # ---------------------------------------------------------------- 1
   passo 1 "Conferindo o servidor"
@@ -206,12 +217,23 @@ main() {
   install -d -m 755 "$BASE"
   if [ -d "$APP/.git" ]; then
     git -C "$APP" fetch --quiet origin "$RAMO"
-    git -C "$APP" checkout --quiet -f -B "$RAMO" "origin/$RAMO"
+    if [ -n "$COMMIT" ]; then
+      git -C "$APP" cat-file -e "$COMMIT^{commit}" 2>/dev/null || falhar "O commit $COMMIT não existe no GitHub (ramo $RAMO)."
+      git -C "$APP" checkout --quiet -f -B "$RAMO" "$COMMIT"
+    else
+      git -C "$APP" checkout --quiet -f -B "$RAMO" "origin/$RAMO"
+    fi
   else
     [ ! -e "$APP" ] || falhar "A pasta $APP existe mas não é uma cópia do Vem Comer. Não vou apagar."
     git clone --quiet --branch "$RAMO" "$REPO" "$APP"
+    if [ -n "$COMMIT" ]; then
+      git -C "$APP" checkout --quiet -f -B "$RAMO" "$COMMIT" || falhar "O commit $COMMIT não existe no GitHub (ramo $RAMO)."
+    fi
   fi
-  ok "código em $APP ($(git -C "$APP" rev-parse --short HEAD))"
+  # o servidor informa esta versão em /api/health (o atualizador confere de fora que subiu a certa)
+  export VEM_VERSION
+  VEM_VERSION=$(git -C "$APP" rev-parse HEAD | cut -c1-12)
+  ok "código em $APP ($VEM_VERSION)"
 
   local COMPOSE=(docker compose -p vemcomer --env-file "$ENVFILE" -f "$APP/deploy/vps/docker-compose.yml")
 
@@ -261,6 +283,14 @@ main() {
     ok "senhas geradas ao acaso e guardadas em $ENVFILE (só o root lê)"
   fi
   chmod 600 "$ENVFILE"
+
+  # guarda a versão no arquivo de senhas: os outros scripts (cobranca.sh, abrir-cadastro.sh...) reiniciam o servidor
+  # com este arquivo e assim não perdem a informação
+  local tmpv
+  tmpv=$(mktemp "$BASE/.env.XXXXXX")
+  { grep -v '^VEM_VERSION=' "$ENVFILE" || true; echo "VEM_VERSION=$VEM_VERSION"; } >"$tmpv"
+  chmod 600 "$tmpv"
+  mv "$tmpv" "$ENVFILE"
 
   "${COMPOSE[@]}" config -q
   ok "configuração conferida"

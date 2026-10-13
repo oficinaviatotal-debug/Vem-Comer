@@ -60,6 +60,13 @@
 - Acceptance of the terms is recorded (`terms_version`, `terms_accepted_at`); a form that shows an older version of the terms is refused with 409.
 - Not built yet: e-mail confirmation and "forgot password" (need a mail provider), CAPTCHA, trial and billing. Before opening to the public: lawyer review of the terms, a support contact in the terms page, and a real-phone test on the server (see `docs/cadastro-do-restaurante.md`).
 
+## Automatic server updates (`deploy/vps/atualizar-sozinho.sh`, see `docs/atualizacao-automatica.md`)
+- Runs as root from a systemd timer every ~10 minutes and installs `main` of `oficinaviatotal-debug/Vem-Comer` only when **all** GitHub check-runs of that exact commit are `completed` with `success`/`skipped`/`neutral` (minimum 5 checks). Red, running, too few or unreachable = nothing is installed.
+- It installs that exact commit (`VEM_COMMIT`, 40 hex), not whatever `main` is a second later, and runs a copy of that version's `instalar.sh`. A backup is taken first; if it fails the update does not start.
+- After installing it checks from the outside that `/api/health` answers `ok` **with the new `version`**; otherwise it rolls the code back to the last confirmed version and sets the bad commit aside. If the rollback fails it writes an `emergencia` flag and stops touching anything.
+- Trust model: whoever can merge to `main` can change what runs on the server. Keep two-factor authentication on the GitHub account and, once there is more than one person, require review before merge. No inbound port is opened and no secret is stored in GitHub (the server pulls). `vem-comer-atualizar --pausar` stops it at once.
+- Database migrations are forward-only; a rollback restores code, not data (backups in `/var/backups/vem-comer`).
+
 ## Before production
 1. Replace bearer-token storage in the browser with a secure session architecture using HttpOnly/Secure/SameSite cookies or an equivalent design.
 2. Move rate limiting to a shared production store so limits work across multiple application instances.

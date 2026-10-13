@@ -1,0 +1,12 @@
+[Unit]
+Description=Atualizador automatico do Vem Comer (so instala versao com testes verdes)
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/vem-comer-atualizar
+Nice=10
+# montar o site pode levar varios minutos num servidor pequeno
+TimeoutStartSec=45min

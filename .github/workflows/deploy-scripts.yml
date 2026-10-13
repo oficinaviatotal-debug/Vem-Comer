@@ -1,0 +1,28 @@
+name: Vem Comer deploy scripts
+
+# Testa o atualizador automático da VPS (deploy/vps/atualizar-sozinho.sh) com Docker, curl e systemctl de mentira.
+# Esse script roda como root no servidor e decide sozinho o que entra no ar, então não pode quebrar sem ninguém ver.
+
+on:
+  pull_request:
+    paths:
+      - "deploy/vps/**"
+      - ".github/workflows/deploy-scripts.yml"
+  push:
+    branches:
+      - main
+      - "feat/**"
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax of every deploy script
+        run: |
+          for f in deploy/vps/*.sh; do bash -n "$f"; done
+      - name: Updater tests (needs root)
+        run: sudo -E env "PATH=$PATH" python3 deploy/vps/test_atualizar_sozinho.py
