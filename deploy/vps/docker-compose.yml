@@ -79,6 +79,8 @@ services:
       BILLING_PIX_KEY: ${BILLING_PIX_KEY:-}
       BILLING_PIX_RECEIVER: ${BILLING_PIX_RECEIVER:-}
       BILLING_CONTACT_PHONE: ${BILLING_CONTACT_PHONE:-}
+      # WhatsApp do botao "Preciso de ajuda" do dono; vazio = usa o mesmo da cobranca (BILLING_CONTACT_PHONE)
+      SUPPORT_WHATSAPP: ${SUPPORT_WHATSAPP:-}
     volumes:
       - uploads:/data/uploads
     healthcheck:

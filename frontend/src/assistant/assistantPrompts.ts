@@ -101,6 +101,9 @@ export function photoStepHint(mode: false | "photo" | "file" | "both"): string {
   return mode === "both" ? PHOTO_OR_FILE_STEP_HINT : PHOTO_STEP_HINT;
 }
 
+/** After the owner says "preciso de ajuda": the sheet opened above, the assistant does not keep listening. */
+export const HELP_OPENED = "Abri o pedido de ajuda. Escolha o assunto e toque em Pedir ajuda. Uma pessoa vai falar com você.";
+
 export const READING_NOTICE = "Estou lendo o seu cardápio. Pode levar até um minuto.";
 
 export const MORE_OR_DONE = "Mais algum? Ou diga pronto.";

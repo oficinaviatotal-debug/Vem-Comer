@@ -66,8 +66,8 @@ sozinhas.
 | Logomarca para quem não tem | Pronto | Criar em 3 toques, 13 desenhos e 9 cores (`logomarca.md`). |
 | Logomarca que o dono já tem, refinada, com "ficou bom?" | Em parte | O envio existe e ajusta a imagem. Não achei no código nem nos documentos a pergunta com o antes e o depois. |
 | Tutorial em sequência que fala e pisca no ponto da tela | Pronto | `onboarding-guiado.md`. |
-| Cadastrar tudo em até 3 dias | Falta medir | Nenhum dono cronometrou. Sem um teste de verdade, é uma promessa. |
-| Suporte quando o dono trava | Falta | Precisa de um botão "Preciso de ajuda" que chegue a uma pessoa enquanto o assistente não resolve tudo. |
+| Cadastrar tudo em até 3 dias | Medido sozinho (no código) | A aba Chamados mostra, por restaurante que se cadastrou sozinho, quantos pratos tem, o prazo e o tempo que levou (`pedido-de-ajuda.md`). Falta o primeiro dono de verdade. |
+| Suporte quando o dono trava | Pronto no código | Botão "Preciso de ajuda" (também por voz), caixa de chamados do GD e cadastros parados (`pedido-de-ajuda.md`). Falta o aviso no celular do GD. |
 
 ## O que cada tipo de negócio consegue hoje
 

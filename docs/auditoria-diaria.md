@@ -165,7 +165,8 @@ Vem Trabalhar (`docs/referencias-visuais/`, PR #4); o texto do benchmark está e
 
 - Cardápio por arquivo (`docs/cardapio-por-arquivo.md`): planilha Excel/CSV sem IA e PDF com a IA da foto, mesma conferência e mesmo cadastro.
   Testes: 744 no servidor (4 falhas antigas de biblioteca de QR/Pix, que não existe aqui) e 548 na tela, todos os novos verdes.
-- Falta para fechar "cadastrar tudo em até 3 dias": pergunta "ficou bom?" da logomarca, botão "Preciso de ajuda" e um teste cronometrado com dono de verdade.
+- Botão "Preciso de ajuda" e aba Chamados (`docs/pedido-de-ajuda.md`): o dono chama (tela ou voz), o GD vê os pedidos e os cadastros parados com o prazo de 3 dias e o tempo que cada um levou.
+- Falta para fechar "cadastrar tudo em até 3 dias": pergunta "ficou bom?" da logomarca, aviso no celular do GD quando chega um chamado e um primeiro dono de verdade.
 
 ## Pauta do 6º dia (13/10)
 

@@ -1,0 +1,62 @@
+/* "Preciso de ajuda": the owner's sheet and the administrator's inbox. Only tokens that already exist. */
+.help {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  scroll-margin-top: var(--s3);
+}
+
+.help h2 {
+  margin: 0;
+}
+
+.help-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.help-topics .btn {
+  min-height: 48px;
+}
+
+.help-topics .btn.is-on {
+  border-color: var(--mata);
+  color: var(--mata);
+  box-shadow: inset 0 0 0 2px var(--mata);
+}
+
+.help textarea {
+  width: 100%;
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.help-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.help-actions .btn {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.help-sent {
+  margin: 0;
+  font-size: var(--t-lg);
+}
+
+/* The administrator's inbox */
+.help-inbox h3 {
+  margin: var(--s3) 0 0;
+}
+
+.help-note {
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+  overflow-wrap: anywhere;
+}

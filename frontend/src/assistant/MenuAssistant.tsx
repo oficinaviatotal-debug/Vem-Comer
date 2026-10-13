@@ -56,6 +56,7 @@ import {
 } from "./assistantFlow";
 import {
   CHOOSE_TYPE_QUESTION,
+  HELP_OPENED,
   MORE_OR_DONE,
   PHOTO_NOT_AVAILABLE,
   READING_NOTICE,
@@ -77,6 +78,7 @@ import {
 } from "./menuPhotoLogic";
 import { guessCategory, parseRemoval, parseSpokenMenu, soundsLikeMenu, type SpokenMenu } from "./spokenMenu";
 import { priceDoubt } from "./priceCheck";
+import { wantsHelp } from "../service/helpLogic";
 import { normalizeSpeech } from "../onboarding/tourEngine";
 import {
   DICTATION_PATIENCE_MS,
@@ -101,6 +103,8 @@ type Props = {
   onSeeMenu?: () => void;
   /** Opens the tour of tables, Pix and orders: the natural next step once the menu exists. */
   onOpenGuide?: () => void;
+  /** Opens "Preciso de ajuda" (a person from Vem Comer gets the request). Also reached by saying "preciso de ajuda". */
+  onAskHelp?: () => void;
 };
 
 type Status = "idle" | "speaking" | "listening";
@@ -123,7 +127,7 @@ function PriceHint({ name, price }: { name: string; price: string }) {
   );
 }
 
-export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGuide }: Props) {
+export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGuide, onAskHelp }: Props) {
   const [templates, setTemplates] = useState<MenuTemplateSummary[] | null>(null);
   const [templatesError, setTemplatesError] = useState("");
   /** null while the server is still being asked what it can read of a menu the owner already has (photo, spreadsheet, PDF). */
@@ -674,6 +678,12 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
   }
 
   function handleHeard(text: string) {
+    // "preciso de ajuda" works on every screen: a person gets the request, and the assistant stops listening
+    if (onAskHelp && wantsHelp(text)) {
+      onAskHelp();
+      void say(HELP_OPENED, false);
+      return;
+    }
     switch (flowRef.current.step) {
       case "type":
         return handleType(text);
@@ -1238,6 +1248,11 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
           {status === "speaking" && (
             <button type="button" className="btn btn-quiet btn-sm" onClick={silence}>
               Parar de falar
+            </button>
+          )}
+          {onAskHelp && (
+            <button type="button" className="btn btn-quiet btn-sm" onClick={onAskHelp}>
+              Preciso de ajuda
             </button>
           )}
           {voiceLabel && <small className="asst-voice-name">Voz: {voiceLabel}</small>}
