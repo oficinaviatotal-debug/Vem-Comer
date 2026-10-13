@@ -38,3 +38,19 @@ def problem_for(order_type: str | None, status: str) -> str | None:
 def event_type(status: str) -> str:
     """O nome do registro em order_events (coluna de até 50 letras): 'saiu para entrega' -> STATUS_SAIU_PARA_ENTREGA."""
     return ("STATUS_" + status.upper().replace(" ", "_"))[:50]
+
+
+# A hora em que a entrega saiu e a hora em que chegou ficam gravadas mesmo quando o restaurante muda o andamento pelo
+# botao do painel (o motoqueiro ja grava as dele pela tela de entregas). So o primeiro carimbo vale: tocar de novo nao o muda.
+# Texto fixo, escolhido pelo andamento (que ja foi conferido contra ALLOWED): nada vem do cliente.
+STAMP_PICKED_UP = ", picked_up_at = COALESCE(picked_up_at, now())"
+STAMP_DELIVERED = ", delivered_at = CASE WHEN order_type = 'entrega' THEN COALESCE(delivered_at, now()) ELSE delivered_at END"
+
+
+def stamp_sql(status: str) -> str:
+    """O pedaco extra do UPDATE que carimba a hora, ou "" quando o andamento nao carimba nada."""
+    if status == OUT_FOR_DELIVERY:
+        return STAMP_PICKED_UP
+    if status == DONE:
+        return STAMP_DELIVERED
+    return ""

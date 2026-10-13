@@ -109,6 +109,8 @@ type Order = {
   delivery_zone?: string | null;
   delivery_address?: Record<string, unknown> | null;
   customer_phone?: string | null;
+  /** Name of the courier who took the delivery, when someone did. */
+  courier_name?: string | null;
   items?: OrderItem[];
 };
 
@@ -1803,6 +1805,11 @@ export default function AdminPanel({
                         <p className="comanda-ship-sub">
                           Telefone:{" "}
                           <a href={handling.phoneHref}>{handling.phone}</a>
+                        </p>
+                      )}
+                      {handling.courierLine && (
+                        <p className="comanda-ship-sub">
+                          {handling.courierLine}
                         </p>
                       )}
                     </div>
