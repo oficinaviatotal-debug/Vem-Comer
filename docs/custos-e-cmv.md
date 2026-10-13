@@ -33,6 +33,9 @@ A lista mostra primeiro os pratos com custo alto, depois os de atenção, depois
   quando ele toca em Salvar. Entende números falados ("duzentos e cinquenta", "um quilo e meio", "meia dúzia") e nomes
   curtos ("frango" acha "Peito de frango"). O que não entendeu aparece explicado. Peso sem unidade ("um peito") é
   recusado com o pedido "diga em gramas ou quilos". Lógica em `frontend/src/costs/recipeSpeech.ts`.
+  O microfone espera 3 segundos de silêncio de verdade antes de encerrar (o celular sozinho corta na primeira pausa,
+  com o dono ainda pensando no próximo insumo); quem terminou antes toca em "Ouvindo… toque quando terminar" e a tela
+  usa o que já foi falado. Mesma paciência do horário, da entrega e das opções do prato.
 
 ## Estoque pela ficha
 

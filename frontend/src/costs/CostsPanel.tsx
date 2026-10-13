@@ -11,7 +11,7 @@ import {
   type CostView,
 } from "../service/api";
 import ConfirmButton from "../service/ConfirmButton";
-import { canListen, hear, type Hearing } from "../assistant/voiceIO";
+import { canListen, hear, DICTATION_PATIENCE_MS, type Hearing } from "../assistant/voiceIO";
 import {
   PACKAGE_UNITS,
   cmvOf,
@@ -86,6 +86,13 @@ function numberText(value: number | null): string {
   return value ? new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(value).replace(/\./g, "") : "";
 }
 
+/** Stop the microphone and forget the session, so whoever was waiting on it knows it was dropped and does nothing. */
+function dropListening(ref: { current: Hearing | null }) {
+  const session = ref.current;
+  ref.current = null;
+  session?.cancel();
+}
+
 /**
  * "Custos" tab: what each dish costs (recipe card for N portions, said by voice or typed),
  * its CMV against the owner's target, the ingredients and their stock, and which dishes
@@ -109,6 +116,8 @@ export default function CostsPanel({ companyId }: Props) {
   const [heard, setHeard] = useState("");
   const [heardNotes, setHeardNotes] = useState<string[]>([]);
   const hearing = useRef<Hearing | null>(null);
+  /** The words heard so far, so "toque quando terminar" can use them before the silence ends the dictation. */
+  const heardRef = useRef("");
 
   const [ingredient, setIngredient] = useState<IngredientForm>(EMPTY_INGREDIENT);
   const [editingIngredient, setEditingIngredient] = useState<CostIngredient | null>(null);
@@ -133,7 +142,7 @@ export default function CostsPanel({ companyId }: Props) {
     setView(null);
     setDraft(null);
     void reload();
-    return () => hearing.current?.cancel();
+    return () => dropListening(hearing);
     // reload only depends on the restaurant
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
@@ -190,7 +199,7 @@ export default function CostsPanel({ companyId }: Props) {
   }
 
   function closeRecipe() {
-    hearing.current?.cancel();
+    dropListening(hearing);
     setListening(false);
     setDraft(null);
   }
@@ -219,22 +228,44 @@ export default function CostsPanel({ companyId }: Props) {
     setDraft((current) => (current ? { ...current, lines: current.lines.filter((_, i) => i !== index) } : current));
   }
 
+  /** Dictation: the phone's own pause (about a second and a half) must not cut the owner while he thinks of the next ingredient. */
   async function speakRecipe() {
     if (!draft) return;
     if (listening) {
-      hearing.current?.cancel();
-      setListening(false);
+      finishListening();
       return;
     }
     setRecipeError("");
     setHeard("");
     setHeardNotes([]);
+    heardRef.current = "";
     setListening(true);
-    const session = hear({ onPartial: (text) => setHeard(text), timeoutMs: 30000 });
+    const session = hear({
+      patienceMs: DICTATION_PATIENCE_MS,
+      timeoutMs: 30000,
+      onPartial: (text) => {
+        heardRef.current = text;
+        setHeard(text);
+      },
+    });
     hearing.current = session;
-    const text = await session.result;
+    const said = await session.result;
+    if (hearing.current !== session) return; // stopped or replaced meanwhile: whoever did it already took over
     hearing.current = null;
     setListening(false);
+    understandRecipe((said ?? heardRef.current).trim());
+  }
+
+  /** "Toque quando terminar": use the words heard so far instead of waiting for the silence. */
+  function finishListening() {
+    const session = hearing.current;
+    if (!session) return;
+    dropListening(hearing);
+    setListening(false);
+    understandRecipe(heardRef.current.trim());
+  }
+
+  function understandRecipe(text: string) {
     if (!text) {
       setHeardNotes(["Não ouvi nada. Toque em Falar a ficha e fale de novo, perto do celular."]);
       return;
@@ -504,7 +535,7 @@ export default function CostsPanel({ companyId }: Props) {
                             aria-pressed={listening}
                             onClick={() => void speakRecipe()}
                           >
-                            {listening ? "Ouvindo… toque para parar" : "Falar a ficha"}
+                            {listening ? "Ouvindo… toque quando terminar" : "Falar a ficha"}
                           </button>
                           <small className="adm-muted">
                             Ex.: “1,2 quilo de peito de frango, 300 gramas de farinha de rosca, 4 ovos, rende 6 porções, porção de 250 gramas”.
