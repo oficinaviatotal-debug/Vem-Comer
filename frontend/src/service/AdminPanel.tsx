@@ -27,13 +27,18 @@ import {
   mediaUrl,
 } from "./api";
 import PhotoPicker from "../photos/PhotoPicker";
+import ProductOptionsEditor from "./ProductOptionsEditor";
+import { groupsBadge } from "./optionsDraft";
 import OnboardingGuide from "../onboarding/OnboardingGuide";
 import { ADMIN_TOUR, ADMIN_TOUR_ID } from "../onboarding/adminTour";
 import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
 import ConfirmButton from "./ConfirmButton";
 import PixSettingsPanel from "./PixSettingsPanel";
+import DeliveryPanel from "./DeliveryPanel";
 import LogoPanel from "../logo/LogoPanel";
 import { adminPaymentChip, canConfirmPayment } from "../customer/payment";
+import ItemDetails from "../customer/ItemDetails";
+import { handlingView, itemsSubtotalCents } from "./orderHandling";
 import {
   formatMoney,
   formatTime,
@@ -62,6 +67,10 @@ type OrderItem = {
   quantity: number;
   unit_price: number;
   total: number;
+  /** Size, extras and the like the customer chose, copied into the order. */
+  options?: { group?: string; name: string; price?: number | string }[] | null;
+  /** What the customer wrote for the kitchen ("sem cebola"). */
+  note?: string | null;
 };
 
 type Order = {
@@ -75,6 +84,13 @@ type Order = {
   payment_change: number;
   created_at: string;
   table_number?: string | null;
+  /** "mesa", "retirada", "entrega" or "balcao"; an order from before delivery existed has none. */
+  order_type?: string | null;
+  /** What the server added to the total for delivery (the total already has it). */
+  delivery_fee?: number | string | null;
+  delivery_zone?: string | null;
+  delivery_address?: Record<string, unknown> | null;
+  customer_phone?: string | null;
   items?: OrderItem[];
 };
 
@@ -86,6 +102,8 @@ type Product = {
   menu_id: string;
   thumb_url?: string | null;
   image_url?: string | null;
+  /** Groups the customer is asked about (size, extras); only what is on sale. */
+  option_groups?: unknown[] | null;
 };
 
 type Menu = {
@@ -117,7 +135,8 @@ type AdminView =
   | "usuarios"
   | "mesas"
   | "pagamento"
-  | "marca";
+  | "marca"
+  | "entrega";
 
 const ADMIN_VIEWS: string[] = [
   "pedidos",
@@ -130,6 +149,7 @@ const ADMIN_VIEWS: string[] = [
   "mesas",
   "pagamento",
   "marca",
+  "entrega",
 ];
 
 function isAdminView(value: string): value is AdminView {
@@ -167,6 +187,7 @@ export default function AdminPanel({
 
   const [products, setProducts] = useState<Product[]>([]);
   const [photoFor, setPhotoFor] = useState<string | null>(null);
+  const [optionsFor, setOptionsFor] = useState<string | null>(null);
   const [menus, setMenus] = useState<Menu[]>([]);
   const [users, setUsers] = useState<StaffUser[]>([]);
 
@@ -872,6 +893,19 @@ export default function AdminPanel({
           Mesas
         </button>
 
+        {(currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") && (
+          <button
+            id="admin-tab-entrega"
+            type="button"
+            className={tabClass("entrega")}
+            aria-current={view === "entrega" ? "page" : undefined}
+            onClick={() => setView("entrega")}
+          >
+            Entrega
+          </button>
+        )}
+
         <button
           id="admin-tab-dashboard"
           type="button"
@@ -980,6 +1014,10 @@ export default function AdminPanel({
         (currentUser?.role === "OWNER" ||
           currentUser?.role === "MANAGER") ? (
         <LogoPanel companyId={companyId} />
+      ) : view === "entrega" &&
+        (currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") ? (
+        <DeliveryPanel />
       ) : view === "usuarios" && currentUser?.role === "OWNER" ? (
         <section className="adm-stack" aria-label="Equipe">
           <form
@@ -1202,6 +1240,9 @@ export default function AdminPanel({
                     {menuName(product.menu_id) && (
                       <span className="chip">{menuName(product.menu_id)}</span>
                     )}
+                    {groupsBadge(product.option_groups?.length) && (
+                      <span className="chip chip-done">{groupsBadge(product.option_groups?.length)}</span>
+                    )}
                   </div>
 
                   <div className="adm-row-side">
@@ -1209,8 +1250,22 @@ export default function AdminPanel({
                     <button
                       type="button"
                       className="btn btn-outline btn-sm"
+                      aria-expanded={optionsFor === product.id}
+                      onClick={() => {
+                        setPhotoFor(null);
+                        setOptionsFor(optionsFor === product.id ? null : product.id);
+                      }}
+                    >
+                      {optionsFor === product.id ? "Fechar" : "Opções"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
                       aria-expanded={photoFor === product.id}
-                      onClick={() => setPhotoFor(photoFor === product.id ? null : product.id)}
+                      onClick={() => {
+                        setOptionsFor(null);
+                        setPhotoFor(photoFor === product.id ? null : product.id);
+                      }}
                     >
                       {photoFor === product.id
                         ? "Fechar"
@@ -1223,6 +1278,17 @@ export default function AdminPanel({
                       onConfirm={() => handleDeleteProduct(product.id)}
                     />
                   </div>
+
+                  {optionsFor === product.id && (
+                    <div className="adm-row-photo-picker">
+                      <ProductOptionsEditor
+                        productId={product.id}
+                        productName={product.name}
+                        price={product.price}
+                        onSaved={() => loadProducts()}
+                      />
+                    </div>
+                  )}
 
                   {photoFor === product.id && (
                     <div className="adm-row-photo-picker">
@@ -1401,6 +1467,7 @@ export default function AdminPanel({
             const changeFor = Number(order.payment_change);
             const showName =
               order.customer_name && order.customer_name !== "Cliente Balcão";
+            const handling = handlingView(order);
 
             return (
               <li
@@ -1414,11 +1481,7 @@ export default function AdminPanel({
                 <article className="comanda">
                   <header className="comanda-head">
                     <div>
-                      <h2 className="comanda-where">
-                        {order.table_number
-                          ? `Mesa ${order.table_number}`
-                          : "Balcão"}
-                      </h2>
+                      <h2 className="comanda-where">{handling.title}</h2>
 
                       <p className="comanda-meta">
                         {showName && <span>{order.customer_name}</span>}
@@ -1440,18 +1503,73 @@ export default function AdminPanel({
                     </span>
                   </header>
 
+                  {(handling.kind === "entrega" ||
+                    handling.kind === "retirada") && (
+                    <div
+                      className={`comanda-ship comanda-ship-${handling.kind}`}
+                    >
+                      <p className="comanda-ship-main">
+                        {handling.kind === "entrega"
+                          ? handling.address ||
+                            "Sem endereço: ligue para o cliente"
+                          : "Cliente retira no balcão"}
+                      </p>
+                      {handling.region && (
+                        <p className="comanda-ship-sub">{handling.region}</p>
+                      )}
+                      {handling.reference && (
+                        <p className="comanda-ship-sub">
+                          Referência: {handling.reference}
+                        </p>
+                      )}
+                      {handling.phone && (
+                        <p className="comanda-ship-sub">
+                          Telefone:{" "}
+                          <a href={handling.phoneHref}>{handling.phone}</a>
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   <ul className="comanda-items">
                     {(order.items ?? []).map((item, index) => (
-                      <li key={index} className="leader-row">
-                        <span>
-                          <span className="comanda-qty">{item.quantity}x</span>{" "}
-                          {item.name}
-                        </span>
-                        <span className="leader" />
-                        <span className="money">{formatMoney(item.total)}</span>
+                      <li key={index} className="comanda-item">
+                        <div className="leader-row">
+                          <span>
+                            <span className="comanda-qty">{item.quantity}x</span>{" "}
+                            {item.name}
+                          </span>
+                          <span className="leader" />
+                          <span className="money">{formatMoney(item.total)}</span>
+                        </div>
+                        <ItemDetails options={item.options} note={item.note} />
                       </li>
                     ))}
                   </ul>
+
+                  {handling.feeCents > 0 && (
+                    <>
+                      <div className="leader-row comanda-fee">
+                        <span>Itens</span>
+                        <span className="leader" />
+                        <span className="money">
+                          {formatMoney(
+                            itemsSubtotalCents(
+                              order.total_price,
+                              handling.feeCents,
+                            ) / 100,
+                          )}
+                        </span>
+                      </div>
+                      <div className="leader-row comanda-fee">
+                        <span>Taxa de entrega</span>
+                        <span className="leader" />
+                        <span className="money">
+                          {formatMoney(handling.feeCents / 100)}
+                        </span>
+                      </div>
+                    </>
+                  )}
 
                   <div className="leader-row comanda-total">
                     <strong>Total</strong>

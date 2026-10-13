@@ -1,5 +1,7 @@
 /** Words the customer reads: order status, errors, name and voice helpers. */
 
+import { deliveryErrorMessage, type Mode } from "./delivery.ts";
+
 // Same values as ../service/orderStatus.ts (a test checks they still match).
 const PENDING = "PENDING_PAYMENT";
 const PREPARING = "em preparo";
@@ -15,7 +17,7 @@ export type CustomerStatus = {
   done: boolean;
 };
 
-export function customerStatus(status: string, tableNumber: number | null): CustomerStatus {
+export function customerStatus(status: string, tableNumber: number | null, orderType?: string | null): CustomerStatus {
   if (status === PREPARING) {
     return {
       headline: "Em preparo",
@@ -27,7 +29,11 @@ export function customerStatus(status: string, tableNumber: number | null): Cust
   if (status === DONE) {
     return {
       headline: "Pronto!",
-      hint: tableNumber ? `Já já chega na mesa ${tableNumber}.` : "Pode retirar no balcão.",
+      hint: tableNumber
+        ? `Já já chega na mesa ${tableNumber}.`
+        : orderType === "entrega"
+          ? "Seu pedido está pronto e já vai sair para o seu endereço."
+          : "Pode retirar no balcão.",
       step: 2,
       done: true,
     };
@@ -61,7 +67,9 @@ export function orderCustomerName(raw: string): string {
 }
 
 /** Friendly text for the few errors the order endpoint can return. */
-export function orderErrorMessage(serverMessage: string | null | undefined): string {
+export function orderErrorMessage(serverMessage: string | null | undefined, mode?: Mode | null): string {
+  const said = deliveryErrorMessage(serverMessage, mode ?? null);
+  if (said) return said;
   const text = String(serverMessage ?? "").toLowerCase();
   if (text.includes("mesa")) {
     return "Não encontramos esta mesa. Chame o atendente para te ajudar.";

@@ -17,6 +17,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import query_db, get_db_connection
 import costing
+import delivery
 from costs_view import (  # noqa: F401 (cost_since e build_cost_view tambem sao usados pelos testes)
     COST_PERIOD_DAYS,
     _num,
@@ -887,6 +888,11 @@ def create_company_order(company_id):
         cart_items = data.get('items')
         table_id = data.get('table_id')
 
+        # Como o pedido sai: mesa (QR), retirada, entrega ou balcao (sem tipo, como sempre foi).
+        order_type = data.get('order_type')
+        delivery_address = data.get('address')
+        customer_phone = data.get('phone')
+
         payment_method = (data.get('payment_method') or '').lower()
         payment_change = data.get('payment_change', 0)
 
@@ -1021,6 +1027,30 @@ def create_company_order(company_id):
                 )
             )
 
+        # Tipo, regiao e taxa: o servidor decide pelo CEP e soma a taxa ao total.
+        # O valor da taxa que o celular mostrou nunca vale.
+        company_flags = delivery.fetch_company_flags(cur, company_id)
+
+        try:
+            handling = delivery.resolve_handling(
+                company_flags,
+                (
+                    delivery.fetch_zones(cur, company_id)
+                    if order_type == 'entrega'
+                    else []
+                ),
+                order_type=order_type,
+                has_table=bool(table_id),
+                address=delivery_address,
+                phone=customer_phone,
+                customer_name=customer_name,
+                subtotal=total
+            )
+        except delivery.DeliveryError as delivery_error:
+            return invalid_order(delivery_error.message)
+
+        total += handling.fee
+
         if payment_method == 'dinheiro' and payment_change < total:
             return invalid_order(
                 "Troco deve ser informado com o valor entregue"
@@ -1040,9 +1070,14 @@ def create_company_order(company_id):
                 status,
                 payment_method,
                 payment_change,
-                table_id
+                table_id,
+                order_type,
+                delivery_fee,
+                delivery_zone,
+                delivery_address,
+                customer_phone
             )
-            VALUES (%s, %s, %s, 'PENDING_PAYMENT', %s, %s, %s)
+            VALUES (%s, %s, %s, 'PENDING_PAYMENT', %s, %s, %s, %s, %s, %s, %s::jsonb, %s)
             RETURNING id;
             """,
             (
@@ -1051,7 +1086,16 @@ def create_company_order(company_id):
                 total,
                 payment_method,
                 payment_change,
-                str(table_id) if table_id else None
+                str(table_id) if table_id else None,
+                handling.order_type,
+                handling.fee,
+                handling.zone,
+                (
+                    json.dumps(handling.address, ensure_ascii=False)
+                    if handling.address
+                    else None
+                ),
+                handling.phone
             )
         )
 
@@ -1154,7 +1198,10 @@ def create_company_order(company_id):
         return jsonify({
             "message": "Pedido realizado com sucesso",
             "order_id": str(order_id),
-            "tracking_token": tracking_token
+            "tracking_token": tracking_token,
+            "order_type": handling.order_type,
+            "delivery_fee": str(handling.fee),
+            "total": str(total)
         }), 201
 
     except Exception as e:
@@ -1168,6 +1215,170 @@ def create_company_order(company_id):
 
         return error_response(
             "Erro interno ao processar pedido",
+            e
+        )
+
+
+@app.route('/api/companies/<uuid:company_id>/delivery', methods=['GET'])
+def get_company_delivery(company_id):
+    """Se o restaurante retira e entrega, e as regioes ligadas (nome, taxa, minimo, prazo). Publica."""
+    try:
+        company = query_db(
+            delivery.COMPANY_FLAGS_SQL,
+            (str(company_id),),
+            one=True
+        )
+
+        if not company:
+            return jsonify({
+                "error": "Estabelecimento nao encontrado"
+            }), 404
+
+        zones = [
+            delivery.zone_from_row(row)
+            for row in query_db(delivery.ZONE_ROWS_SQL, (str(company_id),))
+        ]
+
+        return jsonify(delivery.public_view(company, zones)), 200
+
+    except Exception as e:
+        return error_response(
+            "Erro ao buscar a entrega do estabelecimento",
+            e
+        )
+
+
+@app.route('/api/companies/<uuid:company_id>/delivery/quote', methods=['GET'])
+def quote_company_delivery(company_id):
+    """Entrega neste CEP? Devolve a regiao, a taxa e o pedido minimo, ou o motivo de nao. Publica."""
+    try:
+        company = query_db(
+            delivery.COMPANY_FLAGS_SQL,
+            (str(company_id),),
+            one=True
+        )
+
+        if not company:
+            return jsonify({
+                "error": "Estabelecimento nao encontrado"
+            }), 404
+
+        zones = [
+            delivery.zone_from_row(row)
+            for row in query_db(delivery.ZONE_ROWS_SQL, (str(company_id),))
+        ]
+
+        return jsonify(
+            delivery.quote(company, zones, request.args.get('cep', ''))
+        ), 200
+
+    except Exception as e:
+        return error_response(
+            "Erro ao calcular a entrega",
+            e
+        )
+
+
+@app.route('/api/admin/delivery', methods=['GET'])
+@require_roles('OWNER', 'MANAGER')
+def admin_get_delivery():
+    """Retirada, pausa e regioes de entrega do restaurante, com os ids e os comecos de CEP."""
+    try:
+        company_id = request.user.get('company_id')
+
+        company = query_db(
+            delivery.COMPANY_FLAGS_SQL,
+            (str(company_id),),
+            one=True
+        )
+
+        if not company:
+            return jsonify({
+                "error": "Estabelecimento nao encontrado"
+            }), 404
+
+        zones = [
+            delivery.zone_from_row(row)
+            for row in query_db(delivery.ZONE_ROWS_SQL, (str(company_id),))
+        ]
+
+        return jsonify(delivery.admin_view(company, zones)), 200
+
+    except Exception as e:
+        return error_response(
+            "Erro ao buscar a entrega",
+            e
+        )
+
+
+@app.route('/api/admin/delivery', methods=['PUT'])
+@require_roles('OWNER', 'MANAGER')
+def admin_save_delivery():
+    """Troca a retirada, a pausa e as regioes pelo que o painel mandou. Lista de regioes vazia tira todas."""
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+
+        try:
+            settings = delivery.normalize_settings(
+                request.get_json(silent=True)
+            )
+        except delivery.DeliveryError as delivery_error:
+            return jsonify({"error": delivery_error.message}), delivery_error.status
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Trava a linha do restaurante: dois toques ao mesmo tempo no painel nao misturam as regioes.
+        cur.execute(
+            """
+            SELECT id
+            FROM companies
+            WHERE id = %s
+            FOR UPDATE;
+            """,
+            (str(company_id),)
+        )
+
+        if not cur.fetchone():
+            conn.rollback()
+            cur.close()
+            conn.close()
+
+            return jsonify({
+                "error": "Estabelecimento nao encontrado"
+            }), 404
+
+        delivery.save_settings(cur, company_id, settings)
+
+        saved = delivery.admin_view(
+            delivery.fetch_company_flags(cur, company_id),
+            delivery.fetch_zones(cur, company_id)
+        )
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "message": "Entrega salva",
+            **saved
+        }), 200
+
+    except Exception as e:
+        if conn is not None and not conn.closed:
+            conn.rollback()
+
+            if cur is not None:
+                cur.close()
+
+            conn.close()
+
+        return error_response(
+            "Erro ao salvar a entrega",
             e
         )
 
@@ -1213,6 +1424,11 @@ def get_order(order_id):
                 total_price,
                 status,
                 payment_method,
+                order_type,
+                delivery_fee,
+                delivery_zone,
+                delivery_address,
+                customer_phone,
                 (
                     SELECT pay.status
                     FROM payments pay
@@ -1312,6 +1528,11 @@ def get_admin_orders(company_id):
                 o.payment_method,
                 o.payment_change,
                 o.created_at,
+                o.order_type,
+                o.delivery_fee,
+                o.delivery_zone,
+                o.delivery_address,
+                o.customer_phone,
                 t.number AS table_number,
                 (
                     SELECT pay.status

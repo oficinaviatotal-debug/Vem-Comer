@@ -4,16 +4,36 @@ import "./customer.css";
 import "../logo/logo.css";
 import { createOrder, fetchMenus, fetchPaymentOptions, fetchProducts, fetchTable, mediaUrl } from "../service/api";
 import { formatMoney, shortOrderCode } from "../service/format";
+import { fetchDeliveryInfo } from "./deliveryApi";
+import {
+  EMPTY_ADDRESS,
+  deliveryProblem,
+  effectiveMode,
+  feeCents,
+  offeredModes,
+  orderExtras,
+  type Address,
+  type DeliveryInfo,
+  type Mode,
+} from "./delivery";
+import { deliveryMemory } from "./deliveryMemory";
+import type { DeliveryView } from "./DeliveryForm";
+import { useQuote } from "./useQuote";
 import OnboardingGuide from "../onboarding/OnboardingGuide";
 import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
 import VoiceCommandButton from "../voice/VoiceCommandButton";
 import {
+  addConfigured,
   addToCart,
   cartCount,
   cartTotalCents,
   cashProblem,
   decrementItem,
+  incrementLine,
+  lineKey,
   parseMoneyInput,
+  replaceLine,
+  setLineNote,
   toOrderItems,
   type CartLine,
 } from "./cart";
@@ -26,11 +46,13 @@ import {
   searchTextFromVoice,
 } from "./labels";
 import { groupProducts } from "./menuGroups";
+import { groupsOf, isUnavailable, selectionFromChosen, type Selection } from "./options";
 import { orderMemory, type RememberedOrder } from "./orderMemory";
 import { effectiveMethod, orderPaymentView } from "./payment";
 import type { Company, Menu, OrderView, PaymentMethod, Product } from "./types";
 import CartSheet from "./CartSheet";
 import MenuView, { CategoryChips } from "./MenuView";
+import OptionsSheet, { type OptionsPick } from "./OptionsSheet";
 import OrderTracking from "./OrderTracking";
 import TableHub from "../mesa/TableHub";
 
@@ -58,11 +80,24 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   const [tableLost, setTableLost] = useState(false);
 
   const [cart, setCart] = useState<CartLine[]>([]);
+  // The dish whose choices (size, extras...) are open, and the cart line being changed when there is one.
+  const [picking, setPicking] = useState<{
+    product: Product;
+    editKey?: string;
+    initial?: { selection: Selection; note: string; quantity: number };
+  } | null>(null);
   const [query, setQuery] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [name, setName] = useState(() => orderMemory.loadName());
   const [choice, setChoice] = useState<PaymentMethod | null>(null);
   const [pixOn, setPixOn] = useState(false);
+  // Pickup and delivery: what the restaurant offers, what the customer chose, and the address typed (or remembered)
+  const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo | null>(null);
+  const [modeChoice, setModeChoice] = useState<Mode | null>(null);
+  const [rememberedDelivery] = useState(() => deliveryMemory.load(company.slug));
+  const [address, setAddress] = useState<Address>(() => rememberedDelivery?.address ?? EMPTY_ADDRESS);
+  const [phone, setPhone] = useState(() => rememberedDelivery?.phone ?? "");
+  const [remembered, setRemembered] = useState(rememberedDelivery !== null);
   const [paid, setPaid] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
@@ -131,13 +166,50 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
     };
   }, [company.id]);
 
+  // Delivery only exists for an order that is not at a table; a failed answer means "nothing new to offer"
+  useEffect(() => {
+    if (tableId) return;
+    let alive = true;
+    fetchDeliveryInfo(company.id).then((info) => {
+      if (alive) setDeliveryInfo(info);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [company.id, tableId]);
+
   const payment = effectiveMethod(choice, pixOn);
+  const offered = offeredModes(deliveryInfo, Boolean(tableId));
+  const mode = effectiveMode(modeChoice, offered);
+  const quoteState = useQuote(company.id, address.cep, mode === "entrega");
 
   const groups = useMemo(() => groupProducts(products, menus, query), [products, menus, query]);
   const allGroups = useMemo(() => groupProducts(products, menus, ""), [products, menus]);
   const showChips = !query.trim() && allGroups.length > 1;
   const count = cartCount(cart);
   const total = cartTotalCents(cart);
+
+  const deliveryView: DeliveryView = {
+    offered,
+    mode,
+    onMode: setModeChoice,
+    paused: Boolean(deliveryInfo?.paused) && !tableId,
+    address,
+    onAddress: setAddress,
+    phone,
+    onPhone: setPhone,
+    quote: quoteState.quote,
+    quoting: quoteState.quoting,
+    quoteFailed: quoteState.failed,
+    onRetryQuote: quoteState.retry,
+    remembered,
+    onForget: () => {
+      deliveryMemory.forget(company.slug);
+      setAddress(EMPTY_ADDRESS);
+      setPhone("");
+      setRemembered(false);
+    },
+  };
 
   const steps = useMemo(() => customerTour({ hasCategories: showChips, hasPix: pixOn }), [showChips, pixOn]);
   const payGuideSteps = useMemo(() => pixTour(), []);
@@ -156,9 +228,54 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
     setCart((current) => addToCart(current, product));
   }, []);
 
-  const less = useCallback((id: string) => {
-    setCart((current) => decrementItem(current, id));
+  const less = useCallback((key: string) => {
+    setCart((current) => decrementItem(current, key));
   }, []);
+
+  const more = useCallback((key: string) => {
+    setCart((current) => incrementLine(current, key));
+  }, []);
+
+  const changeNote = useCallback((key: string, note: string) => {
+    setCart((current) => setLineNote(current, key, note));
+  }, []);
+
+  const choose = useCallback((product: Product) => {
+    if (isUnavailable(product)) return;
+    setPicking({ product });
+  }, []);
+
+  function confirmPick(pick: OptionsPick) {
+    if (!picking) return;
+    const { product, editKey } = picking;
+    setCart((current) =>
+      editKey ? replaceLine(current, editKey, product, pick) : addConfigured(current, product, pick)
+    );
+    setPicking(null);
+  }
+
+  /** The dish of a cart line, as long as it is still on the menu with the same option groups. */
+  const productOf = useCallback(
+    (line: CartLine) => {
+      const product = products.find((candidate) => candidate.id === line.id);
+      return product && groupsOf(product).length > 0 && !isUnavailable(product) ? product : null;
+    },
+    [products]
+  );
+
+  function editLine(line: CartLine) {
+    const product = productOf(line);
+    if (!product) return;
+    setPicking({
+      product,
+      editKey: lineKey(line),
+      initial: {
+        selection: selectionFromChosen(groupsOf(product), line.options ?? []),
+        note: line.note ?? "",
+        quantity: line.quantity,
+      },
+    });
+  }
 
   function closeSheet() {
     setSheetOpen(false);
@@ -168,8 +285,26 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   async function send() {
     if (sending || cart.length === 0) return;
 
+    if (mode === "entrega") {
+      const problem = deliveryProblem({
+        name,
+        address,
+        phone,
+        quote: quoteState.quote,
+        subtotalCents: total,
+        quoteFailed: quoteState.failed,
+      });
+      if (problem) {
+        setSendError(problem);
+        return;
+      }
+    }
+
+    // What the customer will pay: the dishes plus the fee the server announced for the CEP
+    const toPay = total + (mode === "entrega" ? feeCents(quoteState.quote) : 0);
+
     if (payment === "dinheiro") {
-      const problem = cashProblem(total, paid);
+      const problem = cashProblem(toPay, paid);
       if (problem) {
         setSendError(problem);
         return;
@@ -186,11 +321,16 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
         toOrderItems(cart),
         payment,
         change,
-        tableId
+        tableId,
+        orderExtras(mode, address, phone)
       );
       if (!result?.order_id || !result?.tracking_token) throw new Error("incomplete");
 
       orderMemory.saveName(cleanCustomerName(name));
+      if (mode === "entrega") {
+        deliveryMemory.save(company.slug, { address, phone });
+        setRemembered(true);
+      }
       setOrders(
         orderMemory.add({
           orderId: String(result.order_id),
@@ -205,7 +345,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
       setScreen("tracking");
       window.scrollTo({ top: 0 });
     } catch (error) {
-      setSendError(orderErrorMessage(error instanceof Error ? error.message : ""));
+      setSendError(orderErrorMessage(error instanceof Error ? error.message : "", mode));
     } finally {
       setSending(false);
     }
@@ -405,6 +545,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
                 query={query}
                 onAdd={add}
                 onLess={less}
+                onChoose={choose}
                 search={
                   products.length >= SEARCH_FROM ? (
                     <div className="cust-search">
@@ -462,15 +603,28 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
           onName={setName}
           payment={payment}
           pixOn={pixOn}
+          delivery={deliveryView}
           onPayment={setChoice}
           paid={paid}
           onPaid={setPaid}
           sending={sending}
           error={sendError}
-          onMore={add}
+          onMore={more}
           onLess={less}
+          onNote={changeNote}
+          onEdit={editLine}
+          canEdit={(line) => productOf(line) !== null}
           onSend={() => void send()}
           onClose={closeSheet}
+        />
+      )}
+
+      {picking && (
+        <OptionsSheet
+          product={picking.product}
+          initial={picking.initial}
+          onConfirm={confirmPick}
+          onClose={() => setPicking(null)}
         />
       )}
 

@@ -108,6 +108,16 @@ Hoje à noite, com o computador do GD ligado, faço a segunda passada abrindo as
 - *Carteira de Trabalho Digital (desde janeiro/2025):* mostra as vagas do Sine compatíveis com o perfil, e o Sine Fácil acabou.
 - **Vem:** o que o governo não faz é o currículo bonito, o curso que aumenta a nota, a empresa sem RH e o RH parceiro. Comunicamos isso: "do jeito que a carteira digital não faz".
 
+**Recrutamento e admissão num só sistema (visto pelo GD, 10/10)**
+- *Empregare:* anúncio patrocinado no Instagram, sem preço e sem passo a passo. A promessa é uma frase: **"Automatize recrutamento e admissão em um só sistema."**
+  - A prova vem antes da explicação: uma grade de logos de clientes conhecidos (Sesc, Brinks, Rock in Rio, Sicoob, Unimed, Colégios Maristas) misturada com rostos de pessoas sorrindo, sob o título "Empresas já evoluíram".
+  - Um único botão, "Saiba mais".
+- **Vem:** a promessa é a mesma e já cabe no que desenhamos, com um passo a mais para o restaurante pequeno.
+  - **Admissão no mesmo lugar:** candidato aprovado vira funcionário sem recomeçar (dados do currículo, documentos por foto, contrato do RH parceiro).
+  - **Prova social com rosto:** o primeiro cartaz de venda do Vem Trabalhar usa os logos e as fotos dos restaurantes que já contrataram, com a autorização de cada um.
+  - **Uma frase e um botão:** "Contrate sem papel, do currículo à admissão" e um único "Quero ver".
+  - A imagem original está guardada no repositório privado do Vem Trabalhar (`docs/referencias-visuais/`), porque tem marcas de terceiros.
+
 ## 3. Cursos: o que funciona e como fica a aula do Vem
 
 **O que a ciência comprova**
@@ -138,6 +148,16 @@ Hoje à noite, com o computador do GD ligado, faço a segunda passada abrindo as
   - linha do tempo;
   - cartões;
   - responder falando.
+
+**Como o curso se vende: capacitação de ponta a ponta (visto pelo GD, 08/10)**
+- *Peça de divulgação de um curso de capacitação, que parece ser da área da saúde (fundo de clínica, logomarca com coração; o nome da marca ficou escondido pelo dedo na foto):* a frase de venda é "capacitação completa une o conhecimento técnico e o atendimento humanizado", e o fechamento é "Entre em contato", com o botão do WhatsApp na própria peça.
+- **O que a frase ensina:** o curso não se vende só pela técnica; o que fecha a venda é a técnica **mais** o atendimento humano, e o contato é uma conversa de WhatsApp, não um formulário.
+- **Vem, na parceria dos cursos:**
+  - cada trilha tem duas pernas juntas: a **técnica** do ofício (cozinha, caixa, salão, entrega) e o **atendimento** (receber, ouvir, resolver reclamação, falar com o cliente);
+  - o certificado mostra as duas, e o Vem Trabalhar usa as duas na nota do match;
+  - o "Entre em contato" da página do curso abre o WhatsApp do parceiro com a mensagem pronta, como na peça;
+  - o parceiro que dá o curso entra com o nome e a marca dele, e o aluno aprovado aparece para os restaurantes do Vem Comer que estão contratando.
+- **Fonte ainda sem nome.** Peça a marca e o contato do parceiro antes de citar. O telefone que aparece na peça não foi copiado para este arquivo porque o repositório é público; ele fica na conversa e na foto original, guardada no repositório privado do Vem Trabalhar (`docs/referencias-visuais/`).
 
 **Como fica a lição do Vem**
 1. Uma situação real em 20 segundos, com imagem ou vídeo curto. Exemplo: "o cliente pagou com R$ 50 uma conta de R$ 37".

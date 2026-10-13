@@ -364,3 +364,154 @@
   word-break: break-all;
   resize: none;
 }
+
+/* ---------- Options of a dish (size, extras, "no onion"): the owner's editor ---------- */
+
+.opt-ed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  padding: var(--s4);
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--r-md, var(--r-sm));
+  background: var(--papel-2);
+}
+
+.opt-ed > .adm-muted,
+.opt-ed > p {
+  margin: 0;
+}
+
+.opt-ed-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-sm);
+  background: var(--comanda, #fff);
+}
+
+.opt-ed-rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--s3);
+}
+
+.opt-ed-sentence {
+  margin: 0;
+  color: var(--folha);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.opt-ed-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Name on its own line; price, "Tem/Acabou" and remove share the line below. */
+.opt-ed-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  padding-bottom: var(--s3);
+  border-bottom: 1px dashed var(--linha);
+}
+
+.opt-ed-item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.opt-ed-name {
+  flex: 1 1 100%;
+}
+
+.opt-ed-price {
+  flex: 1 1 4.5rem;
+  min-width: 0;
+}
+
+.opt-ed-switch {
+  min-width: 4.75rem;
+  padding: 0 var(--s3);
+}
+
+.opt-ed-switch.is-on {
+  border-color: var(--mata);
+  color: var(--mata);
+}
+
+.opt-ed-item.is-off .opt-ed-name input,
+.opt-ed-item.is-off .opt-ed-price input {
+  color: var(--nevoa);
+  text-decoration: line-through;
+}
+
+.opt-ed-x {
+  min-width: 44px;
+  padding: 0 var(--s3);
+  color: var(--nevoa);
+}
+
+.opt-ed-actions,
+.opt-ed-starters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.opt-ed .msg-error ul {
+  margin: var(--s1) 0 0;
+  padding-left: var(--s5);
+}
+
+.opt-ed .msg-error p {
+  margin: 0;
+}
+
+.opt-ed-save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s3);
+}
+
+.opt-ed-listen,
+.opt-ed-heard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s4);
+  border: 2px solid var(--mata);
+  border-radius: var(--r-sm);
+  background: var(--comanda);
+}
+
+.opt-ed-listen p,
+.opt-ed-heard p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.opt-ed-heard ul {
+  margin: 0;
+  padding-left: var(--s5);
+}
+
+.opt-ed-heard .btn-quiet {
+  align-self: flex-start;
+}
+
+.opt-ed-notes {
+  color: var(--alerta);
+  font-weight: 700;
+}

@@ -66,11 +66,29 @@ No pedido, cada item aceita dois campos novos, os dois opcionais:
 - Regras e SQL em `backend/item_options.py`; rotas em `backend/app.py`.
 - Apagar o prato apaga os grupos dele (`ON DELETE CASCADE`).
 
+## Telas do cliente e da cozinha (08/10)
+
+- **Cardápio:** prato com opções mostra **Escolher** no lugar de **Adicionar**; se as opções mudam o preço, mostra
+  "a partir de" com o menor valor possível. Prato com grupo obrigatório sem nenhuma opção ligada mostra
+  "Indisponível agora" e não abre. Quantos já estão no pedido aparece ao lado ("3 no pedido").
+- **Folha de escolhas:** um grupo por bloco, com a regra ("Escolha 1", "Escolha de 1 a 3", "Opcional, até 3"),
+  o acréscimo de cada opção e a linha inteira como área de toque. Grupo de uma escolha troca a opção; o de várias
+  para no máximo (as outras ficam apagadas). Faltou escolha obrigatória? A folha mostra a frase e leva o cliente
+  até ela. Observação de até 140 letras com contador, quantidade e o total já somado no botão.
+- **Carrinho:** o mesmo prato com escolhas diferentes fica em linhas separadas ("Pizza grande, Bacon" e "Pizza
+  pequena"); escolhas iguais somam na mesma linha. Cada linha tem **Mudar opções** (reabre a folha já marcada) e
+  **Observação**. Qualquer prato, mesmo sem opções, aceita observação ("sem gelo").
+- **O que vai para o servidor:** só `id`, `quantity`, os ids das opções e a observação. Nenhum preço.
+- **Acompanhamento do cliente e painel do restaurante:** cada item mostra as opções escolhidas e, em destaque,
+  "Obs.: ..." para a cozinha ler as mesmas palavras do cliente.
+- Lógica pura e testada em `frontend/src/customer/options.ts` e `cart.ts` (34 testes novos); telas em
+  `OptionsSheet.tsx`, `ItemDetails.tsx`, `MenuView.tsx` e `CartSheet.tsx`.
+
 ## O que ainda não faz
 
-- **Telas** (cliente escolhe, carrinho separa o mesmo prato com opções diferentes, painel mostra as opções e a
-  observação para a cozinha, dono monta os grupos): 09/10.
-- **Falar ou fotografar as opções** no cadastro do cardápio: 09/10, junto das telas. A importação de cardápio
+- **Tela do dono para montar os grupos** (o servidor já aceita): é o próximo passo. Até lá, só quem chama a rota
+  `PUT /api/admin/products/<id>/options` consegue criar opções.
+- **Falar ou fotografar as opções** no cadastro do cardápio: depois da tela do dono. A importação de cardápio
   (voz, foto, arquivo) ainda só lê prato e preço.
 - **Custo e CMV**: o custo do prato (`unit_cost`) não inclui o custo dos adicionais. Quem vende muito adicional vê o
   CMV um pouco otimista até a ficha técnica da opção existir.

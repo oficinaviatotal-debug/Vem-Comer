@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import ItemDetails from "./ItemDetails";
 import { fetchOrder, HttpError } from "../service/api";
 import { formatMoney, shortOrderCode } from "../service/format";
 import { customerStatus, STEP_LABELS } from "./labels";
@@ -7,6 +8,7 @@ import { orderMemory } from "./orderMemory";
 import OrderFeedback from "./OrderFeedback";
 import PixPayment from "./PixPayment";
 import { keepPolling } from "./payment";
+import { describeAddress, maskPhone, modeOfOrder, whereLabel } from "./delivery";
 
 type Props = {
   companyId: string;
@@ -90,20 +92,38 @@ export default function OrderTracking(props: Props) {
     );
   }
 
-  const status = customerStatus(order.status, props.tableNumber);
+  const status = customerStatus(order.status, props.tableNumber, order.order_type);
+  const mode = props.tableNumber ? null : modeOfOrder(order.order_type);
+  const fee = Number(order.delivery_fee) || 0;
+  const address = describeAddress(order.delivery_address);
 
   return (
     <div className={status.done ? "comanda-wrap is-ready" : "comanda-wrap"}>
       <article className="comanda" aria-label={`Pedido ${shortOrderCode(order.id)}`}>
         <div className="comanda-head">
           <div>
-            <p className="comanda-where">{props.tableNumber ? `Mesa ${props.tableNumber}` : "Pedido"}</p>
+            <p className="comanda-where">{whereLabel(mode, props.tableNumber)}</p>
             <p className="comanda-meta">
               <span>{shortOrderCode(order.id)}</span>
               {order.customer_name && <span>{order.customer_name}</span>}
             </p>
           </div>
         </div>
+
+        {mode === "entrega" && (
+          <p className="cust-handling">
+            <strong>Entrega em:</strong> {address || "o endereço que você informou"}
+            {order.delivery_zone && !address.toLowerCase().includes(order.delivery_zone.toLowerCase())
+              ? ` (${order.delivery_zone})`
+              : ""}
+            {order.customer_phone ? ` · Telefone ${maskPhone(order.customer_phone)}` : ""}
+          </p>
+        )}
+        {mode === "retirada" && (
+          <p className="cust-handling">
+            <strong>Retirada no local.</strong> Avise o atendente que o pedido é seu.
+          </p>
+        )}
 
         <div className="cust-status">
           <h2 aria-live="polite">{status.headline}</h2>
@@ -124,15 +144,26 @@ export default function OrderTracking(props: Props) {
 
         <ul className="comanda-items">
           {order.items?.map((item, index) => (
-            <li className="leader-row" key={`${item.name}-${index}`}>
-              <span>
-                <span className="comanda-qty">{item.quantity}x</span> {item.name}
-              </span>
-              <span className="leader" aria-hidden="true" />
-              <span className="money">{formatMoney(item.total)}</span>
+            <li className="comanda-item" key={`${item.name}-${index}`}>
+              <div className="leader-row">
+                <span>
+                  <span className="comanda-qty">{item.quantity}x</span> {item.name}
+                </span>
+                <span className="leader" aria-hidden="true" />
+                <span className="money">{formatMoney(item.total)}</span>
+              </div>
+              <ItemDetails options={item.options} note={item.note} />
             </li>
           ))}
         </ul>
+
+        {mode === "entrega" && (
+          <div className="leader-row cust-subtotal">
+            <span>Taxa de entrega</span>
+            <span className="leader" aria-hidden="true" />
+            <span className="money">{fee > 0 ? formatMoney(fee) : "Grátis"}</span>
+          </div>
+        )}
 
         <div className="leader-row comanda-total">
           <span>Total</span>
