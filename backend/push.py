@@ -46,8 +46,12 @@ EVENT_ROLES = {
     "delivery_ready": ("OWNER", "MANAGER", "COURIER"),
 }
 
+# Eventos que nao sao de um restaurante: quem recebe sao os administradores da plataforma (PLATFORM_ADMIN_EMAILS), em
+# qualquer restaurante em que tenham entrado.
+PLATFORM_EVENTS = ("help_request",)
+
 # Quanto tempo o servico de notificacao guarda a mensagem se o celular estiver sem sinal (segundos).
-EVENT_TTL = {"new_order": 600, "table_call": 300, "delivery_ready": 600, "test": 60}
+EVENT_TTL = {"new_order": 600, "table_call": 300, "delivery_ready": 600, "help_request": 3600, "test": 60}
 
 MAX_PER_USER = 5
 MAX_TARGETS = 100
@@ -193,6 +197,14 @@ def table_call_payload(phrase: str, table_number: object, kind: str) -> dict:
     return make_payload(f"{who} {phrase}", "Toque para abrir o painel.", f"mesa-{_text(table_number, 10)}-{_text(kind, 12)}")
 
 
+def help_request_payload(company_id: object, company_name: object, topic: object, again: bool = False) -> dict:
+    """Para o administrador da plataforma: o restaurante e o assunto. O texto que o dono escreveu fica so na caixa de chamados."""
+    place = _text(company_name, 40) or "Um restaurante"
+    what = _text(topic, 30) or "ajuda"
+    title = "Chamado de novo" if again else "Chamado de ajuda"
+    return make_payload(title, f"{place}: {what}", f"ajuda-{company_id}")
+
+
 def delivery_ready_payload(order_id: object) -> dict:
     return make_payload("Entrega pronta", "Tem pedido esperando você pegar.", f"entrega-{order_id}")
 
@@ -304,6 +316,15 @@ SQL_TARGETS_OF_USER = """
     LIMIT %s;
 """
 
+SQL_TARGETS_PLATFORM = """
+    SELECT s.id, s.endpoint, s.p256dh, s.auth
+    FROM push_subscriptions s
+    JOIN users u ON u.id = s.user_id
+    WHERE u.active = TRUE AND lower(u.email) = ANY(%s)
+    ORDER BY s.created_at
+    LIMIT %s;
+"""
+
 SQL_MARK_OK = "UPDATE push_subscriptions SET failures = 0, last_ok_at = now() WHERE id = %s;"
 SQL_MARK_FAILED = "UPDATE push_subscriptions SET failures = failures + 1 WHERE id = %s;"
 SQL_DROP_GONE = "DELETE FROM push_subscriptions WHERE id = %s;"
@@ -382,6 +403,13 @@ def record(cur, result: dict) -> None:
         cur.execute(SQL_MARK_OK, (key,))
 
 
+def platform_emails() -> set:
+    """Os e-mails dos administradores da plataforma (PLATFORM_ADMIN_EMAILS), em minusculas."""
+    import subscription
+
+    return subscription.platform_admin_emails()
+
+
 def _connect():
     from db import get_db_connection
 
@@ -412,6 +440,12 @@ def send_event(event: str, company_id, build_payload, user_id=None, connect=None
         payload = build_payload(cur)
         if user_id is not None:
             cur.execute(SQL_TARGETS_OF_USER, (str(company_id), str(user_id), MAX_PER_USER))
+        elif event in PLATFORM_EVENTS:
+            emails = sorted(platform_emails())
+            if not emails:
+                conn.commit()
+                return empty
+            cur.execute(SQL_TARGETS_PLATFORM, (emails, MAX_TARGETS))
         else:
             roles = list(EVENT_ROLES[event])
             cur.execute(SQL_TARGETS_BY_ROLE, (str(company_id), str(company_id), roles, MAX_TARGETS))
@@ -507,6 +541,15 @@ def notify_delivery_ready(company_id, order_id) -> None:
         return
     payload = delivery_ready_payload(order_id)
     _in_background(lambda: send_event("delivery_ready", company_id, lambda cur: payload))
+
+
+@never_raises
+def notify_help_request(company_id, company_name, topic_label: str, again: bool = False) -> None:
+    """O dono pediu ajuda: avisa o administrador da plataforma. Sem administrador configurado, nao faz nada (nem toca no banco)."""
+    if not enabled() or not platform_emails():
+        return
+    payload = help_request_payload(company_id, company_name, topic_label, again)
+    _in_background(lambda: send_event("help_request", None, lambda cur: payload))
 
 
 def send_test(company_id, user_id, connect=None, send=None) -> dict:
