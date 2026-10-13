@@ -34,20 +34,20 @@ quantos dias faltam.
 Vem Comer:
 
 - [x] Reforma visual: cardápio do cliente, tela da mesa, carrinho e acompanhamento (PR #33 juntado em 07/10; fotos de tela a 390 e 320 px, ainda não vista num celular de verdade)
-- [x] Opções por item (tamanho, adicionais, observação): servidor juntado (PR #34); telas do cliente (PR #37) e do painel com voz (PR #38) prontas, CI verde, esperando junção
-- [~] Entrega: servidor (PR #39), aba do dono com voz (PR #40), tela do cliente com CEP, endereço e taxa (PR #41) e pedido do painel mostrando endereço, telefone e taxa: prontos, CI verde, esperando junção. estados "pronto" e "saiu para entrega" prontos (13/10); **motoqueiro com código de entrega e acerto do dinheiro prontos (13/10, `motoqueiro.md`)**; faltam fotos de prova, pagamento por distância e a decisão de quem paga a taxa
+- [x] Opções por item (tamanho, adicionais, observação): servidor juntado (PR #34); telas do cliente (PR #37) e do painel com voz (PR #38) **juntadas** (CI verde)
+- [~] Entrega: servidor (PR #39), aba do dono com voz (PR #40), tela do cliente com CEP, endereço e taxa (PR #41) e pedido do painel mostrando endereço, telefone e taxa: **juntados em `main`** (versão única no PR #42; o #41 segue aberto só para o GD fechar). Estados "pronto" e "saiu para entrega" prontos (13/10); **motoqueiro com código de entrega e acerto do dinheiro prontos (13/10, `motoqueiro.md`)**; faltam fotos de prova, pagamento por distância e a decisão de quem paga a taxa
 - [~] Assinatura de R$ 190: pagamento no primeiro dia, vencimento e bloqueio no dia seguinte. **Pronta com cobrança manual** (servidor, telas do dono, do cliente e do GD, script `cobranca.sh`; vem DESLIGADA, ligar é decisão do GD). Faltam a empresa de pagamento (cobrança automática) e a decisão sobre pagamento atrasado
 - [~] Horário de funcionamento, pausa de pedidos e esgotado em um toque: **pronto** (servidor, painel do dono com voz, cardápio do cliente; `docs/horario-e-esgotado.md`), CI e junção pendentes; falta ver no celular
 - [~] Front-end contra a prancha de templates (13/10, pedido do GD): cartaz de QR da mesa para imprimir e página de venda `?sistema=1` prontos no Vem Comer (PR #46); front-end do Vem Trabalhar refeito na marca azul (PR #5 do repositório dele). Falta: logomarca em arquivo (SVG/PNG transparente), fotos, ver no celular
-- [ ] Cadastro em até 3 dias: arquivo, "ficou bom?" na logomarca, botão de ajuda, teste cronometrado
+- [~] Cadastro em até 3 dias: **arquivo (PR #50), botão de ajuda e aba Chamados (PR #51) e "ficou bom?" na logomarca (PR #52) juntados**; falta o teste cronometrado com um dono de verdade e o aviso no celular do GD quando chega um chamado
 - [ ] Cardápio falado testado no celular do GD (correções do PR #35 juntadas em 07/10; falta atualizar a VPS e testar de novo)
-- [ ] Reinstalação na VPS aplicando as migrações até a 013 (o instalador aplica sozinho; comando entregue ao GD em 07/10 à noite; sem confirmação de que rodou)
+- [ ] Reinstalação na VPS: o atualizador automático (PR #48) aplica as migrações (hoje até a 015) e só instala o que está com testes verdes; falta o GD rodar o comando uma vez e confirmar
 
 Vem Trabalhar:
 
 - [x] PR #2 juntado (parceria 50% e 30%, validação de CPF e CNPJ), CI verde
 - [x] Estado levantado em 08/10: `docs/estado-2026-10-08.md` no repositório do Vem Trabalhar (PR #3). Cerca de 6,5 dias para vagas funcionando sem pagamento e 11 a 13 com pagamento e escolas
-- [ ] PR #3 juntado (comando de voz corrigido, CI das funções, estado e risco de segurança)
+- [x] PR #3 juntado (comando de voz corrigido, CI das funções, estado e risco de segurança). A nova publicação do comando de voz segue sem autorização
 - [ ] Segurança do banco e das funções (1 dia, depende da autorização do GD)
 
 Antes de vender de verdade (do `docs/roadmap.md`):
@@ -168,6 +168,16 @@ Vem Trabalhar (`docs/referencias-visuais/`, PR #4); o texto do benchmark está e
 - Botão "Preciso de ajuda" e aba Chamados (`docs/pedido-de-ajuda.md`): o dono chama (tela ou voz), o GD vê os pedidos e os cadastros parados com o prazo de 3 dias e o tempo que cada um levou.
 - Logomarca que o dono já tem: tela "Ficou bom?" (`docs/logomarca.md`): mostra a imagem dele, a versão sem margem vazia e como o cliente vai ver, e só salva quando ele aprova.
 - Falta para fechar "cadastrar tudo em até 3 dias": aviso no celular do GD quando chega um chamado e um primeiro dono de verdade (e ver tudo isso num Android de verdade).
+
+## Motoqueiro e aviso de pedido novo (13/10, noite)
+
+- Motoqueiro v1 (PR #53, `docs/motoqueiro.md`): o cliente recebe um código de 4 números; o motoqueiro só fecha a entrega digitando esse código (5 tentativas);
+  o dinheiro que ele recebe fica em aberto no nome dele até o acerto, feito pelo caixa em dois toques. O login de entregador só vê a tela de Entregas.
+  Testes: 895 no servidor (as mesmas 4 falhas antigas), 660 na tela; SQL em PostgreSQL 16 de verdade; telas no Chromium a 390 e 320 px.
+- Aviso de pedido novo com apito e vibração, e o aviso passa a ser pelo **número do pedido** (antes pela quantidade, que parava de subir
+  nos 200 pedidos mais recentes que o servidor manda). O motoqueiro também ouve quando uma entrega fica pronta. Conferido no painel de verdade:
+  abrir com 200 pedidos não faz barulho; um pedido novo com a lista cheia apita uma vez; dois de uma vez apitam uma vez.
+- Falta ver tudo isso num Android de verdade e, depois, avisar quando o celular está bloqueado (notificação push: item 52).
 
 ## Pauta do 6º dia (13/10)
 
