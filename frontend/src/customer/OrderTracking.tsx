@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import ItemDetails from "./ItemDetails";
 import { fetchOrder, HttpError } from "../service/api";
 import { formatMoney, shortOrderCode } from "../service/format";
 import { customerStatus, STEP_LABELS } from "./labels";
@@ -124,12 +125,15 @@ export default function OrderTracking(props: Props) {
 
         <ul className="comanda-items">
           {order.items?.map((item, index) => (
-            <li className="leader-row" key={`${item.name}-${index}`}>
-              <span>
-                <span className="comanda-qty">{item.quantity}x</span> {item.name}
-              </span>
-              <span className="leader" aria-hidden="true" />
-              <span className="money">{formatMoney(item.total)}</span>
+            <li className="comanda-item" key={`${item.name}-${index}`}>
+              <div className="leader-row">
+                <span>
+                  <span className="comanda-qty">{item.quantity}x</span> {item.name}
+                </span>
+                <span className="leader" aria-hidden="true" />
+                <span className="money">{formatMoney(item.total)}</span>
+              </div>
+              <ItemDetails options={item.options} note={item.note} />
             </li>
           ))}
         </ul>

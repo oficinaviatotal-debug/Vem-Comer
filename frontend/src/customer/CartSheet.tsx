@@ -1,6 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatMoney } from "../service/format";
-import { cartTotalCents, lineTotalCents, type CartLine } from "./cart";
+import { cartTotalCents, lineKey, lineTotalCents, type CartLine } from "./cart";
+import ItemDetails from "./ItemDetails";
+import { NOTE_MAX, cleanNote, noteProblem } from "./options";
 import type { PaymentMethod } from "./types";
 import { availableMethods, paymentNote } from "./payment";
 import QuantityStepper from "./QuantityStepper";
@@ -19,11 +21,70 @@ type Props = {
   onPaid: (value: string) => void;
   sending: boolean;
   error: string;
-  onMore: (line: CartLine) => void;
-  onLess: (id: string) => void;
+  /** One more / one less of a line, by its key. */
+  onMore: (key: string) => void;
+  onLess: (key: string) => void;
+  /** Writes (or clears, with an empty text) the note of a line. */
+  onNote: (key: string, note: string) => void;
+  /** Reopens the choices of a line with options; missing when the dish is not on the menu any more. */
+  onEdit: (line: CartLine) => void;
+  canEdit: (line: CartLine) => boolean;
   onSend: () => void;
   onClose: () => void;
 };
+
+/** Small form under a line to write what the kitchen should know ("sem cebola"). */
+function NoteEditor({
+  initial,
+  onSave,
+  onCancel,
+}: {
+  initial: string;
+  onSave: (note: string) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState(initial);
+  const problem = noteProblem(draft);
+  const boxRef = useRef<HTMLDivElement>(null);
+  // The form opens at the bottom of a long order: bring it (and its Save button) into view, above the send bar.
+  useEffect(() => {
+    boxRef.current?.scrollIntoView({ block: "center" });
+  }, []);
+  return (
+    <div className="cust-note-edit" ref={boxRef}>
+      <label className="field">
+        <span>Observação para a cozinha</span>
+        <input
+          autoFocus
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          maxLength={NOTE_MAX}
+          placeholder="Ex.: sem cebola, bem passado"
+          enterKeyHint="done"
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !problem) onSave(cleanNote(draft));
+          }}
+        />
+        <small>
+          {draft.length}/{NOTE_MAX}
+        </small>
+      </label>
+      {problem && (
+        <p className="msg-error" role="alert">
+          {problem}
+        </p>
+      )}
+      <div className="cust-note-actions">
+        <button type="button" className="btn btn-primary btn-sm" disabled={Boolean(problem)} onClick={() => onSave(cleanNote(draft))}>
+          Salvar
+        </button>
+        <button type="button" className="btn btn-quiet btn-sm" onClick={onCancel}>
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /** Bottom sheet with the order slip (comanda), the customer's name and payment. */
 export default function CartSheet(props: Props) {
@@ -31,6 +92,8 @@ export default function CartSheet(props: Props) {
   const total = cartTotalCents(cart);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const closeRef = useRef(props.onClose);
+  // Key of the line whose note is being written.
+  const [noteOf, setNoteOf] = useState<string | null>(null);
 
   useEffect(() => {
     closeRef.current = props.onClose;
@@ -87,21 +150,52 @@ export default function CartSheet(props: Props) {
                 </div>
 
                 <ul className="comanda-items">
-                  {cart.map((line) => (
-                    <li className="cust-line" key={line.id}>
-                      <div className="leader-row">
-                        <span>{line.name}</span>
-                        <span className="leader" aria-hidden="true" />
-                        <span className="money">{formatMoney(lineTotalCents(line) / 100)}</span>
-                      </div>
-                      <QuantityStepper
-                        label={line.name}
-                        quantity={line.quantity}
-                        onMore={() => props.onMore(line)}
-                        onLess={() => props.onLess(line.id)}
-                      />
-                    </li>
-                  ))}
+                  {cart.map((line) => {
+                    const key = lineKey(line);
+                    return (
+                      <li className="cust-line" key={key}>
+                        <div className="leader-row">
+                          <span>{line.name}</span>
+                          <span className="leader" aria-hidden="true" />
+                          <span className="money">{formatMoney(lineTotalCents(line) / 100)}</span>
+                        </div>
+                        <ItemDetails options={line.options} note={line.note} />
+                        <div className="cust-line-actions">
+                          <QuantityStepper
+                            label={line.name}
+                            quantity={line.quantity}
+                            onMore={() => props.onMore(key)}
+                            onLess={() => props.onLess(key)}
+                          />
+                          <div className="cust-line-links">
+                            {line.options?.length && props.canEdit(line) ? (
+                              <button type="button" className="btn btn-quiet btn-sm" onClick={() => props.onEdit(line)}>
+                                Mudar opções
+                              </button>
+                            ) : null}
+                            <button
+                              type="button"
+                              className="btn btn-quiet btn-sm"
+                              onClick={() => setNoteOf(noteOf === key ? null : key)}
+                              aria-expanded={noteOf === key}
+                            >
+                              Observação
+                            </button>
+                          </div>
+                        </div>
+                        {noteOf === key && (
+                          <NoteEditor
+                            initial={line.note ?? ""}
+                            onSave={(text) => {
+                              props.onNote(key, text);
+                              setNoteOf(null);
+                            }}
+                            onCancel={() => setNoteOf(null)}
+                          />
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
 
                 <div className="leader-row comanda-total">

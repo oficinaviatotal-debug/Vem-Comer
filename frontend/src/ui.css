@@ -291,6 +291,43 @@
   font-weight: 700;
 }
 
+/* A dish on the slip: the "2x Dish ..... price" line and, under it, the options and the note. */
+.comanda-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.comanda-extra {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: var(--s4);
+}
+
+.comanda-opts,
+.comanda-note {
+  margin: 0;
+  font-size: var(--t-sm);
+  line-height: 1.35;
+}
+
+.comanda-opts {
+  color: var(--nevoa);
+}
+
+.comanda-note {
+  color: var(--folha);
+  font-weight: 700;
+}
+
+.comanda-note span {
+  margin-right: 4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--sol);
+}
+
 .comanda-total {
   padding-top: var(--s3);
   border-top: 2px dashed var(--linha-forte);

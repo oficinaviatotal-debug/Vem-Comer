@@ -246,6 +246,8 @@
 /* Hugs the button so the guide's blinking ring marks exactly what to touch. */
 .cust-qty {
   display: flex;
+  align-items: center;
+  gap: var(--s2);
   width: fit-content;
   margin-left: auto;
 }
@@ -726,4 +728,189 @@
   .cust-sheet {
     animation: none;
   }
+}
+
+/* ---------- Options per dish: size, extras, "no onion", note ---------- */
+
+.cust-from {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.cust-from small {
+  color: var(--nevoa);
+  font-size: var(--t-xs);
+}
+
+.cust-inorder {
+  color: var(--mata);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.opt-desc {
+  margin: 0;
+  color: var(--nevoa);
+}
+
+.opt-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.opt-group legend {
+  padding: 0 0 var(--s2);
+}
+
+.opt-name {
+  color: var(--folha);
+  font: 700 var(--t-lg) / 1.2 var(--font-display);
+}
+
+.opt-rule {
+  margin-left: var(--s2);
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  background: var(--papel-2);
+  color: var(--nevoa);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.opt-rule.is-required {
+  background: var(--sol);
+  color: var(--folha);
+}
+
+/* The whole row is the tap target; the real input sits invisibly over it. */
+.opt-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: 52px;
+  padding: var(--s2) var(--s3);
+  border: 2px solid var(--linha-forte);
+  border-radius: var(--r-sm);
+  background: var(--comanda);
+  cursor: pointer;
+}
+
+.opt-row.is-checked {
+  border-color: var(--folha);
+}
+
+.opt-row input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.opt-row input:disabled {
+  cursor: not-allowed;
+}
+
+.opt-row input:disabled ~ span {
+  opacity: .45;
+}
+
+.opt-mark {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--linha-forte);
+  border-radius: 50%;
+  background: #fff;
+}
+
+.opt-row input[type="checkbox"] ~ .opt-mark {
+  border-radius: 6px;
+}
+
+.opt-row.is-checked .opt-mark {
+  border-color: var(--folha);
+  background: var(--folha);
+  box-shadow: inset 0 0 0 4px #fff;
+}
+
+.opt-row.is-checked input[type="checkbox"] ~ .opt-mark {
+  box-shadow: none;
+  background: var(--folha) center / 16px no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3.2 3.2L13 4.8' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.opt-row input:focus-visible ~ .opt-mark {
+  outline: 3px solid var(--brasa-viva);
+  outline-offset: 2px;
+}
+
+.opt-label {
+  flex: 1;
+  color: var(--tinta);
+  font-weight: 600;
+}
+
+.opt-price {
+  color: var(--mata);
+  font: 700 var(--t-md) / 1 var(--font-display);
+  white-space: nowrap;
+}
+
+.opt-note small {
+  align-self: flex-end;
+}
+
+.opt-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.opt-foot .btn {
+  flex: 1;
+}
+
+/* Under a dish in the order slip: the actions and the note form. */
+.cust-line-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  width: 100%;
+}
+
+/* The stepper on the left; "Mudar opções" and "Observação" stacked on the right, so nothing wraps. */
+.cust-line-links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.cust-line-links .btn-quiet {
+  min-height: 36px;
+  padding-inline: var(--s2);
+}
+
+.cust-note-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  width: 100%;
+}
+
+.cust-note-actions {
+  display: flex;
+  gap: var(--s2);
 }

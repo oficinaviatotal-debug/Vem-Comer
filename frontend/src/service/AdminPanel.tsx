@@ -34,6 +34,7 @@ import ConfirmButton from "./ConfirmButton";
 import PixSettingsPanel from "./PixSettingsPanel";
 import LogoPanel from "../logo/LogoPanel";
 import { adminPaymentChip, canConfirmPayment } from "../customer/payment";
+import ItemDetails from "../customer/ItemDetails";
 import {
   formatMoney,
   formatTime,
@@ -62,6 +63,10 @@ type OrderItem = {
   quantity: number;
   unit_price: number;
   total: number;
+  /** Size, extras and the like the customer chose, copied into the order. */
+  options?: { group?: string; name: string; price?: number | string }[] | null;
+  /** What the customer wrote for the kitchen ("sem cebola"). */
+  note?: string | null;
 };
 
 type Order = {
@@ -1442,13 +1447,16 @@ export default function AdminPanel({
 
                   <ul className="comanda-items">
                     {(order.items ?? []).map((item, index) => (
-                      <li key={index} className="leader-row">
-                        <span>
-                          <span className="comanda-qty">{item.quantity}x</span>{" "}
-                          {item.name}
-                        </span>
-                        <span className="leader" />
-                        <span className="money">{formatMoney(item.total)}</span>
+                      <li key={index} className="comanda-item">
+                        <div className="leader-row">
+                          <span>
+                            <span className="comanda-qty">{item.quantity}x</span>{" "}
+                            {item.name}
+                          </span>
+                          <span className="leader" />
+                          <span className="money">{formatMoney(item.total)}</span>
+                        </div>
+                        <ItemDetails options={item.options} note={item.note} />
                       </li>
                     ))}
                   </ul>
