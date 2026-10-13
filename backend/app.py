@@ -36,6 +36,7 @@ import menu_import
 import menu_templates
 import pix
 import signup
+import subscription
 import table_calls
 from table_qr import qr_png_for_url
 from trusted_proxy import wrap_trusted_proxy
@@ -406,6 +407,9 @@ def signup_restaurant():
 
         user = cur.fetchone()
 
+        # Assinatura (migracao 012): nasce esperando o primeiro pagamento. Nada bloqueia ate o GD ligar BILLING_ENFORCED.
+        cur.execute(subscription.SQL_START, (str(company['id']), subscription.PLAN_CODE))
+
         conn.commit()
 
         token = serializer.dumps({
@@ -577,11 +581,13 @@ def refresh_session():
 
 def public_company(row):
     """Dados do restaurante que qualquer cliente pode ver. A chave sorteada da logomarca nunca sai:
-    sai so o endereco publico (ou None, se o restaurante ainda nao tem logomarca)."""
+    sai so o endereco publico (ou None, se o restaurante ainda nao tem logomarca).
+    `accepting_orders` e False so quando a cobranca esta ligada e a assinatura esta bloqueada (nunca diz o motivo)."""
     company = dict(row)
     urls = media_store.public_urls(company.get('id'), company.pop('logo_key', None))
     company['logo_url'] = urls['image_url']
     company['logo_thumb_url'] = urls['thumb_url']
+    company['accepting_orders'] = company_accepts_orders(company.get('id'))
     return company
 
 
@@ -935,6 +941,19 @@ def create_company_order(company_id):
             return jsonify({
                 "error": message
             }), 400
+
+        # Assinatura vencida (so com BILLING_ENFORCED ligado): sem pedido novo; os em andamento terminam.
+        if subscription.billing_enforced():
+            cur.execute(subscription.SQL_GET, (str(company_id),))
+
+            if subscription.is_blocked(cur.fetchone(), subscription.today_br(), True):
+                conn.rollback()
+                cur.close()
+                conn.close()
+                return jsonify({
+                    "error": subscription.CUSTOMER_MESSAGE,
+                    "code": "not_accepting_orders"
+                }), 403
 
         if table_id:
             cur.execute(
@@ -4250,6 +4269,197 @@ def admin_ingredient_stock(company_id, ingredient_id):
     except Exception as e:
         _close_quietly(conn, cur)
         return error_response("Erro ao salvar o estoque", e)
+
+
+# ------------------------------------------------------------------------------------------------------------
+# Assinatura do restaurante (subscription.py, migracao 012). Nada bloqueia enquanto BILLING_ENFORCED nao for ligado.
+# O dono ve a propria situacao; o administrador da plataforma (PLATFORM_ADMIN_EMAILS) ve todos e registra pagamentos.
+
+def company_accepts_orders(company_id):
+    """False so quando a cobranca esta ligada e a assinatura do restaurante esta bloqueada. Desligada, nem consulta."""
+    if not subscription.billing_enforced() or not company_id:
+        return True
+
+    try:
+        sub = query_db(subscription.SQL_GET, (str(company_id),), one=True)
+    except Exception:
+        return True  # na duvida, o cardapio continua aberto: um erro nosso nao pode fechar o restaurante
+
+    return not subscription.is_blocked(sub, subscription.today_br(), True)
+
+
+def _iso(value):
+    return value.isoformat() if hasattr(value, 'isoformat') else (str(value) if value is not None else None)
+
+
+def _subscription_view(sub, today=None):
+    today = today or subscription.today_br()
+    view = subscription.evaluate(sub, today)
+    view['message'] = subscription.owner_message(view)
+    view['enforced'] = subscription.billing_enforced()
+    view['blocked'] = bool(view['enforced'] and view['blocks'])
+    return view
+
+
+def _is_platform_admin_request():
+    if not subscription.platform_admin_emails():
+        return False
+
+    row = query_db(subscription.SQL_USER_EMAIL, (str(request.user.get('user_id')),), one=True)
+    return bool(row and subscription.is_platform_admin(row.get('email')))
+
+
+def require_platform_admin(f):
+    @wraps(f)
+    @require_auth
+    def wrapper(*args, **kwargs):
+        try:
+            allowed = _is_platform_admin_request()
+        except Exception as e:
+            return error_response("Erro ao conferir o acesso", e)
+
+        if not allowed:
+            return jsonify({"error": "Acesso negado"}), 403
+
+        return f(*args, **kwargs)
+
+    return wrapper
+
+
+@app.route('/api/admin/subscription', methods=['GET'])
+@require_roles('OWNER', 'MANAGER')
+def get_admin_subscription():
+    try:
+        company_id = str(request.user.get('company_id'))
+        sub = query_db(subscription.SQL_GET, (company_id,), one=True)
+        payments = query_db(subscription.SQL_RECENT_PAYMENTS, (company_id,))
+        body = _subscription_view(sub)
+        body['payment_info'] = subscription.payment_info()
+        body['platform_admin'] = _is_platform_admin_request()
+        body['payments'] = [
+            {
+                "id": str(row['id']),
+                "amount_cents": row['amount_cents'],
+                "period_start": _iso(row['period_start']),
+                "period_end": _iso(row['period_end']),
+                "method": row['method'],
+                "paid_at": _iso(row['paid_at']),
+            }
+            for row in payments
+        ]
+        response = jsonify(body)
+        response.headers['Cache-Control'] = 'no-store'
+        return response, 200
+    except Exception as e:
+        return error_response("Erro ao ver o plano", e)
+
+
+@app.route('/api/platform/subscriptions', methods=['GET'])
+@require_platform_admin
+def list_platform_subscriptions():
+    try:
+        today = subscription.today_br()
+        rows = []
+
+        for row in query_db(subscription.SQL_PLATFORM_LIST):
+            sub = None
+
+            if row['has_subscription']:
+                sub = {
+                    "price_cents": row['price_cents'],
+                    "anchor_day": row['anchor_day'],
+                    "paid_until": row['paid_until'],
+                    "canceled_at": row['canceled_at'],
+                }
+
+            view = subscription.evaluate(sub, today)
+            view['message'] = subscription.owner_message(view)
+            rows.append({
+                "company_id": str(row['company_id']),
+                "name": row['name'],
+                "slug": row['slug'],
+                "owner_name": row['owner_name'],
+                "owner_email": row['owner_email'],
+                "created_at": _iso(row['company_created_at']),
+                "subscription": view,
+            })
+
+        rows.sort(key=subscription.platform_sort_key)
+        needs_attention = sum(1 for r in rows if r['subscription']['state'] in ('past_due', 'awaiting_payment'))
+        response = jsonify({
+            "enforced": subscription.billing_enforced(),
+            "today": today.isoformat(),
+            "needs_attention": needs_attention,
+            "companies": rows,
+        })
+        response.headers['Cache-Control'] = 'no-store'
+        return response, 200
+    except Exception as e:
+        return error_response("Erro ao listar as assinaturas", e)
+
+
+@app.route('/api/platform/subscriptions/<uuid:company_id>/payments', methods=['POST'])
+@require_platform_admin
+def record_subscription_payment(company_id):
+    conn = None
+    cur = None
+
+    try:
+        try:
+            cents, method, reference = subscription.clean_payment(request.get_json(silent=True))
+        except subscription.SubscriptionError as error:
+            return jsonify({"error": error.message}), error.status
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        company = str(company_id)
+
+        cur.execute(subscription.SQL_COMPANY_EXISTS, (company,))
+
+        if not cur.fetchone():
+            _close_quietly(conn, cur)
+            return jsonify({"error": "Estabelecimento nao encontrado"}), 404
+
+        # Restaurante criado pelo script (sem assinatura) ganha a linha no primeiro pagamento registrado.
+        cur.execute(subscription.SQL_START, (company, subscription.PLAN_CODE))
+        cur.execute(subscription.SQL_GET_FOR_UPDATE, (company,))
+        sub = cur.fetchone()
+
+        if not sub:
+            _close_quietly(conn, cur)
+            return error_response("O plano nao esta cadastrado no banco (falta a migracao 012)")
+
+        # Dois toques seguidos no botao nao podem pagar dois meses.
+        cur.execute(subscription.SQL_RECENT_DUPLICATE, (company,))
+
+        if cur.fetchone():
+            _close_quietly(conn, cur)
+            return jsonify({"error": "Este pagamento acabou de ser registrado. Confira a lista antes de registrar de novo."}), 409
+
+        today = subscription.today_br()
+        start, new_until, anchor = subscription.next_period(sub, today)
+        amount = cents if cents is not None else int(sub['price_cents'])
+
+        cur.execute(
+            subscription.SQL_INSERT_PAYMENT,
+            (company, amount, start, new_until, method, reference, str(request.user.get('user_id')))
+        )
+        receipt = cur.fetchone()
+        cur.execute(subscription.SQL_APPLY_PAYMENT, (new_until, anchor, company))
+        conn.commit()
+        _close_quietly(conn, cur, rollback=False)
+
+        paid = dict(sub, paid_until=new_until, anchor_day=anchor, canceled_at=None)
+        return jsonify({
+            "payment_id": str(receipt['id']),
+            "amount_cents": amount,
+            "period_start": start.isoformat(),
+            "period_end": new_until.isoformat(),
+            "subscription": _subscription_view(paid, today),
+        }), 201
+    except Exception as e:
+        _close_quietly(conn, cur)
+        return error_response("Erro ao registrar o pagamento", e)
 
 
 if __name__ == '__main__':
