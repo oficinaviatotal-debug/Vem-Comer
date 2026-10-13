@@ -40,6 +40,10 @@ import PauseStrip from "./PauseStrip";
 import { resetSoldOut, setSoldOut } from "./hoursApi";
 import SubscriptionPanel from "./SubscriptionPanel";
 import PlatformPanel from "./PlatformPanel";
+import HelpSheet from "./HelpSheet";
+import HelpInbox from "./HelpInbox";
+import { fetchPlatformHelp } from "./helpApi";
+import { suggestedTopic } from "./helpLogic";
 import { useOwnerPlan } from "./useOwnerPlan";
 import { bannerOf, hasPlanTab, viewAllowed } from "./subscriptionView";
 import LogoPanel from "../logo/LogoPanel";
@@ -149,7 +153,8 @@ type AdminView =
   | "entrega"
   | "horario"
   | "plano"
-  | "assinaturas";
+  | "assinaturas"
+  | "ajuda";
 
 const ADMIN_VIEWS: string[] = [
   "pedidos",
@@ -166,6 +171,7 @@ const ADMIN_VIEWS: string[] = [
   "horario",
   "plano",
   "assinaturas",
+  "ajuda",
 ];
 
 function isAdminView(value: string): value is AdminView {
@@ -244,6 +250,24 @@ export default function AdminPanel({
   // work (Pedidos, to finish what is in progress, and Plano). Failing to read it never breaks the panel.
   const { plan } = useOwnerPlan(isAuthenticated && canUseGuide);
   const planBlocked = plan?.blocked === true;
+
+  // "Preciso de ajuda": the owner's sheet, and (GD only) how many requests are waiting, shown on the Chamados tab.
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpCount, setHelpCount] = useState<number | null>(null);
+  const isPlatformAdmin = plan?.platform_admin === true;
+
+  useEffect(() => {
+    if (!isPlatformAdmin) return;
+    let alive = true;
+    fetchPlatformHelp()
+      .then((help) => {
+        if (alive) setHelpCount(help.open_count);
+      })
+      .catch(() => undefined); // the count is a courtesy: the tab still opens and says what went wrong
+    return () => {
+      alive = false;
+    };
+  }, [isPlatformAdmin]);
 
   useEffect(() => {
     if (!viewAllowed(view, planBlocked)) setView("plano");
@@ -840,6 +864,18 @@ export default function AdminPanel({
         <div className="adm-bar-actions">
           {canUseGuide && (
             <button
+              id="admin-btn-help"
+              type="button"
+              className="btn btn-outline btn-sm"
+              aria-expanded={helpOpen}
+              onClick={() => setHelpOpen(true)}
+            >
+              Ajuda
+            </button>
+          )}
+
+          {canUseGuide && (
+            <button
               id="admin-btn-guide"
               type="button"
               className="btn btn-outline btn-sm"
@@ -867,6 +903,10 @@ export default function AdminPanel({
           </button>
         </div>
       </header>
+
+      {helpOpen && canUseGuide && (
+        <HelpSheet screen={view} suggested={suggestedTopic(view)} onClose={() => setHelpOpen(false)} />
+      )}
 
       <div className="adm-who">
         <h1 className="adm-title">Painel</h1>
@@ -1068,6 +1108,18 @@ export default function AdminPanel({
             Assinaturas
           </button>
         )}
+
+        {plan?.platform_admin && (
+          <button
+            id="admin-tab-ajuda"
+            type="button"
+            className={tabClass("ajuda")}
+            aria-current={view === "ajuda" ? "page" : undefined}
+            onClick={() => setView("ajuda")}
+          >
+            {helpCount ? `Chamados (${helpCount})` : "Chamados"}
+          </button>
+        )}
       </nav>
 
       {view === "pedidos" &&
@@ -1149,6 +1201,8 @@ export default function AdminPanel({
         />
       ) : view === "assinaturas" && plan?.platform_admin ? (
         <PlatformPanel />
+      ) : view === "ajuda" && plan?.platform_admin ? (
+        <HelpInbox onCount={setHelpCount} />
       ) : view === "usuarios" && currentUser?.role === "OWNER" ? (
         <section className="adm-stack" aria-label="Equipe">
           <form
@@ -1265,6 +1319,7 @@ export default function AdminPanel({
           onSaved={loadProducts}
           onSeeMenu={() => setView("produtos")}
           onOpenGuide={() => setGuideOpen(true)}
+          onAskHelp={() => setHelpOpen(true)}
         />
       ) : view === "produtos" ? (
         <section className="adm-stack" aria-label="Produtos">

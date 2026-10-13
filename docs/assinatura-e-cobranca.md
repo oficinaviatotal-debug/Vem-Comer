@@ -101,6 +101,7 @@ aspas, cifrão, barra, crase ou `#` são recusados, porque estragariam o arquivo
 | `PLATFORM_ADMIN_EMAILS` | E-mails (separados por vírgula) que veem todos os restaurantes e registram pagamentos. |
 | `BILLING_PIX_KEY`, `BILLING_PIX_RECEIVER` | Chave Pix e nome de quem recebe, mostrados ao dono. |
 | `BILLING_CONTACT_PHONE` | WhatsApp para o dono pedir ajuda ou avisar que pagou. |
+| `SUPPORT_WHATSAPP` | (opcional) WhatsApp do botão "Preciso de ajuda"; vazio = usa o `BILLING_CONTACT_PHONE`. |
 
 A chave Pix e os dados de contato vêm do **servidor**, nunca do navegador. Não há chave de empresa de pagamento nenhuma ainda.
 

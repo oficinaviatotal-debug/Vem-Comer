@@ -33,6 +33,7 @@ import menu_photo
 import menu_file
 import voice_tts
 import feedback
+import help_requests
 import hours
 import menu_import
 import menu_templates
@@ -4853,6 +4854,132 @@ def record_subscription_payment(company_id):
     except Exception as e:
         _close_quietly(conn, cur)
         return error_response("Erro ao registrar o pagamento", e)
+
+
+# ------------------------------------------------------------------------------------------------------------
+# Pedidos de ajuda do dono (help_requests.py, migracao 014). O dono toca em "Preciso de ajuda"; o pedido chega a caixa
+# do administrador da plataforma, junto com o acompanhamento de quem se cadastrou e ainda nao tem cardapio.
+
+help_limiter = help_requests.Limiter()
+
+
+@app.route('/api/admin/help', methods=['POST'])
+@require_roles('OWNER', 'MANAGER')
+def create_help_request():
+    """O dono pede ajuda. Pedir de novo com um pedido aberto atualiza o mesmo, nao cria outro."""
+    try:
+        data = help_requests.clean_request(request.get_json(silent=True))
+        company_id = str(request.user.get('company_id'))
+        help_limiter.check(company_id)
+    except help_requests.HelpError as error:
+        return jsonify({"error": error.message}), error.status
+
+    conn = None
+    cur = None
+
+    try:
+        user_id = str(request.user.get('user_id'))
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute(help_requests.SQL_CONTEXT, (user_id, company_id))
+        context = cur.fetchone()
+
+        if not context:
+            _close_quietly(conn, cur)
+            return jsonify({"error": "Estabelecimento nao encontrado"}), 404
+
+        cur.execute(help_requests.SQL_OPEN_ONE, (company_id,))
+        open_request = cur.fetchone()
+
+        if open_request:
+            cur.execute(
+                help_requests.SQL_UPDATE_OPEN,
+                (
+                    data['topic'], data['screen'], data['message'], data['message'], data['phone'],
+                    help_requests.MAX_REPEATS, str(open_request['id']), company_id,
+                )
+            )
+        else:
+            cur.execute(
+                help_requests.SQL_INSERT,
+                (company_id, user_id, data['topic'], data['screen'], data['message'], data['phone'])
+            )
+
+        cur.fetchone()
+        conn.commit()
+        _close_quietly(conn, cur, rollback=False)
+
+        url = help_requests.whatsapp_link(
+            help_requests.support_whatsapp(),
+            help_requests.help_text(context.get('company_name'), context.get('user_name'), data['topic'], data['message'])
+        )
+        already = bool(open_request)
+
+        return jsonify({
+            "ok": True,
+            "already": already,
+            "message": help_requests.confirmation(already, bool(url)),
+            "whatsapp_url": url,
+        }), (200 if already else 201)
+    except Exception as e:
+        _close_quietly(conn, cur)
+        return error_response("Nao foi possivel enviar o pedido de ajuda. Fale com o suporte pelo WhatsApp.", e)
+
+
+@app.route('/api/platform/help', methods=['GET'])
+@require_platform_admin
+def list_platform_help():
+    """A caixa do administrador: pedidos abertos e o acompanhamento dos cadastros feitos pela internet."""
+    try:
+        inbox = [help_requests.inbox_row(row) for row in query_db(help_requests.SQL_INBOX)]
+        tracking = [
+            view for view in (
+                help_requests.tracking_row(row)
+                for row in query_db(help_requests.SQL_TRACKING, (help_requests.MENU_READY_PRODUCTS - 1,))
+            ) if view
+        ]
+        tracking.sort(key=help_requests.tracking_sort_key)
+        response = jsonify({
+            "open": inbox,
+            "open_count": len(inbox),
+            "tracking": tracking,
+            "summary": help_requests.tracking_summary(tracking),
+            "deadline_days": help_requests.DEADLINE_DAYS,
+            "ready_products": help_requests.MENU_READY_PRODUCTS,
+        })
+        response.headers['Cache-Control'] = 'no-store'
+        return response, 200
+    except Exception as e:
+        return error_response("Erro ao listar os pedidos de ajuda", e)
+
+
+@app.route('/api/platform/help/<uuid:request_id>/resolve', methods=['POST'])
+@require_platform_admin
+def resolve_platform_help(request_id):
+    """Marca o pedido como resolvido. Resolver de novo um pedido ja resolvido nao e erro."""
+    conn = None
+    cur = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(help_requests.SQL_RESOLVE, (str(request.user.get('user_id')), str(request_id)))
+        resolved = cur.fetchone()
+
+        if not resolved:
+            cur.execute(help_requests.SQL_EXISTS, (str(request_id),))
+
+            if not cur.fetchone():
+                _close_quietly(conn, cur)
+                return jsonify({"error": "Pedido nao encontrado"}), 404
+
+        conn.commit()
+        _close_quietly(conn, cur, rollback=False)
+        return jsonify({"ok": True}), 200
+    except Exception as e:
+        _close_quietly(conn, cur)
+        return error_response("Erro ao resolver o pedido", e)
 
 
 if __name__ == '__main__':
