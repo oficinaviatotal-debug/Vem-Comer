@@ -20,6 +20,23 @@ Painel → aba **Marca**.
 Também na aba: **Já tenho uma logomarca** (PNG, JPG ou WebP; PNG com fundo transparente é o melhor) e
 **Remover a logomarca** (dois toques). Dono e gerente podem; garçom não vê a aba.
 
+### Ficou bom? (logomarca que o dono já tem)
+
+Escolhida a imagem, **nada é salvo ainda**. Abre a tela **Ficou bom?** com:
+
+- a imagem que ele enviou e, quando havia margem vazia em volta (fundo transparente ou de uma cor só, como o
+  branco de um JPG), a **versão ajustada**: margem tirada, desenho no meio de um quadrado com um respiro de 6%.
+  Uma logomarca com muita margem aparece minúscula no selo de 40 px do cliente; o ajuste devolve o tamanho. A
+  versão ajustada já vem escolhida; **Usar a original, sem ajuste** troca de volta;
+- **como o cliente vai ver**: o selo redondo e branco ao lado do nome do restaurante;
+- avisos: "muito clara, pode sumir no fundo branco" (desenho quase todo branco sobre transparente) e "imagem
+  pequena, pode ficar borrada" (desenho com menos de 120 px de lado);
+- **Sim, usar esta** (salva e o cliente já vê), **Não, escolher outra** e **Cancelar**. Se o salvamento falhar, a
+  tela continua ali para tentar de novo sem escolher a imagem outra vez.
+
+Foto (borda variada, sem fundo de uma cor só) não é cortada: segue como está. Quem fica com o arquivo é o mesmo
+servidor de sempre (`logo_image.py`), que reduz para 512 e 160 px sem esticar.
+
 ## O que acontece por baixo
 
 - **No celular** (`frontend/src/logo/`): tudo é desenhado num canvas com traços próprios, sem imagens prontas.
@@ -32,6 +49,11 @@ Também na aba: **Já tenho uma logomarca** (PNG, JPG ou WebP; PNG com fundo tra
   caso corta com "…" e avisa.
 - **Logomarca enviada pelo dono:** PNG ou JPG até 3 MB vai como está; maior é reduzido no celular (lado maior 1024),
   PNG continua PNG para não perder a transparência. Outros tipos (SVG, GIF, HEIC) são recusados na tela.
+- **Ficou bom?** (`logoRefine.ts`, `LogoReview.tsx`, `reviewLogoFile` em `logoFiles.ts`): `logoRefine.ts` só tem a
+  conta com os pixels (fundo da borda, caixa do desenho que ignora poeira de 1 ou 2 pixels, plano do quadrado novo,
+  "clara demais", "pequena demais") e é testado pelo Node (`tests/logo/logoRefine.test.mjs`). Conferido também num
+  Chromium de verdade: logomarca de 200 x 140 no meio de 800 x 800 transparente virou 224 x 224 centralizada; JPG de
+  fundo branco virou 268 x 268; branca sobre transparente avisou "clara demais"; a que já enchia a imagem não mudou.
 - **No servidor** (`backend/logo_image.py`, rota `POST/DELETE /api/admin/company/logo`): confere os bytes, reduz sem
   esticar (512 e 160 px), grava WebP sem dados escondidos e guarda a chave em `companies.logo_key`. O mesmo volume
   e a mesma entrega `/media/...` das fotos dos pratos. As respostas públicas da empresa trazem `logo_url` e

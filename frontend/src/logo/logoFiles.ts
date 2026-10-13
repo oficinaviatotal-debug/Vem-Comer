@@ -7,6 +7,7 @@ import { openBitmap, prepareImage } from "../photos/photoFiles";
 import { fitWithin } from "../photos/photoLogic";
 import { drawLogo } from "./logoDraw";
 import { LOGO_SIZE, UPLOAD_MAX_SIDE, imageTypeOf, planUpload, type LogoSpec } from "./logoLogic";
+import { reviewLogo } from "./logoRefine";
 
 const CANNOT_MAKE = "Não consegui montar a logomarca aqui. Tente de novo.";
 const CANNOT_OPEN = "Não consegui abrir essa imagem. Escolha outra, em PNG ou JPG.";
@@ -82,6 +83,66 @@ export async function prepareLogoFile(file: File): Promise<Blob> {
     if (!context) throw new Error(CANNOT_OPEN);
     context.drawImage(opened.source, 0, 0, size.width, size.height);
     return await canvasToBlob(canvas, "image/png");
+  } finally {
+    opened.close();
+  }
+}
+
+export type LogoReviewResult = {
+  /** A imagem como o dono mandou (já pequena o bastante para enviar). */
+  original: Blob;
+  /** A mesma imagem sem a margem vazia, centralizada num quadrado. Null quando não há o que tirar. */
+  refined: Blob | null;
+  /** Desenho claro demais: some no selo branco do cardápio. */
+  tooLight: boolean;
+  /** Desenho pequeno demais: sai borrado no cardápio. */
+  small: boolean;
+};
+
+/**
+ * Prepara a tela "Ficou bom?": olha a imagem do dono e, se ela tem muita margem vazia, faz a versão refinada
+ * (PNG, desenho no meio com um respiro). Se não der para analisar, segue só com a original: o dono ainda decide.
+ */
+export async function reviewLogoFile(prepared: Blob): Promise<LogoReviewResult> {
+  const plain: LogoReviewResult = { original: prepared, refined: null, tooLight: false, small: false };
+  let opened: Awaited<ReturnType<typeof openBitmap>>;
+  try {
+    opened = await openBitmap(prepared);
+  } catch {
+    throw new Error(CANNOT_OPEN);
+  }
+  try {
+    const size = fitWithin(opened.width, opened.height, UPLOAD_MAX_SIDE);
+    if (size.width === 0) throw new Error(CANNOT_OPEN);
+    const canvas = document.createElement("canvas");
+    canvas.width = size.width;
+    canvas.height = size.height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return plain;
+    context.drawImage(opened.source, 0, 0, size.width, size.height);
+
+    let review: ReturnType<typeof reviewLogo>;
+    try {
+      review = reviewLogo(context.getImageData(0, 0, size.width, size.height).data, size.width, size.height, UPLOAD_MAX_SIDE);
+    } catch {
+      return plain; // o navegador não deixou ler os pixels: segue sem o ajuste
+    }
+    if (!review.refine) return { ...plain, tooLight: review.tooLight, small: review.small };
+
+    const { source, side, dest } = review.refine;
+    const out = document.createElement("canvas");
+    out.width = side;
+    out.height = side;
+    const outContext = out.getContext("2d");
+    if (!outContext) return { ...plain, tooLight: review.tooLight, small: review.small };
+    if (review.background?.kind === "solid") {
+      const { r, g, b } = review.background;
+      outContext.fillStyle = `rgb(${r}, ${g}, ${b})`;
+      outContext.fillRect(0, 0, side, side);
+    }
+    outContext.drawImage(canvas, source.x, source.y, source.width, source.height, dest.x, dest.y, dest.width, dest.height);
+    const refined = await canvasToBlob(out, "image/png");
+    return { original: prepared, refined, tooLight: review.tooLight, small: review.small };
   } finally {
     opened.close();
   }
