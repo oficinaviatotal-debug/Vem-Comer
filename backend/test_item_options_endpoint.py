@@ -64,6 +64,8 @@ class FakeCursor:
     def fetchone(self):
         if "FROM products" in self._last:
             return self.product
+        if "FROM companies" in self._last:
+            return {"accepts_pickup": True, "delivery_paused": False}
         if "INSERT INTO orders" in self._last:
             return {"id": ORDER_ID}
         if "INSERT INTO option_groups" in self._last:
