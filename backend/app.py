@@ -32,6 +32,7 @@ import media_store
 import menu_photo
 import voice_tts
 import feedback
+import hours
 import menu_import
 import menu_templates
 import pix
@@ -582,13 +583,29 @@ def refresh_session():
 def public_company(row):
     """Dados do restaurante que qualquer cliente pode ver. A chave sorteada da logomarca nunca sai:
     sai so o endereco publico (ou None, se o restaurante ainda nao tem logomarca).
-    `accepting_orders` e False so quando a cobranca esta ligada e a assinatura esta bloqueada (nunca diz o motivo)."""
+    `accepting_orders` e False quando a cobranca esta ligada e a assinatura esta bloqueada (nunca diz o motivo) ou quando
+    o dono pausou os pedidos. `hours` diz se ha horario de funcionamento e se esta aberto agora (nada dos turnos)."""
     company = dict(row)
     urls = media_store.public_urls(company.get('id'), company.pop('logo_key', None))
     company['logo_url'] = urls['image_url']
     company['logo_thumb_url'] = urls['thumb_url']
-    company['accepting_orders'] = company_accepts_orders(company.get('id'))
+    paused = bool(company.pop('orders_paused', False))
+    company['accepting_orders'] = company_accepts_orders(company.get('id')) and not paused
+    company['hours'] = hours.public_view(_hours_rows(company.get('id')), paused)
     return company
+
+
+def _hours_rows(company_id):
+    """Os turnos do restaurante. Na duvida (erro nosso), lista vazia: sem horario o cardapio fica aberto."""
+    if not company_id:
+        return []
+
+    try:
+        rows = query_db(hours.SQL_ROWS, (str(company_id),))
+    except Exception:
+        return []
+
+    return rows if isinstance(rows, list) else []
 
 
 @app.route('/api/companies/<uuid:company_id>', methods=['GET'])
@@ -596,7 +613,7 @@ def get_company(company_id):
     try:
         company = query_db(
             """
-            SELECT id, name, slug, logo_key
+            SELECT id, name, slug, logo_key, orders_paused
             FROM companies
             WHERE id = %s;
             """,
@@ -623,7 +640,7 @@ def get_company_by_slug(slug):
     try:
         company = query_db(
             """
-            SELECT id, name, slug, logo_key
+            SELECT id, name, slug, logo_key, orders_paused
             FROM companies
             WHERE slug = %s;
             """,
@@ -788,7 +805,7 @@ def get_company_products(company_id):
     try:
         products = query_db(
             """
-            SELECT id, company_id, menu_id, name, description, price, image_key
+            SELECT id, company_id, menu_id, name, description, price, image_key, sold_out
             FROM products
             WHERE company_id = %s;
             """,
@@ -955,6 +972,22 @@ def create_company_order(company_id):
                     "code": "not_accepting_orders"
                 }), 403
 
+        # Pausa do dono (vale para todos) e fora do horario (so para entrega e retirada: quem esta sentado pede).
+        closed = hours.closed_reason(
+            hours.fetch_paused(cur, company_id),
+            [] if table_id else hours.fetch_rows(cur, company_id),
+            bool(table_id)
+        )
+
+        if closed:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return jsonify({
+                "error": closed[1],
+                "code": closed[0]
+            }), 403
+
         if table_id:
             cur.execute(
                 """
@@ -1000,7 +1033,7 @@ def create_company_order(company_id):
 
             cur.execute(
                 """
-                SELECT id, price
+                SELECT id, price, name, sold_out
                 FROM products
                 WHERE id = %s
                 AND company_id = %s
@@ -1016,6 +1049,11 @@ def create_company_order(company_id):
 
             if not product:
                 return invalid_order("Produto indisponivel")
+
+            if product.get('sold_out'):
+                return invalid_order(
+                    f"{product.get('name') or 'Um item'} acabou. Tire do pedido e escolha outro item."
+                )
 
             # O preco de cada item e o do prato mais o das opcoes, conferido aqui:
             # o valor que o celular calculou nunca vale.
@@ -1808,6 +1846,111 @@ def admin_create_product(company_id):
 
         return error_response(
             "Erro ao criar produto",
+            e
+        )
+
+
+@app.route('/api/admin/products/<uuid:product_id>/sold-out', methods=['PUT'])
+@require_roles('OWNER', 'MANAGER', 'KITCHEN')
+def admin_set_sold_out(product_id):
+    """Esgotou / voltou, em um toque. O prato continua no cardapio, marcado, e some dos pedidos."""
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+        data = request.get_json(silent=True) or {}
+        sold_out = data.get('sold_out')
+
+        if not isinstance(sold_out, bool):
+            return jsonify({
+                "error": "Diga se o prato esgotou ou voltou."
+            }), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            UPDATE products
+            SET sold_out = %s
+            WHERE id = %s
+            AND company_id = %s;
+            """,
+            (
+                sold_out,
+                str(product_id),
+                str(company_id)
+            )
+        )
+
+        if cur.rowcount == 0:
+            conn.rollback()
+            cur.close()
+            conn.close()
+
+            return jsonify({
+                "error": "Produto nao encontrado"
+            }), 404
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "id": str(product_id),
+            "sold_out": sold_out
+        }), 200
+
+    except Exception as e:
+        _close_quietly(conn, cur)
+
+        return error_response(
+            "Erro ao marcar o prato",
+            e
+        )
+
+
+@app.route('/api/admin/products/sold-out/reset', methods=['POST'])
+@require_roles('OWNER', 'MANAGER', 'KITCHEN')
+def admin_reset_sold_out():
+    """Voltou tudo: tira a marca de esgotado de todos os pratos do restaurante (comeco do dia)."""
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            UPDATE products
+            SET sold_out = FALSE
+            WHERE company_id = %s
+            AND sold_out = TRUE;
+            """,
+            (str(company_id),)
+        )
+
+        changed = cur.rowcount
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "changed": changed
+        }), 200
+
+    except Exception as e:
+        _close_quietly(conn, cur)
+
+        return error_response(
+            "Erro ao voltar os pratos",
             e
         )
 
@@ -4269,6 +4412,165 @@ def admin_ingredient_stock(company_id, ingredient_id):
     except Exception as e:
         _close_quietly(conn, cur)
         return error_response("Erro ao salvar o estoque", e)
+
+
+# ------------------------------------------------------------------------------------------------------------
+# Horario de funcionamento e pausa de pedidos (hours.py, migracao 013).
+
+@app.route('/api/admin/hours', methods=['GET'])
+@require_roles('OWNER', 'MANAGER', 'KITCHEN')
+def admin_get_hours():
+    """Os 7 dias para editar, a pausa e se esta aberto agora."""
+    try:
+        company_id = request.user.get('company_id')
+
+        rows = query_db(hours.SQL_ROWS, (str(company_id),)) or []
+        company = query_db(hours.SQL_PAUSED, (str(company_id),), one=True) or {}
+
+        return jsonify(hours.admin_view(rows, bool(company.get('orders_paused')))), 200
+
+    except Exception as e:
+        return error_response(
+            "Erro ao buscar o horario",
+            e
+        )
+
+
+@app.route('/api/admin/hours', methods=['PUT'])
+@require_roles('OWNER', 'MANAGER')
+def admin_save_hours():
+    """Troca a semana inteira pelo que o painel mandou (7 dias, ate 2 turnos cada)."""
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+
+        try:
+            week = hours.normalize_week(request.get_json(silent=True))
+        except hours.HoursError as hours_error:
+            return jsonify({"error": hours_error.message}), hours_error.status
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Trava a linha do restaurante: dois toques ao mesmo tempo no painel nao misturam os dias.
+        cur.execute(
+            """
+            SELECT id
+            FROM companies
+            WHERE id = %s
+            FOR UPDATE;
+            """,
+            (str(company_id),)
+        )
+
+        if not cur.fetchone():
+            conn.rollback()
+            cur.close()
+            conn.close()
+
+            return jsonify({
+                "error": "Estabelecimento nao encontrado"
+            }), 404
+
+        hours.save_week(cur, company_id, week)
+
+        saved = hours.admin_view(
+            hours.fetch_rows(cur, company_id),
+            hours.fetch_paused(cur, company_id)
+        )
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "message": "Horario salvo",
+            **saved
+        }), 200
+
+    except Exception as e:
+        _close_quietly(conn, cur)
+
+        return error_response(
+            "Erro ao salvar o horario",
+            e
+        )
+
+
+@app.route('/api/admin/hours', methods=['DELETE'])
+@require_roles('OWNER', 'MANAGER')
+def admin_clear_hours():
+    """Tira o horario: sem horario cadastrado o restaurante recebe pedido a qualquer hora."""
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(hours.SQL_DELETE, (str(company_id),))
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "message": "Horario removido"
+        }), 200
+
+    except Exception as e:
+        _close_quietly(conn, cur)
+
+        return error_response(
+            "Erro ao remover o horario",
+            e
+        )
+
+
+@app.route('/api/admin/orders-pause', methods=['PUT'])
+@require_roles('OWNER', 'MANAGER', 'KITCHEN')
+def admin_pause_orders():
+    """Pausa (ou volta) o recebimento de pedidos: vale para todos os tipos, mesa inclusive."""
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+        data = request.get_json(silent=True) or {}
+        paused = data.get('paused')
+
+        if not isinstance(paused, bool):
+            return jsonify({
+                "error": "Diga se e para pausar ou voltar."
+            }), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(hours.SQL_SET_PAUSED, (paused, str(company_id)))
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "orders_paused": paused
+        }), 200
+
+    except Exception as e:
+        _close_quietly(conn, cur)
+
+        return error_response(
+            "Erro ao pausar os pedidos",
+            e
+        )
 
 
 # ------------------------------------------------------------------------------------------------------------

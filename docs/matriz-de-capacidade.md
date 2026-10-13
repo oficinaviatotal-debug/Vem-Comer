@@ -31,8 +31,8 @@ Situações: **Pronto**, **Em PR** (feito, esperando o GD juntar), **Em parte**,
 | Opções por item: tamanho, adicionais, sabor, "sem cebola", meio a meio | Em parte | Servidor pronto (08/10): grupos de escolha por prato, preço recalculado, cópia no pedido e observação de até 140 letras (`opcoes-por-item.md`). Faltam as telas (cliente e painel) e a voz, previstas para 09/10. Meio a meio não entrou. |
 | Venda por peso e por montagem (açaí, sorvete, marmita) | Falta | A quantidade é inteira. O custo conhece "quilo"; o pedido não. |
 | Entrega: endereço, taxa por região, retirada, motoqueiro | Falta | `orders` sem endereço, tipo e taxa. Detalha os itens 42, 56 e 62. |
-| Horário de funcionamento e "loja fechada" no cardápio | Falta | A tabela `business_hours` existe, mas nada a usa. |
-| Esgotado com um toque | Falta | O produto tem `active`, mas o painel só mostra o estado dos usuários, não há botão para o prato. |
+| Horário de funcionamento e "loja fechada" no cardápio | Em PR | Dois turnos por dia, dia fechado, passa da meia-noite, aviso "Abre hoje às 18h", pausa de pedidos e falar o horário. Mesa não é barrada pelo horário (`horario-e-esgotado.md`). |
+| Esgotado com um toque | Em PR | "Esgotou/Voltou" em cada prato (a cozinha também), "Voltou tudo", selo no cardápio e o prato sai do pedido (`horario-e-esgotado.md`). |
 | Cupom, fidelidade e campanha | Falta | Itens 51 e 54. |
 
 ## Gerir

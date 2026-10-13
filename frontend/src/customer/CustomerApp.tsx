@@ -2,7 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "../ui.css";
 import "./customer.css";
 import "../logo/logo.css";
-import { createOrder, fetchMenus, fetchPaymentOptions, fetchProducts, fetchTable, mediaUrl } from "../service/api";
+import {
+  createOrder,
+  fetchCompanyBySlug,
+  fetchMenus,
+  fetchPaymentOptions,
+  fetchProducts,
+  fetchTable,
+  mediaUrl,
+} from "../service/api";
 import { formatMoney, shortOrderCode } from "../service/format";
 import { fetchDeliveryInfo } from "./deliveryApi";
 import {
@@ -39,15 +47,14 @@ import {
 } from "./cart";
 import { customerTour, CUSTOMER_TOUR_ID, CUSTOMER_TOUR_USER, PIX_TOUR_ID, pixTour } from "./customerTour";
 import {
-  CLOSED_NOTICE,
   cleanCustomerName,
   customerStatus,
-  isClosed,
   orderCustomerName,
   orderErrorMessage,
   searchTextFromVoice,
 } from "./labels";
 import { groupProducts } from "./menuGroups";
+import { closedState, dropSoldOut, soldOutNotice } from "./openness";
 import { groupsOf, isUnavailable, selectionFromChosen, type Selection } from "./options";
 import { orderMemory, type RememberedOrder } from "./orderMemory";
 import { effectiveMethod, orderPaymentView } from "./payment";
@@ -80,10 +87,22 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   const [menus, setMenus] = useState<Menu[]>([]);
   const [tableNumber, setTableNumber] = useState<number | null>(null);
   const [tableLost, setTableLost] = useState(false);
-  // The restaurant cannot take orders now (the server says so, never why): the menu stays to be seen, nothing is sold.
-  const closed = isClosed(company.accepting_orders);
+  // What the server says about the restaurant right now (paused, outside its hours, plan): it is asked again every
+  // minute and when the customer comes back to the page, so a menu left open on the phone does not go stale.
+  const [live, setLive] = useState<Company>(company);
+  useEffect(() => {
+    setLive(company);
+  }, [company]);
+  // The restaurant cannot take orders now (the server says so): the menu stays to be seen, nothing is sold.
+  const closedNow = closedState(live, Boolean(tableId));
+  const closed = closedNow !== null;
+  const closedMessage = closedNow?.message ?? "";
+  // Dishes that ran out while the customer was choosing, taken out of the order (said once)
+  const [soldOutNote, setSoldOutNote] = useState("");
 
   const [cart, setCart] = useState<CartLine[]>([]);
+  const cartRef = useRef(cart);
+  cartRef.current = cart;
   // The dish whose choices (size, extras...) are open, and the cart line being changed when there is one.
   const [picking, setPicking] = useState<{
     product: Product;
@@ -140,6 +159,48 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   useEffect(() => {
     void loadMenu();
   }, [loadMenu]);
+
+  // The same menu again, quietly: no "loading" screen, and a failure keeps what is on the screen
+  const refreshMenu = useCallback(async () => {
+    try {
+      const productList = await fetchProducts(company.id);
+      if (!Array.isArray(productList)) return;
+      setProducts(productList);
+      const { cart: kept, removed } = dropSoldOut(cartRef.current, productList);
+      if (removed.length > 0) {
+        setCart(kept);
+        setSoldOutNote(soldOutNotice(removed));
+      }
+    } catch {
+      /* keep the menu that is on the screen */
+    }
+  }, [company.id]);
+
+  useEffect(() => {
+    let stopped = false;
+    const refreshCompany = async () => {
+      try {
+        const fresh = await fetchCompanyBySlug(company.slug);
+        if (!stopped && fresh && fresh.id === company.id) setLive(fresh);
+      } catch {
+        /* keep what is on the screen */
+      }
+    };
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      void refreshCompany();
+      void refreshMenu();
+    };
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refreshCompany();
+    }, 60_000);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [company.slug, company.id, refreshMenu]);
 
   useEffect(() => {
     if (!tableId) return;
@@ -290,7 +351,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
     if (sending || cart.length === 0) return;
 
     if (closed) {
-      setSendError(CLOSED_NOTICE);
+      setSendError(closedMessage);
       return;
     }
 
@@ -525,7 +586,16 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
 
             {closed && (
               <p className="cust-note" role="status">
-                {CLOSED_NOTICE}
+                {closedMessage}
+              </p>
+            )}
+
+            {soldOutNote && (
+              <p className="cust-note" role="status">
+                {soldOutNote}{" "}
+                <button type="button" className="btn btn-quiet btn-sm" onClick={() => setSoldOutNote("")}>
+                  Ok
+                </button>
               </p>
             )}
 
