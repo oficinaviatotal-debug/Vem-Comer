@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { formatMoney } from "../service/format";
 import { cartTotalCents, lineKey, lineTotalCents, type CartLine } from "./cart";
+import { DeliveryChoice, DeliveryForm, type DeliveryView } from "./DeliveryForm";
+import { feeCents, whereLabel } from "./delivery";
 import ItemDetails from "./ItemDetails";
 import { NOTE_MAX, cleanNote, noteProblem } from "./options";
 import type { PaymentMethod } from "./types";
@@ -16,6 +18,8 @@ type Props = {
   payment: PaymentMethod;
   /** The restaurant set a Pix key, so Pix is offered. */
   pixOn: boolean;
+  /** Pickup / delivery: what is offered, the CEP, the address and the phone. */
+  delivery: DeliveryView;
   onPayment: (value: PaymentMethod) => void;
   paid: string;
   onPaid: (value: string) => void;
@@ -88,8 +92,13 @@ function NoteEditor({
 
 /** Bottom sheet with the order slip (comanda), the customer's name and payment. */
 export default function CartSheet(props: Props) {
-  const { cart, payment, sending, error } = props;
-  const total = cartTotalCents(cart);
+  const { cart, payment, sending, error, delivery } = props;
+  const subtotal = cartTotalCents(cart);
+  // The fee is the one the server announced for this CEP (it charges its own again when the order arrives)
+  const delivering = delivery.mode === "entrega" && !props.tableNumber;
+  const fee = delivering ? feeCents(delivery.quote) : 0;
+  const showFee = delivering && delivery.quote?.available === true;
+  const total = subtotal + fee;
   const titleRef = useRef<HTMLHeadingElement>(null);
   const closeRef = useRef(props.onClose);
   // Key of the line whose note is being written.
@@ -142,9 +151,7 @@ export default function CartSheet(props: Props) {
               <div className="comanda">
                 <div className="comanda-head">
                   <div>
-                    <p className="comanda-where">
-                      {props.tableNumber ? `Mesa ${props.tableNumber}` : "Pedido"}
-                    </p>
+                    <p className="comanda-where">{whereLabel(delivery.mode, props.tableNumber)}</p>
                     <p className="comanda-meta">Confira antes de enviar</p>
                   </div>
                 </div>
@@ -198,6 +205,21 @@ export default function CartSheet(props: Props) {
                   })}
                 </ul>
 
+                {showFee && (
+                  <>
+                    <div className="leader-row cust-subtotal">
+                      <span>Pratos</span>
+                      <span className="leader" aria-hidden="true" />
+                      <span className="money">{formatMoney(subtotal / 100)}</span>
+                    </div>
+                    <div className="leader-row cust-subtotal">
+                      <span>Taxa de entrega</span>
+                      <span className="leader" aria-hidden="true" />
+                      <span className="money">{fee === 0 ? "Grátis" : formatMoney(fee / 100)}</span>
+                    </div>
+                  </>
+                )}
+
                 <div className="leader-row comanda-total">
                   <span>Total</span>
                   <span className="leader" aria-hidden="true" />
@@ -212,8 +234,10 @@ export default function CartSheet(props: Props) {
               </p>
             )}
 
+            <DeliveryChoice view={delivery} />
+
             <label className="field" id="cust-name">
-              <span>Seu nome (opcional)</span>
+              <span>{delivering ? "Seu nome" : "Seu nome (opcional)"}</span>
               <input
                 value={props.name}
                 onChange={(event) => props.onName(event.target.value)}
@@ -222,6 +246,8 @@ export default function CartSheet(props: Props) {
                 placeholder="Como podemos te chamar?"
               />
             </label>
+
+            <DeliveryForm view={delivery} />
 
             <fieldset className={props.pixOn ? "cust-choice" : "cust-choice cust-choice-2"} id="cust-payment">
               <legend>Como você vai pagar?</legend>
