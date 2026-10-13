@@ -23,7 +23,7 @@ Ele **não troca o código do site** e não reinicia nada. Só instala o conferi
    segurança/fluxo crítico e gitleaks). Vermelho, ainda rodando, poucos ou GitHub fora do ar = não instala,
    tenta de novo no ciclo seguinte.
 3. Se a versão nova só muda documentação, testes ou arquivos do GitHub (`docs/`, `tests/`, `.github/`,
-   `*.md`), anota como feita e **não reinicia nada**.
+   `deploy/notebook/`, `*.md`), anota como feita e **não reinicia nada**.
 4. Confere que o site está respondendo de fora (HTTPS). Se não responde de fora mas o servidor está bem por
    dentro, não atualiza (o problema é de endereço/DNS e a versão nova não poderia ser conferida).
 5. **Faz backup** do banco e das fotos (`backup.sh`). Se o backup falhar, **não atualiza**.

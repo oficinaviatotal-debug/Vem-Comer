@@ -241,6 +241,14 @@ import {
   PHOTO_FIRST_QUESTION,
   PHOTO_QUESTION,
   BUSINESS_QUESTION,
+  PHOTO_OR_FILE_FIRST_QUESTION,
+  PHOTO_OR_FILE_QUESTION,
+  FILE_FIRST_QUESTION,
+  FILE_QUESTION,
+  photoStepHint,
+  PHOTO_STEP_HINT,
+  PHOTO_OR_FILE_STEP_HINT,
+  FILE_STEP_HINT,
 } from "../../frontend/src/assistant/assistantPrompts.ts";
 
 const PARSED = {
@@ -427,6 +435,20 @@ test("prompts and progress for the photo road", () => {
   assert.match(PHOTO_FIRST_QUESTION, /cardápio pronto/);
   assert.equal(promptFor(startPhoto()), PHOTO_QUESTION);
   assert.equal(progressText(startPhoto()), "Passo 1 de 3 · Foto do cardápio");
+
+  // the same two screens when a spreadsheet or PDF can be sent too, or only a spreadsheet
+  assert.equal(promptFor(initialFlow(), false, "photo"), PHOTO_FIRST_QUESTION);
+  assert.equal(promptFor(initialFlow(), false, "both"), PHOTO_OR_FILE_FIRST_QUESTION);
+  assert.equal(promptFor(initialFlow(), false, "file"), FILE_FIRST_QUESTION);
+  assert.equal(promptFor(startPhoto(), false, "both"), PHOTO_OR_FILE_QUESTION);
+  assert.equal(promptFor(startPhoto(), false, "file"), FILE_QUESTION);
+  assert.match(PHOTO_OR_FILE_FIRST_QUESTION, /planilha/);
+  assert.doesNotMatch(PHOTO_FIRST_QUESTION, /planilha/);
+  assert.doesNotMatch(FILE_FIRST_QUESTION, /foto/);
+  assert.doesNotMatch(FILE_QUESTION, /foto/);
+  assert.equal(photoStepHint("photo"), PHOTO_STEP_HINT);
+  assert.equal(photoStepHint("both"), PHOTO_OR_FILE_STEP_HINT);
+  assert.equal(photoStepHint("file"), FILE_STEP_HINT);
 
   const state = parsedFlow();
   assert.equal(promptFor(state, true), "Faltam alguns preços que não consegui ler. Mussarela. Quanto custa?");

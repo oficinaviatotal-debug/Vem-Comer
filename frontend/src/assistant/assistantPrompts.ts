@@ -21,6 +21,14 @@ export const BUSINESS_QUESTION =
 export const PHOTO_FIRST_QUESTION =
   "Vamos montar o seu cardápio. Fale os pratos com o preço, por exemplo: X-tudo, 25 reais. Se já tem um cardápio pronto, tire uma foto. Ou escolha o tipo do seu negócio.";
 
+/** The first question when this server can read a photo and also a spreadsheet or PDF. */
+export const PHOTO_OR_FILE_FIRST_QUESTION =
+  "Vamos montar o seu cardápio. Fale os pratos com o preço, por exemplo: X-tudo, 25 reais. Se já tem um cardápio pronto, tire uma foto ou mande a planilha. Ou escolha o tipo do seu negócio.";
+
+/** The first question when this server can read a spreadsheet but not a photo (no AI key). */
+export const FILE_FIRST_QUESTION =
+  "Vamos montar o seu cardápio. Fale os pratos com o preço, por exemplo: X-tudo, 25 reais. Se já tem o cardápio numa planilha, mande o arquivo. Ou escolha o tipo do seu negócio.";
+
 /** The speaking screen, before anything was said. */
 export const SPEAK_QUESTION =
   "Pode falar. Diga cada prato com o preço, por exemplo: X-tudo, 25 reais. Coca lata, 6. Quando acabar, diga pronto.";
@@ -63,6 +71,14 @@ export function spokenFeedback(result: Pick<SpokenResult, "added" | "priced">): 
 export const PHOTO_QUESTION =
   "Tire uma foto do seu cardápio, de frente e com boa luz. Se ele tiver mais de uma página, tire uma foto de cada.";
 
+/** The ready-menu screen when a photo or a file can be sent. */
+export const PHOTO_OR_FILE_QUESTION =
+  "Tire uma foto do seu cardápio, de frente e com boa luz. Se ele tiver mais de uma página, tire uma foto de cada. Se ele está numa planilha ou PDF, escolha o arquivo.";
+
+/** The ready-menu screen when only a spreadsheet can be read. */
+export const FILE_QUESTION =
+  "Escolha a planilha do seu cardápio. Pode ser Excel ou CSV, com o nome do prato e o preço em cada linha.";
+
 /** After the owner gives up on the photo and goes back to the list of business types. */
 export const CHOOSE_TYPE_QUESTION =
   "Tudo bem. Qual é o tipo do seu negócio? Lanchonete, pizzaria, restaurante, bar, açaí, padaria, churrasco ou japonês?";
@@ -73,18 +89,33 @@ export const PHOTO_NOT_AVAILABLE =
 export const PHOTO_STEP_HINT =
   "Toque em Tirar foto do cardápio. Se preferir, diga o tipo do seu negócio.";
 
+export const PHOTO_OR_FILE_STEP_HINT =
+  "Toque em Tirar foto do cardápio, ou em Planilha ou PDF. Se preferir, diga o tipo do seu negócio.";
+
+export const FILE_STEP_HINT =
+  "Toque em Escolher a planilha. Se preferir, diga o tipo do seu negócio.";
+
+/** What to say on the ready-menu screen when the owner says something that is not a type of business. */
+export function photoStepHint(mode: false | "photo" | "file" | "both"): string {
+  if (mode === "file") return FILE_STEP_HINT;
+  return mode === "both" ? PHOTO_OR_FILE_STEP_HINT : PHOTO_STEP_HINT;
+}
+
 export const READING_NOTICE = "Estou lendo o seu cardápio. Pode levar até um minuto.";
 
 export const MORE_OR_DONE = "Mais algum? Ou diga pronto.";
 
 /** The question for the current step. `intro` adds the first-time explanation of a step. */
-export function promptFor(state: FlowState, intro = false, photoMenu = false): string {
+export function promptFor(state: FlowState, intro = false, photoMenu: boolean | "photo" | "file" | "both" = false): string {
   switch (state.step) {
     case "type":
+      if (photoMenu === "file") return FILE_FIRST_QUESTION;
+      if (photoMenu === "both") return PHOTO_OR_FILE_FIRST_QUESTION;
       return photoMenu ? PHOTO_FIRST_QUESTION : BUSINESS_QUESTION;
 
     case "photo":
-      return PHOTO_QUESTION;
+      if (photoMenu === "file") return FILE_QUESTION;
+      return photoMenu === "both" ? PHOTO_OR_FILE_QUESTION : PHOTO_QUESTION;
 
     case "speak":
       return selectedItems(state).length === 0 ? SPEAK_QUESTION : SPEAK_MORE;

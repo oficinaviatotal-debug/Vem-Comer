@@ -161,6 +161,12 @@ Vem Trabalhar (`docs/referencias-visuais/`, PR #4); o texto do benchmark está e
 - Banco do Vem Trabalhar: aprovado pelo GD, mas o Supabase recusou reativar o projeto (2,0 GB, plano gratuito). Nada foi alterado; correção 001 segue pronta
   (`docs/propostas/001`). Decisão do GD: plano pago, ou projeto novo só com o que usamos.
 
+## Cadastro em 3 dias: arquivo (13/10, noite)
+
+- Cardápio por arquivo (`docs/cardapio-por-arquivo.md`): planilha Excel/CSV sem IA e PDF com a IA da foto, mesma conferência e mesmo cadastro.
+  Testes: 744 no servidor (4 falhas antigas de biblioteca de QR/Pix, que não existe aqui) e 548 na tela, todos os novos verdes.
+- Falta para fechar "cadastrar tudo em até 3 dias": pergunta "ficou bom?" da logomarca, botão "Preciso de ajuda" e um teste cronometrado com dono de verdade.
+
 ## Pauta do 6º dia (13/10)
 
 1. Passar o checklist item por item, com a foto da tela quando for tela.

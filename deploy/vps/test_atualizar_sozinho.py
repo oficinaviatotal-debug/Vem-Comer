@@ -291,6 +291,14 @@ class AtualizadorTests(unittest.TestCase):
         self.assertNotIn("backup", self.chamadas())
         self.assertEqual(self.versao_no_ar(), self.c1[:12])
 
+    def test_script_do_notebook_nao_reinicia_o_servidor(self):
+        # deploy/notebook roda no Windows do GD, nunca no servidor
+        c2 = self.commit({"deploy/notebook/energia.ps1": "x\n", "docs/notebook.md": "n\n"}, "notebook")
+        rc, saida = self.rodar()
+        self.assertEqual(rc, 0, saida)
+        self.assertEqual(self.ultimo_ok(), c2)
+        self.assertNotIn("instalar", self.chamadas())
+
     def test_codigo_junto_com_documentacao_instala(self):
         c2 = self.commit({"docs/a.md": "novo\n", "frontend/src/x.ts": "x\n"}, "misto")
         rc, saida = self.rodar()

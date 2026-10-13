@@ -61,7 +61,7 @@ sozinhas.
 |---|---|---|
 | Falar o cardápio | Pronto | `assistente-cardapio-voz.md` (PRs #25 a #31). Falta o GD testar no celular. |
 | Foto do cardápio que o dono já tem | Pronto | Até 4 páginas, lê categorias, pratos e preços, e o dono confere (`cardapio-por-foto.md`). |
-| Arquivo (planilha ou PDF) | Falta | PDF entra só como foto. A importação por rota aceita apenas o formato interno do sistema. |
+| Arquivo (planilha ou PDF) | Pronto no código | Excel (.xlsx) e CSV sem IA; PDF com a mesma IA da foto. O dono confere e cadastra (`cardapio-por-arquivo.md`). Falta testar com planilhas reais. |
 | Foto de cada prato melhorada sozinha | Pronto | `fotos-dos-pratos.md`: mostra a original e a melhorada, e dá dica de luz. |
 | Logomarca para quem não tem | Pronto | Criar em 3 toques, 13 desenhos e 9 cores (`logomarca.md`). |
 | Logomarca que o dono já tem, refinada, com "ficou bom?" | Em parte | O envio existe e ajusta a imagem. Não achei no código nem nos documentos a pergunta com o antes e o depois. |
