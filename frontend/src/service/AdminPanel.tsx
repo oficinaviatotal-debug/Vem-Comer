@@ -35,6 +35,10 @@ import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
 import ConfirmButton from "./ConfirmButton";
 import PixSettingsPanel from "./PixSettingsPanel";
 import DeliveryPanel from "./DeliveryPanel";
+import SubscriptionPanel from "./SubscriptionPanel";
+import PlatformPanel from "./PlatformPanel";
+import { useOwnerPlan } from "./useOwnerPlan";
+import { bannerOf, hasPlanTab, viewAllowed } from "./subscriptionView";
 import LogoPanel from "../logo/LogoPanel";
 import { adminPaymentChip, canConfirmPayment } from "../customer/payment";
 import ItemDetails from "../customer/ItemDetails";
@@ -136,7 +140,9 @@ type AdminView =
   | "mesas"
   | "pagamento"
   | "marca"
-  | "entrega";
+  | "entrega"
+  | "plano"
+  | "assinaturas";
 
 const ADMIN_VIEWS: string[] = [
   "pedidos",
@@ -150,6 +156,8 @@ const ADMIN_VIEWS: string[] = [
   "pagamento",
   "marca",
   "entrega",
+  "plano",
+  "assinaturas",
 ];
 
 function isAdminView(value: string): value is AdminView {
@@ -159,12 +167,15 @@ function isAdminView(value: string): value is AdminView {
 type AdminPanelProps = {
   companyId: string;
   companySlug: string;
+  /** For the messages the owner sends about his plan ("Quero pagar o plano do restaurante ..."). */
+  companyName?: string;
   onBack: () => void;
 };
 
 export default function AdminPanel({
   companyId,
   companySlug,
+  companyName,
   onBack,
 }: AdminPanelProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(!!getToken());
@@ -219,6 +230,20 @@ export default function AdminPanel({
   const [guideOpen, setGuideOpen] = useState(false);
   const canUseGuide =
     currentUser?.role === "OWNER" || currentUser?.role === "MANAGER";
+
+  // The plan (R$ 190 per month): the warning strip, the Plano tab and, when it is blocked, the only screens that
+  // work (Pedidos, to finish what is in progress, and Plano). Failing to read it never breaks the panel.
+  const { plan } = useOwnerPlan(isAuthenticated && canUseGuide);
+  const planBlocked = plan?.blocked === true;
+
+  useEffect(() => {
+    if (!viewAllowed(view, planBlocked)) setView("plano");
+  }, [planBlocked, view]);
+
+  // The moment it turns blocked, the owner lands on how to pay; Pedidos stays one tap away.
+  useEffect(() => {
+    if (planBlocked) setView("plano");
+  }, [planBlocked]);
 
   useEffect(() => {
     // First time an owner opens the panel on this browser. With no menu yet the
@@ -617,6 +642,8 @@ export default function AdminPanel({
     isActiveStatus(order.status)
   ).length;
 
+  const planBanner = bannerOf(plan, view);
+
   function tabClass(name: AdminView) {
     return view === name ? "adm-tab is-active" : "adm-tab";
   }
@@ -818,7 +845,24 @@ export default function AdminPanel({
 
       <CallsBar companyId={companyId} />
 
-      <nav className="adm-tabs" aria-label="Seções do painel">
+      {planBanner && (
+        <div className={`adm-alert plan-banner plan-banner-${planBanner.kind}`} role="status">
+          <span>{planBanner.text}</span>
+
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            onClick={() => setView("plano")}
+          >
+            Ver plano
+          </button>
+        </div>
+      )}
+
+      <nav
+        className={planBlocked ? "adm-tabs is-locked" : "adm-tabs"}
+        aria-label="Seções do painel"
+      >
         <button
           id="admin-tab-pedidos"
           type="button"
@@ -953,6 +997,30 @@ export default function AdminPanel({
             Equipe
           </button>
         )}
+
+        {plan && hasPlanTab(plan) && (
+          <button
+            id="admin-tab-plano"
+            type="button"
+            className={tabClass("plano")}
+            aria-current={view === "plano" ? "page" : undefined}
+            onClick={() => setView("plano")}
+          >
+            Plano
+          </button>
+        )}
+
+        {plan?.platform_admin && (
+          <button
+            id="admin-tab-assinaturas"
+            type="button"
+            className={tabClass("assinaturas")}
+            aria-current={view === "assinaturas" ? "page" : undefined}
+            onClick={() => setView("assinaturas")}
+          >
+            Assinaturas
+          </button>
+        )}
       </nav>
 
       {view === "custos" &&
@@ -1018,6 +1086,13 @@ export default function AdminPanel({
         (currentUser?.role === "OWNER" ||
           currentUser?.role === "MANAGER") ? (
         <DeliveryPanel />
+      ) : view === "plano" && plan && hasPlanTab(plan) ? (
+        <SubscriptionPanel
+          plan={plan}
+          restaurantName={companyName ?? companySlug}
+        />
+      ) : view === "assinaturas" && plan?.platform_admin ? (
+        <PlatformPanel />
       ) : view === "usuarios" && currentUser?.role === "OWNER" ? (
         <section className="adm-stack" aria-label="Equipe">
           <form
