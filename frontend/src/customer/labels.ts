@@ -66,11 +66,20 @@ export function orderCustomerName(raw: string): string {
   return cleanCustomerName(raw) || "Cliente";
 }
 
+/** The menu of a restaurant that cannot take orders now. It never says why (the plan is the owner's business). */
+export const CLOSED_NOTICE = "Este restaurante não está recebendo pedidos agora. Você pode ver o cardápio; tente pedir mais tarde.";
+
+/** Only an explicit `false` from the server closes the menu. */
+export function isClosed(acceptingOrders: boolean | null | undefined): boolean {
+  return acceptingOrders === false;
+}
+
 /** Friendly text for the few errors the order endpoint can return. */
 export function orderErrorMessage(serverMessage: string | null | undefined, mode?: Mode | null): string {
   const said = deliveryErrorMessage(serverMessage, mode ?? null);
   if (said) return said;
   const text = String(serverMessage ?? "").toLowerCase();
+  if (text.includes("não está recebendo pedidos")) return CLOSED_NOTICE;
   if (text.includes("mesa")) {
     return "Não encontramos esta mesa. Chame o atendente para te ajudar.";
   }

@@ -9,6 +9,11 @@ export type Company = {
   /** Paths like "/media/<company>/<key>.webp"; null when the restaurant has no logo. Use mediaUrl() to show them. */
   logo_url?: string | null;
   logo_thumb_url?: string | null;
+  /**
+   * False when the restaurant cannot take new orders right now (its plan is blocked). The customer is never told
+   * why. An older server does not send it: only an explicit false closes the menu.
+   */
+  accepting_orders?: boolean;
 };
 
 export type Product = {

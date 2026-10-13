@@ -253,6 +253,8 @@ def happy_handler(taken_slugs=(), today=0, email_taken=False):
             return {"id": COMPANY_ID, "name": params[0], "slug": params[1]}
         if "INSERT INTO users" in sql:
             return {"id": USER_ID, "name": params[1], "email": params[2], "role": "OWNER"}
+        if "INSERT INTO subscriptions" in sql:
+            return None
         raise AssertionError("unexpected SQL: " + sql)
 
     return handler
@@ -320,6 +322,14 @@ class SignupRouteTests(unittest.TestCase):
         self.assertEqual(owner_args[2], "joao@gmail.com")
         self.assertNotEqual(owner_args[3], "minha-senha-forte")
         self.assertTrue(check_password_hash(owner_args[3], "minha-senha-forte"))
+
+    def test_the_new_restaurant_starts_waiting_for_the_first_payment(self):
+        """Migracao 012: a assinatura nasce junto, na mesma transacao; nada bloqueia sem BILLING_ENFORCED."""
+        response, connection = self.post()
+        self.assertEqual(response.status_code, 201)
+        (args,) = connection.ran("INSERT INTO subscriptions")
+        self.assertEqual(args, (COMPANY_ID, "vemcomer_mensal"))
+        self.assertEqual(connection.committed, 1)
 
     def test_the_password_never_comes_back(self):
         response, _ = self.post()
