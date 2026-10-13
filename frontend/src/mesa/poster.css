@@ -1,0 +1,70 @@
+/* Cartaz de QR da mesa: a janela de visualização e a impressão. Cores e espaços vêm dos tokens de styles.css. */
+
+.poster-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--s3);
+  background: rgba(27, 67, 50, .6);
+}
+
+.poster-sheet {
+  width: min(100%, 460px);
+  max-height: 94vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4);
+  border-radius: var(--r-md);
+  background: var(--comanda);
+  box-shadow: var(--sombra-folha);
+}
+
+.poster-title {
+  margin: 0;
+  color: var(--folha);
+  font: 700 var(--t-xl) / 1.15 var(--font-display);
+}
+
+.poster-img {
+  display: block;
+  width: 100%;
+  max-height: 56vh;
+  object-fit: contain;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--linha);
+  background: var(--papel-2);
+}
+
+.poster-note {
+  margin: 0;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+  line-height: 1.45;
+}
+
+.poster-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+@media (min-width: 600px) {
+  .poster-backdrop { align-items: center; }
+}
+
+/* impressão: só o cartaz, na folha inteira */
+.poster-print { display: none; }
+
+@media print {
+  @page { size: A4 portrait; margin: 0; }
+  html, body { margin: 0; padding: 0; }
+  body > *:not(.poster-print) { display: none !important; }
+  /* a folha A4 inteira, sem uma segunda página em branco por diferença de arredondamento */
+  .poster-print { display: block; width: 210mm; height: 297mm; overflow: hidden; }
+  .poster-print img { display: block; width: 210mm; height: 297mm; }
+}

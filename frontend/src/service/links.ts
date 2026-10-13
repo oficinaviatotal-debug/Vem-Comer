@@ -31,7 +31,7 @@ export function wantsPanel(search: string): boolean {
 }
 
 /** The first screens an owner can ask for from the bare address (no restaurant chosen yet). */
-export type EntryScreen = "signup" | "login" | "terms";
+export type EntryScreen = "signup" | "login" | "terms" | "sales";
 
 function entryUrl(origin: string, pathname: string, name: string): string {
   const url = new URL(pathname || "/", origin);
@@ -54,11 +54,17 @@ export function termsUrl(origin: string, pathname: string): string {
   return entryUrl(origin, pathname, "termos");
 }
 
+/** Sales page for restaurant owners ("Seu restaurante no próximo nível!"): where the "buy the system" QR code leads. */
+export function salesUrl(origin: string, pathname: string): string {
+  return entryUrl(origin, pathname, "sistema");
+}
+
 /** Which entry screen the address asks for, if any. Terms win, so a sign-up page can link to them. */
 export function entryScreen(search: string): EntryScreen | null {
   const params = new URLSearchParams(search);
   if (params.get("termos") === "1") return "terms";
   if (params.get("cadastro") === "1") return "signup";
   if (params.get("entrar") === "1") return "login";
+  if (params.get("sistema") === "1") return "sales";
   return null;
 }
