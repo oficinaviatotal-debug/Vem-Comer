@@ -83,12 +83,38 @@ código de acompanhamento, que vale 7 dias). A lista pública de regiões não t
 Prazo para apagar endereço e telefone de pedido antigo: **a decidir** (conferir com o advogado; o prazo das fotos de
 prova do item 56 também).
 
+## Andamento do pedido de entrega (13/10/2026)
+
+Mesa, balcão e retirada seguem como sempre: **aguardando → em preparo → pronto (concluído)**. Entrega ganha dois passos no
+meio:
+
+| Quem toca | Botão no painel | Vira | O cliente vê |
+|---|---|---|---|
+| Cozinha | Aceitar pedido | em preparo | "Em preparo" |
+| Cozinha | **Pronto para entrega** | `pronto` (chip "Pode sair") | "Pronto! Seu pedido está pronto e já vai sair para o seu endereço." |
+| Quem despacha | **Saiu para entrega** | `saiu para entrega` (chip "A caminho") | "Saiu para entrega. O entregador está a caminho do seu endereço." |
+| Quem despacha | **Entregue** | `concluido` (chip "Entregue") | "Entregue! Bom proveito!" |
+
+- Para quem cozinha e entrega sozinho, a cozinha em preparo tem um botão pequeno **"Já saiu para entrega"** que pula o
+  "pronto".
+- A barra de andamento do cliente tem 4 passos na entrega (Enviado, Preparo, Na rua, Entregue) e 3 nos outros tipos.
+- O servidor só aceita `pronto` e `saiu para entrega` em pedido de **entrega** (outro tipo: erro 400 "Esse andamento só
+  existe para pedidos de entrega."); pedido de outra empresa dá 404. Regras em `backend/order_status.py`.
+- **Custo, estoque e relatórios** contam a venda em `em preparo`, `pronto`, `saiu para entrega` e `concluido` (só o
+  "aguardando" fica de fora). A lista fica num lugar só (`SOLD_STATUSES`), e um teste confere que o servidor usa essa lista.
+- Não há trava de ordem: o painel mostra o próximo passo, mas o servidor aceita qualquer estado válido para o tipo (quem
+  errou um toque consegue corrigir).
+- Testes: `test_order_status.py` (14), `tests/ui/orderStatus.test.mjs` e `tests/customer/labels.test.mjs`; o caminho inteiro
+  foi rodado contra um PostgreSQL 16 de verdade (entrega passando pelos 4 estados, os outros tipos recusados, pedido de
+  outra empresa, custos contando as vendas).
+
 ## O que ainda não faz
 
 - **Telas**: cliente escolhe mesa, retirada ou entrega, digita o CEP, vê a taxa e o endereço; dono cadastra as
   regiões (por voz, "centro, taxa 5, CEPs 30110 e 30120") e pausa a entrega; cozinha vê o endereço no pedido.
-- **Estados "pronto" e "saiu para entrega"** e o motoqueiro (código de entrega, acerto do dinheiro, fotos de prova,
-  pagamento por faixa de distância: itens 42, 56 e 62): planejado para 11/10 em diante.
+- **O motoqueiro** (código de entrega, acerto do dinheiro, fotos de prova, pagamento por faixa de distância: itens 42,
+  56 e 62): planejado para depois. Hoje quem leva o pedido avisa o painel pelos botões de cima, e o restaurante acerta
+  com o motoqueiro por fora.
 - **Preencher a rua pelo CEP** (ViaCEP): hoje o cliente digita o endereço. Fica para depois, porque depende de o
   celular do cliente alcançar um serviço de fora.
 - **Horário de funcionamento** (entrega fora do horário): pronto em 13/10, veja `horario-e-esgotado.md`.

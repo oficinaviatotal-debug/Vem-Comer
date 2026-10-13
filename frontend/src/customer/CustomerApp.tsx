@@ -134,6 +134,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   // Mesa que não existe: sem tela da mesa, vai direto ao cardápio (o aviso de "mesa não encontrada" já aparece lá).
   const screen: Screen = screenState === "table" && (!tableId || tableLost) ? "menu" : screenState;
   const [statusById, setStatusById] = useState<Record<string, string>>({});
+  const [typeById, setTypeById] = useState<Record<string, string>>({});
   const [payById, setPayById] = useState<Record<string, string>>({});
   const [, setRated] = useState(0);
 
@@ -434,6 +435,9 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
     setStatusById((current) =>
       current[order.id] === order.status ? current : { ...current, [order.id]: order.status }
     );
+    setTypeById((current) =>
+      current[order.id] === (order.order_type ?? "") ? current : { ...current, [order.id]: order.order_type ?? "" }
+    );
     const payKind = orderPaymentView(order.payment_method, order.payment_status).kind;
     setPayById((current) => (current[order.id] === payKind ? current : { ...current, [order.id]: payKind }));
   }, []);
@@ -490,7 +494,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
 
   const latest = orders[0];
   const latestStatus = latest ? statusById[latest.orderId] : undefined;
-  const banner = latest && latestStatus ? customerStatus(latestStatus, tableNumber) : null;
+  const banner = latest && latestStatus ? customerStatus(latestStatus, tableNumber, typeById[latest.orderId]) : null;
 
   const tableChip = tableId ? (
     tableLost ? (

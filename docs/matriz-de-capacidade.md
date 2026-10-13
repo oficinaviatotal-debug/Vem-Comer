@@ -26,7 +26,7 @@ Situações: **Pronto**, **Em PR** (feito, esperando o GD juntar), **Em parte**,
 | Cardápio digital com categorias, foto e QR da mesa | Pronto | `menus`, `products`, fotos, QR por mesa. |
 | Pedido do cliente (nome, Pix, cartão ou dinheiro com troco) | Pronto | `orders`, `payment-options`. |
 | Pix que cai direto na conta do restaurante | Pronto | Só com a chave do próprio restaurante (`pix-restaurante.md`). |
-| Acompanhar o pedido (cliente) e o painel de pedidos (dono) | Em parte | Os estados são só "em preparo" e "concluído". Faltam "pronto" e "saiu para entrega". |
+| Acompanhar o pedido (cliente) e o painel de pedidos (dono) | Em parte | Entrega passa por "pronto" e "saiu para entrega" (painel e acompanhamento do cliente, PR de 13/10); mesa, balcão e retirada seguem em "em preparo" e "pronto". Falta o motoqueiro (código de entrega, acerto, fotos). |
 | Chamar garçom, pedir a conta, água, limpeza | Em PR | PR #33 (Mesa viva). |
 | Opções por item: tamanho, adicionais, sabor, "sem cebola", meio a meio | Em parte | Servidor pronto (08/10): grupos de escolha por prato, preço recalculado, cópia no pedido e observação de até 140 letras (`opcoes-por-item.md`). Faltam as telas (cliente e painel) e a voz, previstas para 09/10. Meio a meio não entrou. |
 | Venda por peso e por montagem (açaí, sorvete, marmita) | Falta | A quantidade é inteira. O custo conhece "quilo"; o pedido não. |
