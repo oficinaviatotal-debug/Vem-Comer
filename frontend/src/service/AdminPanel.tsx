@@ -47,6 +47,9 @@ import { suggestedTopic } from "./helpLogic";
 import { useOwnerPlan } from "./useOwnerPlan";
 import { bannerOf, hasPlanTab, viewAllowed } from "./subscriptionView";
 import LogoPanel from "../logo/LogoPanel";
+import CourierHome from "../courier/CourierHome";
+import CourierPanel from "../courier/CourierPanel";
+import CashSettlement from "../courier/CashSettlement";
 import { adminPaymentChip, canConfirmPayment } from "../customer/payment";
 import ItemDetails from "../customer/ItemDetails";
 import { handlingView, itemsSubtotalCents } from "./orderHandling";
@@ -151,6 +154,8 @@ type AdminView =
   | "pagamento"
   | "marca"
   | "entrega"
+  | "entregas"
+  | "acerto"
   | "horario"
   | "plano"
   | "assinaturas"
@@ -168,6 +173,8 @@ const ADMIN_VIEWS: string[] = [
   "pagamento",
   "marca",
   "entrega",
+  "entregas",
+  "acerto",
   "horario",
   "plano",
   "assinaturas",
@@ -366,6 +373,12 @@ export default function AdminPanel({
   }, [isAuthenticated]);
 
   useEffect(() => {
+    // The courier has his own list of deliveries; the orders of the whole restaurant are not his.
+    if (currentUser?.role === "COURIER") {
+      setLoading(false);
+      return;
+    }
+
     async function pollOrders() {
       try {
         const data = await fetchAdminOrders(companyId);
@@ -393,7 +406,7 @@ export default function AdminPanel({
     const interval = setInterval(pollOrders, 5000);
 
     return () => clearInterval(interval);
-  }, [companyId]);
+  }, [companyId, currentUser?.role]);
 
   function handleLogout() {
     logout();
@@ -704,6 +717,20 @@ export default function AdminPanel({
 
   function tabClass(name: AdminView) {
     return view === name ? "adm-tab is-active" : "adm-tab";
+  }
+
+  const role = currentUser?.role;
+  const canSettleCash = role === "OWNER" || role === "MANAGER" || role === "CASHIER";
+
+  if (isAuthenticated && role === "COURIER") {
+    return (
+      <CourierHome
+        companyId={companyId}
+        name={currentUser?.name ?? ""}
+        onLogout={handleLogout}
+        onBack={onBack}
+      />
+    );
   }
 
   if (!isAuthenticated) {
@@ -1037,6 +1064,31 @@ export default function AdminPanel({
           </button>
         )}
 
+        {(currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") && (
+          <button
+            id="admin-tab-entregas"
+            type="button"
+            className={tabClass("entregas")}
+            aria-current={view === "entregas" ? "page" : undefined}
+            onClick={() => setView("entregas")}
+          >
+            Entregas
+          </button>
+        )}
+
+        {canSettleCash && (
+          <button
+            id="admin-tab-acerto"
+            type="button"
+            className={tabClass("acerto")}
+            aria-current={view === "acerto" ? "page" : undefined}
+            onClick={() => setView("acerto")}
+          >
+            Acerto
+          </button>
+        )}
+
         <button
           id="admin-tab-dashboard"
           type="button"
@@ -1190,6 +1242,12 @@ export default function AdminPanel({
         (currentUser?.role === "OWNER" ||
           currentUser?.role === "MANAGER") ? (
         <DeliveryPanel />
+      ) : view === "entregas" &&
+        (currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") ? (
+        <CourierPanel companyId={companyId} />
+      ) : view === "acerto" && canSettleCash ? (
+        <CashSettlement companyId={companyId} />
       ) : view === "horario" &&
         (currentUser?.role === "OWNER" ||
           currentUser?.role === "MANAGER") ? (

@@ -129,6 +129,22 @@ class OrderTests(Base):
         self.assertEqual(self.cur.sql("INSERT INTO order_items")[0][1][4], Decimal("40.00"))
         self.conn.commit.assert_called_once()
 
+    def test_a_delivery_is_born_with_a_four_digit_code_that_the_reply_does_not_carry(self):
+        reply = self.send(order_type="entrega", address=ADDRESS, phone="31999998888")
+        self.assertEqual(reply.status_code, 201)
+        self.assertNotIn("delivery_code", reply.get_json())
+        self.assertRegex(self.order_insert()[11], r"^\d{4}$")
+
+    def test_each_delivery_draws_its_own_code(self):
+        with patch.object(backend_app.courier, "new_delivery_code", return_value="0427") as draw:
+            self.send(order_type="entrega", address=ADDRESS, phone="31999998888")
+        draw.assert_called_once()
+        self.assertEqual(self.order_insert()[11], "0427")
+
+    def test_pickup_and_table_orders_have_no_code(self):
+        self.send(order_type="retirada", phone="31999998888")
+        self.assertIsNone(self.order_insert()[11])
+
     def test_the_fee_the_phone_sends_is_ignored(self):
         reply = self.send(order_type="entrega", address=ADDRESS, phone="31999998888", delivery_fee=0, fee=0, total=1)
         self.assertEqual(reply.status_code, 201)
@@ -381,6 +397,8 @@ class OrderReadersTests(unittest.TestCase):
         sql = " ".join(query_db.call_args.args[0].split())
         for column in ("o.order_type", "o.delivery_fee", "o.delivery_zone", "o.delivery_address", "o.customer_phone"):
             self.assertIn(column, sql)
+        # o painel da equipe nunca recebe o código de entrega: quem fecha a entrega é o motoqueiro, com o código do cliente
+        self.assertNotIn("delivery_code", sql)
 
     def test_the_customer_slip_carries_them_too(self):
         token = backend_app.serializer.dumps(
@@ -404,6 +422,40 @@ class OrderReadersTests(unittest.TestCase):
         order_sql = cur.executed[0][0]
         for column in ("order_type", "delivery_fee", "delivery_zone", "delivery_address", "customer_phone"):
             self.assertIn(column, order_sql)
+
+
+class DeliveryCodeOnTheSlipTests(unittest.TestCase):
+    def slip(self, **extra):
+        token = backend_app.serializer.dumps(
+            {"purpose": "order_tracking", "order_id": ORDER_ID, "company_id": COMPANY_ID}
+        )
+        conn = MagicMock()
+        conn.closed = False
+        cur = FakeCursor()
+        conn.cursor.return_value = cur
+        order = {"id": ORDER_ID, "company_id": COMPANY_ID, "customer_name": "Ana", "total_price": Decimal("48.00"),
+                 "status": "pronto", "payment_method": "pix", "payment_status": "PAID", "order_type": "entrega",
+                 "delivery_fee": Decimal("8.00"), "delivery_zone": "Norte", "delivery_address": {"cep": "30140071"},
+                 "customer_phone": "31999998888", "delivery_code": "0427"}
+        order.update(extra)
+        cur.fetchone = MagicMock(return_value=order)
+        cur.fetchall = MagicMock(return_value=[])
+        with patch.object(backend_app, "get_db_connection", return_value=conn):
+            reply = backend_app.app.test_client().get(f"/api/orders/{ORDER_ID}?tracking_token={token}")
+        self.assertEqual(reply.status_code, 200)
+        self.assertIn("delivery_code", cur.executed[0][0])
+        return reply.get_json()
+
+    def test_the_customer_sees_the_code_while_the_delivery_is_open(self):
+        for status in ("PENDING_PAYMENT", "em preparo", "pronto", "saiu para entrega"):
+            self.assertEqual(self.slip(status=status)["delivery_code"], "0427", status)
+
+    def test_the_code_goes_away_when_the_delivery_is_closed(self):
+        self.assertIsNone(self.slip(status="concluido")["delivery_code"])
+
+    def test_pickup_orders_have_no_code_to_show(self):
+        self.assertIsNone(self.slip(order_type="retirada", delivery_code=None)["delivery_code"])
+        self.assertIsNone(self.slip(order_type="mesa")["delivery_code"])
 
 
 if __name__ == "__main__":

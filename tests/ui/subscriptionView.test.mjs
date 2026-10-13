@@ -90,6 +90,9 @@ test("a restaurant with no plan has no Plano tab", () => {
 test("blocked: only the orders in progress and the way to pay work", () => {
   assert.equal(viewAllowed("pedidos", true), true);
   assert.equal(viewAllowed("plano", true), true);
+  // deliveries already on the road still close, and the cash they bring back is still settled
+  assert.equal(viewAllowed("entregas", true), true);
+  assert.equal(viewAllowed("acerto", true), true);
   for (const view of ["produtos", "custos", "entrega", "usuarios", "dashboard", "mesas", "assistente"]) {
     assert.equal(viewAllowed(view, true), false, view);
     assert.equal(viewAllowed(view, false), true, view);

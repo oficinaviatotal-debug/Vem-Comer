@@ -17,6 +17,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import query_db, get_db_connection
 import costing
+import courier
 import delivery
 from costs_view import (  # noqa: F401 (cost_since e build_cost_view tambem sao usados pelos testes)
     COST_PERIOD_DAYS,
@@ -165,6 +166,12 @@ def require_roles(*allowed_roles):
         return wrapper
 
     return decorator
+
+
+def courier_uses_own_screen():
+    return jsonify({
+        "error": "O motoqueiro usa a tela de entregas. Pegue o pedido lá e feche com o código do cliente."
+    }), 403
 
 
 def require_company_access(company_id):
@@ -1136,9 +1143,10 @@ def create_company_order(company_id):
                 delivery_fee,
                 delivery_zone,
                 delivery_address,
-                customer_phone
+                customer_phone,
+                delivery_code
             )
-            VALUES (%s, %s, %s, 'PENDING_PAYMENT', %s, %s, %s, %s, %s, %s, %s::jsonb, %s)
+            VALUES (%s, %s, %s, 'PENDING_PAYMENT', %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s)
             RETURNING id;
             """,
             (
@@ -1156,7 +1164,9 @@ def create_company_order(company_id):
                     if handling.address
                     else None
                 ),
-                handling.phone
+                handling.phone,
+                # Entrega ganha um codigo de 4 numeros que so o cliente ve; o motoqueiro fecha a entrega com ele.
+                courier.new_delivery_code() if handling.order_type == 'entrega' else None
             )
         )
 
@@ -1490,6 +1500,7 @@ def get_order(order_id):
                 delivery_zone,
                 delivery_address,
                 customer_phone,
+                delivery_code,
                 (
                     SELECT pay.status
                     FROM payments pay
@@ -1550,6 +1561,10 @@ def get_order(order_id):
 
         order["items"] = items
 
+        # O codigo so aparece para quem acompanha o pedido de entrega, e some quando a entrega fecha.
+        if order.get('order_type') != 'entrega' or order.get('status') == 'concluido':
+            order['delivery_code'] = None
+
         return jsonify(order), 200
 
     except Exception as e:
@@ -1575,6 +1590,9 @@ def get_admin_orders(company_id):
 
     if access_error:
         return access_error
+
+    if request.user.get('role') == 'COURIER':
+        return courier_uses_own_screen()
 
     try:
         # Each order carries its items and table number: the kitchen and the
@@ -1648,6 +1666,10 @@ def get_admin_orders(company_id):
 def update_order_status(order_id):
     conn = None
     cur = None
+
+    # O motoqueiro fecha a entrega pela tela dele, com o codigo do cliente; por aqui nao.
+    if request.user.get('role') == 'COURIER':
+        return courier_uses_own_screen()
 
     try:
         data = request.get_json() or {}
@@ -1784,6 +1806,238 @@ def update_order_status(order_id):
             "Erro ao atualizar status",
             e
         )
+
+
+# ------------------------------------------------------------------------------------------------ motoqueiro
+
+def courier_user_id():
+    return str(request.user.get('user_id'))
+
+
+@app.route('/api/companies/<uuid:company_id>/courier/orders', methods=['GET'])
+@require_roles(*courier.COURIER_ROLES)
+def courier_list_orders(company_id):
+    """As entregas prontas para pegar, as que ele já levou e as entregues nas últimas 12 horas. Dono e gerente veem todas."""
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    conn = None
+
+    try:
+        user_id = courier_user_id()
+        sees_all = request.user.get('role') in courier.SEES_ALL_ROLES
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(courier.SQL_LIST, (str(company_id), user_id, sees_all, user_id))
+        rows = cur.fetchall() or []
+
+        return jsonify([courier.order_view(row, user_id) for row in rows]), 200
+
+    except Exception as e:
+        return error_response("Erro ao buscar as entregas", e)
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route(
+    '/api/companies/<uuid:company_id>/courier/orders/<uuid:order_id>/pickup',
+    methods=['POST']
+)
+@require_roles(*courier.COURIER_ROLES)
+def courier_pickup_order(company_id, order_id):
+    """"Peguei": o pedido passa a "saiu para entrega" e fica no nome dele."""
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    conn = None
+
+    try:
+        user_id = courier_user_id()
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            courier.SQL_PICKUP,
+            (user_id, str(order_id), str(company_id), user_id, user_id)
+        )
+
+        if cur.fetchone():
+            cur.execute(courier.SQL_EVENT, (str(order_id), 'COURIER_PICKUP'))
+            cur.execute(courier.SQL_EVENT, (str(order_id), order_status.event_type(order_status.OUT_FOR_DELIVERY)))
+            conn.commit()
+            return jsonify({"ok": True, "already": False}), 200
+
+        cur.execute(courier.SQL_WHY, (str(order_id), str(company_id)))
+        courier.pickup_outcome(cur.fetchone(), user_id)  # levanta o motivo; "already" volta aqui
+
+        conn.rollback()
+        return jsonify({"ok": True, "already": True}), 200
+
+    except courier.CourierError as problem:
+        if conn is not None:
+            conn.rollback()
+        return jsonify({"error": problem.message}), problem.status
+    except Exception as e:
+        if conn is not None:
+            conn.rollback()
+        return error_response("Não foi possível pegar o pedido", e)
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route(
+    '/api/companies/<uuid:company_id>/courier/orders/<uuid:order_id>/deliver',
+    methods=['POST']
+)
+@require_roles(*courier.COURIER_ROLES)
+def courier_deliver_order(company_id, order_id):
+    """"Entreguei": só fecha com o código de 4 números do cliente. Errou 5 vezes, trava."""
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    body = request.get_json(silent=True)
+    code_given = body.get('code') if isinstance(body, dict) else None
+    conn = None
+
+    try:
+        user_id = courier_user_id()
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # Trava o pedido: dois toques ao mesmo tempo não contam tentativa em dobro nem fecham duas vezes.
+        cur.execute(courier.SQL_LOCK_FOR_DELIVERY, (str(order_id), str(company_id)))
+        decision = courier.delivery_decision(cur.fetchone(), user_id, code_given)
+
+        if decision['action'] == 'already':
+            conn.rollback()
+            return jsonify({"ok": True, "already": True, "cash_to_hand_over": "0.00"}), 200
+
+        if decision['action'] == 'wrong_code':
+            cur.execute(courier.SQL_COUNT_WRONG_CODE, (str(order_id), str(company_id)))
+            attempts = cur.fetchone()['code_attempts']
+            conn.commit()  # a tentativa errada fica gravada mesmo que a tela feche
+            left = courier.attempts_left(attempts)
+            return jsonify({
+                "error": courier.wrong_code_message(attempts),
+                "wrong_code": True,
+                "attempts_left": left,
+                "locked": left == 0
+            }), (423 if left == 0 else 400)
+
+        cash = decision['cash']
+        cur.execute(
+            courier.SQL_DELIVER,
+            (user_id, str(cash) if cash is not None else None, str(order_id), str(company_id))
+        )
+        cur.execute(courier.SQL_EVENT, (str(order_id), order_status.event_type(order_status.DONE)))
+        cur.execute(courier.SQL_EVENT, (str(order_id), 'COURIER_DELIVERED'))
+        conn.commit()
+
+        return jsonify({
+            "ok": True,
+            "already": False,
+            "cash_to_hand_over": str(cash) if cash is not None else "0.00"
+        }), 200
+
+    except courier.CourierError as problem:
+        if conn is not None:
+            conn.rollback()
+        return jsonify({"error": problem.message, "locked": problem.status == 423}), problem.status
+    except Exception as e:
+        if conn is not None:
+            conn.rollback()
+        return error_response("Não foi possível fechar a entrega", e)
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route('/api/companies/<uuid:company_id>/admin/courier-cash', methods=['GET'])
+@require_roles(*courier.SETTLE_ROLES)
+def admin_courier_cash(company_id):
+    """O dinheiro que os motoqueiros receberam e ainda não entregaram ao caixa, por motoqueiro."""
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    conn = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(courier.SQL_CASH_OPEN, (str(company_id),))
+
+        return jsonify(courier.settlement_view(cur.fetchall() or [])), 200
+
+    except Exception as e:
+        return error_response("Erro ao buscar o dinheiro dos motoqueiros", e)
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@app.route(
+    '/api/companies/<uuid:company_id>/admin/courier-cash/<uuid:courier_id>/settle',
+    methods=['POST']
+)
+@require_roles(*courier.SETTLE_ROLES)
+def admin_settle_courier_cash(company_id, courier_id):
+    """Acerto: o caixa contou o dinheiro dos pedidos marcados. Eles saem do "em aberto" e o pagamento passa a pago."""
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    conn = None
+
+    try:
+        order_ids = courier.clean_settle_ids(request.get_json(silent=True))
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            courier.SQL_SETTLE,
+            (courier_user_id(), str(company_id), str(courier_id), order_ids)
+        )
+        settled = cur.fetchall() or []
+
+        if not settled:
+            conn.rollback()
+            return jsonify({"error": "Nada em aberto para acertar nesses pedidos. Talvez já tenham sido acertados."}), 409
+
+        settled_ids = [str(row['id']) for row in settled]
+        cur.execute(courier.SQL_MARK_PAID, (settled_ids, str(company_id)))
+
+        for settled_id in settled_ids:
+            cur.execute(courier.SQL_EVENT, (settled_id, 'CASH_SETTLED'))
+
+        conn.commit()
+
+        total = sum((courier.money(row['cash_received']) for row in settled), Decimal('0.00'))
+
+        return jsonify({"ok": True, "count": len(settled_ids), "total": str(total)}), 200
+
+    except courier.CourierError as problem:
+        if conn is not None:
+            conn.rollback()
+        return jsonify({"error": problem.message}), problem.status
+    except Exception as e:
+        if conn is not None:
+            conn.rollback()
+        return error_response("Não foi possível fazer o acerto", e)
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 @app.route(

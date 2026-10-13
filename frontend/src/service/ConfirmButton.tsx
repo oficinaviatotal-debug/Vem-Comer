@@ -5,6 +5,8 @@ type Props = {
   /** Shown for a few seconds after the first tap. */
   confirmLabel?: string;
   onConfirm: () => void;
+  /** "danger" (red, the default) for what deletes; "ok" (green) for what cannot be undone but is not a loss. */
+  tone?: "danger" | "ok";
 };
 
 /**
@@ -15,6 +17,7 @@ export default function ConfirmButton({
   label,
   confirmLabel = "Toque de novo",
   onConfirm,
+  tone = "danger",
 }: Props) {
   const [armed, setArmed] = useState(false);
 
@@ -27,7 +30,7 @@ export default function ConfirmButton({
   return (
     <button
       type="button"
-      className={armed ? "btn btn-danger btn-sm is-armed" : "btn btn-danger btn-sm"}
+      className={`btn ${tone === "ok" ? "btn-mata" : "btn-danger"} btn-sm${armed ? " is-armed" : ""}`}
       onClick={() => {
         if (armed) {
           setArmed(false);

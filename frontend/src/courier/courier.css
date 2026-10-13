@@ -1,0 +1,195 @@
+/* Motoqueiro: the delivery list on his phone, and the cash settlement of the cashier. Only tokens that already exist. */
+.crr {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.crr h2,
+.crr h3 {
+  margin: 0;
+}
+
+.crr-summary {
+  font-size: var(--t-xl);
+}
+
+.crr-title {
+  margin-top: var(--s3);
+  font-size: var(--t-lg);
+  color: var(--folha);
+}
+
+.crr-empty {
+  margin: 0;
+  padding: var(--s4);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+  font-size: var(--t-lg);
+}
+
+.crr-notice {
+  margin: 0;
+  font-size: var(--t-lg);
+}
+
+.crr-held {
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-sm);
+  background: var(--sol);
+  color: var(--folha);
+  font-weight: 700;
+}
+
+.crr-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crr-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s4);
+  border: 2px solid var(--linha-forte);
+  border-radius: var(--r-md);
+  background: var(--comanda);
+}
+
+.crr-card-done {
+  border-color: var(--linha);
+  background: var(--papel);
+}
+
+.crr-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.crr-who {
+  font-size: var(--t-xl);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.crr-address {
+  margin: 0;
+  font-size: var(--t-lg);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.crr-meta {
+  margin: 0;
+  color: var(--nevoa);
+  font-size: var(--t-md);
+  overflow-wrap: anywhere;
+}
+
+.crr-cash {
+  margin: 0;
+  padding: var(--s3);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+  color: var(--folha);
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
+
+.crr-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.crr-links .btn {
+  flex: 1 1 10rem;
+  min-height: 52px;
+}
+
+.crr-big {
+  min-height: 60px;
+  font-size: var(--t-xl);
+}
+
+/* The 4 numbers the customer shows: large, spaced, easy to type with a thumb. */
+.crr-code {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.crr-code-input {
+  text-align: center;
+  font-size: var(--t-3xl);
+  font-weight: 700;
+  letter-spacing: .4em;
+  padding-left: .4em;
+  min-height: 64px;
+}
+
+/* Settlement */
+.crr-total {
+  font-size: var(--t-xl);
+  font-weight: 700;
+  color: var(--folha);
+  white-space: nowrap;
+}
+
+.crr-cashlist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crr-check {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: 48px;
+  padding: var(--s1) 0;
+}
+
+.crr-check input {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  accent-color: var(--mata);
+}
+
+.crr-check > span:nth-of-type(1) {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.crr-amount {
+  flex: 0 0 auto;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.crr-settle .btn {
+  width: 100%;
+  min-height: 52px;
+  height: auto;
+  padding-top: var(--s2);
+  padding-bottom: var(--s2);
+  white-space: normal;
+  line-height: 1.2;
+}
+
+/* The page of a login that is only a courier. */
+.crr-page .adm-who {
+  margin-bottom: var(--s3);
+}

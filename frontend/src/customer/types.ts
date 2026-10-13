@@ -83,6 +83,8 @@ export type OrderView = {
   delivery_zone?: string | null;
   delivery_address?: Record<string, unknown> | null;
   customer_phone?: string | null;
+  /** The 4 numbers the customer gives the courier at the door. Only on an open delivery; never saved on the phone. */
+  delivery_code?: string | null;
 };
 
 export type PaymentMethod = "pix" | "cartao" | "dinheiro";

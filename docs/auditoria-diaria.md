@@ -35,7 +35,7 @@ Vem Comer:
 
 - [x] Reforma visual: cardápio do cliente, tela da mesa, carrinho e acompanhamento (PR #33 juntado em 07/10; fotos de tela a 390 e 320 px, ainda não vista num celular de verdade)
 - [x] Opções por item (tamanho, adicionais, observação): servidor juntado (PR #34); telas do cliente (PR #37) e do painel com voz (PR #38) prontas, CI verde, esperando junção
-- [~] Entrega: servidor (PR #39), aba do dono com voz (PR #40), tela do cliente com CEP, endereço e taxa (PR #41) e pedido do painel mostrando endereço, telefone e taxa: prontos, CI verde, esperando junção. estados "pronto" e "saiu para entrega" prontos (13/10); **faltam** o motoqueiro e a decisão de quem paga a taxa
+- [~] Entrega: servidor (PR #39), aba do dono com voz (PR #40), tela do cliente com CEP, endereço e taxa (PR #41) e pedido do painel mostrando endereço, telefone e taxa: prontos, CI verde, esperando junção. estados "pronto" e "saiu para entrega" prontos (13/10); **motoqueiro com código de entrega e acerto do dinheiro prontos (13/10, `motoqueiro.md`)**; faltam fotos de prova, pagamento por distância e a decisão de quem paga a taxa
 - [~] Assinatura de R$ 190: pagamento no primeiro dia, vencimento e bloqueio no dia seguinte. **Pronta com cobrança manual** (servidor, telas do dono, do cliente e do GD, script `cobranca.sh`; vem DESLIGADA, ligar é decisão do GD). Faltam a empresa de pagamento (cobrança automática) e a decisão sobre pagamento atrasado
 - [~] Horário de funcionamento, pausa de pedidos e esgotado em um toque: **pronto** (servidor, painel do dono com voz, cardápio do cliente; `docs/horario-e-esgotado.md`), CI e junção pendentes; falta ver no celular
 - [~] Front-end contra a prancha de templates (13/10, pedido do GD): cartaz de QR da mesa para imprimir e página de venda `?sistema=1` prontos no Vem Comer (PR #46); front-end do Vem Trabalhar refeito na marca azul (PR #5 do repositório dele). Falta: logomarca em arquivo (SVG/PNG transparente), fotos, ver no celular
@@ -125,7 +125,7 @@ antigas por falta de biblioteca de QR e Pix neste ambiente, que também falham n
 - **Vem Comer, para vender de verdade: cerca de 5,5 dias de trabalho** (eram 10 na estimativa da manhã; estados da entrega,
   horário e esgotado e assinatura com cobrança manual ficaram prontos em 13/10). Falta: cadastro em 3 dias 2; teste no celular
   e correções 2; VPS e auditoria geral 1,5. Com cobrança automática, mais 2 depois que a empresa de pagamento estiver
-  escolhida; motoqueiro (código de entrega, acerto, fotos de prova), mais 2 depois que o GD confirmar as faixas.
+  escolhida; motoqueiro: código de entrega e acerto do dinheiro prontos (13/10); fotos de prova e pagamento por distância, mais 1 dia depois que o GD confirmar as faixas.
 - **Vem Trabalhar:** 6,5 dias para vagas funcionando sem pagamento e 11 a 13 com pagamento e escolas (levantamento de 08/10).
 
 **Nova ordem (a que eu sigo se o GD não disser outra)**
