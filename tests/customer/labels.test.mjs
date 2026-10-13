@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   cleanCustomerName,
   customerStatus,
+  DELIVERY_STEP_LABELS,
   orderCustomerName,
   orderErrorMessage,
   searchTextFromVoice,
@@ -11,8 +12,10 @@ import {
 } from "../../frontend/src/customer/labels.ts";
 import {
   STATUS_DONE,
+  STATUS_OUT,
   STATUS_PENDING,
   STATUS_PREPARING,
+  STATUS_READY,
 } from "../../frontend/src/service/orderStatus.ts";
 
 test("the customer wording covers exactly the statuses the panel and the server use", () => {
@@ -57,10 +60,48 @@ test("the voice search keeps only what the person wants to find", () => {
   assert.equal(searchTextFromVoice("pudim"), "pudim");
 });
 
-test("a delivery order that is ready says it goes to the address, not 'retire no balcão'", () => {
-  assert.match(customerStatus(STATUS_DONE, null, "entrega").hint, /endereço/);
+test("a delivery that is ready goes to the address; a finished one is delivered; pickup still says 'retire'", () => {
+  assert.match(customerStatus(STATUS_READY, null, "entrega").hint, /endereço/);
+  assert.match(customerStatus(STATUS_DONE, null, "entrega").headline, /Entregue/);
   assert.match(customerStatus(STATUS_DONE, null, "retirada").hint, /balcão/);
   assert.match(customerStatus(STATUS_DONE, 7, "entrega").hint, /mesa 7/);
+});
+
+test("the two delivery steps have their own words and the bar has four steps", () => {
+  const ready = customerStatus(STATUS_READY, null, "entrega");
+  assert.equal(ready.headline, "Pronto!");
+  assert.equal(ready.done, false, "still on its way: the tracking keeps checking");
+  assert.equal(ready.step, 1);
+  const out = customerStatus(STATUS_OUT, null, "entrega");
+  assert.equal(out.headline, "Saiu para entrega");
+  assert.match(out.hint, /a caminho/);
+  assert.equal(out.step, 2);
+  assert.equal(out.done, false);
+  const done = customerStatus(STATUS_DONE, null, "entrega");
+  assert.equal(done.step, 3);
+  assert.equal(done.done, true);
+  for (const status of [STATUS_PENDING, STATUS_PREPARING, STATUS_READY, STATUS_OUT, STATUS_DONE]) {
+    const view = customerStatus(status, null, "entrega");
+    assert.deepEqual([...view.steps], [...DELIVERY_STEP_LABELS]);
+    assert.ok(view.step < view.steps.length, status);
+  }
+  assert.equal(DELIVERY_STEP_LABELS.length, 4);
+});
+
+test("the delivery words show even when the screen does not know the order type (the banner)", () => {
+  assert.equal(customerStatus(STATUS_OUT, null).steps.length, 4);
+  assert.equal(customerStatus(STATUS_READY, null).steps.length, 4);
+});
+
+test("table, counter and pickup keep the three steps", () => {
+  for (const [table, type] of [[7, "mesa"], [null, "retirada"], [null, null], [null, "balcao"]]) {
+    for (const status of [STATUS_PENDING, STATUS_PREPARING, STATUS_DONE]) {
+      const view = customerStatus(status, table, type);
+      assert.deepEqual([...view.steps], [...STEP_LABELS]);
+      assert.ok(view.step < 3);
+    }
+  }
+  assert.equal(customerStatus(STATUS_DONE, null, "retirada").step, 2);
 });
 
 test("the sentences the server says about delivery are shown as they are", () => {

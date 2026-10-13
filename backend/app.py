@@ -34,6 +34,7 @@ import voice_tts
 import feedback
 import menu_import
 import menu_templates
+import order_status
 import pix
 import signup
 import table_calls
@@ -1597,11 +1598,7 @@ def update_order_status(order_id):
                 "error": "Status nao informado"
             }), 400
 
-        if new_status not in (
-            'PENDING_PAYMENT',
-            'em preparo',
-            'concluido'
-        ):
+        if new_status not in order_status.ALLOWED:
             return jsonify({
                 "error": "Status invalido"
             }), 400
@@ -1611,6 +1608,42 @@ def update_order_status(order_id):
         conn = get_db_connection()
 
         cur = conn.cursor()
+
+        # "pronto" e "saiu para entrega" so existem para pedido de entrega.
+        if new_status in order_status.DELIVERY_ONLY:
+            cur.execute(
+                """
+                SELECT order_type
+                FROM orders
+                WHERE id = %s
+                AND company_id = %s;
+                """,
+                (
+                    str(order_id),
+                    str(company_id)
+                )
+            )
+            found = cur.fetchone()
+
+            if not found:
+                conn.rollback()
+                cur.close()
+                conn.close()
+
+                return jsonify({
+                    "error": "Pedido nao encontrado"
+                }), 404
+
+            mismatch = order_status.problem_for(found[0], new_status)
+
+            if mismatch:
+                conn.rollback()
+                cur.close()
+                conn.close()
+
+                return jsonify({
+                    "error": mismatch
+                }), 400
 
         cur.execute(
             """
@@ -1665,7 +1698,7 @@ def update_order_status(order_id):
             """,
             (
                 str(order_id),
-                'STATUS_' + new_status.upper().replace(' ', '_')
+                order_status.event_type(new_status)
             )
         )
 
@@ -3806,12 +3839,12 @@ def load_cost_view(company_id):
     ) or []
     now = datetime.now(timezone.utc)
     sold_rows = query_db(
-        """
+        f"""
         SELECT oi.product_id, oi.quantity, oi.unit_price, oi.unit_cost, o.created_at
         FROM order_items oi
         JOIN orders o ON o.id = oi.order_id
         WHERE o.company_id = %s
-        AND o.status IN ('em preparo', 'concluido')
+        AND o.status IN ({order_status.SOLD_STATUSES_SQL})
         AND o.created_at >= %s;
         """,
         (str(company_id), cost_since(ingredient_rows, now))
@@ -4211,14 +4244,14 @@ def admin_ingredient_stock(company_id, ingredient_id):
             current = Decimal('0')
             if row.get('stock_qty') is not None and row.get('stock_at') is not None:
                 cur.execute(
-                    """
+                    f"""
                     SELECT oi.quantity AS sold, pi.quantity AS recipe_qty, p.yield_portions
                     FROM order_items oi
                     JOIN orders o ON o.id = oi.order_id
                     JOIN products p ON p.id = oi.product_id AND p.company_id = o.company_id
                     JOIN product_ingredients pi ON pi.product_id = p.id
                     WHERE o.company_id = %s
-                    AND o.status IN ('em preparo', 'concluido')
+                    AND o.status IN ({order_status.SOLD_STATUSES_SQL})
                     AND o.created_at > %s
                     AND pi.ingredient_id = %s;
                     """,

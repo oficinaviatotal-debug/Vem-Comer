@@ -5,36 +5,72 @@ import { deliveryErrorMessage, type Mode } from "./delivery.ts";
 // Same values as ../service/orderStatus.ts (a test checks they still match).
 const PENDING = "PENDING_PAYMENT";
 const PREPARING = "em preparo";
+const READY = "pronto";
+const OUT = "saiu para entrega";
 const DONE = "concluido";
 
+/** Table, counter and pickup: three steps. */
 export const STEP_LABELS = ["Enviado", "Em preparo", "Pronto"] as const;
+/** Delivery: "pronto" (waiting for the courier) is still the "Preparo" step; the next one is the courier leaving. */
+export const DELIVERY_STEP_LABELS = ["Enviado", "Preparo", "Na rua", "Entregue"] as const;
 
 export type CustomerStatus = {
   headline: string;
   hint: string;
-  /** 0 = sent, 1 = preparing, 2 = ready. */
-  step: 0 | 1 | 2;
+  /** Position in `steps`: 0 = sent, 1 = preparing, 2 = ready (or on its way), 3 = delivered. */
+  step: 0 | 1 | 2 | 3;
+  /** The words under the progress bar. */
+  steps: readonly string[];
   done: boolean;
 };
 
 export function customerStatus(status: string, tableNumber: number | null, orderType?: string | null): CustomerStatus {
+  // "pronto" and "saiu para entrega" exist only for deliveries; a finished delivery says "Entregue".
+  const delivery = status === READY || status === OUT || (orderType === "entrega" && !tableNumber);
+  const steps: readonly string[] = delivery ? DELIVERY_STEP_LABELS : STEP_LABELS;
+
   if (status === PREPARING) {
     return {
       headline: "Em preparo",
       hint: "A cozinha está preparando o seu pedido.",
       step: 1,
+      steps,
+      done: false,
+    };
+  }
+  if (status === READY) {
+    return {
+      headline: "Pronto!",
+      hint: "Seu pedido está pronto e já vai sair para o seu endereço.",
+      step: 1,
+      steps,
+      done: false,
+    };
+  }
+  if (status === OUT) {
+    return {
+      headline: "Saiu para entrega",
+      hint: "O entregador está a caminho do seu endereço.",
+      step: 2,
+      steps,
       done: false,
     };
   }
   if (status === DONE) {
+    if (delivery) {
+      return {
+        headline: "Entregue!",
+        hint: "Bom proveito! Se algo não chegou como esperado, fale com o restaurante.",
+        step: 3,
+        steps,
+        done: true,
+      };
+    }
     return {
       headline: "Pronto!",
-      hint: tableNumber
-        ? `Já já chega na mesa ${tableNumber}.`
-        : orderType === "entrega"
-          ? "Seu pedido está pronto e já vai sair para o seu endereço."
-          : "Pode retirar no balcão.",
+      hint: tableNumber ? `Já já chega na mesa ${tableNumber}.` : "Pode retirar no balcão.",
       step: 2,
+      steps,
       done: true,
     };
   }
@@ -43,10 +79,11 @@ export function customerStatus(status: string, tableNumber: number | null, order
       headline: "Pedido enviado",
       hint: "Estamos esperando o restaurante aceitar.",
       step: 0,
+      steps,
       done: false,
     };
   }
-  return { headline: "Pedido enviado", hint: "", step: 0, done: false };
+  return { headline: "Pedido enviado", hint: "", step: 0, steps, done: false };
 }
 
 const NAME_LIMIT = 60;
