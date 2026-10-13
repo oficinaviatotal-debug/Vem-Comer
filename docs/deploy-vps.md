@@ -130,6 +130,8 @@ todas a cada atualização.
 - Não há registro de acessos: os endereços do sistema carregam `?tracking_token=…`, e isso não deve
   ir para arquivo de log. Só ficam avisos e erros (`docker logs`).
 - O porteiro envia cabeçalhos de segurança, redireciona HTTP para HTTPS e fecha o cadastro público.
+- Aviso no celular (`docs/aviso-no-celular.md`): o servidor só entrega a notificação a endereços de serviços conhecidos (Google, Mozilla, Apple,
+  Microsoft), em HTTPS. As chaves nascem sozinhas no banco. `PUSH_ENABLED=0` no `.env` desliga.
 - O limitador de tentativas de login guarda a contagem na memória, por isso o servidor roda com
   **1 processo e várias threads**. Atrás do porteiro o servidor lê o endereço real do visitante
   (`TRUST_PROXY=1`), senão todos pareceriam ser a mesma pessoa.

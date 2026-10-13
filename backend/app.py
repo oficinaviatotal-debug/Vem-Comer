@@ -40,6 +40,7 @@ import menu_import
 import menu_templates
 import order_status
 import pix
+import push
 import signup
 import subscription
 import table_calls
@@ -721,8 +722,9 @@ def create_table_call(company_id, table_id):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute(table_calls.SQL_TABLE, (str(table_id), str(company_id)))
+        table_row = cur.fetchone()
 
-        if not cur.fetchone():
+        if not table_row:
             return jsonify({"error": "Mesa nao encontrada"}), 404
 
         table_call_limiter.check_table(str(table_id))
@@ -739,11 +741,13 @@ def create_table_call(company_id, table_id):
                 (table_calls.MAX_REPEATS, str(open_call['id']), str(company_id))
             )
             conn.commit()
+            push.notify_table_call(company_id, kind, table_calls.phrase(kind), push.column(table_row, 'number', 1))
             return jsonify(table_calls.public_view(open_call, already=True)), 200
 
         cur.execute(table_calls.SQL_INSERT, (str(company_id), str(table_id), kind))
         created = cur.fetchone()
         conn.commit()
+        push.notify_table_call(company_id, kind, table_calls.phrase(kind), push.column(table_row, 'number', 1))
 
         return jsonify(table_calls.public_view(created, already=False)), 201
 
@@ -1259,6 +1263,10 @@ def create_company_order(company_id):
 
         cur.close()
         conn.close()
+
+        # Aviso no celular de quem esta no restaurante (cozinha, caixa, gerente, dono). Em segundo plano e sem erro:
+        # o pedido ja foi gravado e nada daqui pode derrubar a resposta ao cliente.
+        push.notify_new_order(company_id, order_id)
 
         tracking_token = serializer.dumps({
             'purpose': 'order_tracking',
@@ -1789,6 +1797,9 @@ def update_order_status(order_id):
         cur.close()
         conn.close()
 
+        if new_status == order_status.READY:
+            push.notify_delivery_ready(company_id, order_id)
+
         return jsonify({
             "message": f"Status atualizado para {new_status} com sucesso"
         }), 200
@@ -1806,6 +1817,142 @@ def update_order_status(order_id):
             "Erro ao atualizar status",
             e
         )
+
+
+# ------------------------------------------------------------------------------------------------ aviso no celular
+# Web Push (veja push.py). Quem entra no painel e toca em "Ativar aviso" inscreve o celular; o servidor avisa pedido novo,
+# mesa chamando e entrega pronta mesmo com o app fechado.
+push_test_limiter = push.TestLimiter()
+PUSH_OFF = "O aviso no celular ainda nao esta ligado neste servidor."
+
+
+@app.route('/api/push/config', methods=['GET'])
+def push_config():
+    """Se o aviso esta ligado e a chave publica para o navegador se inscrever (a privada nunca sai do servidor)."""
+    if not push.enabled():
+        return jsonify({"enabled": False}), 200
+
+    conn = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        public_key, _private = push.ensure_keys(cur)
+        conn.commit()
+        cur.close()
+
+        return jsonify({"enabled": True, "key": public_key}), 200
+
+    except Exception as e:
+        if conn is not None and not conn.closed:
+            conn.rollback()
+        return error_response("Nao consegui abrir o aviso no celular", e)
+    finally:
+        if conn is not None and not conn.closed:
+            conn.close()
+
+
+@app.route('/api/companies/<uuid:company_id>/push/subscribe', methods=['POST'])
+@require_auth
+def push_subscribe(company_id):
+    """Guarda o celular de quem tocou em "Ativar aviso". Tocar de novo no mesmo celular so atualiza."""
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    if not push.enabled():
+        return jsonify({"error": PUSH_OFF}), 404
+
+    try:
+        subscription = push.clean_subscription(request.get_json(silent=True))
+    except push.PushError as error:
+        return jsonify({"error": error.message}), error.status
+
+    conn = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        push.save_subscription(cur, company_id, request.user.get('user_id'), subscription)
+        conn.commit()
+        cur.close()
+
+        return jsonify({"ok": True}), 200
+
+    except Exception as e:
+        if conn is not None and not conn.closed:
+            conn.rollback()
+        return error_response("Nao consegui ativar o aviso neste celular", e)
+    finally:
+        if conn is not None and not conn.closed:
+            conn.close()
+
+
+@app.route('/api/companies/<uuid:company_id>/push/unsubscribe', methods=['POST'])
+@require_auth
+def push_unsubscribe(company_id):
+    """Desliga o aviso neste celular. Cada pessoa so remove o que e dela."""
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    body = request.get_json(silent=True)
+    endpoint = body.get('endpoint') if isinstance(body, dict) else None
+
+    if not push.endpoint_allowed(endpoint):
+        return jsonify({"error": "Dados do aparelho invalidos."}), 400
+
+    conn = None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            push.SQL_REMOVE_MINE,
+            (endpoint, str(request.user.get('user_id')), str(company_id))
+        )
+        conn.commit()
+        cur.close()
+
+        return jsonify({"ok": True}), 200
+
+    except Exception as e:
+        if conn is not None and not conn.closed:
+            conn.rollback()
+        return error_response("Nao consegui desligar o aviso neste celular", e)
+    finally:
+        if conn is not None and not conn.closed:
+            conn.close()
+
+
+@app.route('/api/companies/<uuid:company_id>/push/test', methods=['POST'])
+@require_auth
+def push_test(company_id):
+    """Manda um aviso de teste para os celulares de quem tocou e diz quantos receberam."""
+    access_error = require_company_access(company_id)
+
+    if access_error:
+        return access_error
+
+    if not push.enabled():
+        return jsonify({"error": PUSH_OFF}), 404
+
+    user_id = request.user.get('user_id')
+
+    try:
+        push_test_limiter.check(user_id)
+    except push.PushError as error:
+        return jsonify({"error": error.message}), error.status
+
+    result = push.send_test(company_id, user_id, connect=get_db_connection)
+
+    return jsonify({
+        "sent": len(result["ok"]),
+        "removed": len(result["gone"]),
+        "failed": len(result["failed"])
+    }), 200
 
 
 # ------------------------------------------------------------------------------------------------ motoqueiro

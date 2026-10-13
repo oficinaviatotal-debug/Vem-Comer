@@ -1,0 +1,42 @@
+/* Aviso no celular: a faixa que convida a ligar e, depois de ligado, a linha com Testar e Desligar. Só tokens que já existem. */
+.push-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s3);
+  margin-bottom: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+  color: var(--folha);
+}
+
+.push-on {
+  padding-top: var(--s2);
+  padding-bottom: var(--s2);
+  font-size: var(--t-md);
+}
+
+.push-text {
+  margin: 0;
+  flex: 1 1 14rem;
+  min-width: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.push-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.push-actions .btn {
+  min-height: 44px;
+}
+
+.push-note {
+  flex: 1 1 100%;
+  margin: 0;
+}
