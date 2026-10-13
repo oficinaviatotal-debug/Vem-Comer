@@ -18,7 +18,9 @@ os.environ.setdefault("SECRET_KEY", "test-secret-not-for-production")
 
 import app as backend_app  # noqa: E402
 import push  # noqa: E402
+import help_requests  # noqa: E402
 import test_delivery_endpoint as delivery_tests  # noqa: E402
+import test_help_requests_endpoint as help_tests  # noqa: E402
 
 COMPANY_ID = "11111111-1111-4111-8111-111111111111"
 OTHER_COMPANY_ID = "22222222-2222-4222-8222-222222222222"
@@ -668,6 +670,88 @@ class ReadyHookTests(unittest.TestCase):
         with patch.object(push, "notify_delivery_ready") as notify:
             reply = self.put("pronto", order_type="mesa")
         self.assertEqual(reply.status_code, 400)
+        notify.assert_not_called()
+
+
+# ------------------------------------------------------------------------------------------------ chamado de ajuda
+class HelpRequestPushTests(unittest.TestCase):
+    def test_the_message_names_the_restaurant_and_the_subject_and_never_the_owners_text(self):
+        payload = push.help_request_payload(COMPANY_ID, "Pizzaria do Zé", "Foto")
+        self.assertEqual(payload["title"], "Chamado de ajuda")
+        self.assertEqual(payload["body"], "Pizzaria do Zé: Foto")
+        self.assertEqual(push.help_request_payload(COMPANY_ID, "Pizzaria do Zé", "Foto", True)["title"], "Chamado de novo")
+        self.assertEqual(push.help_request_payload(COMPANY_ID, None, "")["body"], "Um restaurante: ajuda")
+        self.assertEqual(push.help_request_payload(COMPANY_ID, "x" * 300, "y" * 300)["body"], "x" * 40 + ": " + "y" * 30)
+        self.assertEqual(push.help_request_payload(COMPANY_ID, "A", "B")["tag"], f"ajuda-{COMPANY_ID}")
+
+    def test_it_goes_to_the_platform_admins_in_any_restaurant_and_to_no_one_else(self):
+        conn = FakeConn(targets=[])
+        with patch.dict(os.environ, {"PLATFORM_ADMIN_EMAILS": "GD@Exemplo.com, outro@exemplo.com"}):
+            push.send_event("help_request", None, lambda cur: push.test_payload(), connect=lambda: conn, send=lambda *a: None)
+        (params,) = conn.ran(push.SQL_TARGETS_PLATFORM)
+        self.assertEqual(params, (["gd@exemplo.com", "outro@exemplo.com"], push.MAX_TARGETS))
+        self.assertEqual(conn.ran(push.SQL_TARGETS_BY_ROLE), [])
+        sql = norm(push.SQL_TARGETS_PLATFORM)
+        self.assertIn("lower(u.email) = ANY(%s)", sql)
+        self.assertIn("u.active = TRUE", sql)
+        self.assertNotIn("company_id", sql, "o administrador recebe de onde estiver")
+
+    def test_without_an_admin_configured_nothing_is_looked_up_or_sent(self):
+        sent = []
+        conn = FakeConn(targets=[target(1)])
+        with patch.dict(os.environ, {"PLATFORM_ADMIN_EMAILS": ""}):
+            result = push.send_event("help_request", None, lambda cur: push.test_payload(), connect=lambda: conn, send=lambda *a: sent.append(a))
+            with patch.object(push, "enabled", return_value=True), patch.object(push, "_in_background") as spawn:
+                push.notify_help_request(COMPANY_ID, "Pizzaria", "Foto")
+        self.assertEqual((result, sent), ({"ok": [], "gone": [], "failed": []}, []))
+        self.assertEqual(conn.ran(push.SQL_TARGETS_PLATFORM), [])
+        spawn.assert_not_called()
+
+    def test_it_is_quiet_when_the_switch_is_off(self):
+        with patch.dict(os.environ, {"PLATFORM_ADMIN_EMAILS": "gd@exemplo.com"}):
+            with patch.object(push, "enabled", return_value=False), patch.object(push, "_in_background") as spawn:
+                push.notify_help_request(COMPANY_ID, "Pizzaria", "Foto")
+            spawn.assert_not_called()
+            jobs = []
+            with patch.object(push, "enabled", return_value=True), patch.object(push, "_in_background", side_effect=jobs.append):
+                push.notify_help_request(COMPANY_ID, "Pizzaria", "Foto", True)
+            self.assertEqual(len(jobs), 1)
+
+    def test_a_help_event_does_not_use_the_roles_table(self):
+        self.assertNotIn("help_request", push.EVENT_ROLES)
+        self.assertIn("help_request", push.PLATFORM_EVENTS)
+
+
+class HelpRequestHookTests(help_tests.Base):
+    def ask(self, body):
+        return self.client.post(help_tests.ASK_URL, json=body, headers=help_tests.auth())
+
+    def test_a_new_request_warns_the_platform_admin_with_the_restaurant_and_the_subject(self):
+        self.cur.fetchone.side_effect = [help_tests.CONTEXT, None, {"id": help_tests.REQUEST_ID}]
+        with patch.object(push, "notify_help_request") as notify:
+            reply = self.ask({"topic": "foto", "message": "a foto sai escura"})
+        self.assertEqual(reply.status_code, 201)
+        self.assertEqual(notify.call_args_list[0].args, (help_tests.COMPANY_ID, "Pizzaria do Zé", help_requests.topic_label("foto"), False))
+        self.assertNotIn("escura", repr(notify.call_args_list), "o texto do dono nao vai no aviso")
+
+    def test_asking_again_warns_again_marked_as_a_repeat(self):
+        self.cur.fetchone.side_effect = [help_tests.CONTEXT, {"id": help_tests.REQUEST_ID, "topic": "foto"}, {"id": help_tests.REQUEST_ID}]
+        with patch.object(push, "notify_help_request") as notify:
+            reply = self.ask({"topic": "logo", "message": ""})
+        self.assertEqual(reply.status_code, 200)
+        self.assertEqual(notify.call_args_list[0].args[3], True)
+
+    def test_a_refused_request_warns_nobody(self):
+        with patch.object(push, "notify_help_request") as notify:
+            reply = self.ask({"topic": "pizza"})
+        self.assertEqual(reply.status_code, 400)
+        notify.assert_not_called()
+
+    def test_a_restaurant_that_does_not_exist_warns_nobody(self):
+        self.cur.fetchone.side_effect = [None]
+        with patch.object(push, "notify_help_request") as notify:
+            reply = self.ask({"topic": "foto"})
+        self.assertEqual(reply.status_code, 404)
         notify.assert_not_called()
 
 

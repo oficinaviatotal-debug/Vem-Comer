@@ -179,9 +179,9 @@ Vem Trabalhar (`docs/referencias-visuais/`, PR #4); o texto do benchmark está e
   abrir com 200 pedidos não faz barulho; um pedido novo com a lista cheia apita uma vez; dois de uma vez apitam uma vez.
 - **Aviso no celular com o app fechado** (item 52, `docs/aviso-no-celular.md`): pedido novo, mesa chamando e entrega pronta chegam como notificação,
   com a tela bloqueada, para quem tocou em Ativar aviso. Mensagem sem nome, telefone, endereço ou valor; só aceita endereço de serviço de notificação conhecido
-  (o servidor não chama endereço da rede interna). Testes: 953 no servidor (as mesmas 4 falhas antigas de QR/Pix), 690 na tela; uma mensagem criptografada de verdade
+  (o servidor não chama endereço da rede interna). Testes: 962 no servidor (as mesmas 4 falhas antigas de QR/Pix), 690 na tela; uma mensagem criptografada de verdade
   abre do outro lado com a chave do aparelho; botão testado no Chromium a 390 px.
-- Falta ver tudo isso num Android de verdade: abrir o painel no Chrome do celular, Ativar aviso, Testar aviso. O aviso do GD (chamado de ajuda) e o do cliente ainda não foram ligados.
+- Falta ver tudo isso num Android de verdade: abrir o painel no Chrome do celular, Ativar aviso, Testar aviso. O chamado de ajuda do dono também vira aviso no celular do GD (e-mail em `PLATFORM_ADMIN_EMAILS` + Ativar aviso); o aviso ao cliente ainda não foi ligado.
 
 ## Pauta do 6º dia (13/10)
 

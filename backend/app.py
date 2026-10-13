@@ -5311,6 +5311,11 @@ def create_help_request():
         conn.commit()
         _close_quietly(conn, cur, rollback=False)
 
+        # Aviso no celular do administrador da plataforma (quem esta em PLATFORM_ADMIN_EMAILS e ativou o aviso).
+        push.notify_help_request(
+            company_id, context.get('company_name'), help_requests.topic_label(data['topic']), bool(open_request)
+        )
+
         url = help_requests.whatsapp_link(
             help_requests.support_whatsapp(),
             help_requests.help_text(context.get('company_name'), context.get('user_name'), data['topic'], data['message'])

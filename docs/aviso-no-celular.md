@@ -12,8 +12,9 @@ recebe uma notificação no celular mesmo com o app fechado ou a tela bloqueada:
 | Entra pedido novo | dono, gerente, cozinha, caixa | "Pedido novo" e "Mesa 4", "Entrega", "Retirada" ou "Balcão" |
 | Uma mesa chama (garçom, conta, água, limpeza) | dono, gerente, garçom | "Mesa 4 chama o garçom" |
 | Uma entrega fica pronta | motoqueiros, dono, gerente | "Entrega pronta" |
+| Um dono pede ajuda (botão "Preciso de ajuda") | **o administrador da plataforma** (e-mail em `PLATFORM_ADMIN_EMAILS`), em qualquer restaurante em que tenha entrado | "Chamado de ajuda" e "Pizzaria do Zé: Foto" ("Chamado de novo" se ele pedir outra vez) |
 
-A mensagem **nunca leva nome, telefone, endereço nem valor**: ela aparece com a tela bloqueada.
+A mensagem **nunca leva nome, telefone, endereço nem valor**: ela aparece com a tela bloqueada (o aviso do chamado leva só o nome do restaurante e o assunto; o texto que o dono escreveu fica na caixa de chamados).
 Tocar na notificação abre o painel. Se o painel já está aberto e na frente, o aviso não repete por cima (ele mesmo apita).
 
 ## Como o dono liga
@@ -60,9 +61,9 @@ e a pessoa só toca em Ativar aviso de novo (a inscrição velha é trocada).
 
 ## Testes
 
-- `backend/test_push.py` (58): endereços aceitos e recusados, as chaves do aparelho, mensagens sem dado pessoal, quem recebe o quê,
+- `backend/test_push.py` (67): endereços aceitos e recusados, as chaves do aparelho, mensagens sem dado pessoal, quem recebe o quê,
   o banco não fica preso durante o envio, aparelho que sumiu é apagado, as 4 rotas (login, outra empresa, desligado, limite do teste),
-  e os três pontos onde o aviso nasce. **Um teste manda uma mensagem de verdade pela biblioteca para um servidor de mentira na
+  e os quatro pontos onde o aviso nasce (pedido, mesa, entrega pronta, chamado de ajuda). **Um teste manda uma mensagem de verdade pela biblioteca para um servidor de mentira na
   própria máquina e abre a mensagem com a chave do aparelho** (criptografia, assinatura VAPID, `TTL`, `Urgency`).
 - `tests/push/pushLogic.test.mjs` (11) e `tests/push/serviceWorker.test.mjs` (10): rodam o `sw.js` de verdade numa casca que imita o navegador
   (mostra o texto, corta texto grande, endereço de fora vira a página inicial, fica quieto com o painel na frente, toque abre ou foca o painel).
@@ -74,4 +75,5 @@ e a pessoa só toca em Ativar aviso de novo (a inscrição velha é trocada).
 - **Num Android de verdade com o servidor de verdade.** O Chromium daqui não alcança o serviço de notificação do Google, então a
   entrega até o celular foi provada contra um servidor de mentira. O primeiro teste de verdade é: abrir o painel no Chrome do celular,
   tocar em Ativar aviso, tocar em Testar aviso e ver a notificação chegar.
-- O aviso do **GD** (chamado de ajuda, cadastro parado) e o aviso do **cliente** (pedido saiu, chegou) usam o mesmo mecanismo, mas ainda não foram ligados.
+- Para o GD receber o chamado de ajuda: entrar no painel com o e-mail que está em `PLATFORM_ADMIN_EMAILS` no celular dele e tocar em **Ativar aviso** (uma vez por celular).
+- O aviso do **cliente** (pedido saiu, chegou) usa o mesmo mecanismo, mas ainda não foi ligado; o cliente não tem login, então precisa de um passo próprio.
