@@ -48,4 +48,19 @@ Botão 🎙️ **Falar as regiões** (some se o aparelho não tem reconhecimento
 - Contra o servidor de verdade (a aba depende do #39 e da migração 011 na VPS).
 - Reconhecimento de voz de um Android de verdade com CEP: o aparelho pode escrever "30110" ou "30.110" ou separar os números;
   os dois primeiros leem, o terceiro não.
-- Tela do cliente (escolher entrega, digitar CEP e endereço) e pedidos do painel mostrando o endereço: ainda não feitos.
+- A tela do cliente foi feita no PR #41 e o pedido no painel (abaixo) na versão única do RC; nenhuma das duas foi vista num celular de verdade.
+
+## Pedidos do painel mostram como o pedido sai (13/10)
+
+O cartão do pedido agora diz o que a cozinha e o balcão precisam saber:
+
+- **Título grande:** "Mesa 7", "Entrega", "Retirada" ou "Balcão" (pedido antigo, sem tipo, continua "Balcão").
+- **Entrega:** o endereço (rua, número, complemento, bairro, cidade), o CEP com a região, o ponto de referência e o telefone
+  como link que liga para o cliente. Sem endereço, o cartão manda ligar para o cliente.
+- **Retirada:** "Cliente retira no balcão" e o telefone.
+- **Taxa:** quando há taxa de entrega, o cartão mostra "Itens", "Taxa de entrega" e o total (que já traz a taxa, como o
+  servidor guardou).
+- Código: `frontend/src/service/orderHandling.ts` (lógica pura) e `tests/ui/orderHandling.test.mjs` (8 testes). O servidor já
+  mandava esses campos em `GET /api/companies/<id>/admin/orders`.
+- Tela conferida em 390 e 320 px, sem rolagem lateral, com servidor de mentira (mesa, retirada, entrega, pedido antigo). A 320 px
+  a palavra "Retirada" empurrava a etiqueta de estado para fora do cartão; o título agora diminui em telas estreitas.

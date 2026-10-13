@@ -38,6 +38,7 @@ import DeliveryPanel from "./DeliveryPanel";
 import LogoPanel from "../logo/LogoPanel";
 import { adminPaymentChip, canConfirmPayment } from "../customer/payment";
 import ItemDetails from "../customer/ItemDetails";
+import { handlingView, itemsSubtotalCents } from "./orderHandling";
 import {
   formatMoney,
   formatTime,
@@ -83,6 +84,13 @@ type Order = {
   payment_change: number;
   created_at: string;
   table_number?: string | null;
+  /** "mesa", "retirada", "entrega" or "balcao"; an order from before delivery existed has none. */
+  order_type?: string | null;
+  /** What the server added to the total for delivery (the total already has it). */
+  delivery_fee?: number | string | null;
+  delivery_zone?: string | null;
+  delivery_address?: Record<string, unknown> | null;
+  customer_phone?: string | null;
   items?: OrderItem[];
 };
 
@@ -1459,6 +1467,7 @@ export default function AdminPanel({
             const changeFor = Number(order.payment_change);
             const showName =
               order.customer_name && order.customer_name !== "Cliente Balcão";
+            const handling = handlingView(order);
 
             return (
               <li
@@ -1472,11 +1481,7 @@ export default function AdminPanel({
                 <article className="comanda">
                   <header className="comanda-head">
                     <div>
-                      <h2 className="comanda-where">
-                        {order.table_number
-                          ? `Mesa ${order.table_number}`
-                          : "Balcão"}
-                      </h2>
+                      <h2 className="comanda-where">{handling.title}</h2>
 
                       <p className="comanda-meta">
                         {showName && <span>{order.customer_name}</span>}
@@ -1498,6 +1503,34 @@ export default function AdminPanel({
                     </span>
                   </header>
 
+                  {(handling.kind === "entrega" ||
+                    handling.kind === "retirada") && (
+                    <div
+                      className={`comanda-ship comanda-ship-${handling.kind}`}
+                    >
+                      <p className="comanda-ship-main">
+                        {handling.kind === "entrega"
+                          ? handling.address ||
+                            "Sem endereço: ligue para o cliente"
+                          : "Cliente retira no balcão"}
+                      </p>
+                      {handling.region && (
+                        <p className="comanda-ship-sub">{handling.region}</p>
+                      )}
+                      {handling.reference && (
+                        <p className="comanda-ship-sub">
+                          Referência: {handling.reference}
+                        </p>
+                      )}
+                      {handling.phone && (
+                        <p className="comanda-ship-sub">
+                          Telefone:{" "}
+                          <a href={handling.phoneHref}>{handling.phone}</a>
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   <ul className="comanda-items">
                     {(order.items ?? []).map((item, index) => (
                       <li key={index} className="comanda-item">
@@ -1513,6 +1546,30 @@ export default function AdminPanel({
                       </li>
                     ))}
                   </ul>
+
+                  {handling.feeCents > 0 && (
+                    <>
+                      <div className="leader-row comanda-fee">
+                        <span>Itens</span>
+                        <span className="leader" />
+                        <span className="money">
+                          {formatMoney(
+                            itemsSubtotalCents(
+                              order.total_price,
+                              handling.feeCents,
+                            ) / 100,
+                          )}
+                        </span>
+                      </div>
+                      <div className="leader-row comanda-fee">
+                        <span>Taxa de entrega</span>
+                        <span className="leader" />
+                        <span className="money">
+                          {formatMoney(handling.feeCents / 100)}
+                        </span>
+                      </div>
+                    </>
+                  )}
 
                   <div className="leader-row comanda-total">
                     <strong>Total</strong>
