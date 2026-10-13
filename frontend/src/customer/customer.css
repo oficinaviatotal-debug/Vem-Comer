@@ -193,6 +193,12 @@
   box-shadow: var(--sombra-folha);
 }
 
+/* A dish that ran out: still on the menu, softer, and with the "Esgotado" chip instead of the buttons. */
+.cust-item.is-sold-out .cust-item-main,
+.cust-item.is-sold-out .money {
+  opacity: 0.55;
+}
+
 .cust-item-main {
   display: flex;
   align-items: flex-start;

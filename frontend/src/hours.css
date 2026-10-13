@@ -1,0 +1,256 @@
+/* "Horário" tab of the panel and the pause strip of Pedidos. Own file so it does not touch admin.css. */
+
+.hrs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.hrs > p,
+.hrs > .adm-muted {
+  margin: 0;
+}
+
+.hrs-now {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--mata);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+}
+
+.hrs-now strong {
+  color: var(--mata);
+}
+
+.hrs-now.is-closed,
+.hrs-now.is-paused {
+  border-color: var(--alerta);
+}
+
+.hrs-now.is-closed strong,
+.hrs-now.is-paused strong {
+  color: var(--alerta);
+}
+
+.hrs-switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+}
+
+.hrs-switch > span {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.hrs-switch strong {
+  display: block;
+}
+
+.hrs-switch small {
+  color: var(--nevoa);
+}
+
+.hrs-switch .btn.is-alert {
+  border-color: var(--alerta);
+  color: var(--alerta);
+}
+
+.hrs-days {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hrs-day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+}
+
+.hrs-day.is-closed {
+  opacity: 0.8;
+  border-style: dashed;
+}
+
+.hrs-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.hrs-day-head strong {
+  text-transform: capitalize;
+}
+
+.hrs-day-head .btn.is-on {
+  border-color: var(--mata);
+  color: var(--mata);
+}
+
+.hrs-shift {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s2);
+  align-items: end;
+}
+
+.hrs-shift.has-remove {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
+.hrs-shift .field {
+  min-width: 0;
+}
+
+.hrs-shift input[type="time"] {
+  width: 100%;
+  min-width: 0;
+}
+
+.hrs-remove {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+.hrs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.hrs-summary {
+  margin: 0;
+  color: var(--folha);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.hrs .msg-error ul {
+  margin: var(--s1) 0 0;
+  padding-left: var(--s5);
+}
+
+.hrs .msg-error p {
+  margin: 0;
+}
+
+.hrs-save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s3);
+}
+
+.hrs-listen,
+.hrs-heard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s4);
+  border: 2px solid var(--mata);
+  border-radius: var(--r-sm);
+  background: var(--comanda);
+}
+
+.hrs-listen p,
+.hrs-heard p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.hrs-heard ul {
+  margin: 0;
+  padding-left: var(--s5);
+}
+
+.hrs-heard .btn-quiet {
+  align-self: flex-start;
+}
+
+.hrs-notes {
+  color: var(--alerta);
+  font-weight: 700;
+}
+
+/* The strip on top of Pedidos: is the restaurant taking orders, and one tap to pause. */
+.hrs-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s3);
+  margin-bottom: var(--s3);
+  padding: var(--s2) var(--s4);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+}
+
+.hrs-strip > span {
+  flex: 1 1 10rem;
+  min-width: 0;
+  font-size: var(--t-sm);
+}
+
+.hrs-strip.is-paused {
+  border: 2px solid var(--alerta);
+}
+
+.hrs-strip.is-paused > span {
+  color: var(--alerta);
+  font-weight: 700;
+}
+
+.hrs-strip.is-closed > span {
+  color: var(--alerta);
+}
+
+.hrs-strip .msg-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* Narrow phones: the remove button goes to its own line so both times keep their room. */
+@media (max-width: 360px) {
+  .hrs-day {
+    padding: var(--s3);
+  }
+
+  .hrs-shift.has-remove {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .hrs-shift .hrs-remove {
+    grid-column: 1 / -1;
+    justify-self: start;
+    min-height: 2.25rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .hrs-shift input[type="time"] {
+    padding-inline: var(--s2);
+    font-size: 0.95rem;
+  }
+}

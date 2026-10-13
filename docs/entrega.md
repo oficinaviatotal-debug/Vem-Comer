@@ -117,6 +117,6 @@ meio:
   com o motoqueiro por fora.
 - **Preencher a rua pelo CEP** (ViaCEP): hoje o cliente digita o endereço. Fica para depois, porque depende de o
   celular do cliente alcançar um serviço de fora.
-- **Horário de funcionamento** (entrega fora do horário): 11/10.
+- **Horário de funcionamento** (entrega fora do horário): pronto em 13/10, veja `horario-e-esgotado.md`.
 - **Quem paga a taxa** (item 62 aberto): hoje o cliente paga a taxa da região e o restaurante acerta com o
   motoqueiro por fora.

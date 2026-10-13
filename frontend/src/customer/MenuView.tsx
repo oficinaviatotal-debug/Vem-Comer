@@ -4,6 +4,7 @@ import { formatMoney } from "../service/format";
 import { quantityOf, type CartLine } from "./cart";
 import type { MenuGroup } from "./menuGroups";
 import { hasOptions, hasPriceVariation, isUnavailable, minPriceCents } from "./options";
+import { isSoldOut } from "./openness";
 import type { Product } from "./types";
 import QuantityStepper from "./QuantityStepper";
 
@@ -69,9 +70,13 @@ export default function MenuView({ groups, cart, query, search, onAdd, onLess, o
               const photo = mediaUrl(product.thumb_url);
               const options = hasOptions(product);
               const unavailable = options && isUnavailable(product);
+              const soldOut = isSoldOut(product);
               const priceFrom = options && hasPriceVariation(product);
               return (
-                <li className={photo ? "cust-item has-photo" : "cust-item"} key={product.id}>
+                <li
+                  className={[photo ? "cust-item has-photo" : "cust-item", soldOut ? "is-sold-out" : ""].filter(Boolean).join(" ")}
+                  key={product.id}
+                >
                   <div className="cust-item-main">
                     <div className="cust-item-text">
                       <h3 className="cust-item-name">{product.name}</h3>
@@ -103,6 +108,8 @@ export default function MenuView({ groups, cart, query, search, onAdd, onLess, o
                     <div className="cust-qty" id={product.id === firstId ? "cust-first-add" : undefined}>
                       {closed ? (
                         <span className="chip chip-busy">Sem pedidos agora</span>
+                      ) : soldOut ? (
+                        <span className="chip chip-busy">Esgotado</span>
                       ) : options ? (
                         unavailable ? (
                           <span className="chip chip-busy">Indisponível agora</span>

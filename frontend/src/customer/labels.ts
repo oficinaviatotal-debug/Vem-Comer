@@ -117,6 +117,10 @@ export function orderErrorMessage(serverMessage: string | null | undefined, mode
   if (said) return said;
   const text = String(serverMessage ?? "").toLowerCase();
   if (text.includes("não está recebendo pedidos")) return CLOSED_NOTICE;
+  // These sentences are written for the customer by the server (the hours, the pause, the dish that ran out)
+  if (text.startsWith("fechado agora") || text.includes("pausa nos pedidos") || /\bacabou\.( |$)/.test(text)) {
+    return String(serverMessage).trim();
+  }
   if (text.includes("mesa")) {
     return "Não encontramos esta mesa. Chame o atendente para te ajudar.";
   }

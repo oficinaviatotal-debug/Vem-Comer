@@ -35,6 +35,9 @@ import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
 import ConfirmButton from "./ConfirmButton";
 import PixSettingsPanel from "./PixSettingsPanel";
 import DeliveryPanel from "./DeliveryPanel";
+import HoursPanel from "./HoursPanel";
+import PauseStrip from "./PauseStrip";
+import { resetSoldOut, setSoldOut } from "./hoursApi";
 import SubscriptionPanel from "./SubscriptionPanel";
 import PlatformPanel from "./PlatformPanel";
 import { useOwnerPlan } from "./useOwnerPlan";
@@ -108,6 +111,8 @@ type Product = {
   image_url?: string | null;
   /** Groups the customer is asked about (size, extras); only what is on sale. */
   option_groups?: unknown[] | null;
+  /** Ran out today: stays on the menu, marked, and cannot be ordered. */
+  sold_out?: boolean;
 };
 
 type Menu = {
@@ -141,6 +146,7 @@ type AdminView =
   | "pagamento"
   | "marca"
   | "entrega"
+  | "horario"
   | "plano"
   | "assinaturas";
 
@@ -156,6 +162,7 @@ const ADMIN_VIEWS: string[] = [
   "pagamento",
   "marca",
   "entrega",
+  "horario",
   "plano",
   "assinaturas",
 ];
@@ -197,6 +204,7 @@ export default function AdminPanel({
   const [view, setView] = useState<AdminView>("pedidos");
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [soldOutError, setSoldOutError] = useState("");
   const [photoFor, setPhotoFor] = useState<string | null>(null);
   const [optionsFor, setOptionsFor] = useState<string | null>(null);
   const [menus, setMenus] = useState<Menu[]>([]);
@@ -473,6 +481,31 @@ export default function AdminPanel({
       loadProducts();
     } catch (err) {
       console.error(err);
+    }
+  }
+
+  /** One tap: the dish ran out (or is back). The screen changes at once and goes back if the server says no. */
+  async function handleSoldOut(productId: string, soldOut: boolean) {
+    setSoldOutError("");
+    const mark = (value: boolean) =>
+      setProducts((list) => list.map((item) => (item.id === productId ? { ...item, sold_out: value } : item)));
+    mark(soldOut);
+    try {
+      await setSoldOut(productId, soldOut);
+    } catch (err) {
+      mark(!soldOut);
+      setSoldOutError(err instanceof Error ? err.message : "Não consegui marcar o prato. Tente de novo.");
+    }
+  }
+
+  /** "Voltou tudo": the start of a new day. */
+  async function handleResetSoldOut() {
+    setSoldOutError("");
+    try {
+      await resetSoldOut();
+      setProducts((list) => list.map((item) => ({ ...item, sold_out: false })));
+    } catch (err) {
+      setSoldOutError(err instanceof Error ? err.message : "Não consegui desmarcar os pratos. Tente de novo.");
     }
   }
 
@@ -950,6 +983,19 @@ export default function AdminPanel({
           </button>
         )}
 
+        {(currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") && (
+          <button
+            id="admin-tab-horario"
+            type="button"
+            className={tabClass("horario")}
+            aria-current={view === "horario" ? "page" : undefined}
+            onClick={() => setView("horario")}
+          >
+            Horário
+          </button>
+        )}
+
         <button
           id="admin-tab-dashboard"
           type="button"
@@ -1023,6 +1069,11 @@ export default function AdminPanel({
         )}
       </nav>
 
+      {view === "pedidos" &&
+        (currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER" ||
+          currentUser?.role === "KITCHEN") && <PauseStrip />}
+
       {view === "custos" &&
       (currentUser?.role === "OWNER" ||
         currentUser?.role === "MANAGER") ? (
@@ -1086,6 +1137,10 @@ export default function AdminPanel({
         (currentUser?.role === "OWNER" ||
           currentUser?.role === "MANAGER") ? (
         <DeliveryPanel />
+      ) : view === "horario" &&
+        (currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") ? (
+        <HoursPanel />
       ) : view === "plano" && plan && hasPlanTab(plan) ? (
         <SubscriptionPanel
           plan={plan}
@@ -1294,6 +1349,24 @@ export default function AdminPanel({
               </button>
             </div>
           ) : (
+            <>
+            {products.some((item) => item.sold_out) && (
+              <div className="adm-alert" role="status">
+                <span>
+                  {products.filter((item) => item.sold_out).length === 1
+                    ? "1 prato esgotado. O cliente vê, mas não consegue pedir."
+                    : `${products.filter((item) => item.sold_out).length} pratos esgotados. O cliente vê, mas não consegue pedir.`}
+                </span>
+                <button type="button" className="btn btn-outline btn-sm" onClick={() => void handleResetSoldOut()}>
+                  Voltou tudo
+                </button>
+              </div>
+            )}
+            {soldOutError && (
+              <p className="msg-error" role="alert">
+                {soldOutError}
+              </p>
+            )}
             <ul className="adm-list">
               {products.map((product) => (
                 <li key={product.id} className="adm-row adm-row-photo">
@@ -1312,6 +1385,7 @@ export default function AdminPanel({
                     {product.description && (
                       <p className="adm-muted">{product.description}</p>
                     )}
+                    {product.sold_out && <span className="chip chip-busy">Esgotado</span>}
                     {menuName(product.menu_id) && (
                       <span className="chip">{menuName(product.menu_id)}</span>
                     )}
@@ -1322,6 +1396,15 @@ export default function AdminPanel({
 
                   <div className="adm-row-side">
                     <span className="money">{formatMoney(product.price)}</span>
+                    <button
+                      type="button"
+                      className={product.sold_out ? "btn btn-primary btn-sm" : "btn btn-outline btn-sm"}
+                      aria-pressed={Boolean(product.sold_out)}
+                      aria-label={product.sold_out ? `${product.name} voltou` : `${product.name} esgotou`}
+                      onClick={() => void handleSoldOut(product.id, !product.sold_out)}
+                    >
+                      {product.sold_out ? "Voltou" : "Esgotou"}
+                    </button>
                     <button
                       type="button"
                       className="btn btn-outline btn-sm"
@@ -1379,6 +1462,7 @@ export default function AdminPanel({
                 </li>
               ))}
             </ul>
+            </>
           )}
         </section>
       ) : view === "categorias" ? (

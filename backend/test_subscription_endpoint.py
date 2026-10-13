@@ -139,10 +139,12 @@ class NotEnforcedTests(Base):
 
     def test_off_means_open_and_the_subscription_is_not_even_read(self):
         company = {"id": COMPANY_ID, "name": "Saiteria", "slug": "saiteria", "logo_key": None}
-        with patch.object(backend_app, "query_db", side_effect=[company]) as q:
+        with patch.object(backend_app, "query_db", side_effect=[company, []]) as q:
             body = self.client.get("/api/companies/by-slug/saiteria").get_json()
         self.assertIs(body["accepting_orders"], True)
-        self.assertEqual(q.call_count, 1)
+        # Duas consultas: o restaurante e os horarios. A assinatura nao e lida.
+        self.assertEqual(q.call_count, 2)
+        self.assertFalse(any("FROM subscriptions" in call.args[0] for call in q.call_args_list))
 
     def test_off_means_the_order_goes_through_without_reading_the_subscription(self):
         self.cur.sub = PAST_DUE
