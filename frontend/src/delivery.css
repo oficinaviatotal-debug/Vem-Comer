@@ -1,0 +1,146 @@
+/* "Entrega" tab of the panel: the regions the restaurant delivers to. Own file so it does not touch admin.css. */
+
+.dlv {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.dlv > p,
+.dlv > .adm-muted {
+  margin: 0;
+}
+
+.dlv-switches {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.dlv-switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+}
+
+.dlv-switch > span {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.dlv-switch strong {
+  display: block;
+}
+
+.dlv-switch small {
+  color: var(--nevoa);
+}
+
+.dlv-switch .btn.is-on {
+  border-color: var(--mata);
+  color: var(--mata);
+}
+
+.dlv-switch .btn.is-alert {
+  border-color: var(--alerta);
+  color: var(--alerta);
+}
+
+.dlv-zone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+}
+
+.dlv-zone.is-off {
+  opacity: 0.8;
+  border-style: dashed;
+}
+
+.dlv-money {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: var(--s3);
+}
+
+.dlv-sentence {
+  margin: 0;
+  color: var(--folha);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.dlv-hint {
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+}
+
+.dlv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.dlv-actions .btn.is-on {
+  border-color: var(--mata);
+  color: var(--mata);
+}
+
+.dlv .msg-error ul {
+  margin: var(--s1) 0 0;
+  padding-left: var(--s5);
+}
+
+.dlv .msg-error p {
+  margin: 0;
+}
+
+.dlv-save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s3);
+}
+
+.dlv-listen,
+.dlv-heard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s4);
+  border: 2px solid var(--mata);
+  border-radius: var(--r-sm);
+  background: var(--comanda);
+}
+
+.dlv-listen p,
+.dlv-heard p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.dlv-heard ul {
+  margin: 0;
+  padding-left: var(--s5);
+}
+
+.dlv-heard .btn-quiet {
+  align-self: flex-start;
+}
+
+.dlv-notes {
+  color: var(--alerta);
+  font-weight: 700;
+}
