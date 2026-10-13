@@ -52,11 +52,11 @@ import {
 } from "./format";
 import {
   STATUS_DONE,
-  STATUS_PREPARING,
   isActiveStatus,
   nextAction,
   sortForKitchen,
   statusLabel,
+  statusTone,
 } from "./orderStatus";
 import { tableOrderUrl as buildTableUrl } from "./links";
 import { rememberCompany } from "./lastCompany";
@@ -1538,11 +1538,11 @@ export default function AdminPanel({
       ) : (
         <ul className="adm-orders" aria-label="Pedidos">
           {sortedOrders.map((order) => {
-            const next = nextAction(order.status);
             const changeFor = Number(order.payment_change);
             const showName =
               order.customer_name && order.customer_name !== "Cliente Balcão";
             const handling = handlingView(order);
+            const next = nextAction(order.status, handling.kind);
 
             return (
               <li
@@ -1565,16 +1565,8 @@ export default function AdminPanel({
                       </p>
                     </div>
 
-                    <span
-                      className={
-                        order.status === STATUS_DONE
-                          ? "chip chip-done"
-                          : order.status === STATUS_PREPARING
-                            ? "chip chip-prep"
-                            : "chip chip-wait"
-                      }
-                    >
-                      {statusLabel(order.status)}
+                    <span className={`chip chip-${statusTone(order.status)}`}>
+                      {statusLabel(order.status, handling.kind)}
                     </span>
                   </header>
 
@@ -1710,6 +1702,18 @@ export default function AdminPanel({
                       onClick={() => handleStatusChange(order.id, next.next)}
                     >
                       {next.label}
+                    </button>
+                  )}
+
+                  {next?.skip && (
+                    <button
+                      type="button"
+                      className="btn btn-quiet btn-sm btn-block"
+                      onClick={() =>
+                        handleStatusChange(order.id, next.skip!.next)
+                      }
+                    >
+                      {next.skip.label}
                     </button>
                   )}
                 </article>

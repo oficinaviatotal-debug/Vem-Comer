@@ -538,7 +538,7 @@
 
 .cust-steps {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(var(--steps, 3), minmax(0, 1fr));
   gap: var(--s2);
   margin: var(--s4) 0 0;
   padding: 0;
@@ -572,6 +572,17 @@
 .cust-steps li.is-current::before {
   background: var(--sol);
   box-shadow: inset 0 0 0 2px var(--folha);
+}
+
+/* Four steps (delivery) on a narrow phone: smaller words so "Entregue" is not cut. */
+@media (max-width: 360px) {
+  .cust-steps-many {
+    gap: 4px;
+  }
+
+  .cust-steps-many li {
+    font-size: 0.75rem;
+  }
 }
 
 .comanda-wrap.is-ready .cust-steps li::before {

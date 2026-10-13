@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import ItemDetails from "./ItemDetails";
 import { fetchOrder, HttpError } from "../service/api";
 import { formatMoney, shortOrderCode } from "../service/format";
-import { customerStatus, STEP_LABELS } from "./labels";
+import { customerStatus } from "./labels";
 import type { OrderView } from "./types";
 import { orderMemory } from "./orderMemory";
 import OrderFeedback from "./OrderFeedback";
@@ -128,8 +128,12 @@ export default function OrderTracking(props: Props) {
         <div className="cust-status">
           <h2 aria-live="polite">{status.headline}</h2>
           {status.hint && <p>{status.hint}</p>}
-          <ol className="cust-steps" aria-label="Andamento do pedido">
-            {STEP_LABELS.map((label, index) => (
+          <ol
+            className={status.steps.length > 3 ? "cust-steps cust-steps-many" : "cust-steps"}
+            aria-label="Andamento do pedido"
+            style={{ "--steps": status.steps.length } as CSSProperties}
+          >
+            {status.steps.map((label, index) => (
               <li
                 key={label}
                 className={index < status.step ? "is-done" : index === status.step ? "is-current" : ""}
