@@ -178,7 +178,8 @@ def require_company_access(company_id):
 def health_check():
     return jsonify({
         "status": "ok",
-        "service": "vem-comer-api"
+        "service": "vem-comer-api",
+        "version": os.environ.get('VEM_VERSION', 'dev')
     }), 200
 
 

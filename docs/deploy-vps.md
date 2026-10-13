@@ -110,6 +110,8 @@ systemctl list-timers vem-comer-backup.timer     # próximo backup
 ```
 
 Atualizar para a versão mais nova do GitHub: rodar de novo o comando de instalar.
+**Ou deixar o servidor fazer isso sozinho** (só instala o que passou em todos os testes, faz backup antes e
+volta atrás se o site não subir): veja [atualizacao-automatica.md](atualizacao-automatica.md). É um comando só, uma vez.
 Não edite arquivos dentro de `/opt/vem-comer/app`: o instalador sobrescreve com a versão do GitHub.
 
 Mudanças no banco entram como arquivos novos em `database/migrations/` (de `002` em diante) e

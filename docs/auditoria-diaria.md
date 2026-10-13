@@ -151,6 +151,16 @@ antigas por falta de biblioteca de QR e Pix neste ambiente, que também falham n
 **Referências guardadas em 13/10:** o anúncio de curso (08/10) e o anúncio da Empregare (10/10) estão no repositório privado do
 Vem Trabalhar (`docs/referencias-visuais/`, PR #4); o texto do benchmark está em `docs/benchmark-comida-rh-cursos.md`.
 
+## Atualização de 13/10 (tarde): fila inteira em `main`, atualizador da VPS
+
+- Em `main` (857ef84): #42 (GD), #43 assinatura R$ 190 (desligada por padrão), #44 estados pronto/saiu para entrega, #45 horário/pausa/esgotado,
+  #46 cartaz da mesa e página de venda (entraram pelo PR #47). Vem Trabalhar: #3, #4 e #5 em `main`. Os testes automáticos ficaram verdes em todos.
+  Abertos de propósito: #41 (substituído, já está em `main`; fechar com um toque) e #6 (ADR 0001, aguarda o aval do GD).
+- Atualizador automático da VPS (`docs/atualizacao-automatica.md`): o GD roda UM comando uma vez; depois o servidor só instala o que está em `main` com
+  testes verdes, faz backup antes, confere de fora a versão nova e volta sozinho se não subir. Nada mudou na produção até esse comando ser rodado.
+- Banco do Vem Trabalhar: aprovado pelo GD, mas o Supabase recusou reativar o projeto (2,0 GB, plano gratuito). Nada foi alterado; correção 001 segue pronta
+  (`docs/propostas/001`). Decisão do GD: plano pago, ou projeto novo só com o que usamos.
+
 ## Pauta do 6º dia (13/10)
 
 1. Passar o checklist item por item, com a foto da tela quando for tela.
