@@ -6,3 +6,4 @@ itsdangerous
 gunicorn
 qrcode
 Pillow
+pywebpush==2.5.0

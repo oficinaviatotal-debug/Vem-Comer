@@ -50,6 +50,7 @@ import LogoPanel from "../logo/LogoPanel";
 import { alertDevice } from "./alertDevice";
 import { knownOrderIds, newOrders, wantsNewOrderAlert } from "./newOrders";
 import CourierHome from "../courier/CourierHome";
+import PushToggle from "../push/PushToggle";
 import CourierPanel from "../courier/CourierPanel";
 import CashSettlement from "../courier/CashSettlement";
 import { adminPaymentChip, canConfirmPayment } from "../customer/payment";
@@ -948,6 +949,8 @@ export default function AdminPanel({
       </div>
 
       <CallsBar companyId={companyId} />
+
+      <PushToggle companyId={companyId} />
 
       {planBanner && (
         <div className={`adm-alert plan-banner plan-banner-${planBanner.kind}`} role="status">

@@ -1,6 +1,7 @@
 import "../ui.css";
 import "../admin.css";
 import "./courier.css";
+import PushToggle from "../push/PushToggle";
 import CourierPanel from "./CourierPanel";
 
 type Props = {
@@ -32,6 +33,8 @@ export default function CourierHome({ companyId, name, onLogout, onBack }: Props
         <h1 className="adm-title">Entregas</h1>
         {name && <p className="adm-lead">{name}, Entregador</p>}
       </div>
+
+      <PushToggle companyId={companyId} />
 
       <CourierPanel companyId={companyId} />
     </main>

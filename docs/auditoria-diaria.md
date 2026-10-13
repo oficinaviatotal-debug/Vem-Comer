@@ -177,7 +177,11 @@ Vem Trabalhar (`docs/referencias-visuais/`, PR #4); o texto do benchmark está e
 - Aviso de pedido novo com apito e vibração, e o aviso passa a ser pelo **número do pedido** (antes pela quantidade, que parava de subir
   nos 200 pedidos mais recentes que o servidor manda). O motoqueiro também ouve quando uma entrega fica pronta. Conferido no painel de verdade:
   abrir com 200 pedidos não faz barulho; um pedido novo com a lista cheia apita uma vez; dois de uma vez apitam uma vez.
-- Falta ver tudo isso num Android de verdade e, depois, avisar quando o celular está bloqueado (notificação push: item 52).
+- **Aviso no celular com o app fechado** (item 52, `docs/aviso-no-celular.md`): pedido novo, mesa chamando e entrega pronta chegam como notificação,
+  com a tela bloqueada, para quem tocou em Ativar aviso. Mensagem sem nome, telefone, endereço ou valor; só aceita endereço de serviço de notificação conhecido
+  (o servidor não chama endereço da rede interna). Testes: 953 no servidor (as mesmas 4 falhas antigas de QR/Pix), 690 na tela; uma mensagem criptografada de verdade
+  abre do outro lado com a chave do aparelho; botão testado no Chromium a 390 px.
+- Falta ver tudo isso num Android de verdade: abrir o painel no Chrome do celular, Ativar aviso, Testar aviso. O aviso do GD (chamado de ajuda) e o do cliente ainda não foram ligados.
 
 ## Pauta do 6º dia (13/10)
 

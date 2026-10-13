@@ -33,7 +33,7 @@
 
 	handle {
 		root * /srv/site
-		@casca path / /index.html
+		@casca path / /index.html /sw.js
 		header @casca Cache-Control "no-cache"
 		@arquivos path /assets/*
 		header @arquivos Cache-Control "public, max-age=31536000, immutable"
