@@ -2,15 +2,17 @@ import { useEffect, useId, useRef, useState, type ChangeEvent } from "react";
 import "../ui.css";
 import "../photos/photos.css";
 import "./assistant.css";
-import { readMenuPhotos } from "../service/api";
+import { readMenuFile, readMenuPhotos } from "../service/api";
 import { prepareMenuPage } from "../photos/photoFiles";
 import { MENU_MAX_PHOTOS, photoErrorText } from "../photos/photoLogic";
 import type { ParsedMenu } from "./assistantFlow";
 import {
   fitsTogether,
+  menuFileProblem,
   normalizeReading,
   pagesLeft,
   readingErrorText,
+  unreadableFileText,
   unreadableText,
 } from "./menuPhotoLogic";
 
@@ -21,6 +23,12 @@ type Props = {
   onBack: () => void;
   /** The reading started: the assistant says it may take a while. */
   onReading?: () => void;
+  /** Photos can be read (needs the AI key on the server). On by default. */
+  photoEnabled?: boolean;
+  /** A spreadsheet (Excel, CSV) can be read. Off by default: an older server does not have the route. */
+  fileEnabled?: boolean;
+  /** A PDF can be read (needs the AI key on the server). */
+  pdfEnabled?: boolean;
 };
 
 type Page = { id: number; blob: Blob; url: string };
@@ -29,8 +37,19 @@ type Phase = "choose" | "preparing" | "reading" | "unreadable" | "error";
 /** The server waits up to 85 s for the AI; a little more than that here. */
 const READ_TIMEOUT_MS = 100_000;
 
-/** Photographing the pages of the owner's own menu, then sending them to be read. */
-export default function MenuPhotoStep({ onRead, onBack, onReading }: Props) {
+/** What the file picker offers. The server looks inside the file, so the names here only guide the owner. */
+const SHEET_ACCEPT = ".csv,.tsv,.txt,.xlsx,.xlsm,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+const FILE_ACCEPT = `${SHEET_ACCEPT},.pdf,application/pdf`;
+
+/** Photographing the pages of the owner's own menu (or choosing a spreadsheet or PDF), then sending it to be read. */
+export default function MenuPhotoStep({
+  onRead,
+  onBack,
+  onReading,
+  photoEnabled = true,
+  fileEnabled = false,
+  pdfEnabled = false,
+}: Props) {
   const [pages, setPages] = useState<Page[]>([]);
   const [phase, setPhase] = useState<Phase>("choose");
   const [message, setMessage] = useState("");
@@ -96,15 +115,11 @@ export default function MenuPhotoStep({ onRead, onBack, onReading }: Props) {
     setPhase("choose");
   }
 
-  async function read() {
-    const current = pagesRef.current;
-    if (current.length === 0) return;
-    if (!fitsTogether(current.map((page) => page.blob.size))) {
-      setMessage("As fotos ficaram pesadas demais juntas. Tire uma página de cada vez, ou tire menos páginas.");
-      setPhase("choose");
-      return;
-    }
-
+  /**
+   * Runs one reading: shows the waiting state, sends, and shows what came back.
+   * `kind` decides the words used when the menu could not be read.
+   */
+  async function runReading(kind: "photo" | "file", send: (signal: AbortSignal) => Promise<unknown>) {
     const mine = ++run.current;
     const abort = new AbortController();
     controller.current = abort;
@@ -113,10 +128,7 @@ export default function MenuPhotoStep({ onRead, onBack, onReading }: Props) {
     setMessage("");
     onReading?.();
     try {
-      const answer = await readMenuPhotos(
-        current.map((page) => page.blob),
-        abort.signal
-      );
+      const answer = await send(abort.signal);
       if (mine !== run.current) return;
       const parsed = normalizeReading(answer);
       if (!parsed) {
@@ -125,14 +137,10 @@ export default function MenuPhotoStep({ onRead, onBack, onReading }: Props) {
         return;
       }
       if (!parsed.readable) {
-        setMessage(unreadableText(parsed));
-        setPhase("unreadable");
+        showUnreadable(kind, parsed);
         return;
       }
-      if (onRead(parsed) === false) {
-        setMessage(unreadableText({ ...parsed, notes: "" }));
-        setPhase("unreadable");
-      }
+      if (onRead(parsed) === false) showUnreadable(kind, { ...parsed, notes: "" });
     } catch (reason) {
       if (mine !== run.current) return;
       setMessage(readingErrorText(reason));
@@ -141,6 +149,43 @@ export default function MenuPhotoStep({ onRead, onBack, onReading }: Props) {
       clearTimeout(timer);
       if (controller.current === abort) controller.current = null;
     }
+  }
+
+  function showUnreadable(kind: "photo" | "file", parsed: ParsedMenu) {
+    if (kind === "photo") {
+      setMessage(unreadableText(parsed));
+      setPhase("unreadable");
+      return;
+    }
+    // A file has nothing to retake: the owner just picks another one, so the buttons come back.
+    setMessage(unreadableFileText(parsed, photoEnabled));
+    setPhase("choose");
+  }
+
+  async function read() {
+    const current = pagesRef.current;
+    if (current.length === 0) return;
+    if (!fitsTogether(current.map((page) => page.blob.size))) {
+      setMessage("As fotos ficaram pesadas demais juntas. Tire uma página de cada vez, ou tire menos páginas.");
+      setPhase("choose");
+      return;
+    }
+    await runReading("photo", (signal) =>
+      readMenuPhotos(
+        current.map((page) => page.blob),
+        signal
+      )
+    );
+  }
+
+  async function readFile(file: File) {
+    const problem = menuFileProblem(file, pdfEnabled);
+    if (problem) {
+      setMessage(problem);
+      setPhase("choose");
+      return;
+    }
+    await runReading("file", (signal) => readMenuFile(file, signal));
   }
 
   function cancelReading() {
@@ -168,16 +213,38 @@ export default function MenuPhotoStep({ onRead, onBack, onReading }: Props) {
       void addFiles(chosen);
     },
   });
+  const fileInputProps = {
+    id: `${ids}-file`,
+    "data-role": "file",
+    className: "photo-input",
+    type: "file" as const,
+    accept: pdfEnabled ? FILE_ACCEPT : SHEET_ACCEPT,
+    disabled: busy,
+    onChange: (event: ChangeEvent<HTMLInputElement>) => {
+      const chosen = event.target.files?.[0];
+      event.target.value = ""; // choosing the same file again must still work
+      if (chosen) void readFile(chosen);
+    },
+  };
+  const fileOnly = !photoEnabled && fileEnabled;
   const labelClass = (primary: boolean) =>
     ["btn", primary ? "btn-primary" : "btn-outline", "photo-btn", busy ? "is-disabled" : ""].filter(Boolean).join(" ");
 
   return (
-    <div className="sheet asst-photo" aria-label="Foto do cardápio">
-      <h3>Foto do cardápio</h3>
-      <p className="asst-help">
-        Tire uma foto de cada página, de frente, com boa luz e sem reflexo. A foto é usada só para ler o cardápio e
-        não fica guardada no Vem Comer.
-      </p>
+    <div className="sheet asst-photo" aria-label={fileOnly ? "Arquivo do cardápio" : "Foto do cardápio"}>
+      <h3>{fileOnly ? "Planilha do cardápio" : "Foto do cardápio"}</h3>
+      {fileOnly ? (
+        <p className="asst-help">
+          Escolha o arquivo do cardápio (Excel ou CSV), com o nome do prato e o preço em cada linha. O arquivo é usado
+          só para ler o cardápio e não fica guardado no Vem Comer.
+        </p>
+      ) : (
+        <p className="asst-help">
+          Tire uma foto de cada página, de frente, com boa luz e sem reflexo.
+          {fileEnabled ? " Se o cardápio já está numa planilha ou PDF, escolha o arquivo." : ""} A foto é usada só para
+          ler o cardápio e não fica guardada no Vem Comer.
+        </p>
+      )}
 
       {pages.length > 0 && (
         <ul className="asst-pages" aria-label="Páginas do cardápio">
@@ -236,18 +303,28 @@ export default function MenuPhotoStep({ onRead, onBack, onReading }: Props) {
               Tirar outra foto
             </button>
           ) : (
-            !full && (
-              <>
-                <label htmlFor={`${ids}-camera`} className={labelClass(pages.length === 0)}>
-                  <span aria-hidden="true">📷</span> {pages.length === 0 ? "Tirar foto do cardápio" : "Tirar outra página"}
-                </label>
-                <input {...inputProps("camera")} />
-                <label htmlFor={`${ids}-gallery`} className={labelClass(false)}>
-                  <span aria-hidden="true">🖼️</span> Escolher da galeria
-                </label>
-                <input {...inputProps("gallery")} />
-              </>
-            )
+            <>
+              {photoEnabled && !full && (
+                <>
+                  <label htmlFor={`${ids}-camera`} className={labelClass(pages.length === 0)}>
+                    <span aria-hidden="true">📷</span> {pages.length === 0 ? "Tirar foto do cardápio" : "Tirar outra página"}
+                  </label>
+                  <input {...inputProps("camera")} />
+                  <label htmlFor={`${ids}-gallery`} className={labelClass(false)}>
+                    <span aria-hidden="true">🖼️</span> Escolher da galeria
+                  </label>
+                  <input {...inputProps("gallery")} />
+                </>
+              )}
+              {fileEnabled && pages.length === 0 && (
+                <>
+                  <label htmlFor={`${ids}-file`} className={labelClass(fileOnly)}>
+                    <span aria-hidden="true">📄</span> {pdfEnabled ? "Planilha ou PDF" : "Escolher a planilha"}
+                  </label>
+                  <input {...fileInputProps} />
+                </>
+              )}
+            </>
           )}
         </div>
       )}

@@ -30,6 +30,7 @@ import item_options
 import logo_image
 import media_store
 import menu_photo
+import menu_file
 import voice_tts
 import feedback
 import hours
@@ -54,7 +55,7 @@ app.wsgi_app = wrap_trusted_proxy(app.wsgi_app)
 app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', '1048576'))  # 1 MiB
 # Foto de prato: so as rotas de foto aceitam corpo maior (veja allow_big_body_for_photos).
 PHOTO_MAX_BYTES = int(os.getenv('PHOTO_MAX_BYTES', str(10 * 1024 * 1024)))  # 10 MiB
-PHOTO_ENDPOINTS = {'admin_upload_product_photo', 'admin_parse_menu_photo', 'admin_upload_company_logo'}
+PHOTO_ENDPOINTS = {'admin_upload_product_photo', 'admin_parse_menu_photo', 'admin_parse_menu_file', 'admin_upload_company_logo'}
 # Logomarca: o celular ja manda reduzida (ate ~1 MiB); acima disso nao e logomarca.
 LOGO_MAX_BYTES = int(os.getenv('LOGO_MAX_BYTES', str(4 * 1024 * 1024)))  # 4 MiB
 # No maximo 2 fotos sendo processadas ao mesmo tempo: o processamento usa memoria e processador.
@@ -2585,6 +2586,9 @@ def admin_menu_capabilities():
     """Diz para a tela o que este servidor sabe fazer: ler cardapio por foto e falar com voz natural."""
     return jsonify({
         "photo_menu": menu_photo.is_configured(),
+        # planilha (CSV/Excel) e lida sem IA, entao esta sempre disponivel; PDF depende da leitura por IA
+        "file_menu": True,
+        "pdf_menu": menu_photo.is_configured(),
         "natural_voice": voice_tts.is_configured(),
     }), 200
 
@@ -2697,6 +2701,58 @@ def admin_parse_menu_photo():
         return error_response("Erro ao ler o cardapio da foto", e)
     finally:
         _menu_read_slots.release()
+
+    return jsonify(result), 200
+
+
+@app.route('/api/admin/menu/parse-file', methods=['POST'])
+@require_roles('OWNER', 'MANAGER')
+def admin_parse_menu_file():
+    """Le um cardapio que o dono ja tem em arquivo (campo "file"): planilha CSV/Excel (sem IA) ou PDF (com IA).
+
+    Devolve o mesmo formato da leitura por foto. Nao grava nada: o dono confere na tela e o cadastro acontece
+    pela rota de importacao de sempre.
+    """
+    company_id = request.user.get('company_id')
+    upload = request.files.get('file')
+
+    if upload is None:
+        return jsonify({"error": "Nao recebi nenhum arquivo. Tente de novo."}), 400
+
+    data = upload.read(PHOTO_MAX_BYTES + 1)
+
+    if len(data) > PHOTO_MAX_BYTES:
+        return jsonify({"error": "O arquivo e grande demais."}), 413
+
+    if not data:
+        return jsonify({"error": "O arquivo veio vazio. Tente de novo."}), 400
+
+    kind = menu_file.detect_kind(data)
+
+    try:
+        if kind == 'pdf':
+            if not menu_photo.is_configured():
+                return jsonify({
+                    "error": "Ler PDF ainda nao foi ligado neste servidor. Mande uma planilha (.xlsx ou CSV) ou tire fotos das paginas."
+                }), 501
+
+            if not _menu_read_slots.acquire(timeout=5):
+                return jsonify({
+                    "error": "O servidor esta ocupado lendo outros cardapios. Tente de novo em alguns segundos."
+                }), 503
+
+            try:
+                result = menu_photo.read_menu_pdf(data, str(company_id))
+            finally:
+                _menu_read_slots.release()
+        else:
+            result = menu_file.read_menu_sheet(data, kind)
+    except menu_file.MenuFileError as e:
+        return jsonify({"error": e.message}), e.status
+    except menu_photo.MenuPhotoError as e:
+        return jsonify({"error": e.message}), e.status
+    except Exception as e:
+        return error_response("Erro ao ler o cardapio do arquivo", e)
 
     return jsonify(result), 200
 

@@ -789,15 +789,28 @@ export async function uploadProductPhoto(productId: string, photo: Blob): Promis
 }
 
 /** What this server can do for the menu. Any failure means "not available": the screen then uses the ready-made lists. */
-export type MenuCapabilities = { photo_menu: boolean; natural_voice: boolean };
+export type MenuCapabilities = {
+  /** Reading a photo of a menu (needs the AI key on the server). */
+  photo_menu: boolean;
+  /** Reading a spreadsheet (CSV or Excel): no AI, always on in a server that has the route. */
+  file_menu: boolean;
+  /** Reading a PDF (needs the AI key on the server). */
+  pdf_menu: boolean;
+  natural_voice: boolean;
+};
 
 export async function fetchMenuCapabilities(): Promise<MenuCapabilities> {
-  const off: MenuCapabilities = { photo_menu: false, natural_voice: false };
+  const off: MenuCapabilities = { photo_menu: false, file_menu: false, pdf_menu: false, natural_voice: false };
   try {
     const response = await fetch(`${API_URL}/admin/menu/capabilities`, { headers: authHeaders() });
     if (!response.ok) return off;
     const body = await response.json();
-    return { photo_menu: body?.photo_menu === true, natural_voice: body?.natural_voice === true };
+    return {
+      photo_menu: body?.photo_menu === true,
+      file_menu: body?.file_menu === true,
+      pdf_menu: body?.pdf_menu === true,
+      natural_voice: body?.natural_voice === true,
+    };
   } catch {
     return off;
   }
@@ -853,6 +866,24 @@ export async function readMenuPhotos(photos: Blob[], signal?: AbortSignal): Prom
     signal,
   });
   if (!response.ok) throw await readError(response, "Não consegui ler o cardápio.");
+  return response.json();
+}
+
+/**
+ * Sends a menu the owner already has as a file (spreadsheet: CSV/Excel; or a PDF) to be read.
+ * Returns what the server answered, untouched: menuPhotoLogic.normalizeReading checks it.
+ */
+export async function readMenuFile(file: File, signal?: AbortSignal): Promise<unknown> {
+  const form = new FormData();
+  form.append("file", file, file.name);
+  // No Content-Type here: the browser writes it, with the boundary the server needs.
+  const response = await fetch(`${API_URL}/admin/menu/parse-file`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: form,
+    signal,
+  });
+  if (!response.ok) throw await readError(response, "Não consegui ler o arquivo.");
   return response.json();
 }
 

@@ -135,7 +135,7 @@ somente_documentacao() {
   local arquivo
   while IFS= read -r arquivo; do
     case "$arquivo" in
-      docs/* | tests/* | .github/* | *.md | .gitignore) ;;
+      docs/* | tests/* | .github/* | deploy/notebook/* | *.md | .gitignore) ;;
       *) return 1 ;;
     esac
   done <<<"$1"

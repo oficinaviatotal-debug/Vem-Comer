@@ -10,6 +10,14 @@ import {
   fitsTogether,
   readingErrorText,
   wantsPhoto,
+  wantsFile,
+  wantsReadyMenu,
+  menuFileProblem,
+  unreadableFileText,
+  readyMenuOptions,
+  readyMenuMode,
+  MENU_FILE_MAX_BYTES,
+  MENU_PDF_MAX_BYTES,
 } from "../../frontend/src/assistant/menuPhotoLogic.ts";
 import { MENU_MAX_PHOTOS, MENU_MAX_TOTAL_BYTES } from "../../frontend/src/photos/photoLogic.ts";
 
@@ -134,4 +142,51 @@ test("the owner says he has a menu or wants to send a photo", () => {
   for (const no of ["", "pizzaria", "lanchonete", "restaurante e bar", "não tenho cardápio", "repete", "voltar", "fotogênico"]) {
     assert.equal(wantsPhoto(no), false, no);
   }
+});
+
+test("the owner says he has the menu in a spreadsheet or PDF", () => {
+  for (const yes of ["tenho uma planilha", "está no excel", "vou mandar o arquivo", "é um PDF", "tenho o cardápio em csv", "eu mando a planilha do Excel pra você"]) {
+    assert.equal(wantsFile(yes), true, yes);
+    assert.equal(wantsReadyMenu(yes), true, yes);
+  }
+  for (const no of ["", "pizzaria", "não tenho planilha", "nunca usei excel", "ainda não tenho arquivo", "X-tudo 25 reais", "repete"]) {
+    assert.equal(wantsFile(no), false, no);
+  }
+  // a photo is still a ready menu, and a file alone is not a photo
+  assert.equal(wantsReadyMenu("quero mandar uma foto"), true);
+  assert.equal(wantsPhoto("tenho uma planilha"), false);
+  assert.equal(wantsReadyMenu("lanchonete"), false);
+});
+
+test("a file is checked before it is sent", () => {
+  const sheet = (size, name = "cardapio.xlsx", type = "") => ({ name, type, size });
+  assert.equal(menuFileProblem(sheet(5_000), false), "");
+  assert.equal(menuFileProblem(sheet(MENU_FILE_MAX_BYTES), false), "");
+  assert.match(menuFileProblem(sheet(MENU_FILE_MAX_BYTES + 1), false), /grande demais/);
+  assert.match(menuFileProblem(sheet(0), false), /vazio/);
+  // a PDF is heavier than a spreadsheet and needs the AI on the server
+  assert.equal(menuFileProblem(sheet(MENU_FILE_MAX_BYTES + 1, "menu.PDF"), true), "");
+  assert.equal(menuFileProblem(sheet(MENU_PDF_MAX_BYTES, "menu.pdf"), true), "");
+  assert.match(menuFileProblem(sheet(MENU_PDF_MAX_BYTES + 1, "menu.pdf"), true), /pesado demais/);
+  assert.match(menuFileProblem(sheet(1000, "menu.pdf"), false), /PDF/);
+  assert.match(menuFileProblem(sheet(1000, "sem-nome", "application/pdf"), false), /PDF/);
+  assert.equal(menuFileProblem(sheet(1000, "sem-nome", "application/pdf"), true), "");
+});
+
+test("what is said when the file has no menu in it", () => {
+  assert.match(unreadableFileText({ readable: false, categories: [], notes: "" }, true), /tire uma foto/);
+  assert.doesNotMatch(unreadableFileText({ readable: false, categories: [], notes: "" }, false), /foto/);
+  assert.match(unreadableFileText({ readable: false, categories: [], notes: "planilha vazia" }, false), /\(planilha vazia\)/);
+});
+
+test("the ready-menu card follows what the server can read", () => {
+  const modeOf = (photo_menu, file_menu, pdf_menu) => readyMenuMode(readyMenuOptions({ photo_menu, file_menu, pdf_menu }));
+  assert.equal(modeOf(false, false, false), false);
+  assert.equal(modeOf(true, false, true), "photo");
+  assert.equal(modeOf(false, true, false), "file");
+  assert.equal(modeOf(true, true, true), "both");
+  // no key on the server: only spreadsheets, never PDF
+  assert.deepEqual(readyMenuOptions({ photo_menu: false, file_menu: true, pdf_menu: false }), { photo: false, file: true, pdf: false });
+  // an older server without the file route: the PDF flag alone does not turn files on
+  assert.deepEqual(readyMenuOptions({ photo_menu: true, file_menu: false, pdf_menu: true }), { photo: true, file: false, pdf: false });
 });

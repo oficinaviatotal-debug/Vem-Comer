@@ -58,16 +58,23 @@ import {
   CHOOSE_TYPE_QUESTION,
   MORE_OR_DONE,
   PHOTO_NOT_AVAILABLE,
-  PHOTO_STEP_HINT,
   READING_NOTICE,
   SPEAK_MORE,
   SPEAK_NOT_UNDERSTOOD,
   TYPE_NOT_UNDERSTOOD,
+  photoStepHint,
   progressText,
   promptFor,
   spokenFeedback,
 } from "./assistantPrompts";
-import { readingIntro, wantsPhoto } from "./menuPhotoLogic";
+import {
+  readingIntro,
+  readyMenuMode,
+  readyMenuOptions,
+  wantsReadyMenu,
+  type ReadyMenuMode,
+  type ReadyMenuOptions,
+} from "./menuPhotoLogic";
 import { guessCategory, parseRemoval, parseSpokenMenu, soundsLikeMenu, type SpokenMenu } from "./spokenMenu";
 import { priceDoubt } from "./priceCheck";
 import { normalizeSpeech } from "../onboarding/tourEngine";
@@ -119,8 +126,9 @@ function PriceHint({ name, price }: { name: string; price: string }) {
 export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGuide }: Props) {
   const [templates, setTemplates] = useState<MenuTemplateSummary[] | null>(null);
   const [templatesError, setTemplatesError] = useState("");
-  /** null while the server is still being asked whether it can read a photo of a menu. */
-  const [photoMenu, setPhotoMenu] = useState<boolean | null>(null);
+  /** null while the server is still being asked what it can read of a menu the owner already has (photo, spreadsheet, PDF). */
+  const [readyMenu, setReadyMenu] = useState<ReadyMenuOptions | null>(null);
+  const readyMode: ReadyMenuMode | null = readyMenu ? readyMenuMode(readyMenu) : null;
   const [flow, setFlow] = useState<FlowState>(initialFlow);
   const [started, setStarted] = useState(false);
   const [voiceOn, setVoiceOn] = useState(canSpeak());
@@ -142,7 +150,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
   // Everything the voice loop reads lives in refs: it keeps running between renders.
   const flowRef = useRef(flow);
   const templatesRef = useRef(templates);
-  const photoMenuRef = useRef(false);
+  const photoMenuRef = useRef<ReadyMenuMode>(false);
   const voiceOnRef = useRef(voiceOn);
   const micOnRef = useRef(micOn);
   const sessionRef = useRef(0);
@@ -173,8 +181,9 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
     let alive = true;
     void fetchMenuCapabilities().then((capabilities) => {
       if (!alive) return;
-      photoMenuRef.current = capabilities.photo_menu;
-      setPhotoMenu(capabilities.photo_menu);
+      const options = readyMenuOptions(capabilities);
+      photoMenuRef.current = readyMenuMode(options);
+      setReadyMenu(options);
       setNaturalVoice(capabilities.natural_voice);
     });
     prepareVoice();
@@ -554,7 +563,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
 
   function handleSpeak(text: string, fromKeyboard = false) {
     const listenAfter = !fromKeyboard;
-    if (wantsPhoto(text) && !soundsLikeMenu(text)) {
+    if (wantsReadyMenu(text) && !soundsLikeMenu(text)) {
       if (photoMenuRef.current) return openPhoto();
       return void say("Ainda não leio foto de cardápio por aqui. Continue falando os pratos com o preço.", listenAfter);
     }
@@ -621,7 +630,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
   function handleType(text: string) {
     const options = (templatesRef.current ?? []).map((t) => ({ id: t.id, name: t.name }));
     const id = matchBusinessType(text, options);
-    if (wantsPhoto(text)) {
+    if (wantsReadyMenu(text)) {
       if (photoMenuRef.current) return openPhoto();
       if (!id) {
         void say(PHOTO_NOT_AVAILABLE, false);
@@ -660,7 +669,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
       case "repeat":
         return void say(promptFor(flowRef.current), false);
       default:
-        void say(PHOTO_STEP_HINT, false);
+        void say(photoStepHint(photoMenuRef.current), false);
     }
   }
 
@@ -734,10 +743,10 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
             id="assistant-start"
             type="button"
             className="btn btn-primary btn-block asst-start"
-            disabled={templates === null || photoMenu === null}
+            disabled={templates === null || readyMenu === null}
             onClick={start}
           >
-            {templates === null || photoMenu === null ? "Carregando…" : "Começar"}
+            {templates === null || readyMenu === null ? "Carregando…" : "Começar"}
           </button>
         )}
       </section>
@@ -781,7 +790,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
         </button>
       )}
 
-      {flow.step === "type" && photoMenu && (
+      {flow.step === "type" && readyMode && (
         <>
           <button
             id="assistant-photo-menu"
@@ -790,10 +799,16 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
             disabled={busy}
             onClick={openPhoto}
           >
-            <span className="asst-type-icon" aria-hidden="true">📷</span>
+            <span className="asst-type-icon" aria-hidden="true">{readyMode === "file" ? "📄" : "📷"}</span>
             <span className="asst-photo-card-text">
               <strong>Já tenho um cardápio pronto</strong>
-              <small>Tire uma foto e eu cadastro tudo</small>
+              <small>
+                {readyMode === "file"
+                  ? "Mande a planilha e eu cadastro tudo"
+                  : readyMode === "both"
+                    ? "Tire uma foto ou mande a planilha, e eu cadastro tudo"
+                    : "Tire uma foto e eu cadastro tudo"}
+              </small>
             </span>
           </button>
         </>
@@ -920,6 +935,9 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
           onRead={handleRead}
           onBack={backToTypes}
           onReading={() => void say(READING_NOTICE, false)}
+          photoEnabled={readyMenu?.photo ?? true}
+          fileEnabled={readyMenu?.file ?? false}
+          pdfEnabled={readyMenu?.pdf ?? false}
         />
       )}
 

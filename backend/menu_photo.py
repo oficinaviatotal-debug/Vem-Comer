@@ -172,9 +172,9 @@ TOOL = {
 }
 
 
-def build_request(images: list[bytes], model: str | None = None) -> dict:
+def build_request(images: list[bytes], model: str | None = None, pdf: bytes | None = None) -> dict:
     """Corpo da chamada. Não força uma ferramenta específica (alguns modelos recusam);
-    como só existe uma ferramenta, tool_choice "any" obriga o uso dela."""
+    como só existe uma ferramenta, tool_choice "any" obriga o uso dela. Com `pdf`, manda o PDF inteiro no lugar das fotos."""
     content: list[dict] = [
         {
             "type": "image",
@@ -186,6 +186,17 @@ def build_request(images: list[bytes], model: str | None = None) -> dict:
         }
         for image in images
     ]
+    if pdf is not None:
+        content.append(
+            {
+                "type": "document",
+                "source": {
+                    "type": "base64",
+                    "media_type": "application/pdf",
+                    "data": base64.b64encode(pdf).decode("ascii"),
+                },
+            }
+        )
     content.append({"type": "text", "text": "Leia este cardápio e registre com a ferramenta register_menu."})
     return {
         "model": model or model_name(),
@@ -322,6 +333,29 @@ def read_menu(photos: list[bytes], company_id: str) -> dict:
     limiter.check(company_id)
     try:
         response = _post(build_request(prepared), key)
+        return normalize_result(extract_tool_input(response))
+    except MenuPhotoError as error:
+        if error.status >= 500:
+            limiter.refund(company_id)  # a falha foi nossa ou do serviço: não gasta a cota do dono
+        raise
+
+
+MAX_PDF_BYTES = int(os.getenv("MENU_PDF_MAX_BYTES", str(10 * 1024 * 1024)))
+
+
+def read_menu_pdf(pdf: bytes, company_id: str) -> dict:
+    """Cardápio em PDF: a IA lê o arquivo inteiro (texto e imagens). Mesma ferramenta, limpeza e limites da foto."""
+    key = api_key()
+    if not key:
+        raise MenuPhotoError("A leitura de PDF precisa da leitura por IA, que ainda não foi ligada neste servidor.", 501)
+    if not pdf.startswith(b"%PDF-"):
+        raise MenuPhotoError("Esse arquivo não é um PDF de verdade. Tente de novo.", 400)
+    if len(pdf) > MAX_PDF_BYTES:
+        raise MenuPhotoError("Esse PDF é pesado demais. Mande um PDF menor, ou tire fotos das páginas.", 413)
+
+    limiter.check(company_id)
+    try:
+        response = _post(build_request([], pdf=pdf), key)
         return normalize_result(extract_tool_input(response))
     except MenuPhotoError as error:
         if error.status >= 500:

@@ -81,6 +81,58 @@ export function unreadableText(parsed: ParsedMenu): string {
   return parsed.notes ? `${base} (${parsed.notes})` : base;
 }
 
+/** The sentence shown when a spreadsheet or PDF had no menu in it. */
+export function unreadableFileText(parsed: ParsedMenu, photoAvailable: boolean): string {
+  const base = photoAvailable
+    ? "Não achei pratos com preço nesse arquivo. Escolha outro, ou tire uma foto do cardápio."
+    : "Não achei pratos com preço nesse arquivo. Cada linha precisa ter o nome do prato e o preço.";
+  return parsed.notes ? `${base} (${parsed.notes})` : base;
+}
+
+/** Biggest spreadsheet the server reads (same number as the server's). */
+export const MENU_FILE_MAX_BYTES = 2 * 1024 * 1024;
+/** Biggest PDF the server reads. */
+export const MENU_PDF_MAX_BYTES = 10 * 1024 * 1024;
+
+function looksLikePdf(file: { name: string; type: string }): boolean {
+  return /\.pdf$/i.test(file.name) || file.type === "application/pdf";
+}
+
+/**
+ * Checks a chosen file before it is sent, so a heavy or empty file does not wait for a round trip to fail.
+ * Returns the sentence to show, or "" when the file may go. What the file really is gets decided by the server,
+ * which looks inside it instead of trusting the name.
+ */
+export function menuFileProblem(file: { name: string; type: string; size: number }, pdfEnabled: boolean): string {
+  if (file.size <= 0) return "Esse arquivo está vazio. Escolha outro.";
+  if (looksLikePdf(file)) {
+    if (!pdfEnabled) return "Ainda não leio PDF por aqui. Mande uma planilha (Excel ou CSV).";
+    if (file.size > MENU_PDF_MAX_BYTES) return "O PDF é pesado demais (o máximo é 10 MB). Mande um menor, ou tire fotos das páginas.";
+    return "";
+  }
+  if (file.size > MENU_FILE_MAX_BYTES) return "A planilha é grande demais (o máximo é 2 MB). Deixe só a lista de pratos e preços.";
+  return "";
+}
+
+/** What the "ready menu" card can offer on this server. */
+export type ReadyMenuOptions = { photo: boolean; file: boolean; pdf: boolean };
+/** "photo": only photos. "file": only spreadsheets. "both": photos and files. false: nothing. */
+export type ReadyMenuMode = false | "photo" | "file" | "both";
+
+export function readyMenuOptions(capabilities: { photo_menu: boolean; file_menu: boolean; pdf_menu: boolean }): ReadyMenuOptions {
+  return {
+    photo: capabilities.photo_menu,
+    file: capabilities.file_menu,
+    // a PDF is read by the AI: a server that cannot read photos cannot read PDFs either
+    pdf: capabilities.file_menu && capabilities.pdf_menu,
+  };
+}
+
+export function readyMenuMode(options: ReadyMenuOptions): ReadyMenuMode {
+  if (options.photo) return options.file ? "both" : "photo";
+  return options.file ? "file" : false;
+}
+
 /** How many more pages can be added. */
 export function pagesLeft(count: number): number {
   return Math.max(0, MENU_MAX_PHOTOS - count);
@@ -135,4 +187,17 @@ export function wantsPhoto(transcript: string): boolean {
     const before = padded.slice(0, at).trim().split(" ").slice(-2);
     return !before.some((word) => NEGATIONS.has(word));
   });
+}
+
+const FILE_WORDS = new Set(["planilha", "planilhas", "excel", "csv", "pdf", "arquivo", "arquivos"]);
+
+/** Whether the owner said they have the menu in a file (spreadsheet or PDF), and did not say they do not. */
+export function wantsFile(transcript: string): boolean {
+  const words = normalizeSpeech(transcript).split(" ");
+  return words.some((word, at) => FILE_WORDS.has(word) && !words.slice(Math.max(0, at - 2), at).some((w) => NEGATIONS.has(w)));
+}
+
+/** Whether the owner asked for a ready menu in any form: a photo, a spreadsheet or a PDF. */
+export function wantsReadyMenu(transcript: string): boolean {
+  return wantsPhoto(transcript) || wantsFile(transcript);
 }
