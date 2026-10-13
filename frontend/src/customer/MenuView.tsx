@@ -18,6 +18,8 @@ type Props = {
   onLess: (id: string) => void;
   /** A dish with options (size, extras...): opens the sheet where the customer chooses. */
   onChoose: (product: Product) => void;
+  /** The restaurant cannot take orders now: the dishes stay to be seen, with no way to add them. */
+  closed?: boolean;
 };
 
 function scrollToGroup(key: string) {
@@ -43,7 +45,7 @@ export function CategoryChips({ groups }: { groups: MenuGroup<Product>[] }) {
   );
 }
 
-export default function MenuView({ groups, cart, query, search, onAdd, onLess, onChoose }: Props) {
+export default function MenuView({ groups, cart, query, search, onAdd, onLess, onChoose, closed = false }: Props) {
   const firstId = groups[0]?.items[0]?.id;
 
   return (
@@ -99,7 +101,9 @@ export default function MenuView({ groups, cart, query, search, onAdd, onLess, o
                       <span className="money">{formatMoney(product.price)}</span>
                     )}
                     <div className="cust-qty" id={product.id === firstId ? "cust-first-add" : undefined}>
-                      {options ? (
+                      {closed ? (
+                        <span className="chip chip-busy">Sem pedidos agora</span>
+                      ) : options ? (
                         unavailable ? (
                           <span className="chip chip-busy">Indisponível agora</span>
                         ) : (

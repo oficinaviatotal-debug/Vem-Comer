@@ -46,7 +46,7 @@ Situações: **Pronto**, **Em PR** (feito, esperando o GD juntar), **Em parte**,
 | Caixa: quem recebeu, dinheiro em aberto, conciliação | Falta | Itens 47 e 50. |
 | Impressão do cupom e da comanda (58 e 80 mm) | Falta | Item 54. |
 | "Bom dia do dono", indicadores e alertas | Falta | Itens 55 e 60. |
-| **Assinatura de R$ 190, pagamento no primeiro dia e bloqueio** | Falta | Item 66. Não há tabela de plano, assinatura ou pagamento. |
+| **Assinatura de R$ 190, pagamento no primeiro dia e bloqueio** | Parcial | Item 66. Pronta com cobrança manual: tabelas, regras de vencimento e bloqueio no servidor, aba Plano do dono, aba Assinaturas do GD e `cobranca.sh`. Vem desligada. Falta a empresa de pagamento (cobrança automática). Veja `docs/assinatura-e-cobranca.md`. |
 | Conversar com o sistema por voz ou texto | Falta | Item 64. |
 
 ## Cadastrar rápido: a meta de 3 dias

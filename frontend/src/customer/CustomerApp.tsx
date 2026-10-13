@@ -39,8 +39,10 @@ import {
 } from "./cart";
 import { customerTour, CUSTOMER_TOUR_ID, CUSTOMER_TOUR_USER, PIX_TOUR_ID, pixTour } from "./customerTour";
 import {
+  CLOSED_NOTICE,
   cleanCustomerName,
   customerStatus,
+  isClosed,
   orderCustomerName,
   orderErrorMessage,
   searchTextFromVoice,
@@ -78,6 +80,8 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   const [menus, setMenus] = useState<Menu[]>([]);
   const [tableNumber, setTableNumber] = useState<number | null>(null);
   const [tableLost, setTableLost] = useState(false);
+  // The restaurant cannot take orders now (the server says so, never why): the menu stays to be seen, nothing is sold.
+  const closed = isClosed(company.accepting_orders);
 
   const [cart, setCart] = useState<CartLine[]>([]);
   // The dish whose choices (size, extras...) are open, and the cart line being changed when there is one.
@@ -284,6 +288,11 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
 
   async function send() {
     if (sending || cart.length === 0) return;
+
+    if (closed) {
+      setSendError(CLOSED_NOTICE);
+      return;
+    }
 
     if (mode === "entrega") {
       const problem = deliveryProblem({
@@ -514,6 +523,12 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
               </button>
             )}
 
+            {closed && (
+              <p className="cust-note" role="status">
+                {CLOSED_NOTICE}
+              </p>
+            )}
+
             {tableLost && (
               <p className="cust-note" role="alert">
                 Não encontramos esta mesa. Você pode ver o cardápio; para pedir, chame o atendente.
@@ -546,6 +561,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
                 onAdd={add}
                 onLess={less}
                 onChoose={choose}
+                closed={closed}
                 search={
                   products.length >= SEARCH_FROM ? (
                     <div className="cust-search">
@@ -582,7 +598,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
         <a href={panelHref}>Área do restaurante</a>
       </footer>
 
-      {screen === "menu" && count > 0 && !sheetOpen && (
+      {screen === "menu" && count > 0 && !sheetOpen && !closed && (
         <button type="button" id="cust-cartbar" className="cust-cartbar" onClick={() => setSheetOpen(true)}>
           <span className="cust-cartbar-count" aria-hidden="true">
             {count}

@@ -2,8 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  CLOSED_NOTICE,
   cleanCustomerName,
   customerStatus,
+  isClosed,
   orderCustomerName,
   orderErrorMessage,
   searchTextFromVoice,
@@ -68,4 +70,19 @@ test("the sentences the server says about delivery are shown as they are", () =>
   assert.equal(orderErrorMessage(minimum, "entrega"), minimum);
   assert.match(orderErrorMessage(minimum), /Não deu para enviar/, "no delivery chosen: the old text");
   assert.match(orderErrorMessage("Produto inválido", "entrega"), /item saiu do cardápio/);
+});
+
+test("a restaurant that cannot take orders is closed only when the server says so, and never says why", () => {
+  assert.equal(isClosed(false), true);
+  assert.equal(isClosed(true), false);
+  assert.equal(isClosed(undefined), false, "an older server does not send it: the menu stays open");
+  assert.equal(isClosed(null), false);
+  assert.doesNotMatch(CLOSED_NOTICE, /pag|plano|venc|assinatura/i);
+});
+
+test("the order refused because the restaurant is closed shows the closed notice, with or without delivery", () => {
+  const server = "Este restaurante não está recebendo pedidos agora. Tente de novo mais tarde.";
+  assert.equal(orderErrorMessage(server), CLOSED_NOTICE);
+  assert.equal(orderErrorMessage(server, "entrega"), CLOSED_NOTICE);
+  assert.equal(orderErrorMessage(server, "retirada"), CLOSED_NOTICE);
 });

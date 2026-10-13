@@ -36,7 +36,7 @@ Vem Comer:
 - [x] Reforma visual: cardápio do cliente, tela da mesa, carrinho e acompanhamento (PR #33 juntado em 07/10; fotos de tela a 390 e 320 px, ainda não vista num celular de verdade)
 - [x] Opções por item (tamanho, adicionais, observação): servidor juntado (PR #34); telas do cliente (PR #37) e do painel com voz (PR #38) prontas, CI verde, esperando junção
 - [~] Entrega: servidor (PR #39), aba do dono com voz (PR #40), tela do cliente com CEP, endereço e taxa (PR #41) e pedido do painel mostrando endereço, telefone e taxa: prontos, CI verde, esperando junção. **Faltam** os estados "pronto" e "saiu para entrega"
-- [ ] Assinatura de R$ 190: pagamento no primeiro dia, vencimento e bloqueio no dia seguinte
+- [~] Assinatura de R$ 190: pagamento no primeiro dia, vencimento e bloqueio no dia seguinte. **Pronta com cobrança manual** (servidor, telas do dono, do cliente e do GD, script `cobranca.sh`; vem DESLIGADA, ligar é decisão do GD). Faltam a empresa de pagamento (cobrança automática) e a decisão sobre pagamento atrasado
 - [ ] Horário de funcionamento e esgotado em um toque
 - [ ] Cadastro em até 3 dias: arquivo, "ficou bom?" na logomarca, botão de ajuda, teste cronometrado
 - [ ] Cardápio falado testado no celular do GD (correções do PR #35 juntadas em 07/10; falta atualizar a VPS e testar de novo)

@@ -71,6 +71,12 @@ services:
       SIGNUP_MAX_PER_DAY: ${SIGNUP_MAX_PER_DAY:-}
       SIGNUP_PER_IP_PER_HOUR: ${SIGNUP_PER_IP_PER_HOUR:-}
       SIGNUP_PER_IP_PER_DAY: ${SIGNUP_PER_IP_PER_DAY:-}
+      # cobrança do plano do restaurante (R$ 190/mês): DESLIGADA até o administrador ligar (veja cobranca.sh)
+      BILLING_ENFORCED: ${BILLING_ENFORCED:-}
+      PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-}
+      BILLING_PIX_KEY: ${BILLING_PIX_KEY:-}
+      BILLING_PIX_RECEIVER: ${BILLING_PIX_RECEIVER:-}
+      BILLING_CONTACT_PHONE: ${BILLING_CONTACT_PHONE:-}
     volumes:
       - uploads:/data/uploads
     healthcheck:

@@ -1,0 +1,219 @@
+/* "Plano" (the owner's subscription) and "Assinaturas" (GD's list). Own file so it does not touch admin.css. */
+
+.plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.plan h3 {
+  margin: 0;
+  font: 700 var(--t-lg) / 1.2 var(--font-display);
+  color: var(--folha);
+}
+
+.plan > p,
+.plan .adm-muted {
+  margin: 0;
+}
+
+.plan-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  border-left: 4px solid var(--mata);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+}
+
+.plan-status.plan-warn {
+  border-left-color: var(--sol);
+}
+
+.plan-status.plan-bad {
+  border-left-color: var(--alerta);
+}
+
+.plan-status.plan-quiet {
+  border-left-color: var(--linha-forte);
+}
+
+.plan-message {
+  margin: 0;
+  font-size: var(--t-lg);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.plan-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3) var(--s5);
+  margin: 0;
+}
+
+.plan-facts > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-facts dt {
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+}
+
+.plan-facts dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: var(--t-lg);
+}
+
+.plan-pay {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--r-sm);
+}
+
+.plan-key {
+  margin: 0;
+  max-width: 100%;
+}
+
+.plan-key code {
+  display: block;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+  font-size: 0.95rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: center;
+}
+
+.plan-history ul {
+  display: flex;
+  flex-direction: column;
+  margin: var(--s2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-history li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  padding: var(--s2) 0;
+  border-top: 1px dashed var(--linha-forte);
+}
+
+/* GD's list */
+.plan-summary {
+  margin: 0;
+  font-size: var(--t-lg);
+}
+
+.plan-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: center;
+}
+
+.plan-filters .btn.is-on {
+  border-color: var(--mata);
+  color: var(--mata);
+}
+
+.plan-search {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-co {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--linha);
+  border-left: 4px solid var(--mata);
+  border-radius: var(--r-sm);
+  background: var(--papel-2);
+}
+
+.plan-co.plan-warn {
+  border-left-color: var(--sol);
+}
+
+.plan-co.plan-bad {
+  border-left-color: var(--alerta);
+}
+
+.plan-co.plan-quiet {
+  border-left-color: var(--linha-forte);
+}
+
+.plan-co-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.plan-co-head strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.plan-co-meta {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.plan-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.plan-form .btn {
+  max-width: 100%;
+  white-space: normal;
+}
+
+/* Blocked plan: only "Pedidos" (finish what is in progress) and "Plano" stay in the tabs. */
+.adm-tabs.is-locked > button:not(#admin-tab-pedidos):not(#admin-tab-plano) {
+  display: none;
+}
+
+/* The warning strip on top of the panel ("vence em 3 dias", "vence hoje"). */
+.plan-banner-soon {
+  background: var(--papel-2);
+}
+
+.plan-banner-today,
+.plan-banner-blocked {
+  background: var(--sol);
+}

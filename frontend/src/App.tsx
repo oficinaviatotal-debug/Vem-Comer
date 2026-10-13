@@ -93,7 +93,7 @@ export default function App() {
   }
 
   if (admin) {
-    return <AdminPanel companyId={company.id} companySlug={company.slug} onBack={() => setAdmin(false)} />;
+    return <AdminPanel companyId={company.id} companySlug={company.slug} companyName={company.name} onBack={() => setAdmin(false)} />;
   }
 
   return (

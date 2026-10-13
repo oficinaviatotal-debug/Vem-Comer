@@ -261,7 +261,7 @@ SQL_PLATFORM_LIST = """
     SELECT c.id AS company_id, c.name, c.slug, c.created_at AS company_created_at,
            s.plan_code, s.price_cents, s.anchor_day, s.paid_until, s.canceled_at,
            (s.company_id IS NOT NULL) AS has_subscription,
-           u.name AS owner_name, u.email AS owner_email
+           c.owner_phone, u.name AS owner_name, u.email AS owner_email
     FROM companies c
     LEFT JOIN subscriptions s ON s.company_id = c.id
     LEFT JOIN LATERAL (

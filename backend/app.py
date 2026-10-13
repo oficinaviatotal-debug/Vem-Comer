@@ -4380,6 +4380,7 @@ def list_platform_subscriptions():
                 "slug": row['slug'],
                 "owner_name": row['owner_name'],
                 "owner_email": row['owner_email'],
+                "owner_phone": row.get('owner_phone'),
                 "created_at": _iso(row['company_created_at']),
                 "subscription": view,
             })

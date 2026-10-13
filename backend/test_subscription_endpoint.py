@@ -265,7 +265,8 @@ class PlatformListTests(Base):
         def row(cid, name, **extra):
             base = {"company_id": cid, "name": name, "slug": name.lower(), "company_created_at": NOW, "plan_code": None,
                     "price_cents": None, "anchor_day": None, "paid_until": None, "canceled_at": None,
-                    "has_subscription": False, "owner_name": "Dono " + name, "owner_email": name.lower() + "@x.com"}
+                    "has_subscription": False, "owner_name": "Dono " + name, "owner_email": name.lower() + "@x.com",
+                    "owner_phone": "5584999991234"}
             base.update(extra)
             return base
 
@@ -295,6 +296,7 @@ class PlatformListTests(Base):
         late = body["companies"][0]
         self.assertEqual(late["subscription"]["state"], "past_due")
         self.assertEqual(late["owner_email"], "late@x.com")
+        self.assertEqual(late["owner_phone"], "5584999991234")
         self.assertIn("venceu", late["subscription"]["message"])
 
     def test_a_normal_owner_is_refused(self):
