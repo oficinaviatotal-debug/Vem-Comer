@@ -35,6 +35,13 @@ import { hasSeenGuide, markGuideSeen } from "../onboarding/guideStorage";
 import ConfirmButton from "./ConfirmButton";
 import PixSettingsPanel from "./PixSettingsPanel";
 import DeliveryPanel from "./DeliveryPanel";
+import HoursPanel from "./HoursPanel";
+import PauseStrip from "./PauseStrip";
+import { resetSoldOut, setSoldOut } from "./hoursApi";
+import SubscriptionPanel from "./SubscriptionPanel";
+import PlatformPanel from "./PlatformPanel";
+import { useOwnerPlan } from "./useOwnerPlan";
+import { bannerOf, hasPlanTab, viewAllowed } from "./subscriptionView";
 import LogoPanel from "../logo/LogoPanel";
 import { adminPaymentChip, canConfirmPayment } from "../customer/payment";
 import ItemDetails from "../customer/ItemDetails";
@@ -48,17 +55,18 @@ import {
 } from "./format";
 import {
   STATUS_DONE,
-  STATUS_PREPARING,
   isActiveStatus,
   nextAction,
   sortForKitchen,
   statusLabel,
+  statusTone,
 } from "./orderStatus";
 import { tableOrderUrl as buildTableUrl } from "./links";
 import { rememberCompany } from "./lastCompany";
 import MenuAssistant from "../assistant/MenuAssistant";
 import CostsPanel from "../costs/CostsPanel";
 import CallsBar from "../mesa/CallsBar";
+import TablePoster from "../mesa/TablePoster";
 import "../ui.css";
 import "../admin.css";
 
@@ -104,6 +112,8 @@ type Product = {
   image_url?: string | null;
   /** Groups the customer is asked about (size, extras); only what is on sale. */
   option_groups?: unknown[] | null;
+  /** Ran out today: stays on the menu, marked, and cannot be ordered. */
+  sold_out?: boolean;
 };
 
 type Menu = {
@@ -136,7 +146,10 @@ type AdminView =
   | "mesas"
   | "pagamento"
   | "marca"
-  | "entrega";
+  | "entrega"
+  | "horario"
+  | "plano"
+  | "assinaturas";
 
 const ADMIN_VIEWS: string[] = [
   "pedidos",
@@ -150,6 +163,9 @@ const ADMIN_VIEWS: string[] = [
   "pagamento",
   "marca",
   "entrega",
+  "horario",
+  "plano",
+  "assinaturas",
 ];
 
 function isAdminView(value: string): value is AdminView {
@@ -159,12 +175,15 @@ function isAdminView(value: string): value is AdminView {
 type AdminPanelProps = {
   companyId: string;
   companySlug: string;
+  /** For the messages the owner sends about his plan ("Quero pagar o plano do restaurante ..."). */
+  companyName?: string;
   onBack: () => void;
 };
 
 export default function AdminPanel({
   companyId,
   companySlug,
+  companyName,
   onBack,
 }: AdminPanelProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(!!getToken());
@@ -186,6 +205,7 @@ export default function AdminPanel({
   const [view, setView] = useState<AdminView>("pedidos");
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [soldOutError, setSoldOutError] = useState("");
   const [photoFor, setPhotoFor] = useState<string | null>(null);
   const [optionsFor, setOptionsFor] = useState<string | null>(null);
   const [menus, setMenus] = useState<Menu[]>([]);
@@ -219,6 +239,20 @@ export default function AdminPanel({
   const [guideOpen, setGuideOpen] = useState(false);
   const canUseGuide =
     currentUser?.role === "OWNER" || currentUser?.role === "MANAGER";
+
+  // The plan (R$ 190 per month): the warning strip, the Plano tab and, when it is blocked, the only screens that
+  // work (Pedidos, to finish what is in progress, and Plano). Failing to read it never breaks the panel.
+  const { plan } = useOwnerPlan(isAuthenticated && canUseGuide);
+  const planBlocked = plan?.blocked === true;
+
+  useEffect(() => {
+    if (!viewAllowed(view, planBlocked)) setView("plano");
+  }, [planBlocked, view]);
+
+  // The moment it turns blocked, the owner lands on how to pay; Pedidos stays one tap away.
+  useEffect(() => {
+    if (planBlocked) setView("plano");
+  }, [planBlocked]);
 
   useEffect(() => {
     // First time an owner opens the panel on this browser. With no menu yet the
@@ -451,6 +485,31 @@ export default function AdminPanel({
     }
   }
 
+  /** One tap: the dish ran out (or is back). The screen changes at once and goes back if the server says no. */
+  async function handleSoldOut(productId: string, soldOut: boolean) {
+    setSoldOutError("");
+    const mark = (value: boolean) =>
+      setProducts((list) => list.map((item) => (item.id === productId ? { ...item, sold_out: value } : item)));
+    mark(soldOut);
+    try {
+      await setSoldOut(productId, soldOut);
+    } catch (err) {
+      mark(!soldOut);
+      setSoldOutError(err instanceof Error ? err.message : "Não consegui marcar o prato. Tente de novo.");
+    }
+  }
+
+  /** "Voltou tudo": the start of a new day. */
+  async function handleResetSoldOut() {
+    setSoldOutError("");
+    try {
+      await resetSoldOut();
+      setProducts((list) => list.map((item) => ({ ...item, sold_out: false })));
+    } catch (err) {
+      setSoldOutError(err instanceof Error ? err.message : "Não consegui desmarcar os pratos. Tente de novo.");
+    }
+  }
+
   async function handleDeleteProduct(productId: string) {
     try {
       await deleteProduct(productId);
@@ -616,6 +675,8 @@ export default function AdminPanel({
   const openOrdersCount = orders.filter((order) =>
     isActiveStatus(order.status)
   ).length;
+
+  const planBanner = bannerOf(plan, view);
 
   function tabClass(name: AdminView) {
     return view === name ? "adm-tab is-active" : "adm-tab";
@@ -818,7 +879,24 @@ export default function AdminPanel({
 
       <CallsBar companyId={companyId} />
 
-      <nav className="adm-tabs" aria-label="Seções do painel">
+      {planBanner && (
+        <div className={`adm-alert plan-banner plan-banner-${planBanner.kind}`} role="status">
+          <span>{planBanner.text}</span>
+
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            onClick={() => setView("plano")}
+          >
+            Ver plano
+          </button>
+        </div>
+      )}
+
+      <nav
+        className={planBlocked ? "adm-tabs is-locked" : "adm-tabs"}
+        aria-label="Seções do painel"
+      >
         <button
           id="admin-tab-pedidos"
           type="button"
@@ -906,6 +984,19 @@ export default function AdminPanel({
           </button>
         )}
 
+        {(currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") && (
+          <button
+            id="admin-tab-horario"
+            type="button"
+            className={tabClass("horario")}
+            aria-current={view === "horario" ? "page" : undefined}
+            onClick={() => setView("horario")}
+          >
+            Horário
+          </button>
+        )}
+
         <button
           id="admin-tab-dashboard"
           type="button"
@@ -953,7 +1044,36 @@ export default function AdminPanel({
             Equipe
           </button>
         )}
+
+        {plan && hasPlanTab(plan) && (
+          <button
+            id="admin-tab-plano"
+            type="button"
+            className={tabClass("plano")}
+            aria-current={view === "plano" ? "page" : undefined}
+            onClick={() => setView("plano")}
+          >
+            Plano
+          </button>
+        )}
+
+        {plan?.platform_admin && (
+          <button
+            id="admin-tab-assinaturas"
+            type="button"
+            className={tabClass("assinaturas")}
+            aria-current={view === "assinaturas" ? "page" : undefined}
+            onClick={() => setView("assinaturas")}
+          >
+            Assinaturas
+          </button>
+        )}
       </nav>
+
+      {view === "pedidos" &&
+        (currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER" ||
+          currentUser?.role === "KITCHEN") && <PauseStrip />}
 
       {view === "custos" &&
       (currentUser?.role === "OWNER" ||
@@ -1018,6 +1138,17 @@ export default function AdminPanel({
         (currentUser?.role === "OWNER" ||
           currentUser?.role === "MANAGER") ? (
         <DeliveryPanel />
+      ) : view === "horario" &&
+        (currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") ? (
+        <HoursPanel />
+      ) : view === "plano" && plan && hasPlanTab(plan) ? (
+        <SubscriptionPanel
+          plan={plan}
+          restaurantName={companyName ?? companySlug}
+        />
+      ) : view === "assinaturas" && plan?.platform_admin ? (
+        <PlatformPanel />
       ) : view === "usuarios" && currentUser?.role === "OWNER" ? (
         <section className="adm-stack" aria-label="Equipe">
           <form
@@ -1219,6 +1350,24 @@ export default function AdminPanel({
               </button>
             </div>
           ) : (
+            <>
+            {products.some((item) => item.sold_out) && (
+              <div className="adm-alert" role="status">
+                <span>
+                  {products.filter((item) => item.sold_out).length === 1
+                    ? "1 prato esgotado. O cliente vê, mas não consegue pedir."
+                    : `${products.filter((item) => item.sold_out).length} pratos esgotados. O cliente vê, mas não consegue pedir.`}
+                </span>
+                <button type="button" className="btn btn-outline btn-sm" onClick={() => void handleResetSoldOut()}>
+                  Voltou tudo
+                </button>
+              </div>
+            )}
+            {soldOutError && (
+              <p className="msg-error" role="alert">
+                {soldOutError}
+              </p>
+            )}
             <ul className="adm-list">
               {products.map((product) => (
                 <li key={product.id} className="adm-row adm-row-photo">
@@ -1237,6 +1386,7 @@ export default function AdminPanel({
                     {product.description && (
                       <p className="adm-muted">{product.description}</p>
                     )}
+                    {product.sold_out && <span className="chip chip-busy">Esgotado</span>}
                     {menuName(product.menu_id) && (
                       <span className="chip">{menuName(product.menu_id)}</span>
                     )}
@@ -1247,6 +1397,15 @@ export default function AdminPanel({
 
                   <div className="adm-row-side">
                     <span className="money">{formatMoney(product.price)}</span>
+                    <button
+                      type="button"
+                      className={product.sold_out ? "btn btn-primary btn-sm" : "btn btn-outline btn-sm"}
+                      aria-pressed={Boolean(product.sold_out)}
+                      aria-label={product.sold_out ? `${product.name} voltou` : `${product.name} esgotou`}
+                      onClick={() => void handleSoldOut(product.id, !product.sold_out)}
+                    >
+                      {product.sold_out ? "Voltou" : "Esgotou"}
+                    </button>
                     <button
                       type="button"
                       className="btn btn-outline btn-sm"
@@ -1304,6 +1463,7 @@ export default function AdminPanel({
                 </li>
               ))}
             </ul>
+            </>
           )}
         </section>
       ) : view === "categorias" ? (
@@ -1438,6 +1598,12 @@ export default function AdminPanel({
                       >
                         Baixar QR
                       </a>
+
+                      <TablePoster
+                        restaurant={companyName ?? companySlug}
+                        tableNumber={table.number}
+                        qr={tableQrs[table.id]}
+                      />
                     </>
                   ) : (
                     <span className="adm-muted">Gerando QR code…</span>
@@ -1463,11 +1629,11 @@ export default function AdminPanel({
       ) : (
         <ul className="adm-orders" aria-label="Pedidos">
           {sortedOrders.map((order) => {
-            const next = nextAction(order.status);
             const changeFor = Number(order.payment_change);
             const showName =
               order.customer_name && order.customer_name !== "Cliente Balcão";
             const handling = handlingView(order);
+            const next = nextAction(order.status, handling.kind);
 
             return (
               <li
@@ -1490,16 +1656,8 @@ export default function AdminPanel({
                       </p>
                     </div>
 
-                    <span
-                      className={
-                        order.status === STATUS_DONE
-                          ? "chip chip-done"
-                          : order.status === STATUS_PREPARING
-                            ? "chip chip-prep"
-                            : "chip chip-wait"
-                      }
-                    >
-                      {statusLabel(order.status)}
+                    <span className={`chip chip-${statusTone(order.status)}`}>
+                      {statusLabel(order.status, handling.kind)}
                     </span>
                   </header>
 
@@ -1635,6 +1793,18 @@ export default function AdminPanel({
                       onClick={() => handleStatusChange(order.id, next.next)}
                     >
                       {next.label}
+                    </button>
+                  )}
+
+                  {next?.skip && (
+                    <button
+                      type="button"
+                      className="btn btn-quiet btn-sm btn-block"
+                      onClick={() =>
+                        handleStatusChange(order.id, next.skip!.next)
+                      }
+                    >
+                      {next.skip.label}
                     </button>
                   )}
                 </article>

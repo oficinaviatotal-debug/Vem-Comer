@@ -93,5 +93,5 @@ No pedido, cada item aceita dois campos novos, os dois opcionais:
 - **Custo e CMV**: o custo do prato (`unit_cost`) não inclui o custo dos adicionais. Quem vende muito adicional vê o
   CMV um pouco otimista até a ficha técnica da opção existir.
 - **Meio a meio** (duas metades de sabores diferentes, preço pela mais cara): não está nesta parte.
-- **Prato esgotado** (o prato inteiro, não só uma opção): é o item "esgotado em um toque", planejado para 11/10.
-  Hoje o servidor ainda não confere `products.active` ao receber o pedido.
+- **Prato esgotado** (o prato inteiro, não só uma opção): pronto em 13/10 (`horario-e-esgotado.md`): o servidor recusa
+  o pedido com um prato esgotado, dizendo qual. Ainda não confere `products.active` ao receber o pedido.

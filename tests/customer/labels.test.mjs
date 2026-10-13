@@ -2,8 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  CLOSED_NOTICE,
   cleanCustomerName,
   customerStatus,
+  DELIVERY_STEP_LABELS,
+  isClosed,
   orderCustomerName,
   orderErrorMessage,
   searchTextFromVoice,
@@ -11,8 +14,10 @@ import {
 } from "../../frontend/src/customer/labels.ts";
 import {
   STATUS_DONE,
+  STATUS_OUT,
   STATUS_PENDING,
   STATUS_PREPARING,
+  STATUS_READY,
 } from "../../frontend/src/service/orderStatus.ts";
 
 test("the customer wording covers exactly the statuses the panel and the server use", () => {
@@ -57,10 +62,48 @@ test("the voice search keeps only what the person wants to find", () => {
   assert.equal(searchTextFromVoice("pudim"), "pudim");
 });
 
-test("a delivery order that is ready says it goes to the address, not 'retire no balcão'", () => {
-  assert.match(customerStatus(STATUS_DONE, null, "entrega").hint, /endereço/);
+test("a delivery that is ready goes to the address; a finished one is delivered; pickup still says 'retire'", () => {
+  assert.match(customerStatus(STATUS_READY, null, "entrega").hint, /endereço/);
+  assert.match(customerStatus(STATUS_DONE, null, "entrega").headline, /Entregue/);
   assert.match(customerStatus(STATUS_DONE, null, "retirada").hint, /balcão/);
   assert.match(customerStatus(STATUS_DONE, 7, "entrega").hint, /mesa 7/);
+});
+
+test("the two delivery steps have their own words and the bar has four steps", () => {
+  const ready = customerStatus(STATUS_READY, null, "entrega");
+  assert.equal(ready.headline, "Pronto!");
+  assert.equal(ready.done, false, "still on its way: the tracking keeps checking");
+  assert.equal(ready.step, 1);
+  const out = customerStatus(STATUS_OUT, null, "entrega");
+  assert.equal(out.headline, "Saiu para entrega");
+  assert.match(out.hint, /a caminho/);
+  assert.equal(out.step, 2);
+  assert.equal(out.done, false);
+  const done = customerStatus(STATUS_DONE, null, "entrega");
+  assert.equal(done.step, 3);
+  assert.equal(done.done, true);
+  for (const status of [STATUS_PENDING, STATUS_PREPARING, STATUS_READY, STATUS_OUT, STATUS_DONE]) {
+    const view = customerStatus(status, null, "entrega");
+    assert.deepEqual([...view.steps], [...DELIVERY_STEP_LABELS]);
+    assert.ok(view.step < view.steps.length, status);
+  }
+  assert.equal(DELIVERY_STEP_LABELS.length, 4);
+});
+
+test("the delivery words show even when the screen does not know the order type (the banner)", () => {
+  assert.equal(customerStatus(STATUS_OUT, null).steps.length, 4);
+  assert.equal(customerStatus(STATUS_READY, null).steps.length, 4);
+});
+
+test("table, counter and pickup keep the three steps", () => {
+  for (const [table, type] of [[7, "mesa"], [null, "retirada"], [null, null], [null, "balcao"]]) {
+    for (const status of [STATUS_PENDING, STATUS_PREPARING, STATUS_DONE]) {
+      const view = customerStatus(status, table, type);
+      assert.deepEqual([...view.steps], [...STEP_LABELS]);
+      assert.ok(view.step < 3);
+    }
+  }
+  assert.equal(customerStatus(STATUS_DONE, null, "retirada").step, 2);
 });
 
 test("the sentences the server says about delivery are shown as they are", () => {
@@ -68,4 +111,19 @@ test("the sentences the server says about delivery are shown as they are", () =>
   assert.equal(orderErrorMessage(minimum, "entrega"), minimum);
   assert.match(orderErrorMessage(minimum), /Não deu para enviar/, "no delivery chosen: the old text");
   assert.match(orderErrorMessage("Produto inválido", "entrega"), /item saiu do cardápio/);
+});
+
+test("a restaurant that cannot take orders is closed only when the server says so, and never says why", () => {
+  assert.equal(isClosed(false), true);
+  assert.equal(isClosed(true), false);
+  assert.equal(isClosed(undefined), false, "an older server does not send it: the menu stays open");
+  assert.equal(isClosed(null), false);
+  assert.doesNotMatch(CLOSED_NOTICE, /pag|plano|venc|assinatura/i);
+});
+
+test("the order refused because the restaurant is closed shows the closed notice, with or without delivery", () => {
+  const server = "Este restaurante não está recebendo pedidos agora. Tente de novo mais tarde.";
+  assert.equal(orderErrorMessage(server), CLOSED_NOTICE);
+  assert.equal(orderErrorMessage(server, "entrega"), CLOSED_NOTICE);
+  assert.equal(orderErrorMessage(server, "retirada"), CLOSED_NOTICE);
 });

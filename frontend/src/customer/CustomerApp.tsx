@@ -2,7 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "../ui.css";
 import "./customer.css";
 import "../logo/logo.css";
-import { createOrder, fetchMenus, fetchPaymentOptions, fetchProducts, fetchTable, mediaUrl } from "../service/api";
+import {
+  createOrder,
+  fetchCompanyBySlug,
+  fetchMenus,
+  fetchPaymentOptions,
+  fetchProducts,
+  fetchTable,
+  mediaUrl,
+} from "../service/api";
 import { formatMoney, shortOrderCode } from "../service/format";
 import { fetchDeliveryInfo } from "./deliveryApi";
 import {
@@ -46,6 +54,7 @@ import {
   searchTextFromVoice,
 } from "./labels";
 import { groupProducts } from "./menuGroups";
+import { closedState, dropSoldOut, soldOutNotice } from "./openness";
 import { groupsOf, isUnavailable, selectionFromChosen, type Selection } from "./options";
 import { orderMemory, type RememberedOrder } from "./orderMemory";
 import { effectiveMethod, orderPaymentView } from "./payment";
@@ -78,8 +87,22 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   const [menus, setMenus] = useState<Menu[]>([]);
   const [tableNumber, setTableNumber] = useState<number | null>(null);
   const [tableLost, setTableLost] = useState(false);
+  // What the server says about the restaurant right now (paused, outside its hours, plan): it is asked again every
+  // minute and when the customer comes back to the page, so a menu left open on the phone does not go stale.
+  const [live, setLive] = useState<Company>(company);
+  useEffect(() => {
+    setLive(company);
+  }, [company]);
+  // The restaurant cannot take orders now (the server says so): the menu stays to be seen, nothing is sold.
+  const closedNow = closedState(live, Boolean(tableId));
+  const closed = closedNow !== null;
+  const closedMessage = closedNow?.message ?? "";
+  // Dishes that ran out while the customer was choosing, taken out of the order (said once)
+  const [soldOutNote, setSoldOutNote] = useState("");
 
   const [cart, setCart] = useState<CartLine[]>([]);
+  const cartRef = useRef(cart);
+  cartRef.current = cart;
   // The dish whose choices (size, extras...) are open, and the cart line being changed when there is one.
   const [picking, setPicking] = useState<{
     product: Product;
@@ -111,6 +134,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   // Mesa que não existe: sem tela da mesa, vai direto ao cardápio (o aviso de "mesa não encontrada" já aparece lá).
   const screen: Screen = screenState === "table" && (!tableId || tableLost) ? "menu" : screenState;
   const [statusById, setStatusById] = useState<Record<string, string>>({});
+  const [typeById, setTypeById] = useState<Record<string, string>>({});
   const [payById, setPayById] = useState<Record<string, string>>({});
   const [, setRated] = useState(0);
 
@@ -136,6 +160,48 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   useEffect(() => {
     void loadMenu();
   }, [loadMenu]);
+
+  // The same menu again, quietly: no "loading" screen, and a failure keeps what is on the screen
+  const refreshMenu = useCallback(async () => {
+    try {
+      const productList = await fetchProducts(company.id);
+      if (!Array.isArray(productList)) return;
+      setProducts(productList);
+      const { cart: kept, removed } = dropSoldOut(cartRef.current, productList);
+      if (removed.length > 0) {
+        setCart(kept);
+        setSoldOutNote(soldOutNotice(removed));
+      }
+    } catch {
+      /* keep the menu that is on the screen */
+    }
+  }, [company.id]);
+
+  useEffect(() => {
+    let stopped = false;
+    const refreshCompany = async () => {
+      try {
+        const fresh = await fetchCompanyBySlug(company.slug);
+        if (!stopped && fresh && fresh.id === company.id) setLive(fresh);
+      } catch {
+        /* keep what is on the screen */
+      }
+    };
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      void refreshCompany();
+      void refreshMenu();
+    };
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refreshCompany();
+    }, 60_000);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [company.slug, company.id, refreshMenu]);
 
   useEffect(() => {
     if (!tableId) return;
@@ -285,6 +351,11 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
   async function send() {
     if (sending || cart.length === 0) return;
 
+    if (closed) {
+      setSendError(closedMessage);
+      return;
+    }
+
     if (mode === "entrega") {
       const problem = deliveryProblem({
         name,
@@ -364,6 +435,9 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
     setStatusById((current) =>
       current[order.id] === order.status ? current : { ...current, [order.id]: order.status }
     );
+    setTypeById((current) =>
+      current[order.id] === (order.order_type ?? "") ? current : { ...current, [order.id]: order.order_type ?? "" }
+    );
     const payKind = orderPaymentView(order.payment_method, order.payment_status).kind;
     setPayById((current) => (current[order.id] === payKind ? current : { ...current, [order.id]: payKind }));
   }, []);
@@ -420,7 +494,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
 
   const latest = orders[0];
   const latestStatus = latest ? statusById[latest.orderId] : undefined;
-  const banner = latest && latestStatus ? customerStatus(latestStatus, tableNumber) : null;
+  const banner = latest && latestStatus ? customerStatus(latestStatus, tableNumber, typeById[latest.orderId]) : null;
 
   const tableChip = tableId ? (
     tableLost ? (
@@ -514,6 +588,21 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
               </button>
             )}
 
+            {closed && (
+              <p className="cust-note" role="status">
+                {closedMessage}
+              </p>
+            )}
+
+            {soldOutNote && (
+              <p className="cust-note" role="status">
+                {soldOutNote}{" "}
+                <button type="button" className="btn btn-quiet btn-sm" onClick={() => setSoldOutNote("")}>
+                  Ok
+                </button>
+              </p>
+            )}
+
             {tableLost && (
               <p className="cust-note" role="alert">
                 Não encontramos esta mesa. Você pode ver o cardápio; para pedir, chame o atendente.
@@ -546,6 +635,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
                 onAdd={add}
                 onLess={less}
                 onChoose={choose}
+                closed={closed}
                 search={
                   products.length >= SEARCH_FROM ? (
                     <div className="cust-search">
@@ -582,7 +672,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
         <a href={panelHref}>Área do restaurante</a>
       </footer>
 
-      {screen === "menu" && count > 0 && !sheetOpen && (
+      {screen === "menu" && count > 0 && !sheetOpen && !closed && (
         <button type="button" id="cust-cartbar" className="cust-cartbar" onClick={() => setSheetOpen(true)}>
           <span className="cust-cartbar-count" aria-hidden="true">
             {count}

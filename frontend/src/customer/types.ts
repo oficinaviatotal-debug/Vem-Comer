@@ -9,6 +9,21 @@ export type Company = {
   /** Paths like "/media/<company>/<key>.webp"; null when the restaurant has no logo. Use mediaUrl() to show them. */
   logo_url?: string | null;
   logo_thumb_url?: string | null;
+  /**
+   * False when the restaurant cannot take new orders right now (its plan is blocked). The customer is never told
+   * why. An older server does not send it: only an explicit false closes the menu.
+   */
+  accepting_orders?: boolean;
+  /**
+   * Opening hours and the owner's pause, as the server sees them right now. `configured` is false for a restaurant
+   * with no hours (always open). Only the sentence is sent, never the shifts. An older server does not send it.
+   */
+  hours?: {
+    configured: boolean;
+    open_now: boolean;
+    message: string;
+    paused: boolean;
+  };
 };
 
 export type Product = {
@@ -23,6 +38,8 @@ export type Product = {
   thumb_url?: string | null;
   /** Size, extras and the like the customer chooses before ordering; missing or empty for a plain dish. */
   option_groups?: OptionGroup[];
+  /** The dish ran out today: it stays on the menu, marked, and cannot be ordered. */
+  sold_out?: boolean;
 };
 
 export type Menu = {

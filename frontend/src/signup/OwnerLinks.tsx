@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import "../ui.css";
 import "./signup.css";
 import { fetchSignupStatus } from "../service/api";
-import { ownerLoginUrl, signupUrl } from "../service/links";
+import { ownerLoginUrl, salesUrl, signupUrl } from "../service/links";
 
 /**
  * Atalhos do dono na tela inicial (o endereço sem restaurante). "Entrar" sempre aparece;
@@ -34,6 +34,9 @@ export default function OwnerLinks() {
       {/* sempre do mesmo estilo: quando o status chega e o botão de cadastro aparece, "Entrar" não pisca nem muda de cor */}
       <a className="btn btn-outline btn-block" href={ownerLoginUrl(origin, pathname)}>
         Entrar
+      </a>
+      <a className="btn btn-quiet btn-block" href={salesUrl(origin, pathname)}>
+        Conhecer o sistema
       </a>
     </div>
   );

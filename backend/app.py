@@ -32,10 +32,13 @@ import media_store
 import menu_photo
 import voice_tts
 import feedback
+import hours
 import menu_import
 import menu_templates
+import order_status
 import pix
 import signup
+import subscription
 import table_calls
 from table_qr import qr_png_for_url
 from trusted_proxy import wrap_trusted_proxy
@@ -406,6 +409,9 @@ def signup_restaurant():
 
         user = cur.fetchone()
 
+        # Assinatura (migracao 012): nasce esperando o primeiro pagamento. Nada bloqueia ate o GD ligar BILLING_ENFORCED.
+        cur.execute(subscription.SQL_START, (str(company['id']), subscription.PLAN_CODE))
+
         conn.commit()
 
         token = serializer.dumps({
@@ -577,12 +583,30 @@ def refresh_session():
 
 def public_company(row):
     """Dados do restaurante que qualquer cliente pode ver. A chave sorteada da logomarca nunca sai:
-    sai so o endereco publico (ou None, se o restaurante ainda nao tem logomarca)."""
+    sai so o endereco publico (ou None, se o restaurante ainda nao tem logomarca).
+    `accepting_orders` e False quando a cobranca esta ligada e a assinatura esta bloqueada (nunca diz o motivo) ou quando
+    o dono pausou os pedidos. `hours` diz se ha horario de funcionamento e se esta aberto agora (nada dos turnos)."""
     company = dict(row)
     urls = media_store.public_urls(company.get('id'), company.pop('logo_key', None))
     company['logo_url'] = urls['image_url']
     company['logo_thumb_url'] = urls['thumb_url']
+    paused = bool(company.pop('orders_paused', False))
+    company['accepting_orders'] = company_accepts_orders(company.get('id')) and not paused
+    company['hours'] = hours.public_view(_hours_rows(company.get('id')), paused)
     return company
+
+
+def _hours_rows(company_id):
+    """Os turnos do restaurante. Na duvida (erro nosso), lista vazia: sem horario o cardapio fica aberto."""
+    if not company_id:
+        return []
+
+    try:
+        rows = query_db(hours.SQL_ROWS, (str(company_id),))
+    except Exception:
+        return []
+
+    return rows if isinstance(rows, list) else []
 
 
 @app.route('/api/companies/<uuid:company_id>', methods=['GET'])
@@ -590,7 +614,7 @@ def get_company(company_id):
     try:
         company = query_db(
             """
-            SELECT id, name, slug, logo_key
+            SELECT id, name, slug, logo_key, orders_paused
             FROM companies
             WHERE id = %s;
             """,
@@ -617,7 +641,7 @@ def get_company_by_slug(slug):
     try:
         company = query_db(
             """
-            SELECT id, name, slug, logo_key
+            SELECT id, name, slug, logo_key, orders_paused
             FROM companies
             WHERE slug = %s;
             """,
@@ -782,7 +806,7 @@ def get_company_products(company_id):
     try:
         products = query_db(
             """
-            SELECT id, company_id, menu_id, name, description, price, image_key
+            SELECT id, company_id, menu_id, name, description, price, image_key, sold_out
             FROM products
             WHERE company_id = %s;
             """,
@@ -936,6 +960,35 @@ def create_company_order(company_id):
                 "error": message
             }), 400
 
+        # Assinatura vencida (so com BILLING_ENFORCED ligado): sem pedido novo; os em andamento terminam.
+        if subscription.billing_enforced():
+            cur.execute(subscription.SQL_GET, (str(company_id),))
+
+            if subscription.is_blocked(cur.fetchone(), subscription.today_br(), True):
+                conn.rollback()
+                cur.close()
+                conn.close()
+                return jsonify({
+                    "error": subscription.CUSTOMER_MESSAGE,
+                    "code": "not_accepting_orders"
+                }), 403
+
+        # Pausa do dono (vale para todos) e fora do horario (so para entrega e retirada: quem esta sentado pede).
+        closed = hours.closed_reason(
+            hours.fetch_paused(cur, company_id),
+            [] if table_id else hours.fetch_rows(cur, company_id),
+            bool(table_id)
+        )
+
+        if closed:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return jsonify({
+                "error": closed[1],
+                "code": closed[0]
+            }), 403
+
         if table_id:
             cur.execute(
                 """
@@ -981,7 +1034,7 @@ def create_company_order(company_id):
 
             cur.execute(
                 """
-                SELECT id, price
+                SELECT id, price, name, sold_out
                 FROM products
                 WHERE id = %s
                 AND company_id = %s
@@ -997,6 +1050,11 @@ def create_company_order(company_id):
 
             if not product:
                 return invalid_order("Produto indisponivel")
+
+            if product.get('sold_out'):
+                return invalid_order(
+                    f"{product.get('name') or 'Um item'} acabou. Tire do pedido e escolha outro item."
+                )
 
             # O preco de cada item e o do prato mais o das opcoes, conferido aqui:
             # o valor que o celular calculou nunca vale.
@@ -1597,11 +1655,7 @@ def update_order_status(order_id):
                 "error": "Status nao informado"
             }), 400
 
-        if new_status not in (
-            'PENDING_PAYMENT',
-            'em preparo',
-            'concluido'
-        ):
+        if new_status not in order_status.ALLOWED:
             return jsonify({
                 "error": "Status invalido"
             }), 400
@@ -1611,6 +1665,42 @@ def update_order_status(order_id):
         conn = get_db_connection()
 
         cur = conn.cursor()
+
+        # "pronto" e "saiu para entrega" so existem para pedido de entrega.
+        if new_status in order_status.DELIVERY_ONLY:
+            cur.execute(
+                """
+                SELECT order_type
+                FROM orders
+                WHERE id = %s
+                AND company_id = %s;
+                """,
+                (
+                    str(order_id),
+                    str(company_id)
+                )
+            )
+            found = cur.fetchone()
+
+            if not found:
+                conn.rollback()
+                cur.close()
+                conn.close()
+
+                return jsonify({
+                    "error": "Pedido nao encontrado"
+                }), 404
+
+            mismatch = order_status.problem_for(found[0], new_status)
+
+            if mismatch:
+                conn.rollback()
+                cur.close()
+                conn.close()
+
+                return jsonify({
+                    "error": mismatch
+                }), 400
 
         cur.execute(
             """
@@ -1665,7 +1755,7 @@ def update_order_status(order_id):
             """,
             (
                 str(order_id),
-                'STATUS_' + new_status.upper().replace(' ', '_')
+                order_status.event_type(new_status)
             )
         )
 
@@ -1789,6 +1879,111 @@ def admin_create_product(company_id):
 
         return error_response(
             "Erro ao criar produto",
+            e
+        )
+
+
+@app.route('/api/admin/products/<uuid:product_id>/sold-out', methods=['PUT'])
+@require_roles('OWNER', 'MANAGER', 'KITCHEN')
+def admin_set_sold_out(product_id):
+    """Esgotou / voltou, em um toque. O prato continua no cardapio, marcado, e some dos pedidos."""
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+        data = request.get_json(silent=True) or {}
+        sold_out = data.get('sold_out')
+
+        if not isinstance(sold_out, bool):
+            return jsonify({
+                "error": "Diga se o prato esgotou ou voltou."
+            }), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            UPDATE products
+            SET sold_out = %s
+            WHERE id = %s
+            AND company_id = %s;
+            """,
+            (
+                sold_out,
+                str(product_id),
+                str(company_id)
+            )
+        )
+
+        if cur.rowcount == 0:
+            conn.rollback()
+            cur.close()
+            conn.close()
+
+            return jsonify({
+                "error": "Produto nao encontrado"
+            }), 404
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "id": str(product_id),
+            "sold_out": sold_out
+        }), 200
+
+    except Exception as e:
+        _close_quietly(conn, cur)
+
+        return error_response(
+            "Erro ao marcar o prato",
+            e
+        )
+
+
+@app.route('/api/admin/products/sold-out/reset', methods=['POST'])
+@require_roles('OWNER', 'MANAGER', 'KITCHEN')
+def admin_reset_sold_out():
+    """Voltou tudo: tira a marca de esgotado de todos os pratos do restaurante (comeco do dia)."""
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            UPDATE products
+            SET sold_out = FALSE
+            WHERE company_id = %s
+            AND sold_out = TRUE;
+            """,
+            (str(company_id),)
+        )
+
+        changed = cur.rowcount
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "changed": changed
+        }), 200
+
+    except Exception as e:
+        _close_quietly(conn, cur)
+
+        return error_response(
+            "Erro ao voltar os pratos",
             e
         )
 
@@ -3806,12 +4001,12 @@ def load_cost_view(company_id):
     ) or []
     now = datetime.now(timezone.utc)
     sold_rows = query_db(
-        """
+        f"""
         SELECT oi.product_id, oi.quantity, oi.unit_price, oi.unit_cost, o.created_at
         FROM order_items oi
         JOIN orders o ON o.id = oi.order_id
         WHERE o.company_id = %s
-        AND o.status IN ('em preparo', 'concluido')
+        AND o.status IN ({order_status.SOLD_STATUSES_SQL})
         AND o.created_at >= %s;
         """,
         (str(company_id), cost_since(ingredient_rows, now))
@@ -4211,14 +4406,14 @@ def admin_ingredient_stock(company_id, ingredient_id):
             current = Decimal('0')
             if row.get('stock_qty') is not None and row.get('stock_at') is not None:
                 cur.execute(
-                    """
+                    f"""
                     SELECT oi.quantity AS sold, pi.quantity AS recipe_qty, p.yield_portions
                     FROM order_items oi
                     JOIN orders o ON o.id = oi.order_id
                     JOIN products p ON p.id = oi.product_id AND p.company_id = o.company_id
                     JOIN product_ingredients pi ON pi.product_id = p.id
                     WHERE o.company_id = %s
-                    AND o.status IN ('em preparo', 'concluido')
+                    AND o.status IN ({order_status.SOLD_STATUSES_SQL})
                     AND o.created_at > %s
                     AND pi.ingredient_id = %s;
                     """,
@@ -4250,6 +4445,357 @@ def admin_ingredient_stock(company_id, ingredient_id):
     except Exception as e:
         _close_quietly(conn, cur)
         return error_response("Erro ao salvar o estoque", e)
+
+
+# ------------------------------------------------------------------------------------------------------------
+# Horario de funcionamento e pausa de pedidos (hours.py, migracao 013).
+
+@app.route('/api/admin/hours', methods=['GET'])
+@require_roles('OWNER', 'MANAGER', 'KITCHEN')
+def admin_get_hours():
+    """Os 7 dias para editar, a pausa e se esta aberto agora."""
+    try:
+        company_id = request.user.get('company_id')
+
+        rows = query_db(hours.SQL_ROWS, (str(company_id),)) or []
+        company = query_db(hours.SQL_PAUSED, (str(company_id),), one=True) or {}
+
+        return jsonify(hours.admin_view(rows, bool(company.get('orders_paused')))), 200
+
+    except Exception as e:
+        return error_response(
+            "Erro ao buscar o horario",
+            e
+        )
+
+
+@app.route('/api/admin/hours', methods=['PUT'])
+@require_roles('OWNER', 'MANAGER')
+def admin_save_hours():
+    """Troca a semana inteira pelo que o painel mandou (7 dias, ate 2 turnos cada)."""
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+
+        try:
+            week = hours.normalize_week(request.get_json(silent=True))
+        except hours.HoursError as hours_error:
+            return jsonify({"error": hours_error.message}), hours_error.status
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Trava a linha do restaurante: dois toques ao mesmo tempo no painel nao misturam os dias.
+        cur.execute(
+            """
+            SELECT id
+            FROM companies
+            WHERE id = %s
+            FOR UPDATE;
+            """,
+            (str(company_id),)
+        )
+
+        if not cur.fetchone():
+            conn.rollback()
+            cur.close()
+            conn.close()
+
+            return jsonify({
+                "error": "Estabelecimento nao encontrado"
+            }), 404
+
+        hours.save_week(cur, company_id, week)
+
+        saved = hours.admin_view(
+            hours.fetch_rows(cur, company_id),
+            hours.fetch_paused(cur, company_id)
+        )
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "message": "Horario salvo",
+            **saved
+        }), 200
+
+    except Exception as e:
+        _close_quietly(conn, cur)
+
+        return error_response(
+            "Erro ao salvar o horario",
+            e
+        )
+
+
+@app.route('/api/admin/hours', methods=['DELETE'])
+@require_roles('OWNER', 'MANAGER')
+def admin_clear_hours():
+    """Tira o horario: sem horario cadastrado o restaurante recebe pedido a qualquer hora."""
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(hours.SQL_DELETE, (str(company_id),))
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "message": "Horario removido"
+        }), 200
+
+    except Exception as e:
+        _close_quietly(conn, cur)
+
+        return error_response(
+            "Erro ao remover o horario",
+            e
+        )
+
+
+@app.route('/api/admin/orders-pause', methods=['PUT'])
+@require_roles('OWNER', 'MANAGER', 'KITCHEN')
+def admin_pause_orders():
+    """Pausa (ou volta) o recebimento de pedidos: vale para todos os tipos, mesa inclusive."""
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+        data = request.get_json(silent=True) or {}
+        paused = data.get('paused')
+
+        if not isinstance(paused, bool):
+            return jsonify({
+                "error": "Diga se e para pausar ou voltar."
+            }), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(hours.SQL_SET_PAUSED, (paused, str(company_id)))
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "orders_paused": paused
+        }), 200
+
+    except Exception as e:
+        _close_quietly(conn, cur)
+
+        return error_response(
+            "Erro ao pausar os pedidos",
+            e
+        )
+
+
+# ------------------------------------------------------------------------------------------------------------
+# Assinatura do restaurante (subscription.py, migracao 012). Nada bloqueia enquanto BILLING_ENFORCED nao for ligado.
+# O dono ve a propria situacao; o administrador da plataforma (PLATFORM_ADMIN_EMAILS) ve todos e registra pagamentos.
+
+def company_accepts_orders(company_id):
+    """False so quando a cobranca esta ligada e a assinatura do restaurante esta bloqueada. Desligada, nem consulta."""
+    if not subscription.billing_enforced() or not company_id:
+        return True
+
+    try:
+        sub = query_db(subscription.SQL_GET, (str(company_id),), one=True)
+    except Exception:
+        return True  # na duvida, o cardapio continua aberto: um erro nosso nao pode fechar o restaurante
+
+    return not subscription.is_blocked(sub, subscription.today_br(), True)
+
+
+def _iso(value):
+    return value.isoformat() if hasattr(value, 'isoformat') else (str(value) if value is not None else None)
+
+
+def _subscription_view(sub, today=None):
+    today = today or subscription.today_br()
+    view = subscription.evaluate(sub, today)
+    view['message'] = subscription.owner_message(view)
+    view['enforced'] = subscription.billing_enforced()
+    view['blocked'] = bool(view['enforced'] and view['blocks'])
+    return view
+
+
+def _is_platform_admin_request():
+    if not subscription.platform_admin_emails():
+        return False
+
+    row = query_db(subscription.SQL_USER_EMAIL, (str(request.user.get('user_id')),), one=True)
+    return bool(row and subscription.is_platform_admin(row.get('email')))
+
+
+def require_platform_admin(f):
+    @wraps(f)
+    @require_auth
+    def wrapper(*args, **kwargs):
+        try:
+            allowed = _is_platform_admin_request()
+        except Exception as e:
+            return error_response("Erro ao conferir o acesso", e)
+
+        if not allowed:
+            return jsonify({"error": "Acesso negado"}), 403
+
+        return f(*args, **kwargs)
+
+    return wrapper
+
+
+@app.route('/api/admin/subscription', methods=['GET'])
+@require_roles('OWNER', 'MANAGER')
+def get_admin_subscription():
+    try:
+        company_id = str(request.user.get('company_id'))
+        sub = query_db(subscription.SQL_GET, (company_id,), one=True)
+        payments = query_db(subscription.SQL_RECENT_PAYMENTS, (company_id,))
+        body = _subscription_view(sub)
+        body['payment_info'] = subscription.payment_info()
+        body['platform_admin'] = _is_platform_admin_request()
+        body['payments'] = [
+            {
+                "id": str(row['id']),
+                "amount_cents": row['amount_cents'],
+                "period_start": _iso(row['period_start']),
+                "period_end": _iso(row['period_end']),
+                "method": row['method'],
+                "paid_at": _iso(row['paid_at']),
+            }
+            for row in payments
+        ]
+        response = jsonify(body)
+        response.headers['Cache-Control'] = 'no-store'
+        return response, 200
+    except Exception as e:
+        return error_response("Erro ao ver o plano", e)
+
+
+@app.route('/api/platform/subscriptions', methods=['GET'])
+@require_platform_admin
+def list_platform_subscriptions():
+    try:
+        today = subscription.today_br()
+        rows = []
+
+        for row in query_db(subscription.SQL_PLATFORM_LIST):
+            sub = None
+
+            if row['has_subscription']:
+                sub = {
+                    "price_cents": row['price_cents'],
+                    "anchor_day": row['anchor_day'],
+                    "paid_until": row['paid_until'],
+                    "canceled_at": row['canceled_at'],
+                }
+
+            view = subscription.evaluate(sub, today)
+            view['message'] = subscription.owner_message(view)
+            rows.append({
+                "company_id": str(row['company_id']),
+                "name": row['name'],
+                "slug": row['slug'],
+                "owner_name": row['owner_name'],
+                "owner_email": row['owner_email'],
+                "owner_phone": row.get('owner_phone'),
+                "created_at": _iso(row['company_created_at']),
+                "subscription": view,
+            })
+
+        rows.sort(key=subscription.platform_sort_key)
+        needs_attention = sum(1 for r in rows if r['subscription']['state'] in ('past_due', 'awaiting_payment'))
+        response = jsonify({
+            "enforced": subscription.billing_enforced(),
+            "today": today.isoformat(),
+            "needs_attention": needs_attention,
+            "companies": rows,
+        })
+        response.headers['Cache-Control'] = 'no-store'
+        return response, 200
+    except Exception as e:
+        return error_response("Erro ao listar as assinaturas", e)
+
+
+@app.route('/api/platform/subscriptions/<uuid:company_id>/payments', methods=['POST'])
+@require_platform_admin
+def record_subscription_payment(company_id):
+    conn = None
+    cur = None
+
+    try:
+        try:
+            cents, method, reference = subscription.clean_payment(request.get_json(silent=True))
+        except subscription.SubscriptionError as error:
+            return jsonify({"error": error.message}), error.status
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        company = str(company_id)
+
+        cur.execute(subscription.SQL_COMPANY_EXISTS, (company,))
+
+        if not cur.fetchone():
+            _close_quietly(conn, cur)
+            return jsonify({"error": "Estabelecimento nao encontrado"}), 404
+
+        # Restaurante criado pelo script (sem assinatura) ganha a linha no primeiro pagamento registrado.
+        cur.execute(subscription.SQL_START, (company, subscription.PLAN_CODE))
+        cur.execute(subscription.SQL_GET_FOR_UPDATE, (company,))
+        sub = cur.fetchone()
+
+        if not sub:
+            _close_quietly(conn, cur)
+            return error_response("O plano nao esta cadastrado no banco (falta a migracao 012)")
+
+        # Dois toques seguidos no botao nao podem pagar dois meses.
+        cur.execute(subscription.SQL_RECENT_DUPLICATE, (company,))
+
+        if cur.fetchone():
+            _close_quietly(conn, cur)
+            return jsonify({"error": "Este pagamento acabou de ser registrado. Confira a lista antes de registrar de novo."}), 409
+
+        today = subscription.today_br()
+        start, new_until, anchor = subscription.next_period(sub, today)
+        amount = cents if cents is not None else int(sub['price_cents'])
+
+        cur.execute(
+            subscription.SQL_INSERT_PAYMENT,
+            (company, amount, start, new_until, method, reference, str(request.user.get('user_id')))
+        )
+        receipt = cur.fetchone()
+        cur.execute(subscription.SQL_APPLY_PAYMENT, (new_until, anchor, company))
+        conn.commit()
+        _close_quietly(conn, cur, rollback=False)
+
+        paid = dict(sub, paid_until=new_until, anchor_day=anchor, canceled_at=None)
+        return jsonify({
+            "payment_id": str(receipt['id']),
+            "amount_cents": amount,
+            "period_start": start.isoformat(),
+            "period_end": new_until.isoformat(),
+            "subscription": _subscription_view(paid, today),
+        }), 201
+    except Exception as e:
+        _close_quietly(conn, cur)
+        return error_response("Erro ao registrar o pagamento", e)
 
 
 if __name__ == '__main__':

@@ -171,7 +171,9 @@ class CostsViewTests(unittest.TestCase):
         ])
         self.assertFalse(chicken["stock_controlled"])
         sold_query = next(sql for sql, _ in query.calls if "FROM order_items" in sql)
-        self.assertIn("o.status IN ('em preparo', 'concluido')", sold_query)
+        # Vendido = aceito pela cozinha em diante, inclusive "pronto" e "saiu para entrega" da entrega.
+        self.assertIn("o.status IN ('em preparo', 'pronto', 'saiu para entrega', 'concluido')", sold_query)
+        self.assertNotIn("PENDING_PAYMENT", sold_query)
         # Toda consulta e presa ao restaurante do login.
         for sql, args in query.calls:
             self.assertEqual(args[0], COMPANY_ID, sql)
@@ -441,6 +443,7 @@ class StockRouteTests(unittest.TestCase):
         sold_query = next(item for item in conn.cursor_obj.executed if "FROM order_items" in item[0])
         self.assertEqual(sold_query[1][0], COMPANY_ID)
         self.assertEqual(sold_query[1][2], CHICKEN_ID)
+        self.assertIn("o.status IN ('em preparo', 'pronto', 'saiu para entrega', 'concluido')", sold_query[0])
 
     def test_stop_and_errors(self):
         conn = FakeConnection([("FROM ingredients", {"unit": "g", "yield_pct": 100, "stock_qty": Decimal("1"), "stock_at": NOW})])

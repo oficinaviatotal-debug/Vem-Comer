@@ -53,11 +53,24 @@ mostra "AaBbCc0123", sem dizer o nome).
 
 ## Como isso se liga ao código
 
-- O laranja da prancha (`#FF6F00`) é o mesmo do aplicativo (`--brasa-viva`, em `frontend/src/styles.css`).
-- Os verdes diferem: o aplicativo usa `--mata #1E6B3C` e `--folha #123B2B`; a prancha manda `#2E7032` e `#1B4332`.
-- O laranja `#FF6F00` sobre branco tem contraste de uns 2,8 para 1. Não serve para texto, nem para botão de letra
-  branca. Fica para destaque, foco e ícone; o botão cheio continua em `--brasa #C2410C`.
-- Proposta para a reforma visual: adotar `#2E7032` como verde principal, `#1B4332` como apoio escuro e `#FAE9D2`
-  como fundo de apoio, mantendo o botão cheio em `--brasa`. O GD confirma antes de mexer nas cores.
-- As peças da prancha 3 (ícone, selo, versão circular, horizontal) vêm numa imagem só. Para usar no aplicativo,
-  precisam dos arquivos originais, em PNG com fundo transparente ou SVG.
+Cores (adotadas na reforma visual de 07/10, em `frontend/src/styles.css`): `--mata #2E7032` (verde principal),
+`--folha #1B4332` (apoio escuro), `--papel-2 #FAE9D2` (apoio) e `--brasa-viva #FF6F00` (laranja da marca).
+O laranja `#FF6F00` sobre branco tem contraste de uns 2,8 para 1: não serve para texto nem para botão de letra branca.
+Fica para destaque, foco e ícone; o botão cheio usa `--brasa #C74700`.
+
+Peças da prancha "Templates principais" (lado do Vem Comer) e onde estão:
+
+| Peça da prancha | Estado |
+|---|---|
+| Aplicativo do celular (cardápio, chips, cartões) | Feito na reforma visual de 07/10, sem a busca de restaurantes |
+| Cartaz de QR da mesa "Faça seu pedido aqui" | **Feito em 13/10:** Painel > Mesas > "Cartaz para imprimir" (baixa a imagem ou imprime em A4) |
+| Landing "Seu restaurante no próximo nível!" | **Feita em 13/10:** endereço `?sistema=1`, é o destino do QR "Para compra do sistema" |
+| Início "Comida boa, mais perto de você!" e card de restaurante com nota e distância | Fora por decisão do GD (07/10, item 68): catálogo só depois de 3 meses e mais de 100 negócios por região |
+| E-mail de marketing, QR codes por público, aplicações (uniforme, embalagem, redes sociais) | Material de divulgação, não é tela. Os endereços dos QR: clientes = link do restaurante; restaurantes = `?cadastro=1`; compra do sistema = `?sistema=1` |
+
+As peças da prancha 3 (ícone, selo, versão circular, horizontal) vêm numa imagem só. Para usar no aplicativo
+precisam dos arquivos originais, em PNG com fundo transparente ou SVG. Até lá o cartaz e a página de venda usam
+`frontend/public/logo-vem-comer.png`.
+
+O lado do Vem Trabalhar da mesma prancha, e o cartaz da logomarca azul, foram para o front-end do Vem Trabalhar
+(repositório dele, `docs/front-end.md`).
