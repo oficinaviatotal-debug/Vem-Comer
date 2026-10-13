@@ -7,6 +7,7 @@ import AdminPanel from "./service/AdminPanel";
 import CustomerApp from "./customer/CustomerApp";
 import OwnerLinks from "./signup/OwnerLinks";
 import OwnerLogin from "./signup/OwnerLogin";
+import SalesPage from "./signup/SalesPage";
 import SignupPage from "./signup/SignupPage";
 import TermsPage from "./signup/TermsPage";
 import type { Company } from "./customer/types";
@@ -15,7 +16,7 @@ import type { Company } from "./customer/types";
  * Entry point. The address decides what opens:
  *   ?empresa=<slug>&mesa=<id>      customer menu (what the table QR code opens)
  *   ?empresa=<slug>&painel=1       owner panel
- *   ?cadastro=1 | ?entrar=1 | ?termos=1   owner sign-up, owner sign-in, terms of use
+ *   ?cadastro=1 | ?entrar=1 | ?termos=1 | ?sistema=1   owner sign-up, owner sign-in, terms of use, sales page
  *   nothing                        short explanation (or the panel, for a signed-in owner)
  */
 export default function App() {
@@ -57,6 +58,7 @@ export default function App() {
     if (screen === "signup") return <SignupPage />;
     if (screen === "login") return <OwnerLogin />;
     if (screen === "terms") return <TermsPage />;
+    if (screen === "sales") return <SalesPage />;
 
     return (
       <main className="adm adm-login-page">

@@ -5,6 +5,7 @@ import {
   entryScreen,
   ownerLoginUrl,
   panelUrl,
+  salesUrl,
   signupUrl,
   tableOrderUrl,
   termsUrl,
@@ -59,6 +60,7 @@ test("the sign-up, sign-in and terms links carry only their own flag", () => {
   assert.equal(ownerLoginUrl(ORIGIN, "/"), `${ORIGIN}/?entrar=1`);
   assert.equal(termsUrl(ORIGIN, "/"), `${ORIGIN}/?termos=1`);
   assert.equal(signupUrl(ORIGIN, ""), `${ORIGIN}/?cadastro=1`);
+  assert.equal(salesUrl(ORIGIN, "/"), `${ORIGIN}/?sistema=1`);
 });
 
 test("each entry link opens its own screen, and none of them opens the panel", () => {
@@ -66,6 +68,7 @@ test("each entry link opens its own screen, and none of them opens the panel", (
     [signupUrl(ORIGIN, "/"), "signup"],
     [ownerLoginUrl(ORIGIN, "/"), "login"],
     [termsUrl(ORIGIN, "/"), "terms"],
+    [salesUrl(ORIGIN, "/"), "sales"],
   ]) {
     const search = new URL(link).search;
     assert.equal(entryScreen(search), screen);
@@ -80,4 +83,8 @@ test("entryScreen only accepts =1, ignores the rest and lets the terms win", () 
   assert.equal(entryScreen("?empresa=x"), null);
   assert.equal(entryScreen("?cadastro=1&termos=1"), "terms");
   assert.equal(entryScreen("?entrar=1&cadastro=1"), "signup");
+  // from the sales page the owner goes on to sign up or sign in, and those win over it
+  assert.equal(entryScreen("?sistema=1&cadastro=1"), "signup");
+  assert.equal(entryScreen("?sistema=1&entrar=1"), "login");
+  assert.equal(entryScreen("?sistema=0"), null);
 });

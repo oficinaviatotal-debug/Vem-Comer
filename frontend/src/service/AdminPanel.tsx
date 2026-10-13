@@ -66,6 +66,7 @@ import { rememberCompany } from "./lastCompany";
 import MenuAssistant from "../assistant/MenuAssistant";
 import CostsPanel from "../costs/CostsPanel";
 import CallsBar from "../mesa/CallsBar";
+import TablePoster from "../mesa/TablePoster";
 import "../ui.css";
 import "../admin.css";
 
@@ -1597,6 +1598,12 @@ export default function AdminPanel({
                       >
                         Baixar QR
                       </a>
+
+                      <TablePoster
+                        restaurant={companyName ?? companySlug}
+                        tableNumber={table.number}
+                        qr={tableQrs[table.id]}
+                      />
                     </>
                   ) : (
                     <span className="adm-muted">Gerando QR code…</span>

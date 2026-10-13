@@ -33,6 +33,8 @@ Situações: **Pronto**, **Em PR** (feito, esperando o GD juntar), **Em parte**,
 | Entrega: endereço, taxa por região, retirada, motoqueiro | Falta | `orders` sem endereço, tipo e taxa. Detalha os itens 42, 56 e 62. |
 | Horário de funcionamento e "loja fechada" no cardápio | Em PR | Dois turnos por dia, dia fechado, passa da meia-noite, aviso "Abre hoje às 18h", pausa de pedidos e falar o horário. Mesa não é barrada pelo horário (`horario-e-esgotado.md`). |
 | Esgotado com um toque | Em PR | "Esgotou/Voltou" em cada prato (a cozinha também), "Voltou tudo", selo no cardápio e o prato sai do pedido (`horario-e-esgotado.md`). |
+| Cartaz de QR da mesa para imprimir ("Faça seu pedido aqui") | Em PR | Painel > Mesas > "Cartaz para imprimir": mostra o cartaz pronto, baixa a imagem A4 ou imprime. Só desenho no aparelho, sem rota nova no servidor. |
+| Página de venda "Seu restaurante no próximo nível!" | Em PR | Endereço `?sistema=1`, com "Quero meu sistema" levando ao cadastro. Sem preço (valor de lançamento é decisão do GD). |
 | Cupom, fidelidade e campanha | Falta | Itens 51 e 54. |
 
 ## Gerir

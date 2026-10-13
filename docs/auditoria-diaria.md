@@ -38,6 +38,7 @@ Vem Comer:
 - [~] Entrega: servidor (PR #39), aba do dono com voz (PR #40), tela do cliente com CEP, endereço e taxa (PR #41) e pedido do painel mostrando endereço, telefone e taxa: prontos, CI verde, esperando junção. estados "pronto" e "saiu para entrega" prontos (13/10); **faltam** o motoqueiro e a decisão de quem paga a taxa
 - [~] Assinatura de R$ 190: pagamento no primeiro dia, vencimento e bloqueio no dia seguinte. **Pronta com cobrança manual** (servidor, telas do dono, do cliente e do GD, script `cobranca.sh`; vem DESLIGADA, ligar é decisão do GD). Faltam a empresa de pagamento (cobrança automática) e a decisão sobre pagamento atrasado
 - [~] Horário de funcionamento, pausa de pedidos e esgotado em um toque: **pronto** (servidor, painel do dono com voz, cardápio do cliente; `docs/horario-e-esgotado.md`), CI e junção pendentes; falta ver no celular
+- [~] Front-end contra a prancha de templates (13/10, pedido do GD): cartaz de QR da mesa para imprimir e página de venda `?sistema=1` prontos no Vem Comer (PR #46); front-end do Vem Trabalhar refeito na marca azul (PR #5 do repositório dele). Falta: logomarca em arquivo (SVG/PNG transparente), fotos, ver no celular
 - [ ] Cadastro em até 3 dias: arquivo, "ficou bom?" na logomarca, botão de ajuda, teste cronometrado
 - [ ] Cardápio falado testado no celular do GD (correções do PR #35 juntadas em 07/10; falta atualizar a VPS e testar de novo)
 - [ ] Reinstalação na VPS aplicando as migrações até a 013 (o instalador aplica sozinho; comando entregue ao GD em 07/10 à noite; sem confirmação de que rodou)
