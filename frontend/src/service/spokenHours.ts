@@ -328,7 +328,7 @@ function groupsOf(items: Item[]): { groups: Group[]; before: Group } {
         // "segunda a sexta": the day after "a"/"até" closes the range (it may wrap: "sexta a segunda")
         if (rangeOpen && lastDay !== null) {
           const range: number[] = [];
-          for (let day = (lastDay + 1) % 7; ; day = (day + 1) % 7) {
+          for (let day: number = (lastDay + 1) % 7; ; day = (day + 1) % 7) {
             range.push(day);
             if (day === item.v) break;
           }
