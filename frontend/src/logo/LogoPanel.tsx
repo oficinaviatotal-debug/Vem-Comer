@@ -4,7 +4,8 @@ import "./logo.css";
 import ConfirmButton from "../service/ConfirmButton";
 import { deleteCompanyLogo, fetchCompany, mediaUrl, uploadCompanyLogo } from "../service/api";
 import LogoMaker from "./LogoMaker";
-import { prepareLogoFile } from "./logoFiles";
+import LogoReview from "./LogoReview";
+import { prepareLogoFile, reviewLogoFile, type LogoReviewResult } from "./logoFiles";
 import FeedbackAsk from "../feedback/FeedbackAsk";
 
 type Props = {
@@ -18,7 +19,10 @@ export default function LogoPanel({ companyId }: Props) {
   const [brand, setBrand] = useState<Brand | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [making, setMaking] = useState(false);
+  /** A imagem que o dono escolheu, esperando o "Ficou bom?". Nada foi salvo ainda. */
+  const [candidate, setCandidate] = useState<(LogoReviewResult & { fileName: string }) | null>(null);
   const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState("");
 
@@ -45,20 +49,39 @@ export default function LogoPanel({ companyId }: Props) {
     setDone("Logomarca salva. O cliente já vê no cardápio.");
   }
 
-  async function sendMine(file: File | undefined) {
+  /** O dono escolheu a imagem dele: prepara, olha e mostra o "Ficou bom?". Só salva quando ele disser que sim. */
+  async function chooseMine(file: File | undefined) {
     if (!file) return;
     setError("");
     setDone("");
     setBusy(true);
     try {
       const ready = await prepareLogoFile(file);
-      const result = await uploadCompanyLogo(ready, file.name);
+      const review = await reviewLogoFile(ready);
+      setCandidate({ ...review, fileName: file.name });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não consegui abrir a logomarca. Tente de novo.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function useCandidate(blob: Blob) {
+    if (!candidate) return;
+    setError("");
+    setBusy(true);
+    setSaving(true);
+    try {
+      const result = await uploadCompanyLogo(blob, blob.type === "image/png" ? "logomarca.png" : candidate.fileName);
       setBrand((old) => (old ? { ...old, logo_url: result.logo_url } : old));
+      setCandidate(null);
       setDone("Logomarca salva. O cliente já vê no cardápio.");
     } catch (err) {
+      // fica na tela do "Ficou bom?": o dono tenta de novo sem escolher a imagem outra vez
       setError(err instanceof Error ? err.message : "Não consegui enviar a logomarca. Tente de novo.");
     } finally {
       setBusy(false);
+      setSaving(false);
     }
   }
 
@@ -85,6 +108,24 @@ export default function LogoPanel({ companyId }: Props) {
     );
   }
   if (!brand) return <p className="adm-status">Carregando…</p>;
+
+  if (candidate) {
+    return (
+      <LogoReview
+        review={candidate}
+        restaurantName={brand.name}
+        busy={busy}
+        saving={saving}
+        error={error}
+        onUse={(blob) => void useCandidate(blob)}
+        onPick={(file) => void chooseMine(file)}
+        onCancel={() => {
+          setCandidate(null);
+          setError("");
+        }}
+      />
+    );
+  }
 
   if (making) {
     return (
@@ -139,7 +180,7 @@ export default function LogoPanel({ companyId }: Props) {
             onChange={(event) => {
               const file = event.target.files?.[0];
               event.target.value = ""; // permite escolher o mesmo arquivo de novo
-              void sendMine(file);
+              void chooseMine(file);
             }}
           />
 
@@ -148,7 +189,7 @@ export default function LogoPanel({ companyId }: Props) {
 
         {busy && (
           <p className="adm-muted" role="status">
-            Enviando…
+            Abrindo a imagem…
           </p>
         )}
         {error && (
