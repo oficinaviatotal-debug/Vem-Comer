@@ -33,9 +33,9 @@ quantos dias faltam.
 
 Vem Comer:
 
-- [ ] Reforma visual: cardápio do cliente, tela da mesa, carrinho e acompanhamento
-- [ ] Opções por item (tamanho, adicionais, observação): servidor pronto e juntado (PR #34, CI verde); faltam as telas do cliente e do painel e a voz
-- [ ] Entrega: tipo do pedido, endereço, taxa por região, estados "pronto" e "saiu para entrega"
+- [x] Reforma visual: cardápio do cliente, tela da mesa, carrinho e acompanhamento (PR #33 juntado em 07/10; fotos de tela a 390 e 320 px, ainda não vista num celular de verdade)
+- [x] Opções por item (tamanho, adicionais, observação): servidor juntado (PR #34); telas do cliente (PR #37) e do painel com voz (PR #38) prontas, CI verde, esperando junção
+- [~] Entrega: servidor (PR #39), aba do dono com voz (PR #40), tela do cliente com CEP, endereço e taxa (PR #41) e pedido do painel mostrando endereço, telefone e taxa: prontos, CI verde, esperando junção. **Faltam** os estados "pronto" e "saiu para entrega"
 - [ ] Assinatura de R$ 190: pagamento no primeiro dia, vencimento e bloqueio no dia seguinte
 - [ ] Horário de funcionamento e esgotado em um toque
 - [ ] Cadastro em até 3 dias: arquivo, "ficou bom?" na logomarca, botão de ajuda, teste cronometrado
@@ -90,6 +90,61 @@ Antes de vender de verdade (do `docs/roadmap.md`):
 - A assinatura de R$ 190 (12/10) depende da escolha da empresa de pagamento. Sem ela, entrego a regra de vencimento e bloqueio com cobrança manual.
 - Dois dias de entrega em seguida (10 e 11/10) são apertados; se a opção por item atrasar, a entrega por região do CEP é o que escorrega.
 - Vem Trabalhar só anda com "o que couber": até 13/10 não passa do levantamento e da segurança.
+
+## Balanço do 6º dia (13/10)
+
+**O que é verdade, sem enfeite**
+
+- Nada foi construído nem auditado entre 09 e 12/10: a sessão ficou parada e as rotinas diárias só chegaram hoje. As telas das
+  opções e da entrega (PRs #37 a #41) foram feitas em 08/10, adiantadas em relação ao plano.
+- Nada foi juntado desde 08/10 e a VPS não foi atualizada (ou não sei). Por isso, **nada do que fiz depois do PR #35 está no ar**.
+- "Pronto" aqui é PR com CI verde e tela conferida em foto de tela de computador (390 e 320 px). Nenhuma tela foi vista num
+  celular de verdade, e a entrega nunca foi testada contra um servidor de verdade fora do banco de teste.
+
+**Versão única para juntar de uma vez**
+
+Os PRs #36 a #41 mais o pedido do painel com endereço foram reunidos num PR só (`release/rc-20261013`), para o GD juntar com um
+toque. As emendas não deram conflito; 460 testes do front passam e os 532 do servidor dão o mesmo resultado do `main` (4 falhas
+antigas por falta de biblioteca de QR e Pix neste ambiente, que também falham no `main`).
+
+**O que ficou de fora e por quê**
+
+| Item | Por que não entrou |
+|---|---|
+| Estados "pronto" e "saiu para entrega" | O servidor só aceita pendente, em preparo e concluído; muda a regra do pedido, então merece o próprio dia |
+| Horário de funcionamento e esgotado em um toque | Parados em 09 a 12/10 |
+| Assinatura de R$ 190, vencimento e bloqueio | Parada; a cobrança automática depende da empresa de pagamento (decisão do GD) |
+| Cadastro em 3 dias, "ficou bom?" e botão de ajuda | Parado; o teste cronometrado só faz sentido depois da VPS atualizada |
+| Reinstalação na VPS e teste cronometrado | Depende do GD rodar o comando |
+| Vem Trabalhar além do levantamento | Só "o que couber"; segurança do banco e comando de voz esperam o GD |
+
+**Quantos dias faltam (minha estimativa, sem contar a espera pelas decisões do GD)**
+
+- **Vem Comer, para vender de verdade: cerca de 10 dias de trabalho.** Estados da entrega 1; horário e esgotado 1,5;
+  assinatura com cobrança manual 2; cadastro em 3 dias 2; teste no celular e correções 2; VPS e auditoria geral 1,5.
+  Com cobrança automática, mais 2 depois que a empresa de pagamento estiver escolhida.
+- **Vem Trabalhar:** 6,5 dias para vagas funcionando sem pagamento e 11 a 13 com pagamento e escolas (levantamento de 08/10).
+
+**Nova ordem (a que eu sigo se o GD não disser outra)**
+
+1. Juntar o PR único, atualizar a VPS e testar no celular (GD). Destrava tudo que depende de teste real.
+2. Cadastro em 3 dias: é a promessa de venda do Vem Comer.
+3. Assinatura de R$ 190 com bloqueio no dia seguinte (cobrança manual primeiro).
+4. Estados da entrega, depois horário e esgotado em um toque.
+5. Teste cronometrado, reinstalação e auditoria geral.
+6. Vem Trabalhar: segurança do banco, comando de voz, vagas.
+
+**Decisões que só o GD toma**
+
+1. Juntar o PR único.
+2. Rodar o comando da VPS e testar o cardápio falado com pausas (mandar print).
+3. Escolher a empresa de pagamento com divisão e informar o CNPJ.
+4. Confirmar as faixas do motoqueiro (R$ 7 até 5 km, R$ 10 até 10 km, R$ 15 até 15 km) e quem paga a taxa.
+5. Autorizar a correção de segurança do banco do Vem Trabalhar (`docs/propostas/001`) e a nova publicação do comando de voz.
+6. Dar o aval ao PR #6 (decisão 0001, backend oficial).
+
+**Referências guardadas em 13/10:** o anúncio de curso (08/10) e o anúncio da Empregare (10/10) estão no repositório privado do
+Vem Trabalhar (`docs/referencias-visuais/`, PR #4); o texto do benchmark está em `docs/benchmark-comida-rh-cursos.md`.
 
 ## Pauta do 6º dia (13/10)
 
