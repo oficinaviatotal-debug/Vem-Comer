@@ -1,4 +1,5 @@
 import type { SignupBody } from "../signup/signupLogic";
+import type { ApiGroup, OptionsPayload } from "./optionsDraft";
 
 export const API_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -298,6 +299,29 @@ export async function deleteProduct(productId: string) {
     headers: authHeaders(),
   });
   if (!response.ok) throw new Error("Falha ao remover produto");
+  return response.json();
+}
+
+/** The option groups of a dish (size, extras...), with the turned-off options too. */
+export async function fetchProductOptions(productId: string): Promise<{ groups: ApiGroup[] }> {
+  const response = await fetch(`${API_URL}/admin/products/${productId}/options`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw await readError(response, "Não consegui abrir as opções deste prato");
+  return response.json();
+}
+
+/** Replaces the option groups of a dish. The server checks everything and says why when it refuses. */
+export async function saveProductOptions(
+  productId: string,
+  payload: OptionsPayload
+): Promise<{ groups: ApiGroup[] }> {
+  const response = await fetch(`${API_URL}/admin/products/${productId}/options`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw await readError(response, "Não consegui salvar as opções");
   return response.json();
 }
 
