@@ -101,6 +101,32 @@ class Base(unittest.TestCase):
         self.addCleanup(patcher.stop)
 
 
+# ------------------------------------------------------------------------------------------- o restaurante ve quem está com a entrega
+
+class StaffSeesTheCourierTests(unittest.TestCase):
+    def sql(self, role="KITCHEN"):
+        with patch.object(backend_app, "query_db", return_value=[]) as query_db:
+            reply = backend_app.app.test_client().get(f"{BASE}/admin/orders", headers=auth(role))
+        self.assertEqual(reply.status_code, 200)
+        return norm(query_db.call_args.args[0])
+
+    def test_the_panel_orders_carry_the_courier_name_and_the_times(self):
+        sql = self.sql()
+        self.assertIn("AS courier_name", sql)
+        self.assertIn("o.picked_up_at", sql)
+        self.assertIn("o.delivered_at", sql)
+
+    def test_the_name_comes_only_from_a_user_of_the_same_restaurant(self):
+        sql = self.sql()
+        self.assertIn("FROM users c WHERE c.id = o.courier_id AND c.company_id = o.company_id", sql)
+
+    def test_the_panel_still_never_carries_the_code_nor_the_couriers_login(self):
+        sql = self.sql()
+        self.assertNotIn("delivery_code", sql)
+        self.assertNotIn("email", sql)
+        self.assertNotIn("password", sql)
+
+
 # ------------------------------------------------------------------------------------------- lista
 
 LISTED = {

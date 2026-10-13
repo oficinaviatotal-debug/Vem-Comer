@@ -14,6 +14,9 @@ export type HandlingOrder = {
   delivery_zone?: string | null;
   delivery_address?: Record<string, unknown> | null;
   customer_phone?: string | null;
+  /** Who took the delivery (a login of the restaurant with the role Entregador); empty until someone takes it. */
+  courier_name?: string | null;
+  status?: string | null;
 };
 
 export type HandlingKind = "mesa" | "entrega" | "retirada" | "balcao";
@@ -35,9 +38,21 @@ export type HandlingView = {
   feeCents: number;
   /** One line for people who read the slip without the box: "Retirar no balcão", "Entregar em ...". */
   hint: string;
+  /** Who has the delivery: "Com o entregador Ana", "Entregue por Ana"; empty unless a courier took it. */
+  courierLine: string;
 };
 
 const clean = (value: unknown): string => (typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "");
+
+/** The line about the courier on the slip of a delivery; empty when nobody took it or it is not a delivery. */
+export function courierLine(order: HandlingOrder): string {
+  if (handlingKind(order) !== "entrega") return "";
+  const name = clean(order.courier_name);
+  if (!name) return "";
+  if (order.status === "concluido") return `Entregue por ${name}`;
+  if (order.status === "saiu para entrega") return `Com o entregador ${name}`;
+  return `Entregador: ${name}`;
+}
 
 export function handlingKind(order: HandlingOrder): HandlingKind {
   const mode = modeOfOrder(order.order_type);
@@ -71,7 +86,18 @@ export function handlingView(order: HandlingOrder): HandlingView {
         ? "Cliente retira no balcão"
         : "";
 
-  return { kind, title, address, region, reference, phone, phoneHref: phone ? `tel:${digits}` : "", feeCents, hint };
+  return {
+    kind,
+    title,
+    address,
+    region,
+    reference,
+    phone,
+    phoneHref: phone ? `tel:${digits}` : "",
+    feeCents,
+    hint,
+    courierLine: courierLine(order),
+  };
 }
 
 /** Items only: the total the server stored already has the fee inside, so the slip shows total minus fee. */

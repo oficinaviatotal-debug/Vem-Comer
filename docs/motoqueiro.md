@@ -63,6 +63,15 @@ que volta é acertado (regra do item 66: pedidos em andamento terminam).
   **sem sinal na porta**, a tela diz "Toque em Entreguei de novo quando o sinal voltar: não tem problema repetir".
 - Pedido de entrega **de antes desta mudança não tem código** e fecha como sempre fechou (sem código).
 
+## Quem está com a entrega e as horas (13/10, à noite)
+
+- O cartão do pedido de entrega, no painel da equipe, mostra **"Com o entregador Ana"** (saiu) ou **"Entregue por Ana"** (concluída).
+  O nome vem só de um login do **mesmo restaurante** (`AS courier_name` no pedido do painel); nunca vai e-mail nem senha.
+- Quando o restaurante muda o andamento pelo botão do painel, a hora também é gravada: **"saiu para entrega"** grava `picked_up_at` e **"concluído"**
+  de uma entrega grava `delivered_at` (só se ainda não houver hora; tocar de novo não muda a primeira). Pedido de mesa, balcão e retirada
+  não ganha hora de entrega. Isto cobre o caso do código travado, em que o restaurante fecha a entrega pelo painel.
+- O pedido do painel passa a trazer `picked_up_at` e `delivered_at`, para a conta de tempo por entrega.
+
 ## O que ainda falta (de propósito, para a próxima etapa)
 
 - **Pagamento do motoqueiro por distância** (item 62: R$ 7 até 5 km, R$ 10 até 10 km, R$ 15 até 15 km) e **quem paga**
@@ -70,8 +79,6 @@ que volta é acertado (regra do item 66: pedidos em andamento terminam).
 - **Fotos de prova** (item 56): retirada e entrega.
 - **Tempo por entrega e eficiência** de cada motoqueiro (os campos já estão gravados).
 - Fechar a entrega por **WhatsApp** (item 42) e o aviso do código por e-mail.
-- Quando o restaurante fecha a entrega pelo botão do painel (por exemplo, código travado), a hora de entrega não é gravada.
-- Mostrar no cartão do pedido, para a equipe, **quem é o motoqueiro**.
 - Cartão na porta (maquininha): hoje só o dinheiro entra no acerto.
 
 ## Como foi conferido

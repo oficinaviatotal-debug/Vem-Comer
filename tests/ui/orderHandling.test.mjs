@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { handlingKind, handlingView, itemsSubtotalCents } from "../../frontend/src/service/orderHandling.ts";
+import { courierLine, handlingKind, handlingView, itemsSubtotalCents } from "../../frontend/src/service/orderHandling.ts";
 
 const delivery = {
   order_type: "entrega",
@@ -76,4 +76,21 @@ test("the items subtotal is the total without the delivery fee", () => {
   assert.equal(itemsSubtotalCents(30, 0), 3000);
   assert.equal(itemsSubtotalCents("2.00", 500), 0);
   assert.equal(itemsSubtotalCents("x", 0), 0);
+});
+
+test("the slip of a delivery says who has it", () => {
+  assert.equal(courierLine({ ...delivery, courier_name: "Ana Moto", status: "saiu para entrega" }), "Com o entregador Ana Moto");
+  assert.equal(courierLine({ ...delivery, courier_name: "Ana Moto", status: "concluido" }), "Entregue por Ana Moto");
+  assert.equal(courierLine({ ...delivery, courier_name: "Ana Moto", status: "pronto" }), "Entregador: Ana Moto");
+  assert.equal(handlingView({ ...delivery, courier_name: "  Ana   Moto ", status: "saiu para entrega" }).courierLine, "Com o entregador Ana Moto");
+});
+
+test("no courier line when nobody took it, or when it is not a delivery", () => {
+  for (const name of [null, undefined, "", "   ", 5]) {
+    assert.equal(courierLine({ ...delivery, courier_name: name, status: "saiu para entrega" }), "", String(name));
+  }
+  assert.equal(handlingView(delivery).courierLine, "");
+  for (const order_type of ["mesa", "retirada", null]) {
+    assert.equal(courierLine({ order_type, table_number: "4", courier_name: "Ana", status: "pronto" }), "", String(order_type));
+  }
 });

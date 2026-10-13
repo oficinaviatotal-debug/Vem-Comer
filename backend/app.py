@@ -1620,7 +1620,15 @@ def get_admin_orders(company_id):
                 o.delivery_zone,
                 o.delivery_address,
                 o.customer_phone,
+                o.picked_up_at,
+                o.delivered_at,
                 t.number AS table_number,
+                (
+                    SELECT c.name
+                    FROM users c
+                    WHERE c.id = o.courier_id
+                    AND c.company_id = o.company_id
+                ) AS courier_name,
                 (
                     SELECT pay.status
                     FROM payments pay
@@ -1736,9 +1744,9 @@ def update_order_status(order_id):
                 }), 400
 
         cur.execute(
-            """
+            f"""
             UPDATE orders
-            SET status = %s
+            SET status = %s{order_status.stamp_sql(new_status)}
             WHERE id = %s
             AND company_id = %s;
             """,

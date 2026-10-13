@@ -99,6 +99,24 @@ class FakeConnection:
         return [item for item in self.executed if item[0].startswith(start)]
 
 
+class StampTests(unittest.TestCase):
+    def test_only_leaving_and_arriving_stamp_a_time(self):
+        self.assertEqual(order_status.stamp_sql("pronto"), "")
+        self.assertEqual(order_status.stamp_sql("em preparo"), "")
+        self.assertEqual(order_status.stamp_sql("PENDING_PAYMENT"), "")
+        self.assertIn("picked_up_at = COALESCE(picked_up_at, now())", order_status.stamp_sql("saiu para entrega"))
+        self.assertIn("delivered_at", order_status.stamp_sql("concluido"))
+
+    def test_the_stamp_is_fixed_text_that_never_overwrites_an_earlier_time(self):
+        for status in order_status.ALLOWED:
+            stamp = order_status.stamp_sql(status)
+            if stamp:
+                self.assertIn("COALESCE(", stamp)
+                self.assertNotIn("%", stamp, "nada vindo do cliente entra no SQL")
+        # so uma entrega ganha hora de chegada: mesa e balcao seguem sem ela
+        self.assertIn("order_type = 'entrega'", order_status.stamp_sql("concluido"))
+
+
 class StatusRouteTests(unittest.TestCase):
     def setUp(self):
         self.client = backend_app.app.test_client()
@@ -129,6 +147,27 @@ class StatusRouteTests(unittest.TestCase):
             event = conn.sql("INSERT INTO order_events")[0]
             self.assertEqual(event[1][1], order_status.event_type(status))
             conn.commit.assert_called_once()
+
+    def test_leaving_and_arriving_by_the_button_stamp_the_times_in_the_same_update(self):
+        conn = FakeConnection(order_type="entrega")
+        self.put("saiu para entrega", conn)
+        (update,) = conn.sql("UPDATE orders")
+        self.assertIn("picked_up_at = COALESCE(picked_up_at, now())", update[0])
+        self.assertEqual(update[1], ("saiu para entrega", ORDER_ID, COMPANY_ID))
+
+        conn = FakeConnection(order_type="entrega")
+        self.put("concluido", conn)
+        (update,) = conn.sql("UPDATE orders")
+        self.assertIn("delivered_at = CASE WHEN order_type = 'entrega'", update[0])
+        self.assertEqual(update[1], ("concluido", ORDER_ID, COMPANY_ID))
+
+    def test_the_other_steps_stamp_nothing(self):
+        for status in ("PENDING_PAYMENT", "em preparo", "pronto"):
+            conn = FakeConnection(order_type="entrega")
+            self.put(status, conn)
+            (update,) = conn.sql("UPDATE orders")
+            self.assertNotIn("picked_up_at", update[0])
+            self.assertNotIn("delivered_at", update[0])
 
     def test_ready_and_out_for_delivery_are_refused_for_other_types(self):
         for kind in ("mesa", "balcao", "retirada"):
