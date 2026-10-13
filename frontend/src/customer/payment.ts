@@ -54,12 +54,20 @@ function isMethod(value: unknown): value is PayMethod {
   return value === "pix" || value === "cartao" || value === "dinheiro";
 }
 
-/** What the order slip shows about payment. */
-export function orderPaymentView(method: unknown, status: unknown): OrderPaymentView {
+/** What the order slip shows about payment. A delivery is paid to the courier at the door, not to the attendant. */
+export function orderPaymentView(method: unknown, status: unknown, orderType?: unknown): OrderPaymentView {
   const paid = String(status ?? "").toUpperCase() === "PAID";
   if (paid) return { kind: "paid" };
   if (method === "pix") return { kind: "pix-due" };
   const label = isMethod(method) ? PAY_LABELS[method].toLowerCase() : "";
+  if (orderType === "entrega") {
+    return {
+      kind: "at-table",
+      text: label
+        ? `Pagamento em ${label}: você paga ao entregador quando o pedido chegar.`
+        : "Você paga ao entregador quando o pedido chegar.",
+    };
+  }
   return {
     kind: "at-table",
     text: label ? `Pagamento em ${label}: você acerta com o atendente.` : "Você acerta o pagamento com o atendente.",

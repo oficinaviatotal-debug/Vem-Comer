@@ -26,11 +26,11 @@ Situações: **Pronto**, **Em PR** (feito, esperando o GD juntar), **Em parte**,
 | Cardápio digital com categorias, foto e QR da mesa | Pronto | `menus`, `products`, fotos, QR por mesa. |
 | Pedido do cliente (nome, Pix, cartão ou dinheiro com troco) | Pronto | `orders`, `payment-options`. |
 | Pix que cai direto na conta do restaurante | Pronto | Só com a chave do próprio restaurante (`pix-restaurante.md`). |
-| Acompanhar o pedido (cliente) e o painel de pedidos (dono) | Em parte | Entrega passa por "pronto" e "saiu para entrega" (painel e acompanhamento do cliente, PR de 13/10); mesa, balcão e retirada seguem em "em preparo" e "pronto". Falta o motoqueiro (código de entrega, acerto, fotos). |
+| Acompanhar o pedido (cliente) e o painel de pedidos (dono) | Em parte | Entrega passa por "pronto" e "saiu para entrega" (painel e acompanhamento do cliente, PR de 13/10); mesa, balcão e retirada seguem em "em preparo" e "pronto". O motoqueiro fecha a entrega com o código que o cliente vê (`motoqueiro.md`); faltam as fotos de prova. |
 | Chamar garçom, pedir a conta, água, limpeza | Em PR | PR #33 (Mesa viva). |
 | Opções por item: tamanho, adicionais, sabor, "sem cebola", meio a meio | Em parte | Servidor pronto (08/10): grupos de escolha por prato, preço recalculado, cópia no pedido e observação de até 140 letras (`opcoes-por-item.md`). Faltam as telas (cliente e painel) e a voz, previstas para 09/10. Meio a meio não entrou. |
 | Venda por peso e por montagem (açaí, sorvete, marmita) | Falta | A quantidade é inteira. O custo conhece "quilo"; o pedido não. |
-| Entrega: endereço, taxa por região, retirada, motoqueiro | Falta | `orders` sem endereço, tipo e taxa. Detalha os itens 42, 56 e 62. |
+| Entrega: endereço, taxa por região, retirada, motoqueiro | Em parte | Endereço, taxa por região e retirada prontos; **motoqueiro com código de entrega e dinheiro em aberto até o acerto pronto (13/10, `motoqueiro.md`)**. Faltam o pagamento por faixa de distância, fotos de prova e tempo por entrega (itens 56 e 62). |
 | Horário de funcionamento e "loja fechada" no cardápio | Em PR | Dois turnos por dia, dia fechado, passa da meia-noite, aviso "Abre hoje às 18h", pausa de pedidos e falar o horário. Mesa não é barrada pelo horário (`horario-e-esgotado.md`). |
 | Esgotado com um toque | Em PR | "Esgotou/Voltou" em cada prato (a cozinha também), "Voltou tudo", selo no cardápio e o prato sai do pedido (`horario-e-esgotado.md`). |
 | Cartaz de QR da mesa para imprimir ("Faça seu pedido aqui") | Em PR | Painel > Mesas > "Cartaz para imprimir": mostra o cartaz pronto, baixa a imagem A4 ou imprime. Só desenho no aparelho, sem rota nova no servidor. |
@@ -43,9 +43,9 @@ Situações: **Pronto**, **Em PR** (feito, esperando o GD juntar), **Em parte**,
 |---|---|---|
 | Custo do prato, CMV, ficha técnica e estoque de insumos | Pronto | `006_custos`, `007_rendimento_estoque`, `docs/custos-e-cmv.md`. |
 | Cadastro do restaurante pela internet e guia de primeiros passos | Pronto | Fechado até o GD abrir (`abrir-cadastro.sh`). |
-| Perfis: dono, gerente, garçom, caixa, cozinha, entregador | Em parte | Os papéis existem no login; só dono e gerente têm tela útil. |
+| Perfis: dono, gerente, garçom, caixa, cozinha, entregador | Em parte | Os papéis existem no login; dono e gerente têm o painel, o **entregador tem a tela de Entregas** e o caixa a aba Acerto. Garçom e cozinha ainda não têm tela própria. |
 | Telas do garçom, da cozinha e do balcão | Falta | Itens 48, 49, 50 e 65. |
-| Caixa: quem recebeu, dinheiro em aberto, conciliação | Falta | Itens 47 e 50. |
+| Caixa: quem recebeu, dinheiro em aberto, conciliação | Em parte | **Dinheiro em aberto dos motoqueiros e o acerto prontos (13/10)**. Faltam o registro de quem recebeu em cada pagamento e a conciliação (itens 47 e 50). |
 | Impressão do cupom e da comanda (58 e 80 mm) | Falta | Item 54. |
 | "Bom dia do dono", indicadores e alertas | Falta | Itens 55 e 60. |
 | **Assinatura de R$ 190, pagamento no primeiro dia e bloqueio** | Parcial | Item 66. Pronta com cobrança manual: tabelas, regras de vencimento e bloqueio no servidor, aba Plano do dono, aba Assinaturas do GD e `cobranca.sh`. Vem desligada. Falta a empresa de pagamento (cobrança automática). Veja `docs/assinatura-e-cobranca.md`. |

@@ -112,11 +112,10 @@ meio:
 
 - **Telas**: cliente escolhe mesa, retirada ou entrega, digita o CEP, vê a taxa e o endereço; dono cadastra as
   regiões (por voz, "centro, taxa 5, CEPs 30110 e 30120") e pausa a entrega; cozinha vê o endereço no pedido.
-- **O motoqueiro** (código de entrega, acerto do dinheiro, fotos de prova, pagamento por faixa de distância: itens 42,
-  56 e 62): planejado para depois. Hoje quem leva o pedido avisa o painel pelos botões de cima, e o restaurante acerta
-  com o motoqueiro por fora.
+- **O motoqueiro** (item 42): **código de entrega e acerto do dinheiro prontos em 13/10**, veja `motoqueiro.md`. Ainda
+  faltam as fotos de prova, o pagamento por faixa de distância (itens 56 e 62) e o tempo por entrega.
 - **Preencher a rua pelo CEP** (ViaCEP): hoje o cliente digita o endereço. Fica para depois, porque depende de o
   celular do cliente alcançar um serviço de fora.
 - **Horário de funcionamento** (entrega fora do horário): pronto em 13/10, veja `horario-e-esgotado.md`.
-- **Quem paga a taxa** (item 62 aberto): hoje o cliente paga a taxa da região e o restaurante acerta com o
-  motoqueiro por fora.
+- **Quem paga a taxa** (item 62 aberto): hoje o cliente paga a taxa da região e o restaurante acerta o que paga ao
+  motoqueiro por fora (o sistema só acerta o dinheiro que o motoqueiro recebeu na porta).

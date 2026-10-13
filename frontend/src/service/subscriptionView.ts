@@ -118,8 +118,11 @@ export function hasPlanTab(plan: OwnerPlan | null | undefined): boolean {
   return Boolean(plan && plan.state !== "none");
 }
 
-/** While blocked, only these screens work: the orders in progress must be finished, and the way to pay. */
-export const BLOCKED_VIEWS = ["pedidos", "plano"] as const;
+/**
+ * While blocked, only these screens work: the orders in progress must be finished (the kitchen's list and the
+ * deliveries on the road, with the cash they bring back), and the way to pay.
+ */
+export const BLOCKED_VIEWS = ["pedidos", "entregas", "acerto", "plano"] as const;
 
 export function viewAllowed(view: string, blocked: boolean): boolean {
   return !blocked || (BLOCKED_VIEWS as readonly string[]).includes(view);

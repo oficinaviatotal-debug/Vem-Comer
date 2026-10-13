@@ -56,6 +56,21 @@ test("card and cash orders say the customer settles with the attendant", () => {
   assert.match(unknown.text, /atendente/);
 });
 
+test("a delivery is paid to the courier at the door, never to the attendant", () => {
+  const cash = orderPaymentView("dinheiro", "PENDING", "entrega");
+  assert.equal(cash.kind, "at-table");
+  assert.match(cash.text, /dinheiro/);
+  assert.match(cash.text, /entregador/);
+  assert.doesNotMatch(cash.text, /atendente/);
+  assert.match(orderPaymentView(undefined, "PENDING", "entrega").text, /entregador/);
+  // Pix is paid on the phone and a confirmed payment is just confirmed, delivery or not
+  assert.deepEqual(orderPaymentView("pix", "PENDING", "entrega"), { kind: "pix-due" });
+  assert.deepEqual(orderPaymentView("dinheiro", "PAID", "entrega"), { kind: "paid" });
+  // pickup and table keep the attendant
+  assert.match(orderPaymentView("dinheiro", "PENDING", "retirada").text, /atendente/);
+  assert.match(orderPaymentView("dinheiro", "PENDING").text, /atendente/);
+});
+
 test("the slip keeps refreshing while a ready Pix order waits to be marked as paid", () => {
   assert.equal(keepPolling(false, "pix", "PENDING"), true);
   assert.equal(keepPolling(false, "cartao", "PENDING"), true);

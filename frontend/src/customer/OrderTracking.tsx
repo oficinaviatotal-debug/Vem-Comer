@@ -9,6 +9,7 @@ import OrderFeedback from "./OrderFeedback";
 import PixPayment from "./PixPayment";
 import { keepPolling } from "./payment";
 import { describeAddress, maskPhone, modeOfOrder, whereLabel } from "./delivery";
+import { CODE_HINT, CODE_TITLE, deliveryCodeToShow, spokenCode } from "./deliveryCode";
 
 type Props = {
   companyId: string;
@@ -96,6 +97,7 @@ export default function OrderTracking(props: Props) {
   const mode = props.tableNumber ? null : modeOfOrder(order.order_type);
   const fee = Number(order.delivery_fee) || 0;
   const address = describeAddress(order.delivery_address);
+  const deliveryCode = mode === "entrega" ? deliveryCodeToShow(order) : "";
 
   return (
     <div className={status.done ? "comanda-wrap is-ready" : "comanda-wrap"}>
@@ -146,6 +148,16 @@ export default function OrderTracking(props: Props) {
           {offline && <p className="cust-note">Sem internet. Mostrando o último andamento.</p>}
         </div>
 
+        {deliveryCode && (
+          <div className="cust-code" role="group" aria-label={CODE_TITLE}>
+            <p className="cust-code-title">{CODE_TITLE}</p>
+            <p className="cust-code-digits" aria-label={spokenCode(deliveryCode)}>
+              {deliveryCode}
+            </p>
+            <p className="cust-code-hint">{CODE_HINT}</p>
+          </div>
+        )}
+
         <ul className="comanda-items">
           {order.items?.map((item, index) => (
             <li className="comanda-item" key={`${item.name}-${index}`}>
@@ -180,6 +192,7 @@ export default function OrderTracking(props: Props) {
           token={token}
           method={order.payment_method}
           status={order.payment_status}
+          orderType={mode === "entrega" ? "entrega" : null}
           guideTarget={props.pixGuideTarget}
           onHelp={props.onPixHelp}
         />

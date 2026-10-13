@@ -9,6 +9,8 @@ type Props = {
   token: string;
   method?: string;
   status?: string;
+  /** "entrega" changes who is paid: the courier, at the door. */
+  orderType?: string | null;
   /**
    * Element ids must be unique on the page, so only the slip the guide points at
    * carries them (the guide looks for #cust-pix-copy and #cust-pix-status).
@@ -22,7 +24,7 @@ type Copied = "" | "ok" | "manual";
 
 /** The payment part of the order slip: the Pix code to pay, "received", or what to do at the table. */
 export default function PixPayment(props: Props) {
-  const view = orderPaymentView(props.method, props.status);
+  const view = orderPaymentView(props.method, props.status, props.orderType);
 
   if (view.kind === "paid") {
     return (

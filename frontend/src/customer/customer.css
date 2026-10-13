@@ -992,3 +992,43 @@
   margin: 0 0 var(--s3);
   overflow-wrap: anywhere;
 }
+
+/* The 4 numbers of a delivery: the customer says them to the courier when the order arrives. */
+.cust-code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  margin: 0 0 var(--s3);
+  padding: var(--s3) var(--s4);
+  border: 2px dashed var(--folha);
+  border-radius: var(--r-md);
+  background: var(--papel-2);
+  text-align: center;
+}
+
+.cust-code p {
+  margin: 0;
+}
+
+.cust-code-title {
+  color: var(--folha);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.cust-code-digits {
+  color: var(--folha);
+  font-family: var(--font-display);
+  font-size: var(--t-3xl);
+  font-weight: 700;
+  letter-spacing: .35em;
+  padding-left: .35em;
+}
+
+.cust-code-hint {
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+}
