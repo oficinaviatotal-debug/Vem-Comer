@@ -24,11 +24,13 @@ verdade, fotografado no balcão, ainda não tenho (pedido no fim).
 1. **Não existe "o cardápio". Existem uns 14 jeitos de montar um preço**, e quase todo negócio mistura três ou
    quatro deles. O sistema não pode ser feito por segmento; tem que ser feito por jeito de preço. O segmento só
    ajuda a sugerir o ponto de partida.
-2. **O que mais aparece nos prints, e que o sistema ainda trata mal, é o tamanho/quantidade como produtos
-   separados.** "Calabresa (Broto)" e "Calabresa (Grande)" viram dois pratos, duas fotos, duas linhas. O mercado
-   mostra **um prato com um seletor de tamanho** [P6][P7]. No print do painel do Anota AI aparecem "300 ml" e
-   "400 ml - Cópia" (categoria Açaí) como linhas separadas, com um ícone no lugar da foto [P1]: é o desenho que
-   o Vem Comer deve evitar.
+2. **Cada tamanho e cada sabor é um produto de verdade**: "Coca-Cola 200 ml", "1 L", "2 L", "Zero" e "Light" têm
+   preço, custo, CMV, estoque, código, peso e foto próprios. É assim que o sistema já é (a ficha técnica e o CMV são por
+   produto) e é assim que a leitura por foto já cadastra ("Calabresa (G)" e "Calabresa (Broto)" são dois produtos).
+   *Correção de 14/10:* a primeira versão deste atlas recomendava juntar os tamanhos num produto só, com o preço
+   somando diferença. Isso estava errado: apagaria o custo, o CMV e o estoque de cada tamanho. O GD apontou o erro e
+   a recomendação foi tirada. O que os concorrentes mostram na tela [P6][P7] é só **aparência**: um cartão com
+   botões de tamanho. Por baixo, cada tamanho continua com os seus números.
 3. **Descrição embaixo do nome, subseção e foto por produto são o padrão.** Descrição e subseção entraram hoje (PR #64).
    Foto por produto a tela do cliente já mostra; falta o jeito fácil de o dono colocar (uma foto por prato, na hora).
 4. **A primeira pergunta não deve ser "qual o seu segmento".** Deve ser "como você quer cadastrar?" (foto, arquivo,
@@ -48,8 +50,8 @@ verdade, fotografado no balcão, ainda não tenho (pedido no fim).
 | J1 | Prato simples: nome e preço | Quase todos | **Cabe** |
 | J2 | Descrição embaixo do nome (ingredientes) | Lanches numerados com ingredientes [P2]; pizzas doces [P3]; pratos "Picanha na manteiga: picanha grelhada, arroz, farofa e vinagrete" [P3] | **Cabe** (14/10, PR #64) |
 | J3 | Subseção dentro da categoria | Bebidas > Sucos, Cremes, Destilados [P4]; Pizzas > Doces [P3] | **Cabe** (14/10, PR #64) |
-| J4 | Tamanho com preço próprio | Porções P/M/G [P2]; Broto/Grande [P3]; Marmita mini/média/grande [P7]; Pizza Média/Grande/Família [P6]; copo 300/400 ml [P1] | **Cabe, mas como gambiarra:** grupo "Tamanho", preço base = o mais barato e as outras opções somam a diferença (só soma, nunca desconta). **A leitura por foto/planilha ainda cria um prato por tamanho** |
-| J5 | Escada de quantidade | "10 un. R$ 5,00 … 90 un. R$ 45,00, 100 un. R$ 45,00" [P2]; "R$ 49,90 o cento" [P3]; "R$ 85,00 o cento" [P5]; mini pastel "R$ 2,00" a unidade [P3] | Mesma gambiarra do J4 (grupo "Quantidade"). Não existe "preço por unidade com mínimo" |
+| J4 | Tamanho com preço próprio | Porções P/M/G [P2]; Broto/Grande [P3]; Marmita mini/média/grande [P7]; Pizza Média/Grande/Família [P6]; copo 300/400 ml [P1] | **Cabe, do jeito certo:** cada tamanho é um produto (preço, custo, CMV, estoque, foto próprios). A leitura por foto e planilha já cria um produto por tamanho. Agrupar na tela do cliente (cartão com botões de tamanho) é só visual e ainda não existe |
+| J5 | Escada de quantidade | "10 un. R$ 5,00 … 90 un. R$ 45,00, 100 un. R$ 45,00" [P2]; "R$ 49,90 o cento" [P3]; "R$ 85,00 o cento" [P5]; mini pastel "R$ 2,00" a unidade [P3] | Mesmo caso do J4: cada quantidade é um produto ("Salgado frito, 50 un.", "100 un."), com o custo da embalagem e do salgado dele. É como o cardápio da [Alô] já funciona |
 | J6 | Escolher N sabores de uma lista | "Escolha até 4 sabores, mínimo 25 de cada" [P3]; "até 2 sabores" [P3]; "Até 2 sabores e 6 fatias / Até 3 sabores e 8 fatias" [P6]; "dois sabores 50/50" [Alô] | **Cabe em parte:** grupo "Sabores" com máximo 4 e preço extra zero. **Não cabe:** mínimo por sabor (vai na descrição) e meio a meio com preço pela média ou pelo mais caro |
 | J7 | Montar em etapas | Sorveteria: casquinha/cascão/milkshake com 1, 2 ou 3 bolas → escolher sabores → coberturas "+R$ 2 cada" [P3] | **Cabe em parte:** 3 grupos (tamanho, sabores, coberturas com +2,00). **Não cabe:** o limite de sabores seguir o número de bolas (fica o máximo geral) |
 | J8 | Adicional | "ADICIONAIS" (bacon, queijo, ovo…) [P4]; "Peça também" [P6] | **Cabe** (grupo opcional). Venda cruzada ("Peça também") **não existe** |
@@ -110,8 +112,9 @@ açaí, padaria, churrasco, japonês). Os demais não existem ainda.
   **"Disponibilidade"** (quando pode ser pedida). O texto que li não explica como os sabores são cadastrados.
 
 Lição: os dois concorrentes tratam pizza como **um tipo especial**, e só quem monta o cardápio à mão aguenta isso. Para
-o Vem Comer, a leitura por foto tem que entregar a pizza já montada: um prato por sabor, com seletor de tamanho,
-e a regra do meio a meio escolhida uma vez por categoria.
+o Vem Comer, a leitura por foto tem que entregar a pizza já montada: um produto para cada sabor e tamanho
+("Calabresa Broto", "Calabresa Grande"), cada um com o seu custo e CMV; o meio a meio vira uma **regra de preço da
+categoria** (média ou mais caro, escolhida uma vez), e borda e massa viram adicionais.
 
 ---
 
@@ -122,12 +125,11 @@ distintos."
 
 Regras para o desenho:
 
-1. **Cada produto tem a sua foto.** "Produto" aqui é o prato ou o tipo de salgado: no cardápio da [Alô], são seis
-   (Salgado de festa, Pastéis chinês, Pastéis fritos, Empadas, Pães, Sonho de noiva), cada um com a sua foto, e não uma
-   foto só para "Salgados de festa". Os tamanhos e quantidades do mesmo produto (50 un., 100 un., um sabor, dois
-   sabores) **dividem** a foto, porque são o mesmo produto; isso só funciona depois de a leitura juntar os tamanhos num
-   produto só (seção 5, item 1). Antes disso, "Calabresa (Broto)" e "Calabresa (Grande)" pedem duas fotos, o que é
-   errado. **É uma proposta minha: o GD precisa confirmar** (seção 8, item 4).
+1. **Cada produto tem a sua foto.** "Produto" é cada linha que se vende: Coca-Cola 2 L, Coca-Cola Zero, Calabresa Broto,
+   Calabresa Grande. Na [Alô], o que o cardápio mostra é a lista de produtos com preço (Salgado de festa um sabor 100 un.,
+   Pastéis fritos 50 un., Empadas…), e cada linha pede a sua foto, não uma foto só para "Salgados de festa". Se um
+   produto ainda não tem foto, a tela pode mostrar a de outro tamanho do mesmo produto, mas isso é uma escolha do dono, nunca
+   automática, e só quando o desenho de agrupar tamanhos existir (seção 5, item 9).
 2. **Nunca foto inventada.** O sistema não gera foto de comida nem usa foto de banco de imagens: o cliente vê no prato
    o que o dono vende. Quem não tem foto aparece com um espaço marcado "sem foto ainda", como no painel do
    Anota AI [P1], e a conferência lembra o dono.
@@ -146,19 +148,20 @@ motor novo: são campos e regras em cima de `products` e dos grupos de opções 
 
 | Ordem | Mudança | Destrava | Tamanho |
 |---|---|---|---|
-| 1 | **Leitura que junta tamanhos num produto só.** A IA e a planilha passam a devolver `sizes: [{rótulo, preço}]`; a importação cria o produto com o grupo "Tamanho" (base = o mais barato, diferenças somadas). Nenhuma mudança de banco | Pizzaria, marmita, porções, açaí, sorveteria, salgado por quantidade (J4, J5) | Pequena |
-| 2 | **Código do item** (`products.code`) e mostrar o número no cardápio | Lanchonete, bar, quem pede por número (J10) | Pequena |
+| 1 | **Ficha completa do produto:** código do produto (`code`), código de barras (`barcode`), unidade (un, kg, L), peso ou volume líquido (`net_qty` + g/ml/un) e NCM. Tudo opcional, na migração 018. A leitura passa a preencher o código quando o cardápio é numerado (lanches 01 a 18 [P2]) e o peso/volume quando o nome diz ("2 L", "300 ml") | Todos: o dono que tem planilha com código, balança, bar com bebida de vários tamanhos (J10, J15) | Pequena |
+| 2 | **Dados fiscais por produto** (CEST, CFOP, CST/CSOSN e origem), **sem** calcular nada. Calcular imposto e emitir nota fiscal depende do regime de cada restaurante e de um serviço de emissão: é um módulo à parte, com o contador | Prepara a nota fiscal sem prometer o que só o contador pode definir | Pequena para guardar; grande para emitir |
 | 3 | **Foto por prato, um de cada vez, no assistente** | Todos (seção 4) | Média (só tela) |
 | 4 | **Preço "de/por" e destaques**, mais "Peça também" no carrinho | Aumenta o ticket em todos (J13, J8) | Média |
 | 5 | **Meio a meio** com regra por categoria (média ou mais caro) e mínimo por sabor | Pizzaria, salgado de festa (J6) | Média |
 | 6 | **Disponibilidade por categoria e antecedência** (café da manhã, almoço, "encomendar 2 dias antes") | Café, bolos, salgados de festa (J12, J14) | Média |
 | 7 | **Combo que referencia pratos do cardápio** | Lanchonete, açaí, japonês (J9) | Média a grande |
 | 8 | **Preço por quilo e por pessoa**, etiquetas de alérgeno | Self-service, rodízio, restaurante (J15, J16) | Média |
-| 9 | **Limite de sabores que segue a escolha anterior** (3 bolas = 3 sabores) | Sorveteria (J7) | Média |
-| 10 | **Foto na opção** (cada sabor de salgado, de sorvete ou de pizza com a sua foto na hora de escolher) | Salgado de festa, sorveteria, pizzaria | Média |
+| 9 | **Agrupar na tela do cliente** (um cartão "Coca-Cola" com botões 200 ml, 1 L, 2 L, Zero), só visual, por um campo de família; cada botão é o produto com os seus números | Bebidas, pizzas, marmitas: lista mais curta para o cliente | Média |
+| 10 | **Limite de sabores que segue a escolha anterior** (3 bolas = 3 sabores) | Sorveteria (J7) | Média |
+| 11 | **Foto na opção** (cada sabor de salgado, de sorvete ou de pizza com a sua foto na hora de escolher) | Salgado de festa, sorveteria, pizzaria | Média |
 
-Itens 1 e 2 são pequenos e destravam a maior parte do que o GD mostrou. São os próximos a construir, antes do
-meio a meio.
+Os itens 1 e 2 são pequenos, não mudam nada do que já funciona e completam a ficha do produto como o GD pediu (código,
+código de barras, NCM, peso, unidade). São os próximos a construir, antes do meio a meio.
 
 ---
 
@@ -186,16 +189,16 @@ servem para conferir a estrutura. Onde o preço não dá para ler, o certo é **
 
 | # | Cardápio | Resultado esperado |
 |---|---|---|
-| T1 | Salgados em escada, "Petisco" [P2] | 1 produto "Cento do salgado frito" com sabores na descrição (coxinha, pastel de carne, bolinha de queijo, risole, travesseiro, enrolado de salsicha) e **escada de quantidade** de 10 a 100 un., de R$ 5 a R$ 45 |
+| T1 | Salgados em escada, "Petisco" [P2] | Um produto por quantidade ("Salgado frito, 10 un." R$ 5 … "100 un." R$ 45), com os sabores na descrição (coxinha, pastel de carne, bolinha de queijo, risole, travesseiro, enrolado de salsicha) |
 | T2 | "Skina dos Salgados" [P3] | Salgado de festa R$ 49,90 o cento, 7 sabores, "até 4 sabores, mínimo 25 de cada". Assados/esfihas R$ 65,00 o cento, 7 sabores, "até 2 sabores", **antecedência de 2 dias**. Mini pastéis R$ 2,00 a unidade, 5 sabores. Horário: segunda a sábado 08h às 20h30, domingo 09h às 13h30 |
 | T3 | Sorveteria [P3] | Casquinha, Cascão e Milkshake, cada um com 1, 2 ou 3 bolas a R$ 5, R$ 8 e R$ 10; 14 sabores; 7 coberturas a +R$ 2 cada |
-| T4 | Pizzas doces, Broto e Grande [P3] | Um produto por sabor (Banana nevada, Banana com canela…), tamanhos Broto e Grande, ingredientes na descrição. **Não** dois produtos por sabor |
+| T4 | Pizzas doces, Broto e Grande [P3] | Dois produtos por sabor ("Banana nevada (Broto)" R$ 45, "Banana nevada (Grande)" R$ 55 e assim por diante), com os ingredientes na descrição de cada um |
 | T5 | Comida caseira [P3] | Categorias Porções, Pratos principais e Bebidas; descrição de cada prato principal (ex.: picanha, arroz, farofa e vinagrete); preço R$ 20 em todos (o modelo repete o preço) |
 | T6 | Lanches numerados "Ops!" [P2] | 18 lanches visíveis (o print corta a lista) com **código** 01 a 18 e ingredientes na descrição. Os preços aparecem em branco no print: o resultado esperado é preço vazio e a pergunta ao dono |
 | T7 | Bebidas de bar com código [P4] | Categoria Bebidas com subseções (Sucos, Cremes, Destilados…), código do item, preço de cada. Com letra pequena, devolver "não deu para ler" nos itens duvidosos em vez de chutar |
-| T8 | Marmita mini/média/grande [P7] | Um produto "Marmita" com 3 tamanhos (R$ 12 e R$ 16 para mini e média), descrição "arroz, feijão, mistura e acompanhamento à sua escolha" |
+| T8 | Marmita mini/média/grande [P7] | Três produtos ("Marmita mini" R$ 12, "Marmita média" R$ 16, "Marmita grande" sem preço legível), todos com a descrição "arroz, feijão, mistura e acompanhamento à sua escolha" |
 | T9 | Salgados de festa [Alô] | O que já foi provado em teste simulado (`RealMenuExampleTests`): 13 itens com a quantidade no nome, 5 bebidas, Açaí sem preço (coberto por fita), nota sobre o painel cortado. Falta só a leitura real |
-| T10 | Mini pastéis a R$ 85 o cento, "até 4 sabores" [P5] | 1 produto por cento, 5 sabores, máximo 4 |
+| T10 | Mini pastéis a R$ 85 o cento, "até 4 sabores" [P5] | Produto "Mini pastéis (cento)" R$ 85, com os 5 sabores na descrição e a regra "até 4 sabores" na descrição até existir o grupo de sabores |
 
 ---
 
@@ -206,9 +209,10 @@ servem para conferir a estrutura. Onde o preço não dá para ler, o certo é **
    precisa ser de cliente; vale o do vizinho.
 2. **Dizer quais segmentos vêm primeiro.** Minha proposta: os que mais aparecem na sua conversa, **salgados, lanches,
    pizzas, marmita, açaí, bar**. Pode trocar.
-3. **O sinal verde para o item 1 e o 2 da seção 5** (tamanhos num produto só e código do item).
-4. **Confirmar a regra da foto (seção 4, item 1):** uma foto por produto, e os tamanhos e quantidades do mesmo produto
-   dividem essa foto. Se você quiser foto diferente para cada tamanho, o desenho muda.
+3. **O sinal verde para os itens 1 e 2 da seção 5** (código, código de barras, NCM, unidade e peso/volume por produto;
+   dados fiscais guardados, sem calcular imposto). E confirmar se "KNAI" é o NCM.
+4. **O contador** (quando você quiser chamar): define o que entra na nota fiscal de cada tipo de restaurante (MEI,
+   Simples…). Sem ele, o sistema só guarda os campos.
 
 ---
 
