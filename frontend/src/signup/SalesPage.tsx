@@ -87,6 +87,7 @@ export default function SalesPage() {
       <footer className="sales-foot">
         <p>Vem Comer · Pedido fácil, comida que chega.</p>
         <a href={termsUrl(origin, pathname)}>Termos de uso e privacidade</a>
+        <a href="/api/privacidade">Seus direitos sobre os dados</a>
       </footer>
     </div>
   );

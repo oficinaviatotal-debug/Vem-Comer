@@ -19,6 +19,7 @@ from db import query_db, get_db_connection
 import costing
 import compliance_api
 import consent
+import titular_api
 import courier
 import delivery
 from costs_view import (  # noqa: F401 (cost_since e build_cost_view tambem sao usados pelos testes)
@@ -96,6 +97,7 @@ FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
 
 # Rotas de conformidade abertas ao publico (descadastro de um clique). Veja compliance_api.py.
 app.register_blueprint(compliance_api.blueprint)
+app.register_blueprint(titular_api.blueprint)
 
 
 @app.before_request
@@ -5144,6 +5146,10 @@ def require_platform_admin(f):
         return f(*args, **kwargs)
 
     return wrapper
+
+
+# Pedidos do titular, cópia dos dados e eliminação (LGPD arts. 18 e 19): as rotas com login ficam em titular_api.py.
+titular_api.register_private(app, require_auth=require_auth, require_platform_admin=require_platform_admin)
 
 
 @app.route('/api/admin/subscription', methods=['GET'])

@@ -60,10 +60,8 @@ export default function TermsPage() {
           O que você cadastra (cardápio, preços, fotos, promoções e dados do restaurante) é de responsabilidade
           sua e precisa ser verdadeiro. Quando a leitura por foto sugerir pratos e preços, o que fica salvo é o
           que você conferiu e confirmou. Se alguém avisar que algum conteúdo fere a lei ou direitos de outra
-          pessoa, vamos analisar e retirar o que for preciso, e podemos pedir explicações a você.{" "}
-          {SUPPORT_CONTACT
-            ? `Para avisar, fale com o suporte: ${SUPPORT_CONTACT}.`
-            : "Para avisar, fale com o suporte do Vem Comer, pelo mesmo canal em que você recebeu o link do cadastro."}
+          pessoa, vamos analisar e retirar o que for preciso, e podemos pedir explicações a você. Para avisar, use a{" "}
+          <a href="/api/denuncia">página de denúncia</a> (dá para denunciar sem se identificar).
         </p>
         <p>Isto não tira nenhum direito que a lei dá a quem compra.</p>
 
@@ -112,6 +110,11 @@ export default function TermsPage() {
           {SUPPORT_CONTACT
             ? `Fale com o suporte: ${SUPPORT_CONTACT}.`
             : "É só pedir ao suporte do Vem Comer, pelo mesmo canal em que você recebeu o link do cadastro."}
+        </p>
+        <p>
+          Veja tudo o que guardamos, por quanto tempo e com quem dividimos, e faça o seu pedido (com protocolo e
+          prazo de 15 dias) em <a href="/api/privacidade">Privacidade e os seus direitos</a>. O dono do restaurante
+          também baixa uma cópia dos próprios dados dentro do painel, na aba Plano.
         </p>
 
         <h2>Se estes termos mudarem</h2>

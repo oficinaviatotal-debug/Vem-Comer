@@ -2,6 +2,7 @@ import { useState } from "react";
 import "../ui.css";
 import "../admin.css";
 import "../plan.css";
+import MyDataCard from "./MyDataCard";
 import {
   fullDate,
   methodLabel,
@@ -122,6 +123,8 @@ export default function SubscriptionPanel({ plan, restaurantName }: Props) {
           </ul>
         </div>
       )}
+
+      <MyDataCard />
     </section>
   );
 }
