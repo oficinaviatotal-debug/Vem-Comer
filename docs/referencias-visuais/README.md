@@ -82,3 +82,32 @@ aba **Assistente**, "Passo 1 de 3 · Foto do cardápio", com o texto "Escolha a 
 "Escolher a planilha". Mostra duas coisas: (1) o servidor no ar ainda não lê foto nem PDF, porque a chave de IA não está
 ligada, então só aparece a planilha; (2) o título do passo dizia "Foto do cardápio" com a planilha na tela. O item (2) foi
 corrigido no mesmo dia (`progressText` agora recebe o que o servidor lê).
+
+## 5. `cardapio-real-alo-coxinha-salgados-20261014.jpg`
+
+Foto do cardápio real da "Alô Coxinha" (salgados de festa, pastéis, empadas, pães, sonho de noiva, shakes e açaí), que
+o GD mandou em 14/10/2026, às 09:29, como exemplo do que o sistema deve ler: "Se eu quiser mandar essa foto, você
+cadastrar todos os produtos e já entregar o cardápio pronto." Tem pontos difíceis de verdade: preço escrito à mão por cima
+do impresso, preço coberto por fita (Açaí), painel cortado na lateral, chamada de propaganda ("a partir de R$ 2,00") e
+quantidade na linha ("100 un."). As lições estão no prompt de `backend/menu_photo.py` e no teste `RealMenuExampleTests`.
+
+## 6. `google-cardapios-01…08-*-20261014.jpg`
+
+Oito prints da busca de imagens do Google que o GD fez do próprio celular em 14/10/2026, entre 09:35 e 09:44, com o
+pedido: "pesquisar melhor, em todos os estilos de cardápio, em todos os segmentos", "da carrocinha ao restaurante com
+100 mesas". São modelos, anúncios e cardápios da internet, não clientes reais. Servem de referência de **estrutura**.
+A análise, com o que cada um mostra, está em `docs/atlas-de-cardapios.md` (as marcas P1 a P8 do atlas são estes arquivos, na ordem):
+
+| Marca | Arquivo | O que mostra |
+|---|---|---|
+| P1 | `google-cardapios-01-busca-anota-ai-olaclick-edicao-em-massa-…` | Anúncios do Anota AI e OlaClick, **painel "Edição em massa" do Anota AI** (itens com foto, "300 ml"/"400 ml - Cópia" sem foto, categorias Açaí, Aperitivos, Doces/Sobremesas), Menuart com categorias e troca de idioma |
+| P2 | `…02-salgados-escada-lanches-numerados-pasteis-…` | Salgados a R$ 5 por 10 un. até R$ 45 por 100, lanches numerados com ingredientes, pastéis e porções P/M/G |
+| P3 | `…03-sorveteria-salgados-de-festa-pizzas-doces-comida-caseira-…` | Sorveteria (bolas, sabores, coberturas +R$ 2), salgados de festa a R$ 49,90 o cento com "até 4 sabores, mínimo 25 de cada", pizzas doces Broto/Grande, comida caseira |
+| P4 | `…04-bebidas-drinks-tira-gosto-saipos-…` | Cardápio com "serve 2 pessoas", tira-gosto e adicionais, bebidas com código e subseções, drink menu |
+| P5 | `…05-bar-cervejas-mini-pasteis-cento-…` | Bar e cervejas, mini pastéis R$ 85 o cento "até 4 sabores", pack de hambúrguer |
+| P6 | `…06-anota-ai-pizzas-destaques-peca-tambem-…` | App Anota AI: abas, "Destaques" com foto, preço riscado, "Pizza Média até 2 sabores e 6 fatias", "Peça também" no carrinho |
+| P7 | `…07-marmita-acaiteria-saipos-whatsmenu-…` | Marmita mini/média/grande, açaiteria com foto, sushi delivery, mensagem de pedido no WhatsApp |
+| P8 | `…08-sischef-combos-hotel-ifood-…` | Sischef (cardápio por QR com nota e tempo de entrega), combos com foto, cardápio para hotel, app do iFood |
+
+Observação: o print da empresa de talentos droove.tech que veio junto está guardado no repositório do Vem Trabalhar
+(`droove-alocacao-de-talentos-14-10.jpg`).
