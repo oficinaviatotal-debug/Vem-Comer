@@ -8,6 +8,8 @@ import { MENU_MAX_PHOTOS, photoErrorText } from "../photos/photoLogic";
 import type { ParsedMenu } from "./assistantFlow";
 import {
   fitsTogether,
+  MENU_FILE_ACCEPT as FILE_ACCEPT,
+  MENU_SHEET_ACCEPT as SHEET_ACCEPT,
   menuFileProblem,
   normalizeReading,
   pagesLeft,
@@ -29,6 +31,8 @@ type Props = {
   fileEnabled?: boolean;
   /** A PDF can be read (needs the AI key on the server). */
   pdfEnabled?: boolean;
+  /** What the owner already chose on the first screen: the photos taken, or the file picked. It goes on from there. */
+  initial?: { photos?: File[]; file?: File } | null;
 };
 
 type Page = { id: number; blob: Blob; url: string };
@@ -36,10 +40,6 @@ type Phase = "choose" | "preparing" | "reading" | "unreadable" | "error";
 
 /** The server waits up to 85 s for the AI; a little more than that here. */
 const READ_TIMEOUT_MS = 100_000;
-
-/** What the file picker offers. The server looks inside the file, so the names here only guide the owner. */
-const SHEET_ACCEPT = ".csv,.tsv,.txt,.xlsx,.xlsm,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-const FILE_ACCEPT = `${SHEET_ACCEPT},.pdf,application/pdf`;
 
 /** Photographing the pages of the owner's own menu (or choosing a spreadsheet or PDF), then sending it to be read. */
 export default function MenuPhotoStep({
@@ -49,6 +49,7 @@ export default function MenuPhotoStep({
   photoEnabled = true,
   fileEnabled = false,
   pdfEnabled = false,
+  initial = null,
 }: Props) {
   const [pages, setPages] = useState<Page[]>([]);
   const [phase, setPhase] = useState<Phase>("choose");
@@ -61,14 +62,22 @@ export default function MenuPhotoStep({
   const pagesRef = useRef<Page[]>([]);
   pagesRef.current = pages;
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // The first screen already opened the camera (or the file picker): go on with what came back.
+    // It starts on the next tick: if React mounts, unmounts and mounts this again (development), the first
+    // timer is cleared by the cleanup below and only one reading is sent to the server.
+    const timer = setTimeout(() => {
+      if (initial?.file) void readFile(initial.file);
+      else if (initial?.photos && initial.photos.length > 0) void addFiles(initial.photos);
+    }, 0);
+    return () => {
+      clearTimeout(timer);
       run.current += 1;
       controller.current?.abort();
       pagesRef.current.forEach((page) => URL.revokeObjectURL(page.url));
-    },
-    []
-  );
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function addFiles(files: File[]) {
     if (files.length === 0) return;

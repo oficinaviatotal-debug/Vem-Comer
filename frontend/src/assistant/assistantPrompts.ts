@@ -106,6 +106,10 @@ export const HELP_OPENED = "Abri o pedido de ajuda. Escolha o assunto e toque em
 
 export const READING_NOTICE = "Estou lendo o seu cardápio. Pode levar até um minuto.";
 
+/** The photo was taken on the first screen: more pages may follow, otherwise the owner taps to read. */
+export const PHOTO_RECEIVED =
+  "Recebi a foto. Se o cardápio tem mais páginas, tire uma de cada. Quando acabar, toque em Ler o cardápio.";
+
 export const MORE_OR_DONE = "Mais algum? Ou diga pronto.";
 
 /** The question for the current step. `intro` adds the first-time explanation of a step. */

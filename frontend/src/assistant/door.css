@@ -1,0 +1,400 @@
+/*
+ * First screen of the menu assistant: four big doors (photo, file, speak, model), then the business types.
+ * Colors come from the brand tokens in styles.css; the gradients are made from the same orange and greens.
+ * Text on the orange card is the darkest green (about 6:1); white text is used only on the dark greens.
+ */
+
+.door {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+/* ---------- Hero ---------- */
+
+.door-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s5) var(--s4) var(--s5) var(--s5);
+  border-radius: 28px;
+  background: linear-gradient(135deg, var(--folha) 0%, #24593a 55%, var(--mata) 100%);
+  box-shadow: 0 16px 34px rgba(27, 67, 50, .28);
+  color: #fff;
+  overflow: hidden;
+}
+
+/* Two round shapes in the brand orange and sun yellow, half out of the card: color without a picture. */
+.door-hero::before,
+.door-hero::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.door-hero::before {
+  right: -42px;
+  bottom: -58px;
+  width: 170px;
+  height: 170px;
+  background: var(--brasa-viva);
+}
+
+.door-hero::after {
+  right: 58px;
+  bottom: -30px;
+  width: 64px;
+  height: 64px;
+  background: var(--sol);
+}
+
+.door-hero-text {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  max-width: 76%;
+}
+
+.door-kicker {
+  margin: 0 0 var(--s2);
+  color: var(--sol);
+  font: 700 var(--t-xs) / 1 var(--font-ui);
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.door-hero h2 {
+  margin: 0;
+  color: #fff;
+  font: 700 1.55rem / 1.1 var(--font-display);
+  letter-spacing: -.01em;
+}
+
+.door-sub {
+  margin: var(--s2) 0 0;
+  color: #d9efdf;
+  font-size: var(--t-md);
+  line-height: 1.35;
+}
+
+.door-logo {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 76px;
+  height: 76px;
+  padding: 7px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .25);
+  object-fit: contain;
+}
+
+/* ---------- The four doors ---------- */
+
+.door-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.door-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 96px;
+  padding: var(--s3) var(--s3) var(--s3) var(--s3);
+  border: 2px solid var(--door-edge, var(--linha));
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(27, 67, 50, .12);
+  color: var(--folha);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.door-card:hover:not(.is-off),
+.door-card:focus-within {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 30px rgba(27, 67, 50, .2);
+}
+
+.door-card:active:not(.is-off) {
+  transform: scale(.985);
+}
+
+.door-card:has(.door-input:focus-visible),
+.door-card:focus-visible {
+  outline: 3px solid var(--brasa-viva);
+  outline-offset: 3px;
+}
+
+/* The real input stays in the page (so the tap opens the camera) but cannot be seen. */
+.door-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.door-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: var(--door-icon-bg);
+  color: var(--door-icon-ink, #fff);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, .16);
+}
+
+.door-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.door-text strong {
+  font: 700 1.2rem / 1.15 var(--font-display);
+  letter-spacing: -.005em;
+}
+
+.door-text small {
+  color: var(--door-hint, var(--nevoa));
+  font-size: var(--t-sm);
+  line-height: 1.35;
+}
+
+.door-chevron {
+  flex: none;
+  color: var(--door-chevron, var(--mata));
+}
+
+/* Photo: the main door, the loudest. */
+.door-card--photo {
+  --door-edge: #ff9a3d;
+  --door-icon-bg: linear-gradient(145deg, #ffffff, #ffe9d2);
+  --door-icon-ink: #c74700;
+  --door-hint: #3a1f00;
+  --door-chevron: #14301f;
+  border-color: transparent;
+  background: linear-gradient(135deg, #ffa23a 0%, #ff7f0e 48%, #ff6200 100%);
+  color: #14301f;
+  box-shadow: 0 14px 30px rgba(255, 111, 0, .42);
+}
+
+.door-card--photo:hover:not(.is-off) {
+  box-shadow: 0 18px 36px rgba(255, 111, 0, .5);
+}
+
+.door-badge {
+  position: absolute;
+  top: -11px;
+  right: 18px;
+  padding: 5px 11px;
+  border-radius: var(--r-pill);
+  background: var(--folha);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .22);
+  color: #fff;
+  font: 700 var(--t-xs) / 1 var(--font-ui);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.door-card--file {
+  --door-edge: #b9dfbd;
+  --door-icon-bg: linear-gradient(145deg, #46a04c, var(--mata));
+}
+
+.door-card--speak {
+  --door-edge: #ffe08a;
+  --door-icon-bg: linear-gradient(145deg, #ffd34d, #ffb300);
+  --door-icon-ink: var(--folha);
+}
+
+.door-card--model {
+  --door-edge: #c9d6cd;
+  --door-icon-bg: linear-gradient(145deg, #2e7032, var(--folha));
+}
+
+/* A door this server cannot open yet: honest, quiet, no tap. */
+.door-card.is-off {
+  border-style: dashed;
+  border-color: var(--linha-forte);
+  background: #f6f2ea;
+  box-shadow: none;
+  color: #52605a;
+  cursor: default;
+}
+
+.door-card.is-off .door-icon {
+  background: #dcd6c9;
+  color: #6a746e;
+  box-shadow: none;
+}
+
+.door-card.is-off .door-text small {
+  color: #52605a;
+}
+
+.door-card.is-off .door-chevron {
+  display: none;
+}
+
+.door-foot {
+  margin: 0;
+  color: var(--nevoa);
+  font-size: var(--t-sm);
+  text-align: center;
+}
+
+.door-error {
+  display: grid;
+  gap: var(--s3);
+  margin-top: var(--s4);
+}
+
+/* ---------- Business types ---------- */
+
+.door-types-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.door-types-head h2 {
+  margin: 0;
+  color: var(--folha);
+  font: 800 var(--t-xl) / 1.1 var(--font-display);
+}
+
+.door-back {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--linha-forte);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--folha);
+  cursor: pointer;
+}
+
+.door-search {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 58px;
+  padding: 0 var(--s4);
+  border: 2px solid var(--mata);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--sombra-folha);
+  color: var(--nevoa);
+}
+
+.door-search:focus-within {
+  border-color: var(--brasa-viva);
+}
+
+.door-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--folha);
+  font: 700 var(--t-lg) / 1.2 var(--font-ui);
+}
+
+.door-search input::placeholder {
+  color: var(--nevoa);
+  font-weight: 400;
+}
+
+.door-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3);
+}
+
+.tint-orange { --tint: #ffe8cf; --tint-edge: #ffb56e; }
+.tint-green { --tint: #d9f1dc; --tint-edge: #8fcf97; }
+.tint-sun { --tint: #fff0b8; --tint-edge: #ffd24f; }
+.tint-rose { --tint: #ffdcd3; --tint-edge: #ff9f8c; }
+
+.door-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 118px;
+  padding: var(--s3);
+  border: 2px solid var(--tint-edge);
+  border-radius: 22px;
+  background: var(--tint);
+  color: var(--folha);
+  font: 700 var(--t-md) / 1.15 var(--font-ui);
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(27, 67, 50, .1);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.door-tile:hover:not(:disabled),
+.door-tile:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--brasa-viva);
+  box-shadow: 0 12px 22px rgba(27, 67, 50, .18);
+}
+
+.door-tile:active:not(:disabled) {
+  transform: scale(.97);
+}
+
+.door-tile:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.door-tile-icon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .12);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.door-empty {
+  margin: var(--s4) 0;
+  color: var(--nevoa);
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .door-card,
+  .door-tile {
+    transition: none;
+  }
+}

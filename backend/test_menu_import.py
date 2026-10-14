@@ -435,6 +435,28 @@ class TemplateContentTests(unittest.TestCase):
             total = sum(len(c["items"]) for c in categories)
             self.assertLessEqual(total, menu_import.MAX_ITEMS)
 
+    def test_the_segments_owners_ask_for_have_their_own_list(self):
+        ids = {summary["id"] for summary in menu_templates.list_templates()}
+        self.assertTrue({
+            "tapiocaria", "salgados", "pastelaria", "hamburgueria", "cafeteria",
+            "bolos", "doces", "sorveteria", "crepe", "regional",
+        } <= ids)
+        self.assertGreaterEqual(len(ids), 18)
+
+    def test_every_template_has_enough_dishes_in_few_sections(self):
+        for summary in menu_templates.list_templates():
+            template = menu_templates.get_template(summary["id"])
+            total = sum(len(category["items"]) for category in template["categories"])
+            self.assertGreaterEqual(total, 20, summary["id"])
+            self.assertLessEqual(len(template["categories"]), 8, summary["id"])
+
+    def test_sizes_are_separate_dishes_never_merged(self):
+        # each size is its own product (own price, cost and code): the lists name them one by one
+        sorveteria = menu_templates.get_template("sorveteria")
+        names = [e["name"] for c in sorveteria["categories"] for e in c["items"]]
+        for size in ("Pote 200 ml", "Pote 500 ml", "Pote 1 litro", "Casquinha 1 bola", "Casquinha 3 bolas"):
+            self.assertIn(size, names)
+
     def test_unknown_id(self):
         self.assertIsNone(menu_templates.get_template("nao-existe"))
         self.assertIsNone(menu_templates.get_template(""))

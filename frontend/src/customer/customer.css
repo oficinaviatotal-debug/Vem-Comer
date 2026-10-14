@@ -19,30 +19,32 @@
 
 /* ---------- Header: restaurant, table, help, categories ---------- */
 
+/* Dark green band with rounded bottom corners: the restaurant's name in white, the categories as pills. */
 .cust-top {
   position: sticky;
   top: 0;
   z-index: 30;
-  background: var(--comanda);
-  box-shadow: 0 1px 0 var(--linha), 0 6px 16px rgba(27, 67, 50, .06);
+  border-radius: 0 0 26px 26px;
+  background: linear-gradient(160deg, var(--folha), #214f3c);
+  box-shadow: 0 10px 24px rgba(27, 67, 50, .28);
 }
 
 .cust-bar {
   display: flex;
   align-items: center;
   gap: var(--s3);
-  min-height: 64px;
+  min-height: 76px;
 }
 
-/* The restaurant's own logo, in a round white badge so any logo reads on the page. */
+/* The restaurant's own logo, in a round cream badge so any logo reads on the green. */
 .cust-logo {
   flex: none;
-  width: 44px;
-  height: 44px;
-  padding: 2px;
-  border: 1px solid var(--linha);
+  width: 52px;
+  height: 52px;
+  padding: 3px;
+  border: 2px solid rgba(255, 255, 255, .85);
   border-radius: 50%;
-  background: #fff;
+  background: var(--papel-2);
   object-fit: contain;
 }
 
@@ -53,8 +55,9 @@
   min-width: 0;
   margin: 0;
   overflow: hidden;
-  color: var(--folha);
-  font: 700 var(--t-lg) / 1.15 var(--font-display);
+  color: #fff;
+  font: 800 var(--t-xl) / 1.1 var(--font-display);
+  letter-spacing: -.01em;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -62,6 +65,29 @@
 
 .cust-table {
   flex: none;
+}
+
+.cust-top .cust-table {
+  border: 0;
+  background: var(--sol);
+  color: var(--folha);
+  font-weight: 800;
+}
+
+.cust-top .cust-table-lost {
+  background: var(--alerta);
+  color: #fff;
+}
+
+.cust-top .cust-bar .btn-outline {
+  border-color: rgba(255, 255, 255, .5);
+  background: transparent;
+  color: #fff;
+}
+
+.cust-top .cust-bar .btn-outline:hover:not(:disabled) {
+  border-color: #fff;
+  background: rgba(255, 255, 255, .14);
 }
 
 .cust-table-lost {
@@ -72,7 +98,7 @@
 .cust-chips {
   display: flex;
   gap: var(--s2);
-  padding: 0 0 var(--s3);
+  padding: 0 0 var(--s4);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -85,17 +111,18 @@
   flex: none;
   min-height: 44px;
   padding: 0 var(--s4);
-  border: 2px solid transparent;
+  border: 0;
   border-radius: var(--r-pill);
-  background: var(--papel-2);
-  color: var(--folha);
-  font: 700 var(--t-sm) / 1 var(--font-ui);
+  background: rgba(255, 255, 255, .16);
+  color: #fff;
+  font: 800 var(--t-sm) / 1 var(--font-ui);
   cursor: pointer;
 }
 
-.cust-chips button:hover {
-  background: var(--folha);
-  color: #fff;
+.cust-chips button:hover,
+.cust-chips button:focus-visible {
+  background: var(--brasa-viva);
+  color: var(--folha);
 }
 
 /* ---------- Menu ---------- */
@@ -163,24 +190,34 @@
   margin-top: var(--s4);
 }
 
+/* The category name, with a short orange bar under it. */
 .cust-group > h2 {
   margin: 0;
-  padding-left: var(--s3);
-  border-left: 6px solid var(--brasa-viva);
-  border-radius: 3px;
+  padding-bottom: var(--s2);
   color: var(--folha);
-  font: 700 var(--t-2xl) / 1.1 var(--font-display);
+  font: 800 var(--t-2xl) / 1.1 var(--font-display);
+  letter-spacing: -.01em;
+}
+
+.cust-group > h2::after {
+  content: "";
+  display: block;
+  width: 44px;
+  height: 5px;
+  margin-top: var(--s2);
+  border-radius: 3px;
+  background: var(--brasa-viva);
 }
 
 /* "Tradicionais" inside "Pizzas": a smaller heading between the category and its dishes. */
 .cust-subgroup {
   display: inline-block;
   margin: var(--s3) 0 0;
-  padding: 4px var(--s3);
+  padding: 5px var(--s3);
   border-radius: 999px;
-  background: var(--mata);
-  color: #fff;
-  font: 700 var(--t-sm) / 1.3 var(--font-display);
+  background: var(--sol);
+  color: var(--folha);
+  font: 800 var(--t-sm) / 1.3 var(--font-display);
 }
 
 .cust-items {
@@ -197,11 +234,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--s3);
-  padding: var(--s3);
-  border: 1px solid var(--linha);
-  border-radius: var(--r-md);
+  padding: var(--s4);
+  border: 1.5px solid rgba(27, 67, 50, .1);
+  border-radius: 22px;
   background: var(--comanda);
-  box-shadow: var(--sombra-folha);
+  box-shadow: 0 2px 4px rgba(27, 67, 50, .06), 0 12px 28px rgba(27, 67, 50, .09);
 }
 
 /* A dish that ran out: still on the menu, softer, and with the "Esgotado" chip instead of the buttons. */
@@ -224,18 +261,19 @@
 
 .cust-item-photo {
   flex: 0 0 auto;
-  width: 96px;
-  height: 96px;
-  border-radius: var(--r-sm);
+  width: 104px;
+  height: 104px;
+  border-radius: 18px;
   object-fit: cover;
   background: var(--papel-2);
+  box-shadow: 0 6px 14px rgba(27, 67, 50, .16);
 }
 
 .cust-item-name {
   min-width: 0;
   margin: 0;
-  color: var(--tinta);
-  font: 700 var(--t-lg) / 1.25 var(--font-ui);
+  color: var(--folha);
+  font: 800 var(--t-lg) / 1.2 var(--font-ui);
 }
 
 /* The whole description stays visible: it often says what is in the dish. */
@@ -257,7 +295,50 @@
 
 .cust-item .money {
   color: var(--mata);
-  font-size: var(--t-xl);
+  font: 800 var(--t-xl) / 1 var(--font-display);
+}
+
+/* The add button on a dish: orange, filled, with the dark green word on it (white on this orange fails contrast). */
+.cust-item .btn-add {
+  min-height: 46px;
+  padding: 0 var(--s5);
+  border: 0;
+  background: var(--brasa-viva);
+  box-shadow: 0 6px 14px rgba(255, 111, 0, .35);
+  color: var(--folha);
+  font-weight: 800;
+}
+
+.cust-item .btn-add:hover:not(:disabled),
+.cust-item .btn-add:active:not(:disabled) {
+  background: #E86300;
+  color: var(--folha);
+}
+
+/* The - 2 + on a dish already in the order: a green pill, the plus in orange. */
+.cust-item .cust-step {
+  gap: 2px;
+  padding: 4px;
+  border: 0;
+  background: var(--mata);
+}
+
+.cust-item .cust-step button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .18);
+  color: #fff;
+}
+
+.cust-item .cust-step button:last-of-type {
+  background: var(--brasa-viva);
+  color: var(--folha);
+}
+
+.cust-item .cust-step output {
+  min-width: 36px;
+  color: #fff;
 }
 
 /* Hugs the button so the guide's blinking ring marks exactly what to touch. */
