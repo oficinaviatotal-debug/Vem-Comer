@@ -32,7 +32,15 @@ Preço inicial (GD, 07/10/2026): **R$ 190 por restaurante por mês**, só pelo u
 não cobra venda nem fica com parte do dinheiro dele. Vence no dia do mês em que o restaurante entrou, e **quem não paga bloqueia no dia
 seguinte** (entrou dia 5, vence todo dia 5, no dia 6 não funciona). Estratégia de entrada: ser a opção mais barata nos 3 primeiros meses
 e subir o preço aos poucos para os próximos que entrarem. Detalhes e proposta de engenharia no item 66 de
-`docs/requisitos-do-dono-vem-comer.md`. Falta decidir o preço de lançamento dos 3 primeiros meses e a política de devolução.
+`docs/requisitos-do-dono-vem-comer.md`. Falta decidir a política de devolução.
+
+**Desconto de entrada (GD, 14/10/2026, 08:46): os primeiros 30 dias do Vem Comer têm 50% de desconto.** Leitura que o código
+vai seguir até o GD corrigir: vale para **cada restaurante novo**, no **primeiro pagamento** (R$ 95,00 em vez de R$ 190,00), que
+continua sendo **pago no primeiro dia** e cobre os primeiros 30 dias; o mês seguinte já é o preço cheio de R$ 190,00 (o preço de
+tabela vigente quando o restaurante entrou fica copiado na assinatura). Isso **substitui** a pergunta "primeiro mês grátis também
+no Vem Comer?": não há mês grátis no Vem Comer, há metade do preço no primeiro mês. Ainda **não está no código** (a cobrança
+está desligada); quando entrar, o valor já preenchido no "Registrar pagamento" do 1º pagamento será R$ 95,00 e a aba Plano do
+dono mostrará "1º mês com 50% de desconto".
 
 ## Vem Comer: o que já está construído (13/10/2026)
 
@@ -148,7 +156,8 @@ tempo) foi rodado contra um PostgreSQL 16 de verdade com as migrações 002 a 01
 1. O R$ 80 do candidato é **por mês** ou pago **uma vez**? (o GD falou em "acessos mensais"; tratado como mensal até dizer o contrário)
 2. O currículo **básico por voz, vídeo ou foto** para quem nunca trabalhou continua **grátis** (requisito 35) e os R$ 80 são
    do pacote completo, ou tudo é pago?
-3. Preço de lançamento do **Vem Comer** nos 3 primeiros meses (o preço inicial é R$ 190, pago no primeiro dia) e a política de devolução.
+3. **Vem Comer:** o desconto de 50% nos primeiros 30 dias está decidido (14/10/2026). Falta confirmar se vale para todo restaurante
+   novo (leitura atual) ou só para quem entrar numa janela de lançamento, e a política de devolução.
 4. Qual **CNPJ** recebe e qual **PSP** (taxas, CPF ou CNPJ).
 5. O que precisa estar funcionando em **13/10**.
 6. **Pagamento atrasado**: hoje, quem paga depois de vencido começa um mês cheio a partir do dia do pagamento e o dia do
