@@ -5,10 +5,10 @@
     "norma": "LGPD art. 8º §2º (quem trata o dado prova que houve consentimento)",
     "exige": "Guardar a prova de cada aceite: quem aceitou, qual texto (versão), quando e por qual canal, e a prova de saída quando a pessoa retira o aceite.",
     "aplica_a": ["vem_comer", "vem_trabalhar"],
-    "controle": "O cadastro do restaurante recusa versão velha dos termos e grava versão e data do aceite da empresa.",
+    "controle": "O cadastro do restaurante recusa versão velha dos termos e grava versão e data do aceite da empresa. O banco tem o registro de aceites que só recebe linhas novas (o banco recusa alterar ou apagar), guardando só a impressão digital do e-mail e do IP.",
     "status": "parcial",
-    "evidencias": ["backend/signup.py::TERMS_VERSION", "backend/test_signup.py::SignupRouteTests"],
-    "falta": "Registro de aceites que só recebe linhas novas, com impressão digital do texto, canal e retirada; aceite do cliente final do restaurante e do candidato.",
+    "evidencias": ["backend/signup.py::TERMS_VERSION", "backend/test_signup.py::SignupRouteTests", "backend/consent.py", "database/migrations/018_conformidade.sql", "backend/test_outreach.py::ConsentTests", "backend/test_conformidade_db.py::test_the_acceptance_log_only_takes_new_rows"],
+    "falta": "Ligar o registro ao cadastro do restaurante e às telas de aceite (uma caixa por finalidade); aceite do cliente final do restaurante e do candidato.",
     "fontes": ["lgpd"],
     "verificado_em": "2026-10-14"
   },
@@ -30,11 +30,12 @@
     "norma": "LGPD art. 8º §5º (retirar o consentimento a qualquer momento)",
     "exige": "Retirar o aceite tem de ser tão fácil quanto dar: botão na conta e descadastro de e-mail em um clique, valendo na hora.",
     "aplica_a": ["vem_comer", "vem_trabalhar"],
-    "controle": "Botão 'retirar meu aceite' em 'Meus dados' e link de descadastro em todo e-mail.",
-    "status": "planejado",
-    "proximo_passo": "Rota de retirada que grava na tabela de aceites e na lista de bloqueio, com teste.",
+    "controle": "Descadastro de um clique em todo e-mail de divulgação: entra na lista de bloqueio e retira todos os aceites de e-mail. Falta o botão dentro da conta.",
+    "status": "parcial",
     "fontes": ["lgpd"],
-    "verificado_em": "2026-10-14"
+    "verificado_em": "2026-10-14",
+    "evidencias": ["backend/compliance_api.py", "backend/test_compliance_api.py::UnsubscribeActionTests", "backend/test_outreach.py::ConsentTests"],
+    "falta": "Botão 'retirar meu aceite' em 'Meus dados' para os outros aceites (termos, IA, alertas) e a tela correspondente."
   },
   {
     "id": "LGPD-DIREITOS-TITULAR",
@@ -258,12 +259,13 @@
     "norma": "LGPD art. 7º IX (interesse legítimo) e art. 18 §2º (oposição)",
     "exige": "Primeiro contato por e-mail com empresa só pelo canal que ela mesma divulgou, com remetente identificado, motivo do contato e jeito simples de recusar; recusa vale na hora e para sempre; nada de lista comprada nem de e-mail tirado de rede social por robô.",
     "aplica_a": ["vem_comer", "vem_trabalhar"],
-    "controle": "Tabela de contatos com origem, base legal e data; função única 'pode_enviar'; no máximo 2 lembretes; limite diário crescente.",
-    "status": "planejado",
-    "proximo_passo": "Criar a tabela de contatos e a função pode_enviar() com testes (próxima entrega do agente da lei).",
+    "controle": "Tabela de contatos com origem, base legal e data; função única que libera ou barra o envio (máximo de 3 envios por contato, 5 dias entre eles, limite diário crescente, freio automático por reclamação ou e-mail devolvido); candidato nunca entra nessa lista.",
+    "status": "parcial",
     "pergunta": "O primeiro contato por e-mail com empresa que divulgou vaga em público cabe como interesse legítimo? Qual texto de aviso e de recusa usar?",
     "fontes": ["lgpd", "gmail-yahoo"],
-    "verificado_em": "2026-10-14"
+    "verificado_em": "2026-10-14",
+    "evidencias": ["backend/outreach.py", "backend/test_outreach.py::CanSendTests", "backend/test_conformidade_db.py::test_after_the_first_message_the_reminder_waits_five_days_and_the_third_is_the_last", "backend/test_conformidade_db.py::test_a_complaint_freezes_all_sending_until_someone_checks"],
+    "falta": "Provedor de envio e o texto da mensagem (dependem do domínio e do parecer do advogado); tela para o GD anotar empresas."
   },
   {
     "id": "EMAIL-CANDIDATO-CONFIRMACAO",
@@ -296,11 +298,12 @@
     "norma": "LGPD art. 18 §2º e art. 8º §5º",
     "exige": "Uma lista de bloqueio única para os dois produtos: quem pediu para não receber nunca mais recebe, mesmo se o e-mail entrar por outra porta.",
     "aplica_a": ["vem_comer", "vem_trabalhar"],
-    "controle": "Tabela de bloqueio consultada por pode_enviar() antes de todo envio; guarda só a impressão digital do e-mail.",
-    "status": "planejado",
-    "proximo_passo": "Tabela de bloqueio + teste: e-mail bloqueado não sai por nenhum caminho.",
+    "controle": "Tabela de bloqueio com a impressão digital do e-mail, consultada antes de todo envio; quem saiu não volta por outra porta. No Vem Comer já funciona; o Vem Trabalhar usa a mesma regra e a mesma impressão digital.",
+    "status": "parcial",
     "fontes": ["lgpd"],
-    "verificado_em": "2026-10-14"
+    "verificado_em": "2026-10-14",
+    "evidencias": ["backend/outreach.py", "backend/test_outreach.py::ServiceTests", "backend/test_conformidade_db.py::test_unsubscribing_blocks_the_address_everywhere_and_for_good"],
+    "falta": "Criar a mesma tabela no Vem Trabalhar e trocar as impressões digitais entre os dois produtos."
   },
   {
     "id": "EMAIL-REMETENTE",
