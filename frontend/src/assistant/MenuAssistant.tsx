@@ -12,6 +12,7 @@ import {
 import { parseSpokenNumber } from "../onboarding/tourEngine";
 import PhotoSession from "../photos/PhotoSession";
 import MenuPhotoStep from "./MenuPhotoStep";
+import MenuDoor, { TypeGrid } from "./MenuDoor";
 import ConfirmButton from "../service/ConfirmButton";
 import FeedbackAsk from "../feedback/FeedbackAsk";
 import { prepareVoice } from "../onboarding/speech";
@@ -57,8 +58,10 @@ import {
 import {
   CHOOSE_TYPE_QUESTION,
   HELP_OPENED,
+  BUSINESS_QUESTION,
   MORE_OR_DONE,
   PHOTO_NOT_AVAILABLE,
+  PHOTO_RECEIVED,
   READING_NOTICE,
   SPEAK_MORE,
   SPEAK_NOT_UNDERSTOOD,
@@ -149,6 +152,8 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
   const [result, setResult] = useState<MenuImportResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [photosOn, setPhotosOn] = useState(false);
+  /** What the owner already did on the first screen (camera or file picker): the photo step goes on from there. */
+  const [entry, setEntry] = useState<{ photos?: File[]; file?: File } | null>(null);
   const [voiceLabel, setVoiceLabel] = useState("");
 
   // Everything the voice loop reads lives in refs: it keeps running between renders.
@@ -343,7 +348,8 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
 
   /* ------------------------------------------------------------- the steps */
 
-  function start() {
+  /** Leaves the first screen. `how` is the door the owner took; the camera or file picker was already opened by that tap. */
+  function begin(how: "photo" | "file" | "speak" | "models", chosen?: { photos?: File[]; file?: File }) {
     prepareVoice();
     setStarted(true);
     setPhotosOn(false);
@@ -351,16 +357,36 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
     setNotice("");
     setProblem("");
     setUnclear([]);
-    void say(promptFor(initialFlow(), false, photoMenuRef.current));
+    setEntry(chosen ?? null);
+    if (how === "speak") return openSpeak();
+    if (how === "models") return void say(BUSINESS_QUESTION);
+    commit(startPhoto());
+    // A file is read at once (the step says so); a photo waits for the owner to add pages or tap Ler.
+    if (how === "photo") void say(PHOTO_RECEIVED, false);
   }
 
   function openPhoto() {
     if (busy) return;
     setProblem("");
+    setEntry(null);
     go(startPhoto());
   }
 
-  function backToTypes() {
+  /** The first screen again: the owner changed their mind about the way to register. */
+  function backToDoor() {
+    silence();
+    commit(initialFlow());
+    setEntry(null);
+    setPrompt("");
+    setNotice("");
+    setProblem("");
+    setUnclear([]);
+    setStarted(false);
+  }
+
+  /** The list of business types. */
+  function openModels() {
+    setEntry(null);
     commit(initialFlow());
     setProblem("");
     void say(CHOOSE_TYPE_QUESTION);
@@ -597,7 +623,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
     if (menu.finished || command === "next" || command === "no" || /cadastr|salv|confirm/.test(said)) {
       return finishSpeaking();
     }
-    if (command === "back") return backToTypes();
+    if (command === "back") return backToDoor();
     if (command === "repeat") return void say(promptFor(flowRef.current), listenAfter);
     if (command === "confirm") return void say(`Pode falar. ${SPEAK_MORE}`, listenAfter);
     if (menu.unclear.length > 0) {
@@ -669,7 +695,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
     }
     switch (parseAssistantCommand(text)) {
       case "back":
-        return backToTypes();
+        return backToDoor();
       case "repeat":
         return void say(promptFor(flowRef.current), false);
       default:
@@ -728,44 +754,30 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
 
   if (!started) {
     return (
-      <section className="sheet asst" aria-label="Assistente do cardápio">
-        <h2>Assistente do cardápio</h2>
-        <p className="asst-lead">
-          Fale os pratos com o preço, do seu jeito, e eu anoto tudo de uma vez. Se você já tem um cardápio
-          pronto, tire uma foto. Ou escolha o tipo do seu negócio e marque os pratos. No fim, você confere e o
-          cardápio fica pronto.
-        </p>
-        {unsupported && (
-          <p className="asst-help">
-            Este navegador não escuta a voz. Dá para fazer tudo tocando nos botões; para falar, use o
-            Chrome no celular.
-          </p>
-        )}
-        {templatesError ? (
-          <>
+      <>
+        <MenuDoor
+          options={readyMenu}
+          voiceWorks={!unsupported}
+          onPhotos={(photos) => begin("photo", { photos })}
+          onFile={(file) => begin("file", { file })}
+          onSpeak={() => begin("speak")}
+          onModels={() => begin("models")}
+        />
+        {templatesError && (
+          <div className="door-error">
             <p className="msg-error">{templatesError}</p>
             <button type="button" className="btn btn-outline btn-block" onClick={loadTemplates}>
               Tentar de novo
             </button>
-          </>
-        ) : (
-          <button
-            id="assistant-start"
-            type="button"
-            className="btn btn-primary btn-block asst-start"
-            disabled={templates === null || readyMenu === null}
-            onClick={start}
-          >
-            {templates === null || readyMenu === null ? "Carregando…" : "Começar"}
-          </button>
+          </div>
         )}
-      </section>
+      </>
     );
   }
 
   return (
     <section className="asst" aria-label="Assistente do cardápio">
-      <p className="asst-progress">{progressText(flow, readyMode)}</p>
+      {flow.step !== "type" && <p className="asst-progress">{progressText(flow, readyMode)}</p>}
 
       <div className="asst-bubble" aria-live="polite">
         <p>{prompt || promptFor(flow)}</p>
@@ -785,62 +797,12 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
       {problem && <p className="msg-error">{problem}</p>}
 
       {flow.step === "type" && (
-        <button
-          id="assistant-speak-menu"
-          type="button"
-          className="asst-photo-card asst-speak-card"
-          disabled={busy}
-          onClick={openSpeak}
-        >
-          <span className="asst-type-icon" aria-hidden="true">🎤</span>
-          <span className="asst-photo-card-text">
-            <strong>Falar o meu cardápio</strong>
-            <small>Diga os pratos com o preço. Eu anoto.</small>
-          </span>
-        </button>
-      )}
-
-      {flow.step === "type" && readyMode && (
-        <>
-          <button
-            id="assistant-photo-menu"
-            type="button"
-            className="asst-photo-card"
-            disabled={busy}
-            onClick={openPhoto}
-          >
-            <span className="asst-type-icon" aria-hidden="true">{readyMode === "file" ? "📄" : "📷"}</span>
-            <span className="asst-photo-card-text">
-              <strong>Já tenho um cardápio pronto</strong>
-              <small>
-                {readyMode === "file"
-                  ? "Mande a planilha e eu cadastro tudo"
-                  : readyMode === "both"
-                    ? "Tire uma foto ou mande a planilha, e eu cadastro tudo"
-                    : "Tire uma foto e eu cadastro tudo"}
-              </small>
-            </span>
-          </button>
-        </>
-      )}
-
-      {flow.step === "type" && <p className="asst-or">Ou escolha o tipo do seu negócio e marque os pratos:</p>}
-
-      {flow.step === "type" && (
-        <div className="asst-types" role="group" aria-label="Tipo de negócio">
-          {(templates ?? []).map((template) => (
-            <button
-              key={template.id}
-              type="button"
-              className="asst-type"
-              disabled={busy}
-              onClick={() => void chooseType(template.id)}
-            >
-              <span className="asst-type-icon" aria-hidden="true">{template.icon}</span>
-              <span>{template.name}</span>
-            </button>
-          ))}
-        </div>
+        <TypeGrid
+          templates={templates}
+          busy={busy}
+          onChoose={(templateId) => void chooseType(templateId)}
+          onBack={backToDoor}
+        />
       )}
 
       {flow.step === "speak" && (
@@ -921,11 +883,11 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
 
           <div className="asst-actions">
             {picked.length === 0 ? (
-              <button type="button" className="btn btn-quiet" onClick={backToTypes}>
+              <button type="button" className="btn btn-quiet" onClick={backToDoor}>
                 Voltar
               </button>
             ) : (
-              <ConfirmButton label="Recomeçar" confirmLabel="Toque de novo para apagar a lista" onConfirm={backToTypes} />
+              <ConfirmButton label="Recomeçar" confirmLabel="Toque de novo para apagar a lista" onConfirm={backToDoor} />
             )}
             <button
               id="assistant-speak-done"
@@ -943,11 +905,12 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
       {flow.step === "photo" && (
         <MenuPhotoStep
           onRead={handleRead}
-          onBack={backToTypes}
+          onBack={openModels}
           onReading={() => void say(READING_NOTICE, false)}
           photoEnabled={readyMenu?.photo ?? true}
           fileEnabled={readyMenu?.file ?? false}
           pdfEnabled={readyMenu?.pdf ?? false}
+          initial={entry}
         />
       )}
 
@@ -1201,7 +1164,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
                 Ver o cardápio
               </button>
             )}
-            <button type="button" className="btn btn-quiet" onClick={() => { setResult(null); start(); }}>
+            <button type="button" className="btn btn-quiet" onClick={() => { setResult(null); backToDoor(); }}>
               Cadastrar mais pratos
             </button>
           </div>

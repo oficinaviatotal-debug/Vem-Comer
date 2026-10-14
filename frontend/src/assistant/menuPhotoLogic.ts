@@ -122,6 +122,11 @@ export function menuFileProblem(file: { name: string; type: string; size: number
 }
 
 /** What the "ready menu" card can offer on this server. */
+/** What the file picker offers. The server looks inside the file, so the names here only guide the owner. */
+export const MENU_SHEET_ACCEPT =
+  ".csv,.tsv,.txt,.xlsx,.xlsm,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+export const MENU_FILE_ACCEPT = `${MENU_SHEET_ACCEPT},.pdf,application/pdf`;
+
 export type ReadyMenuOptions = { photo: boolean; file: boolean; pdf: boolean };
 /** "photo": only photos. "file": only spreadsheets. "both": photos and files. false: nothing. */
 export type ReadyMenuMode = false | "photo" | "file" | "both";

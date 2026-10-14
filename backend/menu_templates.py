@@ -19,7 +19,7 @@ _DRINKS_COMMON = [
 _TEMPLATES = {
     "lanchonete": {
         "name": "Lanchonete",
-        "icon": "🍔",
+        "icon": "🥪",
         "categories": [
             ("Lanches", [
                 "X-Burguer", "X-Salada", "X-Bacon", "X-Egg", "X-Tudo", "X-Frango",
@@ -221,6 +221,287 @@ _TEMPLATES = {
                 "Água mineral", "Cerveja long neck", "Sakê",
             ]),
             ("Sobremesas", ["Harumaki doce", "Banana tempurá", "Sorvete de matcha"]),
+        ],
+    },
+    "tapiocaria": {
+        "name": "Tapiocaria",
+        "icon": "🥙",
+        "categories": [
+            ("Tapiocas salgadas", [
+                "Tapioca de queijo coalho", "Tapioca de queijo e presunto",
+                "Tapioca de frango com catupiry", "Tapioca de carne de sol",
+                "Tapioca de carne seca", "Tapioca de calabresa", "Tapioca de ovo",
+                "Tapioca de atum", "Tapioca de camarão", "Tapioca de pizza",
+                "Tapioca de queijo com tomate seco", "Tapioca de queijo com banana",
+            ]),
+            ("Tapiocas doces", [
+                "Tapioca de coco", "Tapioca de banana com canela", "Tapioca de doce de leite",
+                "Tapioca de chocolate", "Tapioca de morango com leite condensado",
+                "Tapioca de goiabada com queijo", "Tapioca de brigadeiro",
+                "Tapioca de leite ninho",
+            ]),
+            ("Crepioca", [
+                "Crepioca de queijo", "Crepioca de frango", "Crepioca de carne",
+                "Crepioca de ovo com tomate",
+            ]),
+            ("Cuscuz", [
+                "Cuscuz simples", "Cuscuz com ovo", "Cuscuz com queijo",
+                "Cuscuz com carne de sol", "Cuscuz com frango", "Cuscuz com linguiça",
+            ]),
+            ("Bebidas", _DRINKS_COMMON + ["Café", "Café com leite", "Suco de cajá", "Água de coco"]),
+        ],
+    },
+    "salgados": {
+        "name": "Salgados e coxinhas",
+        "icon": "🧆",
+        "categories": [
+            ("Salgados fritos", [
+                "Coxinha de frango", "Coxinha com catupiry", "Risole de carne",
+                "Risole de queijo e presunto", "Risole de frango", "Bolinha de queijo",
+                "Bolinho de carne", "Kibe", "Croquete", "Travesseiro de presunto e queijo",
+                "Enroladinho de salsicha", "Pastel de festa",
+            ]),
+            ("Assados e esfihas", [
+                "Esfiha de carne", "Esfiha de queijo", "Esfiha de frango com catupiry",
+                "Empada de frango", "Empada de palmito", "Enroladinho assado",
+                "Folhado de queijo", "Pão de queijo", "Pão de batata",
+            ]),
+            ("Salgados de festa", [
+                "Salgado de festa misto 50 unidades", "Salgado de festa misto 100 unidades",
+                "Salgado de festa de um sabor 50 unidades", "Salgado de festa de um sabor 100 unidades",
+                "Mini coxinha 100 unidades", "Mini pastel 100 unidades",
+                "Assado de festa 100 unidades",
+            ]),
+            ("Bebidas", _DRINKS_COMMON),
+        ],
+    },
+    "pastelaria": {
+        "name": "Pastelaria",
+        "icon": "🥟",
+        "categories": [
+            ("Pastéis salgados", [
+                "Pastel de carne", "Pastel de queijo", "Pastel de frango",
+                "Pastel de frango com catupiry", "Pastel de pizza", "Pastel de calabresa",
+                "Pastel de carne com queijo", "Pastel de queijo e presunto",
+                "Pastel de palmito", "Pastel de bacalhau", "Pastel de camarão",
+                "Pastel de carne seca com queijo", "Pastel de vento",
+            ]),
+            ("Pastéis doces", [
+                "Pastel de banana com chocolate", "Pastel de queijo com goiabada",
+                "Pastel de doce de leite", "Pastel de chocolate", "Pastel de morango com chocolate",
+            ]),
+            ("Mini pastéis", [
+                "Mini pastel de carne 10 unidades", "Mini pastel de queijo 10 unidades",
+                "Mini pastel misto 50 unidades", "Mini pastel misto 100 unidades",
+            ]),
+            ("Porções", [
+                "Batata frita", "Mandioca frita", "Bolinho de bacalhau", "Calabresa acebolada",
+            ]),
+            ("Bebidas", [
+                "Caldo de cana 300 ml", "Caldo de cana 500 ml", "Caldo de cana 700 ml",
+                "Caldo de cana com limão", "Caldo de cana com abacaxi",
+                "Refrigerante lata", "Refrigerante 600 ml", "Refrigerante 2 litros",
+                "Suco de laranja", "Água mineral",
+            ]),
+        ],
+    },
+    "hamburgueria": {
+        "name": "Hamburgueria",
+        "icon": "🍔",
+        "categories": [
+            ("Hambúrgueres", [
+                "Hambúrguer clássico", "Cheeseburguer", "Cheddar e bacon", "Hambúrguer duplo",
+                "Hambúrguer triplo", "Smash simples", "Smash duplo", "Burger de frango crocante",
+                "Burger de costela", "Burger de picanha", "Burger vegetariano",
+                "Burger com ovo", "Burger com cebola caramelizada", "Burger barbecue",
+            ]),
+            ("Combos", [
+                "Combo clássico (burger, batata e refrigerante)",
+                "Combo duplo (burger, batata e refrigerante)",
+                "Combo smash (burger, batata e refrigerante)",
+                "Combo infantil",
+            ]),
+            ("Acompanhamentos", [
+                "Batata frita pequena", "Batata frita média", "Batata frita grande",
+                "Batata com cheddar e bacon", "Anéis de cebola", "Nuggets de frango 6 unidades",
+                "Nuggets de frango 10 unidades", "Mandioca frita",
+            ]),
+            ("Adicionais", [
+                "Bacon extra", "Queijo extra", "Ovo extra", "Hambúrguer extra",
+                "Cebola caramelizada", "Molho da casa",
+            ]),
+            ("Bebidas", _DRINKS_COMMON + [
+                "Milkshake 300 ml", "Milkshake 500 ml", "Cerveja long neck",
+            ]),
+            ("Sobremesas", ["Brownie", "Sundae", "Torta de limão (fatia)"]),
+        ],
+    },
+    "cafeteria": {
+        "name": "Café da manhã e cafeteria",
+        "icon": "☕",
+        "categories": [
+            ("Cafés", [
+                "Café expresso", "Expresso duplo", "Café coado", "Café com leite", "Cappuccino",
+                "Mocaccino", "Macchiato", "Latte", "Café gelado", "Affogato",
+                "Chocolate quente", "Chocolate quente cremoso",
+            ]),
+            ("Café da manhã", [
+                "Café da manhã completo", "Café da manhã simples", "Pão na chapa",
+                "Pão com manteiga", "Pão com queijo", "Misto quente", "Tapioca",
+                "Cuscuz com ovo", "Ovos mexidos", "Omelete", "Iogurte com granola",
+                "Panqueca americana", "Torrada com requeijão", "Fruta fatiada",
+            ]),
+            ("Salgados e tostas", [
+                "Croissant de queijo e presunto", "Tosta de queijo", "Tosta de ovo e tomate",
+                "Sanduíche natural", "Quiche (fatia)", "Pão de queijo", "Empada",
+            ]),
+            ("Doces", [
+                "Bolo de cenoura (fatia)", "Bolo de chocolate (fatia)", "Brownie", "Cookie",
+                "Torta de limão (fatia)", "Cheesecake (fatia)", "Pão de mel", "Brigadeiro",
+            ]),
+            ("Bebidas frias", [
+                "Suco de laranja", "Suco verde", "Vitamina de banana", "Chá gelado",
+                "Limonada suíça", "Água mineral", "Água com gás", "Refrigerante lata",
+            ]),
+        ],
+    },
+    "bolos": {
+        "name": "Bolos e tortas",
+        "icon": "🎂",
+        "categories": [
+            ("Bolos (fatia)", [
+                "Bolo de cenoura com chocolate (fatia)", "Bolo de chocolate (fatia)",
+                "Bolo de milho (fatia)", "Bolo de fubá (fatia)", "Bolo de laranja (fatia)",
+                "Bolo de coco (fatia)", "Bolo de aipim (fatia)", "Bolo de ninho com morango (fatia)",
+            ]),
+            ("Bolos inteiros", [
+                "Bolo de cenoura com chocolate (inteiro)", "Bolo de chocolate (inteiro)",
+                "Bolo de milho (inteiro)", "Bolo de fubá (inteiro)", "Bolo de laranja (inteiro)",
+            ]),
+            ("Tortas", [
+                "Torta de limão (fatia)", "Torta de morango (fatia)", "Torta holandesa (fatia)",
+                "Torta de maracujá (fatia)", "Torta salgada (fatia)", "Torta de limão (inteira)",
+            ]),
+            ("Bolos no pote", [
+                "Bolo no pote de chocolate", "Bolo no pote de ninho com morango",
+                "Bolo no pote de brigadeiro", "Bolo no pote de cenoura",
+                "Bolo no pote de maracujá",
+            ]),
+            ("Bolos de festa (encomenda)", [
+                "Bolo de aniversário 1 kg", "Bolo de aniversário 1,5 kg",
+                "Bolo de aniversário 2 kg", "Bolo de aniversário 3 kg",
+                "Bolo decorado de 2 andares",
+            ]),
+            ("Bebidas", ["Café", "Café com leite", "Suco de laranja", "Refrigerante lata", "Água mineral"]),
+        ],
+    },
+    "doces": {
+        "name": "Doces e sobremesas",
+        "icon": "🍮",
+        "categories": [
+            ("Brigadeiros e docinhos", [
+                "Brigadeiro tradicional", "Brigadeiro gourmet", "Beijinho", "Cajuzinho",
+                "Bicho de pé", "Olho de sogra", "Brigadeiro 50 unidades", "Brigadeiro 100 unidades",
+                "Docinhos sortidos 100 unidades",
+            ]),
+            ("Sobremesas", [
+                "Pudim de leite (fatia)", "Pudim de leite (inteiro)", "Mousse de maracujá",
+                "Mousse de chocolate", "Pavê", "Cheesecake (fatia)", "Petit gâteau",
+                "Tiramisù", "Panna cotta", "Torta holandesa (fatia)",
+            ]),
+            ("Doces no pote", [
+                "Brigadeiro de colher no pote", "Bolo no pote", "Mousse no pote",
+                "Pudim no pote", "Cheesecake no pote", "Pote da felicidade",
+            ]),
+            ("Chocolates", [
+                "Trufa", "Brownie", "Cookie", "Palha italiana", "Pão de mel", "Casadinho",
+                "Ovo de colher", "Barra de chocolate recheada",
+            ]),
+            ("Churros e fritos", [
+                "Churros de doce de leite", "Churros de chocolate", "Churros de goiabada",
+                "Sonho", "Rosquinha",
+            ]),
+            ("Bebidas", ["Café", "Refrigerante lata", "Suco de laranja", "Água mineral"]),
+        ],
+    },
+    "sorveteria": {
+        "name": "Sorveteria",
+        "icon": "🍦",
+        "categories": [
+            ("Casquinhas e cascões", [
+                "Casquinha 1 bola", "Casquinha 2 bolas", "Casquinha 3 bolas",
+                "Cascão 1 bola", "Cascão 2 bolas", "Cascão 3 bolas",
+            ]),
+            ("Potes e taças", [
+                "Pote 200 ml", "Pote 300 ml", "Pote 500 ml", "Pote 1 litro", "Pote 2 litros",
+                "Taça de sorvete", "Sundae", "Banana split", "Petit gâteau com sorvete",
+                "Affogato",
+            ]),
+            ("Milkshakes", ["Milkshake 300 ml", "Milkshake 500 ml", "Milkshake 700 ml"]),
+            ("Picolés", [
+                "Picolé de fruta", "Picolé cremoso", "Picolé de leite condensado",
+                "Picolé de chocolate", "Picolé de açaí", "Paleta mexicana",
+            ]),
+            ("Coberturas e adicionais", [
+                "Calda de chocolate", "Calda de morango", "Calda de caramelo", "Granulado",
+                "Paçoca", "Confete", "Leite em pó", "Chantilly",
+            ]),
+            ("Bebidas", ["Água de coco", "Refrigerante lata", "Suco de laranja", "Água mineral"]),
+        ],
+    },
+    "crepe": {
+        "name": "Crepe e waffle",
+        "icon": "🥞",
+        "categories": [
+            ("Crepes salgados", [
+                "Crepe de queijo e presunto", "Crepe de frango com catupiry", "Crepe de carne",
+                "Crepe de calabresa", "Crepe de queijo", "Crepe de atum",
+                "Crepe de queijo com tomate seco", "Crepe quatro queijos", "Crepe de palmito",
+            ]),
+            ("Crepes doces", [
+                "Crepe de chocolate", "Crepe de chocolate com morango",
+                "Crepe de banana com canela", "Crepe de doce de leite",
+                "Crepe de goiabada com queijo", "Crepe de brigadeiro", "Crepe de leite ninho",
+                "Crepe de maçã com canela",
+            ]),
+            ("Waffles", [
+                "Waffle simples", "Waffle com sorvete", "Waffle com frutas",
+                "Waffle com chocolate", "Waffle de doce de leite", "Waffle salgado",
+            ]),
+            ("Panquecas", [
+                "Panqueca americana com mel", "Panqueca de carne", "Panqueca de frango",
+                "Panqueca de chocolate",
+            ]),
+            ("Bebidas", _DRINKS_COMMON + ["Café", "Chocolate quente", "Milkshake 300 ml"]),
+        ],
+    },
+    "regional": {
+        "name": "Comida regional",
+        "icon": "🍲",
+        "categories": [
+            ("Nordeste e Bahia", [
+                "Baião de dois", "Carne de sol com macaxeira", "Escondidinho de carne seca",
+                "Arrumadinho", "Feijão de corda", "Cuscuz nordestino", "Paçoca de carne de sol",
+                "Galinha caipira", "Moqueca baiana", "Acarajé", "Abará", "Vatapá", "Caruru",
+            ]),
+            ("Minas e Centro-Oeste", [
+                "Feijão tropeiro", "Frango com quiabo", "Tutu de feijão", "Costelinha de porco",
+                "Torresmo", "Couve refogada", "Arroz com pequi", "Empadão goiano", "Pamonha",
+            ]),
+            ("Norte", [
+                "Tacacá", "Maniçoba", "Pirarucu frito", "Tucunaré frito", "Pato no tucupi",
+            ]),
+            ("Sul", [
+                "Arroz carreteiro", "Galeto", "Polenta frita", "Cuca", "Churrasco gaúcho",
+            ]),
+            ("Bebidas", [
+                "Suco de cajá", "Suco de graviola", "Suco de cupuaçu", "Água de coco",
+                "Caldo de cana", "Refrigerante lata", "Água mineral", "Cerveja long neck",
+            ]),
+            ("Sobremesas", [
+                "Cocada", "Bolo de rolo", "Doce de leite", "Doce de banana",
+                "Queijo com goiabada", "Rapadura",
+            ]),
         ],
     },
 }
