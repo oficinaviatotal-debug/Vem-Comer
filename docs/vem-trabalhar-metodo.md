@@ -35,8 +35,9 @@ usa a mesma peça da entrega por CEP do Vem Comer.
   (decisão do GD, 06/10/2026). A primeira versão da planilha, com esse levantamento, continua no histórico do git
   (commit de51e17).
 - Curso técnico e faculdade entram por parceria: a escola paga ao Vem Trabalhar 50% da matrícula e 30% de cada
-  mensalidade (entendimento da fala do GD; falta confirmar por quantas mensalidades e se vale igual para
-  técnico e faculdade). O aluno paga o preço normal da escola.
+  mensalidade, **em todos os períodos, mês a mês** (GD, 14/10/2026). O aluno paga o preço normal da escola.
+- Cursos próprios custam **R$ 80 cada** (GD, 14/10/2026). O candidato paga **R$ 15 por mês** pelo currículo, análise de perfil,
+  análise social e vagas de empresas verificadas (`docs/assinatura-e-cobranca.md`).
 - Curso de parceiro leva a etiqueta "Parceiro". A comissão nunca muda a nota do match nem a ordem das vagas.
 - Certificado é de curso livre. Diploma técnico ou superior só instituição credenciada emite: o Vem Trabalhar
   faz o link, o aluno e o match. Conferir credenciamento antes de fechar com a escola.
@@ -65,7 +66,9 @@ para desenvolver, nunca para demitir de forma automática. Não pedimos CPF, ida
 
 Pedido do GD (06/10/2026), aba `RH parceiro`:
 
-- Profissionais de RH se cadastram (taxa de R$ 200; falta saber se é uma vez ou por mês) e dizem o preço da entrevista.
+- Profissionais de RH se cadastram (taxa de **R$ 200 para se cadastrar**, GD 14/10/2026) e dizem o preço da entrevista.
+- A empresa vê um botão "Enviar para o RH" quando a vaga tem **3 candidatos com match alto**; o pedido vai aos RHs cadastrados e
+  pagantes (GD, 14/10/2026). Detalhes em `docs/assinatura-e-cobranca.md`.
 - Empresas sem RH, pequenas ou grandes, contratam pela plataforma. A entrevista é online, dentro do Vem Trabalhar, com
   roteiro de no mínimo 20 perguntas (comportamento, competências da vaga, soft skills e hard skills), junto com o
   currículo, o match e, se o candidato autorizar, o teste de perfil.
@@ -82,9 +85,10 @@ voz e o registro de benchmark estão em `docs/curriculo-ia-e-voz.md` (abas novas
 
 ## O que ainda falta decidir
 
-Veja a aba `Leia primeiro`: prazo da comissão de 30%, quais escolas e faculdades, nome da escola ("Vem Aprender"?),
-R$ 80 mensal ou único, currículo básico grátis, taxa do RH uma vez ou mensal, se o RH precisa ser psicólogo, a metodologia
-de gestão dos 25 anos do GD, revisão do advogado.
+Veja a aba `Leia primeiro`: quais escolas e faculdades, nome da escola ("Vem Aprender"?), currículo básico por voz grátis ou
+não, se o RH precisa ser psicólogo, para quais RHs o pedido da empresa vai, a metodologia de gestão dos 25 anos do GD, revisão
+do advogado. **Já respondidos em 14/10/2026:** comissão de 30% em todos os meses; candidato R$ 15 por mês e curso R$ 80 cada; taxa
+do RH de R$ 200 para se cadastrar.
 
 ## Limites
 

@@ -1,26 +1,40 @@
 # Assinatura, teste grátis e cobrança
 
-Decisões do GD em 06/10/2026. O que ainda está aberto está no fim.
+Decisões do GD em 06/10/2026, corrigidas em 14/10/2026 (o que vale hoje está marcado). O que ainda está aberto está no fim.
 
-## Vem Trabalhar: quanto custa
+## Vem Trabalhar: quanto custa (vale o de 14/10/2026)
 
-**Candidato** (quem procura emprego, estágio, troca de emprego): **R$ 80** do próprio bolso. Dá direito a criar, melhorar e
-potencializar o currículo, com **20 ou mais modelos** (cores, layouts) e os **testes de perfil e de habilidades**.
+**Candidato** (quem procura emprego, estágio, troca de emprego): **R$ 15 por mês** (GD, 14/10, 08:50). Dá direito a criar o
+currículo (20 ou mais modelos de cores e layouts), à **análise de perfil**, à **análise social** (só com autorização da pessoa e
+só do que for profissional) e a ver as **vagas das empresas verificadas**. O **R$ 80 não é o preço do candidato: é o valor de
+cada curso próprio.** O R$ 80 mensal da planilha de 06/10 deixa de valer.
 
-**Empresa**: paga **por mês, pela quantidade de vagas anunciadas**. Dá acesso aos currículos cadastrados e ao match.
+**Cursos próprios** (livres): **R$ 80 cada um** (GD, 14/10).
+
+**Empresa** (GD, 14/10, 06:44 e depois): **primeiro mês grátis, até 2 vagas**, para cada empresa cadastrada. Do segundo mês em
+diante tudo é pago, por mês, pelas vagas anunciadas ao mesmo tempo. A vaga paga é mais divulgada e aparece acima da gratuita.
+Dá acesso aos currículos cadastrados e ao match.
 
 | Vagas anunciadas | Por mês |
 |---|---|
-| 0 a 10 | R$ 300 |
-| 11 a 500 (o GD citou 11 a 50 e 51 a 500, os dois a R$ 500: é uma faixa só) | R$ 500 |
-| 501 a 1.000 | R$ 1.000 |
-| Acima de 1.000 | Negociado |
+| 1 a 20 | R$ 100 |
+| 21 a 100 | R$ 200 |
+| 101 a 200 | R$ 300 |
+| 201 a 999 | R$ 400 |
+| 1.000 ou mais | R$ 1.000 |
 
-Estes preços **substituem** os antigos (candidato R$ 15; empresa com 2 vagas grátis e de R$ 100 a R$ 400).
+A tabela de 06/10 (R$ 300 para 0 a 10 vagas, R$ 500 para 11 a 500, R$ 1.000 para 501 a 1.000) **foi substituída** por esta.
+
+**Raspador de vagas públicas** (GD, 14/10): o sistema também coleta vagas públicas para aumentar o banco de vagas. Regra de
+engenharia: só de fontes que permitem (página de vagas com dado estruturado `JobPosting`, API ou RSS oferecidos, órgãos públicos),
+respeitando `robots.txt` e os termos de cada site, sempre com o link e o nome da origem, sem login de terceiros e sem copiar o
+que o site proíbe. A vaga coletada aparece com a etiqueta "vaga pública" e fica abaixo das vagas pagas. Depende de revisão do
+advogado antes de ligar.
 
 ## Teste grátis
 
-- **Uma semana**, para quem se cadastra (candidato e empresa), **sem poder baixar nada**: nem o currículo em arquivo, nem a
+- **Uma semana**, para quem se cadastra (decisão de 06/10; para a **empresa** foi trocada em 14/10 por "primeiro mês grátis, até 2
+  vagas"; o teste do candidato não foi revisto), **sem poder baixar nada**: nem o currículo em arquivo, nem a
   lista de candidatos. Dá para usar e ver; baixar depende de assinar.
 - Objetivo do GD: formar o **banco de dados** e juntar informações para o **marketing**. Isso só vale com cadastro feito pela
   própria pessoa e **consentimento claro** para e-mail, WhatsApp e Telegram, com como sair (LGPD). Nada de lista comprada
@@ -34,7 +48,7 @@ seguinte** (entrou dia 5, vence todo dia 5, no dia 6 não funciona). Estratégia
 e subir o preço aos poucos para os próximos que entrarem. Detalhes e proposta de engenharia no item 66 de
 `docs/requisitos-do-dono-vem-comer.md`. Falta decidir a política de devolução.
 
-**Desconto de entrada (GD, 14/10/2026, 08:46): os primeiros 30 dias do Vem Comer têm 50% de desconto.** Leitura que o código
+**Desconto de entrada (GD, 14/10/2026, 08:46 e confirmado às 08:50 "o primeiro mês também é 50%"): os primeiros 30 dias do Vem Comer têm 50% de desconto.** Leitura que o código
 vai seguir até o GD corrigir: vale para **cada restaurante novo**, no **primeiro pagamento** (R$ 95,00 em vez de R$ 190,00), que
 continua sendo **pago no primeiro dia** e cobre os primeiros 30 dias; o mês seguinte já é o preço cheio de R$ 190,00 (o preço de
 tabela vigente quando o restaurante entrou fica copiado na assinatura). Isso **substitui** a pergunta "primeiro mês grátis também
@@ -153,11 +167,11 @@ tempo) foi rodado contra um PostgreSQL 16 de verdade com as migrações 002 a 01
 
 ## Em aberto
 
-1. O R$ 80 do candidato é **por mês** ou pago **uma vez**? (o GD falou em "acessos mensais"; tratado como mensal até dizer o contrário)
-2. O currículo **básico por voz, vídeo ou foto** para quem nunca trabalhou continua **grátis** (requisito 35) e os R$ 80 são
-   do pacote completo, ou tudo é pago?
-3. **Vem Comer:** o desconto de 50% nos primeiros 30 dias está decidido (14/10/2026). Falta confirmar se vale para todo restaurante
-   novo (leitura atual) ou só para quem entrar numa janela de lançamento, e a política de devolução.
+1. ~~O R$ 80 do candidato é por mês ou uma vez?~~ **Respondido (14/10):** o candidato paga R$ 15 por mês; R$ 80 é cada curso.
+2. O currículo **básico por voz, vídeo ou foto** para quem nunca trabalhou continua **grátis** (requisito 35) e os R$ 15 são do
+   pacote completo (análise de perfil, análise social, vagas verificadas), ou tudo é pago? (recomendação: básico grátis)
+3. **Vem Comer:** o desconto de 50% nos primeiros 30 dias está decidido e confirmado (14/10/2026). Falta confirmar se vale para
+   todo restaurante novo (leitura atual) ou só para quem entrar numa janela de lançamento, e a política de devolução.
 4. Qual **CNPJ** recebe e qual **PSP** (taxas, CPF ou CNPJ).
 5. O que precisa estar funcionando em **13/10**.
 6. **Pagamento atrasado**: hoje, quem paga depois de vencido começa um mês cheio a partir do dia do pagamento e o dia do
@@ -168,13 +182,20 @@ tempo) foi rodado contra um PostgreSQL 16 de verdade com as migrações 002 a 01
 ## Receita de parcerias com escolas (decisão do GD, 06/10/2026)
 
 Além das assinaturas, o Vem Trabalhar recebe das escolas parceiras (técnicas e faculdades): 50% da matrícula e
-30% de cada mensalidade dos alunos que levar. O aluno paga o preço normal da escola. Por quantas mensalidades a
-comissão vale está em aberto. Referência de mercado: o anúncio de parceiros da Uniateneu (06/10/2026) fala em até 100% da matrícula e até 70% das mensalidades; nossos 50% e 30% são piso para negociar. Detalhes e calculadora em `docs/planilhas/Vem-Trabalhar-planilhas.xlsx` (aba `Parcerias`).
+30% de cada mensalidade dos alunos que levar. O aluno paga o preço normal da escola. **Os 30% valem para todos os períodos,
+mês a mês, enquanto o aluno pagar** (GD, 14/10/2026; a calculadora da planilha supunha 12 meses e precisa ser ajustada).
+Referência de mercado: o anúncio de parceiros da Uniateneu (06/10/2026) fala em até 100% da matrícula e até 70% das mensalidades; nossos 50% e 30% são piso para negociar. Detalhes e calculadora em `docs/planilhas/Vem-Trabalhar-planilhas.xlsx` (aba `Parcerias`).
 No código, a comissão fica fora do match e fora da ordem das vagas; o curso de parceiro leva a etiqueta "Parceiro".
 
 ## Receita do RH terceirizado (pedido do GD, 06/10/2026)
 
-- Taxa do profissional de RH para se cadastrar: R$ 200 (em aberto: uma vez ou por mês).
+- Taxa do profissional de RH para se cadastrar: **R$ 200, paga para se cadastrar** (GD, 14/10: "R$ 200 para ele se cadastrar e
+  depois 30% de cada serviço que ele pegar"; tratado como pagamento único).
+- **Como a empresa pede** (GD, 14/10): no painel da vaga aparece um botão quando a vaga tem **3 candidatos com match alto**:
+  "Enviar para o RH". O pedido vai para os RHs cadastrados e pagantes; o RH que aceitar faz a **entrevista dentro do portal, por
+  chamada de vídeo ou de áudio**, e depois responde um **questionário de 20 perguntas** montado pelo sistema conforme o perfil
+  que a empresa quer (capacidade, competência e comportamento). O RH escreve o relatório; **a decisão é sempre da empresa**.
+  Em aberto: para quais RHs o pedido vai (todos, por área ou por região) e quem aceita primeiro.
 - Cada RH define o preço da entrevista; o Vem Trabalhar fica com 30% de cada entrevista paga pela plataforma.
   Exemplo da planilha (valores inventados): entrevista de R$ 150 → R$ 45 para o Vem Trabalhar e R$ 105 para o RH.
 - Precisa de meio de pagamento com divisão automática (split) para o repasse de 70%; até lá, repasse manual com registro.
