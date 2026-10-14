@@ -435,6 +435,10 @@ test("prompts and progress for the photo road", () => {
   assert.match(PHOTO_FIRST_QUESTION, /cardápio pronto/);
   assert.equal(promptFor(startPhoto()), PHOTO_QUESTION);
   assert.equal(progressText(startPhoto()), "Passo 1 de 3 · Foto do cardápio");
+  // só planilha: o título do passo não fala em foto (GD viu isso no celular, 14/10/2026)
+  assert.equal(progressText(startPhoto(), "file"), "Passo 1 de 3 · Planilha do cardápio");
+  assert.equal(progressText(startPhoto(), "both"), "Passo 1 de 3 · Foto do cardápio");
+  assert.equal(progressText(startPhoto(), "photo"), "Passo 1 de 3 · Foto do cardápio");
 
   // the same two screens when a spreadsheet or PDF can be sent too, or only a spreadsheet
   assert.equal(promptFor(initialFlow(), false, "photo"), PHOTO_FIRST_QUESTION);

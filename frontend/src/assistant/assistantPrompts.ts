@@ -158,7 +158,8 @@ export function promptFor(state: FlowState, intro = false, photoMenu: boolean | 
 }
 
 /** Short label for the progress line at the top. */
-export function progressText(state: FlowState): string {
+/** `readyMenu` diz o que o servidor lê hoje: só planilha ("file") não pode chamar o passo de "Foto do cardápio". */
+export function progressText(state: FlowState, readyMenu: false | "photo" | "file" | "both" | null = null): string {
   if (state.source === "speech") {
     const missing = selectedItems(state).filter((item) => !item.price).length;
     switch (state.step) {
@@ -199,7 +200,7 @@ export function progressText(state: FlowState): string {
     case "type":
       return "Passo 1 de 4 · Tipo de negócio";
     case "photo":
-      return "Passo 1 de 3 · Foto do cardápio";
+      return readyMenu === "file" ? "Passo 1 de 3 · Planilha do cardápio" : "Passo 1 de 3 · Foto do cardápio";
     case "speak":
       return "Passo 1 de 3 · Fale os pratos";
     case "pick": {

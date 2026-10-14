@@ -74,3 +74,11 @@ precisam dos arquivos originais, em PNG com fundo transparente ou SVG. Até lá 
 
 O lado do Vem Trabalhar da mesma prancha, e o cartaz da logomarca azul, foram para o front-end do Vem Trabalhar
 (repositório dele, `docs/front-end.md`).
+
+## 4. `tela-assistente-planilha-gd-20261014.jpg`
+
+Print que o GD mandou em 14/10/2026, às 09:26, do próprio celular (aparenta ser Android) já dentro do painel como "GD, Dono":
+aba **Assistente**, "Passo 1 de 3 · Foto do cardápio", com o texto "Escolha a planilha do seu cardápio" e o botão
+"Escolher a planilha". Mostra duas coisas: (1) o servidor no ar ainda não lê foto nem PDF, porque a chave de IA não está
+ligada, então só aparece a planilha; (2) o título do passo dizia "Foto do cardápio" com a planilha na tela. O item (2) foi
+corrigido no mesmo dia (`progressText` agora recebe o que o servidor lê).
