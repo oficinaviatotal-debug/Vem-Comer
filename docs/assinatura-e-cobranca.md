@@ -52,9 +52,9 @@ e subir o preço aos poucos para os próximos que entrarem. Detalhes e proposta 
 vai seguir até o GD corrigir: vale para **cada restaurante novo**, no **primeiro pagamento** (R$ 95,00 em vez de R$ 190,00), que
 continua sendo **pago no primeiro dia** e cobre os primeiros 30 dias; o mês seguinte já é o preço cheio de R$ 190,00 (o preço de
 tabela vigente quando o restaurante entrou fica copiado na assinatura). Isso **substitui** a pergunta "primeiro mês grátis também
-no Vem Comer?": não há mês grátis no Vem Comer, há metade do preço no primeiro mês. Ainda **não está no código** (a cobrança
-está desligada); quando entrar, o valor já preenchido no "Registrar pagamento" do 1º pagamento será R$ 95,00 e a aba Plano do
-dono mostrará "1º mês com 50% de desconto".
+no Vem Comer?": não há mês grátis no Vem Comer, há metade do preço no primeiro mês. **Entra no código no PR #62** (a cobrança
+continua desligada): o valor já preenchido no "Registrar pagamento" do 1º pagamento passa a ser R$ 95,00 e a aba Plano do
+dono mostra "Primeiro pagamento: R$ 95,00 (50% de desconto)".
 
 ## Vem Comer: o que já está construído (13/10/2026)
 
