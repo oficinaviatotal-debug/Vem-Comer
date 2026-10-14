@@ -17,6 +17,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import query_db, get_db_connection
 import costing
+import business_api
 import compliance_api
 import consent
 import titular_api
@@ -5150,6 +5151,9 @@ def require_platform_admin(f):
 
 # Pedidos do titular, cópia dos dados e eliminação (LGPD arts. 18 e 19): as rotas com login ficam em titular_api.py.
 titular_api.register_private(app, require_auth=require_auth, require_platform_admin=require_platform_admin)
+
+# Painel "Seu negócio" (vendas, ticket médio, horários, pratos que dão lucro, tempos): só dono e gerente.
+business_api.register(app, require_roles=require_roles, require_company_access=require_company_access, error_response=error_response)
 
 
 @app.route('/api/admin/subscription', methods=['GET'])

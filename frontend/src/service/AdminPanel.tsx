@@ -76,6 +76,7 @@ import { tableOrderUrl as buildTableUrl } from "./links";
 import { rememberCompany } from "./lastCompany";
 import MenuAssistant from "../assistant/MenuAssistant";
 import CostsPanel from "../costs/CostsPanel";
+import BusinessPanel from "../business/BusinessPanel";
 import CallsBar from "../mesa/CallsBar";
 import TablePoster from "../mesa/TablePoster";
 import "../ui.css";
@@ -1105,7 +1106,9 @@ export default function AdminPanel({
           aria-current={view === "dashboard" ? "page" : undefined}
           onClick={() => setView("dashboard")}
         >
-          Resumo
+          {currentUser?.role === "OWNER" || currentUser?.role === "MANAGER"
+            ? "Seu negócio"
+            : "Resumo"}
         </button>
 
         {(currentUser?.role === "OWNER" ||
@@ -1192,6 +1195,13 @@ export default function AdminPanel({
       (currentUser?.role === "OWNER" ||
         currentUser?.role === "MANAGER") ? (
         <CostsPanel companyId={companyId} />
+      ) : view === "dashboard" &&
+        (currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") ? (
+        <BusinessPanel
+          companyId={companyId}
+          onGo={(target) => setView(target)}
+        />
       ) : view === "dashboard" ? (
         <section className="sheet" aria-label="Resumo">
           <h2>Resumo</h2>
