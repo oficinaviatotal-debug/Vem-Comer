@@ -36,7 +36,8 @@ Um login, dois produtos, e uma central de crescimento que serve aos dois:
 ## 3. Os 8 movimentos, por impacto e custo
 
 1. **Os 30 primeiros restaurantes à mão.** GD e Claude, cada um usando de verdade; viram prova com número.
-2. **Contadores como canal.** Comissão de **20% recorrente por 12 meses** (R$ 38 por mês por restaurante a R$ 190), por divisão automática.
+2. **Contadores (profissionais de contabilidade) como canal.** Eles cuidam de impostos, MEI, notas e folha do restaurante e têm a confiança
+   do dono. Proposta de comissão (aguardando confirmação do GD): **20% recorrente por 12 meses** (R$ 38 por mês por restaurante a R$ 190), por divisão automática.
    Os contadores também sabem quem está contratando (eSocial), então servem aos dois produtos.
 3. **E-mail B2B com os dados abertos de CNPJ da Receita**, por tipo de negócio e cidade, com a oferta "mande a foto do seu cardápio e receba o
    cardápio pronto em 2 minutos". Custo na casa de US$ 0,10 por mil e-mails. O advogado vê antes; a Receita mudou regras de divulgação em
@@ -62,8 +63,8 @@ abrir as primeiras vagas. Depois, escalar só o canal que provar custo bom. **Po
 
 ## 5. Custo mensal estimado
 
-VPS que já existe + e-mail (menos de US$ 100) + domínios (cerca de R$ 40 por ano cada .com.br) + IA (a medir) + o teste pago opcional.
-Sem anúncio, poucas centenas de reais por mês.
+VPS que já existe + e-mail (menos de US$ 100) + IA (a medir) + o teste pago opcional. **Domínios: sem custo pelo plano da Hostinger**
+(GD, 09:20; falta ele dizer quais endereços o painel libera). Sem anúncio, poucas centenas de reais por mês.
 
 ## 6. Regras que não quebramos
 
@@ -78,8 +79,9 @@ Sem anúncio, poucas centenas de reais por mês.
 | Item | Decisão |
 | --- | --- |
 | Plano de 90 dias (este documento) | Aprovado; meta dura de 1.000 restaurantes pagantes no dia 90 e 5 a 10 mil como meta do dia 180 a 365 |
-| Registrar dois domínios (vemcomer e vemtrabalhar) | Aprovado; Claude passa o passo a passo; o GD paga e registra |
-| Comissão do contador | 20% recorrente por 12 meses |
+| Dois domínios (vemcomer e vemtrabalhar) | Saem **sem custo pelo plano da Hostinger** (GD, 09:20); não precisa de registro.br. Aberto: quais endereços o painel libera (`.com` ou `.com.br`); o QR das mesas carrega o endereço, então a escolha vem antes de imprimir |
+| Registro da marca | Nada a fazer agora (GD, 09:20: "o registro da marca também" não precisa). Entendimento de Claude; fica anotado para o advogado |
+| Comissão do contador (o profissional de contabilidade que indica o restaurante) | Proposta: 20% recorrente por 12 meses. **Aguardando confirmação**: o GD pediu a explicação às 09:20 |
 | Teste pago de R$ 3 a 5 mil | Aprovado em princípio; antes de gastar, Claude mostra anúncio e valor e o GD toca em "pode" |
 | Currículo básico por voz | Grátis (os R$ 15 por mês pagam o pacote completo) |
 | LinkJob (~450 tabelas) | Não pagar para reativar |
