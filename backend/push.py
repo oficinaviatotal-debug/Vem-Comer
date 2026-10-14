@@ -48,10 +48,10 @@ EVENT_ROLES = {
 
 # Eventos que nao sao de um restaurante: quem recebe sao os administradores da plataforma (PLATFORM_ADMIN_EMAILS), em
 # qualquer restaurante em que tenham entrado.
-PLATFORM_EVENTS = ("help_request",)
+PLATFORM_EVENTS = ("help_request", "titular_request")
 
 # Quanto tempo o servico de notificacao guarda a mensagem se o celular estiver sem sinal (segundos).
-EVENT_TTL = {"new_order": 600, "table_call": 300, "delivery_ready": 600, "help_request": 3600, "test": 60}
+EVENT_TTL = {"new_order": 600, "table_call": 300, "delivery_ready": 600, "help_request": 3600, "titular_request": 3600, "test": 60}
 
 MAX_PER_USER = 5
 MAX_TARGETS = 100
@@ -203,6 +203,13 @@ def help_request_payload(company_id: object, company_name: object, topic: object
     what = _text(topic, 30) or "ajuda"
     title = "Chamado de novo" if again else "Chamado de ajuda"
     return make_payload(title, f"{place}: {what}", f"ajuda-{company_id}")
+
+
+def titular_request_payload(is_report: bool) -> dict:
+    """Para o administrador da plataforma: so o tipo e o prazo. O contato e o texto da pessoa ficam na caixa de pedidos."""
+    if is_report:
+        return make_payload("Denúncia de conteúdo", "Prazo de 2 dias. Abra a caixa de pedidos.", "titular-denuncia")
+    return make_payload("Pedido de dados pessoais", "Prazo de 15 dias. Abra a caixa de pedidos.", "titular-pedido")
 
 
 def delivery_ready_payload(order_id: object) -> dict:
@@ -550,6 +557,15 @@ def notify_help_request(company_id, company_name, topic_label: str, again: bool 
         return
     payload = help_request_payload(company_id, company_name, topic_label, again)
     _in_background(lambda: send_event("help_request", None, lambda cur: payload))
+
+
+@never_raises
+def notify_titular_request(is_report: bool = False) -> None:
+    """Chegou pedido do titular dos dados (LGPD) ou denúncia: avisa o administrador da plataforma, que tem prazo a cumprir."""
+    if not enabled() or not platform_emails():
+        return
+    payload = titular_request_payload(is_report)
+    _in_background(lambda: send_event("titular_request", None, lambda cur: payload))
 
 
 def send_test(company_id, user_id, connect=None, send=None) -> dict:

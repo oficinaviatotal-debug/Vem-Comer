@@ -57,11 +57,11 @@ export default function SignupPage() {
     };
   }, []);
 
-  function setField<K extends keyof SignupForm>(key: K, value: SignupForm[K], field: SignupField) {
+  function setField<K extends keyof SignupForm>(key: K, value: SignupForm[K], field?: SignupField) {
     setForm((current) => ({ ...current, [key]: value }));
-    // quem começa a corrigir não precisa ver o erro antigo
+    // quem começa a corrigir não precisa ver o erro antigo (campos opcionais não têm erro)
     setErrors((current) => {
-      if (!current[field]) return current;
+      if (!field || !current[field]) return current;
       const next = { ...current };
       delete next[field];
       return next;
@@ -287,12 +287,32 @@ export default function SignupPage() {
           <span>
             Li e aceito os{" "}
             <a href={termsUrl(window.location.origin, window.location.pathname)} target="_blank" rel="noopener">
-              termos de uso
+              termos de uso e a política de privacidade
             </a>
             .
           </span>
         </label>
         {fieldError("accept_terms", false)}
+
+        <label className="signup-terms">
+          <input
+            {...fieldProps("accept_adult")}
+            type="checkbox"
+            checked={form.acceptAdult}
+            onChange={(e) => setField("acceptAdult", e.target.checked, "accept_adult")}
+          />
+          <span>Tenho 18 anos ou mais.</span>
+        </label>
+        {fieldError("accept_adult", false)}
+
+        <label className="signup-terms">
+          <input
+            type="checkbox"
+            checked={form.acceptNews}
+            onChange={(e) => setField("acceptNews", e.target.checked)}
+          />
+          <span>Quero receber novidades do Vem Comer por e-mail (opcional; dá para sair a qualquer momento).</span>
+        </label>
 
         <p className="signup-honey" aria-hidden="true">
           <label>

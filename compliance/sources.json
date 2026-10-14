@@ -21,7 +21,7 @@
     "obrigacoes": [
       "LGPD-ACEITE-PROVA", "LGPD-CONSENT-ESPECIFICO", "LGPD-REVOGACAO", "LGPD-DIREITOS-TITULAR",
       "LGPD-ENCARREGADO", "LGPD-INCIDENTE", "LGPD-ELIMINACAO-RETENCAO", "LGPD-CRIANCAS",
-      "EMAIL-PROSPECCAO-EMPRESA", "EMAIL-CANDIDATO-CONFIRMACAO", "EMAIL-CAIXA-DE-ESPERA"
+      "EMAIL-PROSPECCAO-EMPRESA", "EMAIL-CANDIDATO-CONFIRMACAO", "EMAIL-CAIXA-DE-ESPERA", "INTERMEDIARIO-PAPEIS"
     ],
     "verificado_em": "2026-10-14",
     "como_foi_verificado": "Frases conferidas na página oficial do Planalto em 14/10/2026 (leitura por ferramenta de busca, que resume a página)."
@@ -34,9 +34,10 @@
     "ancoras": [
       "pelo prazo de 6 (seis) meses, nos termos do regulamento",
       "exclusão definitiva dos dados pessoais que tiver fornecido a determinada aplicação de internet",
-      "pelo prazo de 1 (um) ano, nos termos do regulamento"
+      "pelo prazo de 1 (um) ano, nos termos do regulamento",
+      "somente poderá ser responsabilizado civilmente por danos decorrentes de conteúdo gerado por terceiros"
     ],
-    "obrigacoes": ["MCI-LOG-ACESSO", "MCI-EXCLUSAO"],
+    "obrigacoes": ["MCI-LOG-ACESSO", "MCI-EXCLUSAO", "MCI-DENUNCIA-CONTEUDO", "INTERMEDIARIO-PARECER"],
     "verificado_em": "2026-10-14",
     "como_foi_verificado": "Frases conferidas na página oficial do Planalto em 14/10/2026."
   },
@@ -49,9 +50,11 @@
       "pode desistir do contrato, no prazo de 7 dias a contar de sua assinatura",
       "serão devolvidos, de imediato, monetariamente atualizados",
       "enviar ou entregar ao consumidor, sem solicitação prévia, qualquer produto",
-      "informações corretas, claras, precisas, ostensivas e em língua portuguesa"
+      "informações corretas, claras, precisas, ostensivas e em língua portuguesa",
+      "Havendo mais de um responsável pela causação do dano, todos responderão solidariamente",
+      "impossibilitem, exonerem ou atenuem a responsabilidade do fornecedor por vícios de qualquer natureza dos produtos e serviços"
     ],
-    "obrigacoes": ["CDC-INFO-CLARA", "CDC-ARREPENDIMENTO"],
+    "obrigacoes": ["CDC-INFO-CLARA", "CDC-ARREPENDIMENTO", "INTERMEDIARIO-PAPEIS", "INTERMEDIARIO-PARECER"],
     "verificado_em": "2026-10-14",
     "como_foi_verificado": "Frases conferidas na página oficial do Planalto em 14/10/2026."
   },
@@ -196,6 +199,15 @@
     "modo": "manual",
     "resumo_verificado": "Valia durante a emergência de saúde pública da covid-19, que terminou; não se aplica ao motoqueiro do Vem Comer hoje. Conferido em 14/10/2026.",
     "obrigacoes": ["ENTREG-LEI-14297"],
+    "verificado_em": "2026-10-14"
+  },
+  {
+    "id": "stf-art19-2025",
+    "nome": "Julgamento do STF de 26/06/2025 sobre o art. 19 do Marco Civil (Temas 987 e 533)",
+    "url": "https://www.machadomeyer.com.br/pt/inteligencia-juridica/publicacoes-ij/direito-digital/stf-muda-regime-de-responsabilizacao-das-plataformas",
+    "modo": "manual",
+    "resumo_verificado": "O STF declarou o art. 19 parcialmente inconstitucional (8 a 3), com efeito daqui para frente. Para a maior parte do conteúdo ilegal de terceiros passa a valer a retirada por notificação (art. 21); crimes graves exigem retirada imediata; anúncios, impulsionamento pago e robôs podem gerar responsabilidade sem notificação; provedores devem ter sistema de notificação, devido processo, relatório de transparência e canal de atendimento; marketplaces respondem pelo CDC; e-mail e mensagem privada seguem o art. 19. Conferido em 14/10/2026 em dois resumos de escritórios (Machado Meyer e Mattos Filho); a íntegra da tese não foi lida, por isso a leitura exata do alcance para plataformas pequenas é pergunta ao advogado.",
+    "obrigacoes": ["MCI-DENUNCIA-CONTEUDO", "INTERMEDIARIO-PAPEIS", "INTERMEDIARIO-PARECER"],
     "verificado_em": "2026-10-14"
   }
 ]

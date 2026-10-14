@@ -8,7 +8,8 @@ O que protege a porta (ninguém precisa de e-mail confirmado para isto funcionar
 - limite por endereço de rede (por hora e por dia) e limite geral por dia (contado no banco);
 - campo escondido (honeypot) que só robô preenche;
 - e-mail único em todo o sistema, senha que não seja das mais comuns;
-- o aceite dos termos fica gravado com a versão dos termos e a hora.
+- o aceite dos termos fica gravado com a versão dos termos e a hora, e também no registro de aceites
+  (consent.py: termos, privacidade, maior de 18 anos e, se a pessoa marcar, novidades por e-mail).
 
 Ainda NÃO existe: confirmação de e-mail e "esqueci a senha" (precisam de um serviço de e-mail), nem
 CAPTCHA. Está em docs/cadastro-do-restaurante.md como próximos passos.
@@ -26,7 +27,7 @@ from collections import deque
 
 # Versão do texto dos termos de uso que a tela mostra. Se o texto mudar, mude aqui e na tela
 # (frontend/src/signup/signupLogic.ts, TERMS_VERSION). A rota recusa um cadastro feito com versão velha.
-TERMS_VERSION = "2026-10-06"
+TERMS_VERSION = "2026-10-14"
 
 NAME_MIN = 2
 RESTAURANT_NAME_MAX = 120
@@ -232,6 +233,9 @@ def validate(data: dict) -> dict:
         raise SignupError(
             "Os termos de uso foram atualizados. Recarregue a página e leia de novo.", 409, "accept_terms"
         )
+    # O Vem Comer nasce para maiores de 18 anos (LGPD art. 14 e ECA Digital): a pessoa declara no cadastro.
+    if data.get("accept_adult") is not True:
+        raise SignupError("Para continuar, confirme que você tem 18 anos ou mais.", 400, "accept_adult")
 
     return {
         "restaurant_name": restaurant,
@@ -239,4 +243,6 @@ def validate(data: dict) -> dict:
         "email": email,
         "phone": phone,
         "password": password,
+        # novidades por e-mail: opcional, nunca marcado de antemão (só vale se a pessoa marcou)
+        "accept_news": data.get("accept_news") is True,
     }

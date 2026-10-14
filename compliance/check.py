@@ -39,7 +39,7 @@ STATUS = {
 PRODUTOS = {"vem_comer", "vem_trabalhar"}
 AREAS = {
     "dados-pessoais", "internet", "consumidor", "trabalho", "propriedade", "acessibilidade",
-    "comunicacao", "pagamento", "seguranca", "entrega",
+    "comunicacao", "pagamento", "seguranca", "entrega", "responsabilidade",
 }
 CAMPOS = ("id", "area", "norma", "exige", "aplica_a", "controle", "status")
 DIAS_VELHA = 90

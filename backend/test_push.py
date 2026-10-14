@@ -721,6 +721,30 @@ class HelpRequestPushTests(unittest.TestCase):
         self.assertNotIn("help_request", push.EVENT_ROLES)
         self.assertIn("help_request", push.PLATFORM_EVENTS)
 
+    def test_a_titular_request_warns_the_platform_admin_without_any_personal_data(self):
+        for is_report, title in ((False, "Pedido de dados pessoais"), (True, "Denúncia de conteúdo")):
+            payload = push.titular_request_payload(is_report)
+            self.assertEqual(payload["title"], title)
+            self.assertIn("prazo", payload["body"].lower())
+            self.assertNotIn("@", str(payload))
+        self.assertIn("titular_request", push.PLATFORM_EVENTS)
+        self.assertNotIn("titular_request", push.EVENT_ROLES)
+        self.assertGreaterEqual(push.EVENT_TTL["titular_request"], 3600)
+
+    def test_the_titular_hook_is_quiet_without_admin_or_switch_and_sends_one_job_otherwise(self):
+        with patch.dict(os.environ, {"PLATFORM_ADMIN_EMAILS": ""}):
+            with patch.object(push, "enabled", return_value=True), patch.object(push, "_in_background") as spawn:
+                push.notify_titular_request(False)
+            spawn.assert_not_called()
+        with patch.dict(os.environ, {"PLATFORM_ADMIN_EMAILS": "gd@exemplo.com"}):
+            with patch.object(push, "enabled", return_value=False), patch.object(push, "_in_background") as spawn:
+                push.notify_titular_request(True)
+            spawn.assert_not_called()
+            jobs = []
+            with patch.object(push, "enabled", return_value=True), patch.object(push, "_in_background", side_effect=jobs.append):
+                push.notify_titular_request(True)
+            self.assertEqual(len(jobs), 1)
+
 
 class HelpRequestHookTests(help_tests.Base):
     def ask(self, body):

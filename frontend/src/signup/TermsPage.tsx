@@ -44,6 +44,26 @@ export default function TermsPage() {
           quiser, o seu WhatsApp. Guardamos também o dia em que você aceitou estes termos e a versão que você
           leu. A sua senha é guardada de forma protegida: ninguém consegue ler a senha, nem nós.
         </p>
+        <p>
+          O Vem Comer é só para maiores de 18 anos, e por isso pedimos que você confirme a sua idade. O seu
+          aceite (termos, privacidade e idade) fica guardado como prova, com a data e a versão do texto. Nesse
+          registro não guardamos o seu e-mail escrito, só um código calculado a partir dele.
+        </p>
+
+        <h2>Quem faz o quê</h2>
+        <p>
+          O Vem Comer é uma plataforma de tecnologia que liga o restaurante aos clientes dele. Quem vende a
+          comida, define preços, prazos e entrega, e responde pelo que vende, é o restaurante. O Vem Comer não
+          vende, não entrega e não recebe o dinheiro dos pedidos.
+        </p>
+        <p>
+          O que você cadastra (cardápio, preços, fotos, promoções e dados do restaurante) é de responsabilidade
+          sua e precisa ser verdadeiro. Quando a leitura por foto sugerir pratos e preços, o que fica salvo é o
+          que você conferiu e confirmou. Se alguém avisar que algum conteúdo fere a lei ou direitos de outra
+          pessoa, vamos analisar e retirar o que for preciso, e podemos pedir explicações a você. Para avisar, use a{" "}
+          <a href="/api/denuncia">página de denúncia</a> (dá para denunciar sem se identificar).
+        </p>
+        <p>Isto não tira nenhum direito que a lei dá a quem compra.</p>
 
         <h2>Cardápio, fotos e pedidos</h2>
         <p>
@@ -67,7 +87,9 @@ export default function TermsPage() {
         <h2>Mensagens</h2>
         <p>
           Só enviaremos e-mail ou WhatsApp para você, ou para clientes do seu restaurante, com permissão de
-          quem recebe, e sempre com um jeito de parar de receber.
+          quem recebe, e sempre com um jeito de parar de receber. No cadastro há uma caixa opcional para
+          receber novidades do Vem Comer por e-mail: ela vem desmarcada e você pode parar de receber quando
+          quiser.
         </p>
 
         <h2>Divulgação do Vem Comer</h2>
@@ -88,6 +110,11 @@ export default function TermsPage() {
           {SUPPORT_CONTACT
             ? `Fale com o suporte: ${SUPPORT_CONTACT}.`
             : "É só pedir ao suporte do Vem Comer, pelo mesmo canal em que você recebeu o link do cadastro."}
+        </p>
+        <p>
+          Veja tudo o que guardamos, por quanto tempo e com quem dividimos, e faça o seu pedido (com protocolo e
+          prazo de 15 dias) em <a href="/api/privacidade">Privacidade e os seus direitos</a>. O dono do restaurante
+          também baixa uma cópia dos próprios dados dentro do painel, na aba Plano.
         </p>
 
         <h2>Se estes termos mudarem</h2>

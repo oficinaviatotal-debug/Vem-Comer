@@ -60,3 +60,19 @@
   background: var(--papel-2);
   overflow-wrap: anywhere;
 }
+
+/* Caixinha de marcar com o texto ao lado (caixa de pedidos de dados). */
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin: var(--s2) 0;
+  min-height: 44px;
+}
+
+.check input {
+  flex: none;
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-top: 0.1rem;
+}

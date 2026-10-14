@@ -1,0 +1,209 @@
+{
+  "versao": "2026-10-14",
+  "aviso": "Registro das operações de tratamento de dados pessoais do Vem Comer (LGPD art. 37). É a fonte da página pública de privacidade e é conferido por teste: campo pessoal novo no banco sem registro aqui derruba a conferência. Os prazos de guarda e as bases legais são a interpretação da engenharia e ainda esperam o advogado (ver compliance/obligations.json, INTERMEDIARIO-PARECER e LGPD-ELIMINACAO-RETENCAO).",
+  "bases_legais": {
+    "contrato": "Execução de contrato ou de procedimentos preliminares a pedido da pessoa (LGPD art. 7º, V)",
+    "obrigacao_legal": "Cumprimento de obrigação legal ou regulatória (LGPD art. 7º, II)",
+    "consentimento": "Consentimento da pessoa (LGPD art. 7º, I)",
+    "interesse_legitimo": "Interesse legítimo, com avaliação feita e registrada (LGPD art. 7º, IX)",
+    "exercicio_direitos": "Exercício regular de direitos, inclusive em processo (LGPD art. 7º, VI)"
+  },
+  "categorias": [
+    {
+      "id": "conta-do-dono",
+      "titular": "Dono, gerente e equipe do restaurante que usam o painel",
+      "papel_da_plataforma": "controlador",
+      "dados": "nome, e-mail, senha (guardada só como código que não volta ao texto original), cargo na conta, WhatsApp do dono, versão dos termos aceita e data do aceite, e como o cadastro foi feito",
+      "campos": [
+        "users.name", "users.email", "users.password_hash", "users.role", "users.active",
+        "companies.owner_phone", "companies.terms_version", "companies.terms_accepted_at", "companies.signup_source"
+      ],
+      "finalidade": "Criar e manter a conta, deixar a pessoa entrar no painel, avisar sobre a conta e provar que os termos foram aceitos.",
+      "base_legal": "contrato",
+      "compartilha_com": "Ninguém além da hospedagem do servidor. Não vendemos nem cedemos esses dados.",
+      "guarda": "Enquanto a conta existir. Depois do pedido de encerramento, os dados são anonimizados em até 30 dias, menos o que a lei manda guardar (registro de acesso por 6 meses e a prova de aceite).",
+      "eliminacao": "Rotina de anonimização da conta (backend/titular.py).",
+      "revisao_juridica": "proposta_da_engenharia"
+    },
+    {
+      "id": "dados-do-restaurante",
+      "titular": "Dono do restaurante (a chave Pix pode ser CPF, telefone ou e-mail dele)",
+      "papel_da_plataforma": "controlador",
+      "dados": "nome do restaurante, chave Pix, nome do recebedor e cidade do Pix, logomarca",
+      "campos": [
+        "companies.name", "companies.pix_key_type", "companies.pix_key", "companies.pix_receiver_name",
+        "companies.pix_city", "companies.logo_key"
+      ],
+      "finalidade": "Mostrar o cardápio do restaurante e montar o código Pix que vai direto para a conta do restaurante.",
+      "base_legal": "contrato",
+      "compartilha_com": "Quem compra no cardápio vê o nome do restaurante e o código Pix (que carrega a chave). A plataforma não recebe nem repassa o dinheiro.",
+      "guarda": "Enquanto a conta existir; a chave Pix é apagada no encerramento.",
+      "eliminacao": "Rotina de anonimização da conta (backend/titular.py).",
+      "revisao_juridica": "proposta_da_engenharia"
+    },
+    {
+      "id": "pedido-do-cliente",
+      "titular": "Cliente que faz pedido no cardápio de um restaurante",
+      "papel_da_plataforma": "operador",
+      "dados": "nome, telefone, endereço de entrega, código de entrega, observações do pedido",
+      "campos": [
+        "orders.customer_name", "orders.customer", "orders.customer_phone", "orders.delivery_address",
+        "orders.delivery_code", "order_items.note"
+      ],
+      "finalidade": "Levar o pedido ao restaurante, fazer a retirada ou a entrega e permitir que o restaurante e o cliente se entendam sobre o pedido.",
+      "base_legal": "contrato",
+      "compartilha_com": "O restaurante que recebeu o pedido e, na entrega, o motoqueiro designado. O restaurante é quem decide sobre esses dados; a plataforma só os guarda e protege para ele.",
+      "guarda": "O restaurante decide. Proposta da engenharia: manter o nome, o telefone e o endereço por até 12 meses e depois anonimizar, guardando só valores e datas do pedido; ao encerrar a conta, entregar uma cópia ao restaurante e anonimizar em até 30 dias.",
+      "eliminacao": "Rotina de anonimização do pedido e da conta (backend/titular.py).",
+      "revisao_juridica": "proposta_da_engenharia"
+    },
+    {
+      "id": "ajuda-e-opiniao",
+      "titular": "Dono ou equipe do restaurante, cliente que deu opinião",
+      "papel_da_plataforma": "controlador",
+      "dados": "mensagem, tela, telefone para contato, quem pediu a ajuda, comentário e nota de opinião",
+      "campos": [
+        "help_requests.contact_phone", "help_requests.message", "help_requests.user_id",
+        "feedback.comment", "feedback.user_id", "feedbacks.comment"
+      ],
+      "finalidade": "Atender pedidos de ajuda e melhorar o sistema com as opiniões recebidas.",
+      "base_legal": "contrato",
+      "compartilha_com": "Ninguém além da equipe da plataforma.",
+      "guarda": "Proposta da engenharia: 24 meses depois de atendido; o telefone e o texto são apagados no encerramento da conta.",
+      "eliminacao": "Rotina de anonimização da conta (backend/titular.py).",
+      "revisao_juridica": "proposta_da_engenharia"
+    },
+    {
+      "id": "avisos-no-celular",
+      "titular": "Pessoa que ligou os avisos no celular",
+      "papel_da_plataforma": "controlador",
+      "dados": "identificação do aparelho no navegador (endereço do aviso e chaves de entrega), quem ligou",
+      "campos": [
+        "push_subscriptions.endpoint", "push_subscriptions.p256dh", "push_subscriptions.auth",
+        "push_subscriptions.user_id"
+      ],
+      "finalidade": "Entregar no celular o aviso de pedido novo, chamada de mesa e pedido de ajuda.",
+      "base_legal": "consentimento",
+      "compartilha_com": "O serviço de avisos do navegador (Google, Apple ou Mozilla, conforme o aparelho), que entrega a mensagem.",
+      "guarda": "Até a pessoa desligar os avisos ou o aparelho deixar de responder.",
+      "eliminacao": "Apagada ao desligar os avisos e no encerramento da conta.",
+      "revisao_juridica": "proposta_da_engenharia"
+    },
+    {
+      "id": "prova-de-aceite",
+      "titular": "Quem aceitou termos e privacidade, ou pediu para não receber e-mail",
+      "papel_da_plataforma": "controlador",
+      "dados": "impressão digital (SHA-256) do e-mail, o que foi aceito ou retirado, versão do texto, canal, data, impressão digital do IP misturada com a chave do servidor; na lista de bloqueio, só a impressão digital do e-mail",
+      "campos": [
+        "consent_records.subject_hash", "consent_records.ip_hash", "consent_records.document_sha256",
+        "email_suppression.email_hash"
+      ],
+      "finalidade": "Provar que houve consentimento (LGPD art. 8º, §2º) e respeitar para sempre o pedido de não receber e-mail.",
+      "base_legal": "obrigacao_legal",
+      "compartilha_com": "Ninguém. A impressão digital do e-mail da lista de bloqueio pode ser trocada entre o Vem Comer e o Vem Trabalhar para o pedido valer nos dois.",
+      "guarda": "Proposta da engenharia: a prova de aceite por 5 anos depois do fim da relação; a lista de bloqueio sem prazo, porque apagar faria o sistema esquecer o pedido da pessoa.",
+      "eliminacao": "Não se apaga durante o prazo (o registro só recebe linhas novas); a pessoa não aparece, só a impressão digital.",
+      "revisao_juridica": "proposta_da_engenharia"
+    },
+    {
+      "id": "divulgacao-para-empresas",
+      "titular": "Contato de empresa que o sistema procurou para apresentar o Vem Comer ou o Vem Trabalhar",
+      "papel_da_plataforma": "controlador",
+      "dados": "e-mail da empresa, de onde veio e por que podemos escrever, quem cadastrou, histórico de envios",
+      "campos": [
+        "outreach_contacts.email", "outreach_contacts.email_hash", "outreach_contacts.source",
+        "outreach_contacts.source_note", "outreach_contacts.legal_basis", "outreach_contacts.added_by"
+      ],
+      "finalidade": "Apresentar o sistema a empresas, no máximo 3 mensagens, só para empresa (nunca para candidato), sempre com descadastro de um clique.",
+      "base_legal": "interesse_legitimo",
+      "compartilha_com": "O serviço de envio de e-mail contratado (quando houver).",
+      "guarda": "Proposta da engenharia: até o descadastro ou 24 meses sem resposta, o que vier primeiro; depois só a impressão digital na lista de bloqueio, se a pessoa pediu para sair.",
+      "eliminacao": "Apagar o contato e manter só a impressão digital no bloqueio.",
+      "revisao_juridica": "pendente_do_advogado"
+    },
+    {
+      "id": "cobranca-da-assinatura",
+      "titular": "Dono do restaurante que assina o Vem Comer",
+      "papel_da_plataforma": "controlador",
+      "dados": "valor, período, forma de pagamento, referência do Pix, quem registrou o pagamento",
+      "campos": [
+        "subscription_payments.reference", "subscription_payments.recorded_by"
+      ],
+      "finalidade": "Registrar o pagamento da assinatura e a data até quando ela vale.",
+      "base_legal": "contrato",
+      "compartilha_com": "Contador, quando houver, e o banco do Pix.",
+      "guarda": "5 anos depois do pagamento (prazo fiscal e de defesa); o contador confirma.",
+      "eliminacao": "Depois do prazo, apagar a referência.",
+      "revisao_juridica": "pendente_do_contador"
+    },
+    {
+      "id": "pedidos-do-titular",
+      "titular": "Quem pediu para ver, corrigir ou apagar dados, ou denunciou um conteúdo",
+      "papel_da_plataforma": "controlador",
+      "dados": "tipo do pedido, forma de contato, texto do pedido, endereço do conteúdo denunciado, protocolo e andamento, impressão digital do e-mail",
+      "campos": [
+        "data_requests.contact", "data_requests.subject_hash", "data_requests.description",
+        "data_requests.target_url", "data_requests.response", "data_requests.token_hash",
+        "data_request_events.note"
+      ],
+      "finalidade": "Responder o pedido dentro do prazo da lei e guardar a prova de que respondemos.",
+      "base_legal": "obrigacao_legal",
+      "compartilha_com": "Ninguém.",
+      "guarda": "Proposta da engenharia: 5 anos depois de respondido, como prova de que o direito foi atendido.",
+      "eliminacao": "Depois do prazo, apagar o contato e o texto e manter só tipo, datas e protocolo.",
+      "revisao_juridica": "proposta_da_engenharia"
+    },
+    {
+      "id": "registro-de-acesso",
+      "titular": "Quem usa o site e o painel",
+      "papel_da_plataforma": "controlador",
+      "dados": "endereço de rede (IP), data e hora do acesso",
+      "campos": [],
+      "onde": "servidor (arquivo de registro do proxy), fora do banco",
+      "finalidade": "Segurança e cumprimento do Marco Civil da Internet (art. 15): guardar o registro de acesso e entregá-lo só por ordem judicial.",
+      "base_legal": "obrigacao_legal",
+      "compartilha_com": "Ninguém, salvo ordem judicial.",
+      "guarda": "6 meses (Marco Civil, art. 15); depois é apagado pela rotação do registro.",
+      "eliminacao": "Rotação automática do registro.",
+      "revisao_juridica": "proposta_da_engenharia"
+    },
+    {
+      "id": "foto-do-cardapio-lida-por-ia",
+      "titular": "Dono do restaurante que usa a leitura do cardápio por foto",
+      "papel_da_plataforma": "controlador",
+      "dados": "a imagem do cardápio enviada pelo dono (não guardamos a imagem enviada para leitura)",
+      "campos": [],
+      "onde": "enviada a um serviço de inteligência artificial no exterior (Anthropic); não fica no banco",
+      "finalidade": "Ler pratos e preços da foto para o dono conferir e salvar.",
+      "base_legal": "consentimento",
+      "compartilha_com": "Anthropic (Estados Unidos), só para ler a imagem.",
+      "guarda": "Não guardamos a imagem enviada para leitura.",
+      "eliminacao": "Não se aplica: nada fica guardado aqui.",
+      "revisao_juridica": "pendente_do_advogado"
+    }
+  ],
+  "tabelas_sem_dado_pessoal": {
+    "business_hours": "horário de funcionamento do restaurante",
+    "delivery_zones": "faixas de CEP e taxa de entrega do restaurante",
+    "email_controle": "uma linha com o freio do envio de e-mail",
+    "ingredients": "ingredientes e custos do restaurante",
+    "menus": "cardápios",
+    "option_groups": "grupos de opções do prato",
+    "option_items": "itens de opção do prato",
+    "order_events": "andamento do pedido (sem dados da pessoa)",
+    "outreach_log": "tentativas de envio ligadas ao contato pelo número, sem texto da pessoa",
+    "payment_webhook_events": "números de eventos de pagamento já tratados",
+    "payments": "valor e situação do pagamento do pedido, ligados ao pedido",
+    "plans": "planos e preços",
+    "product_ingredients": "ingredientes de cada prato",
+    "products": "pratos, preços e fotos de pratos",
+    "push_config": "chaves do servidor para enviar avisos (segredo do sistema, não é dado de pessoa)",
+    "subscriptions": "situação da assinatura de cada restaurante",
+    "table_calls": "chamadas de mesa (mesa e horário)",
+    "tables": "mesas do restaurante"
+  },
+  "colunas_excecoes": {
+    "companies.slug": "endereço público do restaurante, não identifica pessoa por si",
+    "subscription_payments.amount_cents": "valor"
+  }
+}

@@ -85,6 +85,13 @@ services:
       # As chaves nascem sozinhas no banco; VAPID_SUBJECT so serve para trocar o contato enviado ao servico de notificacao.
       PUSH_ENABLED: ${PUSH_ENABLED:-1}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+      # quem responde pelos dados (LGPD) e o canal de privacidade, mostrados em /api/privacidade (veja docs/direitos-do-titular.md).
+      # PRIVACY_REVIEWED=1 só depois que um advogado revisou os textos; antes disso a página mostra o aviso de "texto preliminar".
+      CONTROLLER_NAME: ${CONTROLLER_NAME:-}
+      CONTROLLER_CNPJ: ${CONTROLLER_CNPJ:-}
+      CONTROLLER_ADDRESS: ${CONTROLLER_ADDRESS:-}
+      PRIVACY_CONTACT: ${PRIVACY_CONTACT:-}
+      PRIVACY_REVIEWED: ${PRIVACY_REVIEWED:-}
     volumes:
       - uploads:/data/uploads
     healthcheck:

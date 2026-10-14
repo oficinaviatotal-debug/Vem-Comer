@@ -42,6 +42,7 @@ import SubscriptionPanel from "./SubscriptionPanel";
 import PlatformPanel from "./PlatformPanel";
 import HelpSheet from "./HelpSheet";
 import HelpInbox from "./HelpInbox";
+import TitularInbox from "./TitularInbox";
 import { fetchPlatformHelp } from "./helpApi";
 import { suggestedTopic } from "./helpLogic";
 import { useOwnerPlan } from "./useOwnerPlan";
@@ -1268,7 +1269,10 @@ export default function AdminPanel({
       ) : view === "assinaturas" && plan?.platform_admin ? (
         <PlatformPanel />
       ) : view === "ajuda" && plan?.platform_admin ? (
-        <HelpInbox onCount={setHelpCount} />
+        <>
+          <HelpInbox onCount={setHelpCount} />
+          <TitularInbox />
+        </>
       ) : view === "usuarios" && currentUser?.role === "OWNER" ? (
         <section className="adm-stack" aria-label="Equipe">
           <form

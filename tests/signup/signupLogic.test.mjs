@@ -27,6 +27,7 @@ function good(overrides = {}) {
     phone: "(84) 99999-1234",
     password: "minha-senha-forte",
     acceptTerms: true,
+    acceptAdult: true,
     ...overrides,
   };
 }
@@ -75,6 +76,7 @@ test("each rule points at its own field", () => {
     [{ password: "curta" }, "password"],
     [{ password: "x".repeat(129) }, "password"],
     [{ acceptTerms: false }, "accept_terms"],
+    [{ acceptAdult: false }, "accept_adult"],
   ];
   for (const [change, field] of cases) {
     assert.deepEqual(Object.keys(validateSignup(good(change))), [field], JSON.stringify(change));
@@ -135,9 +137,30 @@ test("the request body is clean and carries the version of the terms", () => {
     phone: "(84) 99999-1234",
     password: "minha-senha-forte",
     accept_terms: true,
+    accept_adult: true,
+    accept_news: false,
     terms_version: TERMS_VERSION,
     website: "",
   });
+});
+
+test("news by e-mail is optional, starts unticked and only goes when ticked", () => {
+  assert.equal(EMPTY_FORM.acceptNews, false);
+  assert.deepEqual(validateSignup(good({ acceptNews: false })), {});
+  assert.equal(toRequestBody(good()).accept_news, false);
+  assert.equal(toRequestBody(good({ acceptNews: true })).accept_news, true);
+});
+
+test("the \"I am 18 or older\" box starts unticked and is required", () => {
+  assert.equal(EMPTY_FORM.acceptAdult, false);
+  assert.deepEqual(Object.keys(validateSignup(good({ acceptAdult: false }))), ["accept_adult"]);
+});
+
+test("client and server use the same names for the acceptance fields", () => {
+  for (const name of ["accept_terms", "accept_adult", "accept_news"]) {
+    assert.ok(BACKEND.includes(`"${name}"`), `${name} is not in backend/signup.py`);
+  }
+  assert.ok(FIELD_ORDER.includes("accept_adult"));
 });
 
 test("the password goes as typed (no trimming, no changing case)", () => {
