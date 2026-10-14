@@ -765,7 +765,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
 
   return (
     <section className="asst" aria-label="Assistente do cardápio">
-      <p className="asst-progress">{progressText(flow)}</p>
+      <p className="asst-progress">{progressText(flow, readyMode)}</p>
 
       <div className="asst-bubble" aria-live="polite">
         <p>{prompt || promptFor(flow)}</p>

@@ -8,7 +8,7 @@ is wrong, and the writes happen in one transaction (the caller commits).
 Payload:
     {"categories": [
         {"name": "Lanches", "items": [
-            {"name": "X-Burguer", "price": "18,50", "description": "opcional"}
+            {"name": "X-Burguer", "price": "18,50", "description": "opcional", "subcategory": "opcional"}
         ]}
     ]}
 
@@ -26,6 +26,7 @@ MAX_ITEMS = 300
 MAX_CATEGORY_NAME = 100  # menus.name is VARCHAR(100)
 MAX_ITEM_NAME = 150  # products.name is VARCHAR(150)
 MAX_DESCRIPTION = 500
+MAX_SUBCATEGORY = 100  # products.subcategory is VARCHAR(100) (migration 017)
 MAX_PRICE = Decimal("99999.99")
 
 _CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
@@ -159,6 +160,7 @@ def validate_payload(data):
                     "name": item_name,
                     "price": price,
                     "description": clean_text(raw_item.get("description"), MAX_DESCRIPTION),
+                    "subcategory": clean_text(raw_item.get("subcategory"), MAX_SUBCATEGORY),
                 }
             )
 
@@ -243,8 +245,8 @@ def import_menu(cur, company_id, categories):
 
             cur.execute(
                 """
-                INSERT INTO products (company_id, menu_id, name, description, price)
-                VALUES (%s, %s, %s, %s, %s);
+                INSERT INTO products (company_id, menu_id, name, description, price, subcategory)
+                VALUES (%s, %s, %s, %s, %s, %s);
                 """,
                 (
                     str(company_id),
@@ -252,6 +254,7 @@ def import_menu(cur, company_id, categories):
                     item["name"],
                     item["description"],
                     item["price"],
+                    item["subcategory"] or None,
                 ),
             )
             existing.add(item_key)

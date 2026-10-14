@@ -48,3 +48,25 @@ test("searching removes sections that end up empty", () => {
   assert.deepEqual(groups.map((group) => group.title), ["Bebidas"]);
   assert.deepEqual(groupProducts(products, menus, "xyz"), []);
 });
+
+test("dishes of one category are split by subsection, in the order each subsection first appears", () => {
+  const pizzas = [
+    { id: "a", menu_id: "m1", name: "Calabresa", subcategory: "Tradicionais" },
+    { id: "b", menu_id: "m1", name: "Chocolate", subcategory: "Doces" },
+    { id: "c", menu_id: "m1", name: "Mussarela", subcategory: "tradicionais " },
+    { id: "d", menu_id: "m1", name: "Borda recheada" },
+  ];
+  const [group] = groupProducts(pizzas, [{ id: "m1", name: "Pizzas" }]);
+  assert.deepEqual(group.sections.map((section) => section.title), ["Tradicionais", "Doces", ""]);
+  assert.deepEqual(group.sections[0].items.map((item) => item.id), ["a", "c"]);
+  assert.equal(group.items.length, 4); // the flat list is still there
+});
+
+test("a category without subsections is one untitled section", () => {
+  const groups = groupProducts(products, menus);
+  for (const group of groups) {
+    assert.equal(group.sections.length, 1);
+    assert.equal(group.sections[0].title, "");
+    assert.deepEqual(group.sections[0].items, group.items);
+  }
+});

@@ -66,7 +66,7 @@ class ParseFileRouteTests(unittest.TestCase):
         self.assertEqual(reply.status_code, 200, reply.get_data(as_text=True))
         body = reply.get_json()
         self.assertEqual(set(body), {"readable", "categories", "notes"})
-        self.assertEqual(body["categories"][0], {"name": "Lanches", "items": [{"name": "X-Burguer", "price": "18.50"}]})
+        self.assertEqual(body["categories"][0], {"name": "Lanches", "items": [{"name": "X-Burguer", "price": "18.50", "description": "", "subcategory": ""}]})
         self.assertEqual(self.calls, [])
 
     def test_planilha_xlsx(self):
@@ -74,7 +74,13 @@ class ParseFileRouteTests(unittest.TestCase):
         reply = self.send(data, "cardapio.xlsx")
         self.assertEqual(reply.status_code, 200, reply.get_data(as_text=True))
         items = reply.get_json()["categories"][0]["items"]
-        self.assertEqual(items, [{"name": "Pastel", "price": "8.00"}, {"name": "Caldo de cana", "price": "7.50"}])
+        self.assertEqual(
+            items,
+            [
+                {"name": "Pastel", "price": "8.00", "description": "", "subcategory": ""},
+                {"name": "Caldo de cana", "price": "7.50", "description": "", "subcategory": ""},
+            ],
+        )
 
     def test_o_tipo_vem_do_conteudo_e_nao_do_nome_do_arquivo(self):
         reply = self.send(CSV, "foto.jpg")
@@ -90,7 +96,7 @@ class ParseFileRouteTests(unittest.TestCase):
         with patch.dict(os.environ, {"ANTHROPIC_API_KEY": FAKE_KEY}):
             reply = self.send(PDF, "cardapio.pdf")
         self.assertEqual(reply.status_code, 200, reply.get_data(as_text=True))
-        self.assertEqual(reply.get_json()["categories"][0]["items"][0], {"name": "Calabresa (G)", "price": "52.00"})
+        self.assertEqual(reply.get_json()["categories"][0]["items"][0], {"name": "Calabresa (G)", "price": "52.00", "description": "", "subcategory": ""})
         body, key = self.calls[0]
         self.assertEqual(key, FAKE_KEY)
         documents = [b for b in body["messages"][0]["content"] if b["type"] == "document"]

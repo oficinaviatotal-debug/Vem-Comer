@@ -227,6 +227,46 @@ class CsvTests(unittest.TestCase):
         data = csv_bytes("Lanches;X-Burguer;18,50\nLanches;X-Salada;20,00\n")
         self.assertEqual(flat(menu_file.read_menu_sheet(data)), {"Lanches": [("X-Burguer", "18.50"), ("X-Salada", "20.00")]})
 
+    def test_descricao_e_subcategoria_viram_campos_do_produto(self):
+        data = csv_bytes(
+            "Categoria;Subcategoria;Produto;Descrição;Preço\n"
+            "Pizzas;Tradicionais;Calabresa;Molho, calabresa e cebola;42,00\n"
+            "Pizzas;Doces;Chocolate;Chocolate ao leite e morango;48,00\n"
+            "Bebidas;Refrigerantes;Guaraná 2 L;;12,00\n"
+        )
+        result = menu_file.read_menu_sheet(data)
+        pizzas, bebidas = result["categories"]
+        self.assertEqual(
+            pizzas["items"][0],
+            {"name": "Calabresa", "price": "42.00", "description": "Molho, calabresa e cebola", "subcategory": "Tradicionais"},
+        )
+        self.assertEqual(pizzas["items"][1]["subcategory"], "Doces")
+        self.assertEqual(bebidas["items"][0], {"name": "Guaraná 2 L", "price": "12.00", "description": "", "subcategory": "Refrigerantes"})
+
+    def test_subsecao_igual_a_categoria_e_descartada(self):
+        data = csv_bytes("Categoria;Subseção;Prato;Preço\nPizzas;Pizzas;Calabresa;42,00\n")
+        item = menu_file.read_menu_sheet(data)["categories"][0]["items"][0]
+        self.assertEqual(item["subcategory"], "")
+
+    def test_descricao_repete_em_cada_tamanho(self):
+        data = csv_bytes("Sabor;Descrição;Broto;Grande\nCalabresa;Com cebola;25,00;45,00\nMussarela;Com orégano;22,00;40,00\n")
+        items = menu_file.read_menu_sheet(data)["categories"][0]["items"]
+        self.assertEqual([i["name"] for i in items][:2], ["Calabresa (Broto)", "Calabresa (Grande)"])
+        self.assertEqual({i["description"] for i in items[:2]}, {"Com cebola"})
+
+    def test_prato_com_descricao_e_sem_preco_nao_vira_titulo_de_grupo(self):
+        data = csv_bytes("Prato;Descrição;Preço\nFeijoada;Aos sábados;\nPastel;;8,00\n")
+        items = menu_file.read_menu_sheet(data)["categories"][0]["items"]
+        self.assertEqual([i["name"] for i in items], ["Feijoada", "Pastel"])
+        self.assertEqual(items[0]["price"], "")
+        self.assertEqual(items[0]["description"], "Aos sábados")
+
+    def test_codigo_descricao_preco_nao_duplica_a_descricao(self):
+        data = csv_bytes("Código;Descrição;Preço Venda\n001;Pastel de carne;8,00\n")
+        item = menu_file.read_menu_sheet(data)["categories"][0]["items"][0]
+        self.assertEqual(item["name"], "Pastel de carne")
+        self.assertEqual(item["description"], "")
+
     def test_arquivo_sem_pratos(self):
         result = menu_file.read_menu_sheet(csv_bytes("Prato;Preço\n"))
         self.assertFalse(result["readable"])

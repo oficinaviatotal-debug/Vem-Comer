@@ -32,6 +32,10 @@ export type DraftItem = {
   custom: boolean;
   /** "" until a price is given; otherwise "18.50". */
   price: string;
+  /** Text the menu itself had under the dish name (photo or spreadsheet); never made up. Missing for ready-made dishes. */
+  description?: string;
+  /** Heading inside the category, like "Tradicionais" inside "Pizzas". Missing when the menu has none. */
+  subcategory?: string;
 };
 
 export type DraftCategory = { name: string; items: DraftItem[] };
@@ -47,7 +51,10 @@ export type Source = "template" | "photo" | "speech";
 /** What the server read from the photos of a menu (already cleaned by menuPhotoLogic). Price is "18.50" or "". */
 export type ParsedMenu = {
   readable: boolean;
-  categories: Array<{ name: string; items: Array<{ name: string; price: string }> }>;
+  categories: Array<{
+    name: string;
+    items: Array<{ name: string; price: string; description?: string; subcategory?: string }>;
+  }>;
   notes: string;
 };
 
@@ -96,7 +103,10 @@ export function startFromParsed(parsed: ParsedMenu): FlowState {
     for (const item of category.items) {
       const name = cleanItemName(item.name);
       if (!name || items.some((other) => key(other.name) === key(name))) continue;
-      items.push({ name, selected: true, custom: true, price: normalizePrice(item.price) ?? "" });
+      const draft: DraftItem = { name, selected: true, custom: true, price: normalizePrice(item.price) ?? "" };
+      if (item.description) draft.description = item.description;
+      if (item.subcategory) draft.subcategory = item.subcategory;
+      items.push(draft);
     }
     const title = cleanItemName(category.name);
     if (title && items.length > 0) categories.push({ name: title, items });
@@ -409,7 +419,10 @@ export function renameItem(state: FlowState, categoryIndex: number, itemIndex: n
 /* --------------------------------------------------------------- saving */
 
 export type ImportPayload = {
-  categories: Array<{ name: string; items: Array<{ name: string; price: string }> }>;
+  categories: Array<{
+    name: string;
+    items: Array<{ name: string; price: string; description?: string; subcategory?: string }>;
+  }>;
 };
 
 /** What the server expects. Only selected dishes with a price; empty categories are left out. */
@@ -420,7 +433,12 @@ export function importPayload(state: FlowState): ImportPayload {
         name: category.name,
         items: category.items
           .filter((item) => item.selected && item.price)
-          .map((item) => ({ name: item.name, price: item.price })),
+          .map((item) => ({
+            name: item.name,
+            price: item.price,
+            ...(item.description ? { description: item.description } : {}),
+            ...(item.subcategory ? { subcategory: item.subcategory } : {}),
+          })),
       }))
       .filter((category) => category.items.length > 0),
   };

@@ -32,6 +32,8 @@ export type Product = {
   menu_id: string | null;
   name: string;
   description?: string | null;
+  /** Heading inside the category ("Tradicionais" in "Pizzas"); empty or missing when there is none. */
+  subcategory?: string | null;
   price: number | string;
   /** Paths like "/media/<company>/<key>.webp"; null when the dish has no photo. Use mediaUrl() to show them. */
   image_url?: string | null;

@@ -64,91 +64,100 @@ export default function MenuView({ groups, cart, query, search, onAdd, onLess, o
       {groups.map((group) => (
         <section className="cust-group" id={`cat-${group.key}`} key={group.key}>
           <h2>{group.title}</h2>
-          <ul className="cust-items">
-            {group.items.map((product) => {
-              const quantity = quantityOf(cart, product.id);
-              const photo = mediaUrl(product.thumb_url);
-              const options = hasOptions(product);
-              const unavailable = options && isUnavailable(product);
-              const soldOut = isSoldOut(product);
-              const priceFrom = options && hasPriceVariation(product);
-              return (
-                <li
-                  className={[photo ? "cust-item has-photo" : "cust-item", soldOut ? "is-sold-out" : ""].filter(Boolean).join(" ")}
-                  key={product.id}
-                >
-                  <div className="cust-item-main">
-                    <div className="cust-item-text">
-                      <h3 className="cust-item-name">{product.name}</h3>
-                      {product.description && <p className="cust-item-desc">{product.description}</p>}
-                    </div>
+          {group.sections.map((section) => (
+            <div className="cust-section" key={section.title || "_"}>
+              {section.title && (
+                <p className="cust-subgroup" role="heading" aria-level={3}>
+                  {section.title}
+                </p>
+              )}
+              <ul className="cust-items">
+                {section.items.map((product) => {
+                  const quantity = quantityOf(cart, product.id);
+                  const photo = mediaUrl(product.thumb_url);
+                  const options = hasOptions(product);
+                  const unavailable = options && isUnavailable(product);
+                  const soldOut = isSoldOut(product);
+                  const priceFrom = options && hasPriceVariation(product);
+                  return (
+                    <li
+                      className={[photo ? "cust-item has-photo" : "cust-item", soldOut ? "is-sold-out" : ""].filter(Boolean).join(" ")}
+                      key={product.id}
+                    >
+                      <div className="cust-item-main">
+                        <div className="cust-item-text">
+                          <h3 className="cust-item-name">{product.name}</h3>
+                          {product.description && <p className="cust-item-desc">{product.description}</p>}
+                        </div>
 
-                    {photo && (
-                      <img
-                        className="cust-item-photo"
-                        src={photo}
-                        alt=""
-                        width={96}
-                        height={96}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    )}
-                  </div>
+                        {photo && (
+                          <img
+                            className="cust-item-photo"
+                            src={photo}
+                            alt=""
+                            width={96}
+                            height={96}
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        )}
+                      </div>
 
-                  <div className="cust-item-foot">
-                    {options && priceFrom ? (
-                      <span className="cust-from">
-                        <small>a partir de</small>
-                        <span className="money">{formatMoney(minPriceCents(product) / 100)}</span>
-                      </span>
-                    ) : (
-                      <span className="money">{formatMoney(product.price)}</span>
-                    )}
-                    <div className="cust-qty" id={product.id === firstId ? "cust-first-add" : undefined}>
-                      {closed ? (
-                        <span className="chip chip-busy">Sem pedidos agora</span>
-                      ) : soldOut ? (
-                        <span className="chip chip-busy">Esgotado</span>
-                      ) : options ? (
-                        unavailable ? (
-                          <span className="chip chip-busy">Indisponível agora</span>
+                      <div className="cust-item-foot">
+                        {options && priceFrom ? (
+                          <span className="cust-from">
+                            <small>a partir de</small>
+                            <span className="money">{formatMoney(minPriceCents(product) / 100)}</span>
+                          </span>
                         ) : (
-                          <>
-                            {quantity > 0 && <span className="cust-inorder">{quantity} no pedido</span>}
+                          <span className="money">{formatMoney(product.price)}</span>
+                        )}
+                        <div className="cust-qty" id={product.id === firstId ? "cust-first-add" : undefined}>
+                          {closed ? (
+                            <span className="chip chip-busy">Sem pedidos agora</span>
+                          ) : soldOut ? (
+                            <span className="chip chip-busy">Esgotado</span>
+                          ) : options ? (
+                            unavailable ? (
+                              <span className="chip chip-busy">Indisponível agora</span>
+                            ) : (
+                              <>
+                                {quantity > 0 && <span className="cust-inorder">{quantity} no pedido</span>}
+                                <button
+                                  type="button"
+                                  className="btn btn-add btn-sm"
+                                  onClick={() => onChoose(product)}
+                                  aria-label={`Escolher opções de ${product.name}`}
+                                >
+                                  Escolher
+                                </button>
+                              </>
+                            )
+                          ) : quantity === 0 ? (
                             <button
                               type="button"
                               className="btn btn-add btn-sm"
-                              onClick={() => onChoose(product)}
-                              aria-label={`Escolher opções de ${product.name}`}
+                              onClick={() => onAdd(product)}
+                              aria-label={`Adicionar ${product.name}`}
                             >
-                              Escolher
+                              Adicionar
                             </button>
-                          </>
-                        )
-                      ) : quantity === 0 ? (
-                        <button
-                          type="button"
-                          className="btn btn-add btn-sm"
-                          onClick={() => onAdd(product)}
-                          aria-label={`Adicionar ${product.name}`}
-                        >
-                          Adicionar
-                        </button>
-                      ) : (
-                        <QuantityStepper
-                          label={product.name}
-                          quantity={quantity}
-                          onMore={() => onAdd(product)}
-                          onLess={() => onLess(product.id)}
-                        />
-                      )}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                          ) : (
+                            <QuantityStepper
+                              label={product.name}
+                              quantity={quantity}
+                              onMore={() => onAdd(product)}
+                              onLess={() => onLess(product.id)}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </section>
       ))}
     </>

@@ -435,6 +435,10 @@ test("prompts and progress for the photo road", () => {
   assert.match(PHOTO_FIRST_QUESTION, /cardápio pronto/);
   assert.equal(promptFor(startPhoto()), PHOTO_QUESTION);
   assert.equal(progressText(startPhoto()), "Passo 1 de 3 · Foto do cardápio");
+  // só planilha: o título do passo não fala em foto (GD viu isso no celular, 14/10/2026)
+  assert.equal(progressText(startPhoto(), "file"), "Passo 1 de 3 · Planilha do cardápio");
+  assert.equal(progressText(startPhoto(), "both"), "Passo 1 de 3 · Foto do cardápio");
+  assert.equal(progressText(startPhoto(), "photo"), "Passo 1 de 3 · Foto do cardápio");
 
   // the same two screens when a spreadsheet or PDF can be sent too, or only a spreadsheet
   assert.equal(promptFor(initialFlow(), false, "photo"), PHOTO_FIRST_QUESTION);
@@ -462,4 +466,24 @@ test("prompts and progress for the photo road", () => {
   const list = backOnePrice(review);
   assert.match(promptFor(list), /Estes são os pratos que li/);
   assert.match(progressText(list), /^Pratos · Pizzas \(1 de 2\)$/);
+});
+
+test("description and subsection read from the menu travel to the server, and only when there are any", () => {
+  const state = startFromParsed({
+    readable: true,
+    notes: "",
+    categories: [
+      {
+        name: "Pizzas",
+        items: [
+          { name: "Calabresa", price: "42.00", description: "Molho e cebola", subcategory: "Tradicionais" },
+          { name: "Mussarela", price: "40.00" },
+        ],
+      },
+    ],
+  });
+  assert.equal(state.step, "review");
+  const [first, second] = importPayload(state).categories[0].items;
+  assert.deepEqual(first, { name: "Calabresa", price: "42.00", description: "Molho e cebola", subcategory: "Tradicionais" });
+  assert.deepEqual(second, { name: "Mussarela", price: "40.00" });
 });

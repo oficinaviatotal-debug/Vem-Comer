@@ -261,6 +261,7 @@ _TRAILING_PRICE = re.compile(
 _NAME_HEADERS = ("nome", "prato", "produto", "item", "sabor", "titulo", "artigo")
 _CATEGORY_HEADERS = ("categoria", "grupo", "secao", "tipo", "classe", "setor", "departamento", "linha", "familia")
 _DESCRIPTION_HEADERS = ("descricao", "ingrediente", "detalhe", "observa", "composicao", "obs")
+_SUBCATEGORY_HEADERS = ("subcategoria", "subsecao", "subgrupo", "sub categoria", "sub secao", "sub grupo")
 _PRICE_HEADERS = ("preco", "valor", "vlr", "pvp")
 _NOT_PRICE_HEADERS = ("custo", "compra", "cmv", "estoque", "quant", "qtd", "desconto", "codigo", "cod ", "margem", "lucro")
 
@@ -278,6 +279,8 @@ def _role_of_header(cell: str) -> str | None:
         return None
     if key in ("r$", "$") or any(word in key for word in _PRICE_HEADERS):
         return "price"
+    if any(key == word or key.startswith(word + " ") or key.startswith(word + "s") for word in _SUBCATEGORY_HEADERS):
+        return "subcategory"
     if any(word in key for word in _DESCRIPTION_HEADERS):
         return "description"
     if any(key == word or key.startswith(word + " ") or key.startswith(word + "s") for word in _CATEGORY_HEADERS):
@@ -321,10 +324,14 @@ def _find_header(rows: list[list[str]]) -> tuple[int, dict] | None:
         columns: dict = {"name": roles["name"]}
         if "category" in roles:
             columns["category"] = roles["category"]
+        if "subcategory" in roles:
+            columns["subcategory"] = roles["subcategory"]
+        if "description" in roles and roles["description"] != roles["name"]:
+            columns["description"] = roles["description"]  # coluna de descrição própria; se for o próprio nome, não repete
         if "price" in roles:
             columns["prices"] = [(roles["price"], None)]
             return position, columns
-        used = {roles["name"], roles.get("category", -1)}
+        used = {roles["name"], roles.get("category", -1), roles.get("subcategory", -1), roles.get("description", -1)}
         by_content = _price_columns_by_content(rows[position + 1:], used)
         if len(by_content) == 1:
             columns["prices"] = [(by_content[0], None)]
@@ -415,6 +422,8 @@ def _table_menu(rows: list[list[str]], columns: dict) -> list[dict]:
     name_col = columns["name"]
     price_cols: list[tuple[int, str | None]] = columns["prices"]
     category_col = columns.get("category")
+    subcategory_col = columns.get("subcategory")
+    description_col = columns.get("description")
     price_indexes = {column for column, _ in price_cols}
     categories: list[dict] = []
     by_key: dict[str, dict] = {}
@@ -447,6 +456,8 @@ def _table_menu(rows: list[list[str]], columns: dict) -> list[dict]:
                 current = category_named(category)
             continue
         others = [cell for index, cell in enumerate(row) if cell and index != name_col and index not in price_indexes]
+        subcategory = row[subcategory_col].strip() if subcategory_col is not None and subcategory_col < len(row) else ""
+        description = row[description_col].strip() if description_col is not None and description_col < len(row) else ""
         if not any_price_text and not others and category_col is None and next_has_price(position):
             current = category_named(name)  # "Bebidas" sozinho na linha, e a próxima já tem preço: título de grupo
             continue
@@ -459,16 +470,17 @@ def _table_menu(rows: list[list[str]], columns: dict) -> list[dict]:
         for text, label in cells:
             if looks_like_price(text):
                 item_name = f"{name} ({label})" if label and len(price_cols) > 1 else name
-                current["items"].append({"name": item_name, "price": text})
+                current["items"].append({"name": item_name, "price": text, "description": description, "subcategory": subcategory})
                 emitted = True
         if not emitted:
             trailing_name, trailing_price = (name, None)
             if not any_price_text:
                 trailing_name, trailing_price = split_trailing_price(name)
             if trailing_price is not None:
-                current["items"].append({"name": trailing_name, "price": trailing_price})
+                current["items"].append({"name": trailing_name, "price": trailing_price, "description": description, "subcategory": subcategory})
             else:
-                current["items"].append({"name": name, "price": ""})  # sem preço: o dono preenche na conferência
+                # sem preço: o dono preenche na conferência
+                current["items"].append({"name": name, "price": "", "description": description, "subcategory": subcategory})
     return categories
 
 
