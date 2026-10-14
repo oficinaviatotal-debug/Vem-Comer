@@ -7,7 +7,7 @@
  */
 
 /** Versão dos termos que esta tela mostra. Tem de ser igual à do servidor (backend/signup.py). */
-export const TERMS_VERSION = "2026-10-06";
+export const TERMS_VERSION = "2026-10-14";
 
 export const PASSWORD_MIN = 8;
 export const PASSWORD_MAX = 128;
@@ -21,7 +21,8 @@ export type SignupField =
   | "email"
   | "phone"
   | "password"
-  | "accept_terms";
+  | "accept_terms"
+  | "accept_adult";
 
 /** Ordem em que os campos aparecem na tela: o primeiro com erro recebe o foco. */
 export const FIELD_ORDER: SignupField[] = [
@@ -31,6 +32,7 @@ export const FIELD_ORDER: SignupField[] = [
   "phone",
   "password",
   "accept_terms",
+  "accept_adult",
 ];
 
 export type SignupForm = {
@@ -40,6 +42,10 @@ export type SignupForm = {
   phone: string;
   password: string;
   acceptTerms: boolean;
+  /** "Tenho 18 anos ou mais": obrigatório (LGPD art. 14, ECA Digital). */
+  acceptAdult: boolean;
+  /** Novidades por e-mail: opcional e nunca marcado de antemão (LGPD art. 8 §4º). */
+  acceptNews: boolean;
 };
 
 export type FieldErrors = Partial<Record<SignupField, string>>;
@@ -51,6 +57,8 @@ export const EMPTY_FORM: SignupForm = {
   phone: "",
   password: "",
   acceptTerms: false,
+  acceptAdult: false,
+  acceptNews: false,
 };
 
 /** Espaços das pontas e repetidos fora (teclado de celular põe espaço no fim e maiúscula no começo). */
@@ -137,6 +145,10 @@ export function validateSignup(form: SignupForm): FieldErrors {
     errors.accept_terms = "Para continuar, aceite os termos de uso.";
   }
 
+  if (!form.acceptAdult) {
+    errors.accept_adult = "Para continuar, confirme que você tem 18 anos ou mais.";
+  }
+
   return errors;
 }
 
@@ -153,6 +165,8 @@ export type SignupBody = {
   phone: string;
   password: string;
   accept_terms: boolean;
+  accept_adult: boolean;
+  accept_news: boolean;
   terms_version: string;
   website: string;
 };
@@ -166,6 +180,8 @@ export function toRequestBody(form: SignupForm, honeypot = ""): SignupBody {
     phone: form.phone.trim() ? form.phone.trim() : "",
     password: form.password,
     accept_terms: form.acceptTerms,
+    accept_adult: form.acceptAdult,
+    accept_news: form.acceptNews,
     terms_version: TERMS_VERSION,
     website: honeypot,
   };

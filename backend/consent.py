@@ -18,6 +18,8 @@ import outreach
 KINDS = ("dono", "cliente", "candidato", "empresa", "contato")
 PURPOSES = ("termos", "privacidade", "maior_de_18", "ia_foto_exterior", "alertas_email", "divulgacao_email")
 CHANNELS = ("site", "painel", "email", "api", "presencial")
+# O que todo dono aceita ao se cadastrar (as novidades por e-mail são opcionais e entram só se ele marcar).
+SIGNUP_PURPOSES = ("termos", "privacidade", "maior_de_18")
 # Finalidades que são "receber e-mail": o descadastro retira todas de uma vez.
 EMAIL_PURPOSES = ("alertas_email", "divulgacao_email")
 

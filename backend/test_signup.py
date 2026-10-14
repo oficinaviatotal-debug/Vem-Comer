@@ -9,6 +9,7 @@ from werkzeug.security import check_password_hash
 os.environ.setdefault("SECRET_KEY", "test-secret-not-for-production")
 
 import app as backend_app  # noqa: E402
+import outreach  # noqa: E402
 import signup  # noqa: E402
 
 COMPANY_ID = "11111111-1111-4111-8111-111111111111"
@@ -24,6 +25,7 @@ def good(**overrides):
         "phone": "(84) 99999-1234",
         "password": "minha-senha-forte",
         "accept_terms": True,
+        "accept_adult": True,
         "terms_version": signup.TERMS_VERSION,
     }
     data.update(overrides)
@@ -128,6 +130,23 @@ class ValidateTests(unittest.TestCase):
         self.fails("password", password="SENHA123")
         self.fails("password", password="aaaaaaaaaaaa")
         self.fails("password", password="joao@gmail.com")
+
+    def test_the_person_must_say_they_are_18_or_older(self):
+        self.fails("accept_adult", accept_adult=False)
+        self.fails("accept_adult", accept_adult=None)
+        self.fails("accept_adult", accept_adult="true")
+        self.fails("accept_adult", accept_adult=1)
+        form = good()
+        del form["accept_adult"]
+        with self.assertRaises(signup.SignupError) as caught:
+            signup.validate(form)
+        self.assertEqual(caught.exception.field, "accept_adult")
+
+    def test_news_by_email_is_optional_and_off_unless_ticked(self):
+        self.assertIs(signup.validate(good())["accept_news"], False)
+        self.assertIs(signup.validate(good(accept_news=False))["accept_news"], False)
+        self.assertIs(signup.validate(good(accept_news="true"))["accept_news"], False)  # so um "true" de verdade vale
+        self.assertIs(signup.validate(good(accept_news=True))["accept_news"], True)
 
     def test_terms_must_be_accepted_with_the_current_version(self):
         self.fails("accept_terms", accept_terms=False)
@@ -255,6 +274,8 @@ def happy_handler(taken_slugs=(), today=0, email_taken=False):
             return {"id": USER_ID, "name": params[1], "email": params[2], "role": "OWNER"}
         if "INSERT INTO subscriptions" in sql:
             return None
+        if "INSERT INTO consent_records" in sql:
+            return None
         raise AssertionError("unexpected SQL: " + sql)
 
     return handler
@@ -330,6 +351,49 @@ class SignupRouteTests(unittest.TestCase):
         (args,) = connection.ran("INSERT INTO subscriptions")
         self.assertEqual(args, (COMPANY_ID, "vemcomer_mensal"))
         self.assertEqual(connection.committed, 1)
+
+    def test_the_acceptances_are_recorded_in_the_same_transaction(self):
+        """LGPD art. 8 par. 2: quem trata o dado prova o consentimento. Termos, privacidade e maior de 18 sempre."""
+        response, connection = self.post()
+        self.assertEqual(response.status_code, 201)
+        rows = connection.ran("INSERT INTO consent_records")
+        self.assertEqual([r[2] for r in rows], ["termos", "privacidade", "maior_de_18"])
+        for row in rows:
+            self.assertEqual(row[1], "dono")
+            self.assertIs(row[3], True)
+            self.assertEqual(row[4], signup.TERMS_VERSION)
+            self.assertEqual(row[6], "site")
+        # a pessoa aparece so pela impressao digital do e-mail; o IP so misturado com a chave
+        for row in rows:
+            self.assertEqual(row[0], outreach.email_hash("joao@gmail.com"))
+            self.assertNotIn("joao", str(row))
+            self.assertNotIn("127.0.0.1", str(row))
+        self.assertEqual(connection.committed, 1)
+
+    def test_news_by_email_is_recorded_only_when_the_person_ticked_it(self):
+        _, without = self.post()
+        self.assertNotIn("divulgacao_email", [r[2] for r in without.ran("INSERT INTO consent_records")])
+        _, with_news = self.post(body=good(accept_news=True))
+        purposes = [r[2] for r in with_news.ran("INSERT INTO consent_records")]
+        self.assertEqual(purposes, ["termos", "privacidade", "maior_de_18", "divulgacao_email"])
+
+    def test_without_the_adult_declaration_nothing_is_created(self):
+        with patch.object(backend_app, "get_db_connection") as db:
+            response = self.client.post("/api/signup", json=good(accept_adult=False))
+            db.assert_not_called()
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json()["field"], "accept_adult")
+
+    def test_if_the_signup_fails_no_acceptance_is_kept(self):
+        def handler(sql, params):
+            if "INSERT INTO consent_records" in sql:
+                raise RuntimeError("banco caiu")
+            return happy_handler()(sql, params)
+
+        response, connection = self.post(handler=handler)
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(connection.committed, 0)
+        self.assertGreaterEqual(connection.rolled_back, 1)
 
     def test_the_password_never_comes_back(self):
         response, _ = self.post()

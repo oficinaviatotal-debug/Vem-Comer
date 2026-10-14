@@ -18,7 +18,7 @@ Abrir e fechar mexem em uma linha do `.env` (`SIGNUP_OPEN=1`) e reiniciam só o 
 
 | Endereço | O que abre |
 | --- | --- |
-| `https://SEU-ENDERECO/?cadastro=1` | Formulário: nome do restaurante, nome do dono, e-mail, WhatsApp (opcional), senha, aceite dos termos |
+| `https://SEU-ENDERECO/?cadastro=1` | Formulário: nome do restaurante, nome do dono, e-mail, WhatsApp (opcional), senha, aceite dos termos e da privacidade, declaração de 18 anos ou mais e, se a pessoa quiser, novidades por e-mail (opcional, desmarcado) |
 | `https://SEU-ENDERECO/?entrar=1` | Entrar com e-mail e senha, sem saber o link do restaurante |
 | `https://SEU-ENDERECO/?termos=1` | Termos de uso e privacidade |
 | `https://SEU-ENDERECO/` | Tela inicial, com os botões "Entrar" e (se o cadastro estiver aberto) "Cadastrar meu restaurante" |
@@ -53,6 +53,11 @@ Abrir e fechar mexem em uma linha do `.env` (`SIGNUP_OPEN=1`) e reiniciam só o 
    servidor continua conferindo antes de gravar.
 7. **Termos.** O formulário manda a versão dos termos que o dono leu. Se for diferente da versão do servidor,
    o cadastro é recusado e pede para recarregar. Ficam gravados `terms_version` e `terms_accepted_at`.
+   Além disso, a pessoa precisa declarar que tem 18 anos ou mais (`accept_adult`, LGPD art. 14).
+   A prova de cada aceite vai para o registro de aceites (`consent_records`, migração 018) **na mesma
+   transação**: termos, privacidade, maior de 18 e, só se a pessoa marcar `accept_news`, novidades por
+   e-mail. Se algo falha, nenhum aceite fica gravado. O registro guarda a impressão digital do e-mail e o IP
+   misturado com a chave do servidor, nunca o e-mail ou o IP escritos.
 8. **Tudo em uma transação.** Restaurante e dono nascem juntos ou não nascem.
 9. **A senha** é guardada com hash (a mesma função do login) e nunca volta na resposta.
 10. A resposta (`201`) já traz o token de sessão, como o login, com `Cache-Control: no-store`.
@@ -101,7 +106,8 @@ sozinha):
   coluna `created_at` na tabela de restaurantes do servidor.)
 - `deploy/vps/test_abrir_cadastro.py`: o script que abre e fecha, com um "docker" de mentira.
 - `tests/signup/signupLogic.test.mjs` e `tests/ui/links.test.mjs`: regras da tela e endereços; o primeiro
-  confere que a tela e o servidor concordam na versão dos termos, nos DDDs e nos nomes dos campos.
+  confere que a tela e o servidor concordam na versão dos termos, nos DDDs e nos nomes dos campos (inclusive
+  `accept_adult` e `accept_news`).
 - Navegador de verdade (Chromium, tela de celular de 360 px, regras de segurança de produção e servidor de
   mentira): tela inicial com cadastro aberto e fechado, formulário vazio e com erros (foco no primeiro campo),
   telefone arrumado ao digitar, mostrar/esconder senha, armadilha de robô fora da tela, cadastro com sucesso

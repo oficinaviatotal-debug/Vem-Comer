@@ -18,6 +18,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from db import query_db, get_db_connection
 import costing
 import compliance_api
+import consent
 import courier
 import delivery
 from costs_view import (  # noqa: F401 (cost_since e build_cost_view tambem sao usados pelos testes)
@@ -426,6 +427,19 @@ def signup_restaurant():
 
         # Assinatura (migracao 012): nasce esperando o primeiro pagamento. Nada bloqueia ate o GD ligar BILLING_ENFORCED.
         cur.execute(subscription.SQL_START, (str(company['id']), subscription.PLAN_CODE))
+
+        # Prova de aceite (migracao 018), na mesma transacao do cadastro: ou grava tudo ou nao grava nada.
+        for purpose in consent.SIGNUP_PURPOSES:
+            consent.record(
+                cur, clean['email'], kind='dono', purpose=purpose, granted=True,
+                version=signup.TERMS_VERSION, channel='site', ip=request.remote_addr, secret=SECRET_KEY
+            )
+
+        if clean['accept_news']:
+            consent.record(
+                cur, clean['email'], kind='dono', purpose='divulgacao_email', granted=True,
+                version=signup.TERMS_VERSION, channel='site', ip=request.remote_addr, secret=SECRET_KEY
+            )
 
         conn.commit()
 

@@ -44,6 +44,11 @@ export default function TermsPage() {
           quiser, o seu WhatsApp. Guardamos também o dia em que você aceitou estes termos e a versão que você
           leu. A sua senha é guardada de forma protegida: ninguém consegue ler a senha, nem nós.
         </p>
+        <p>
+          O Vem Comer é só para maiores de 18 anos, e por isso pedimos que você confirme a sua idade. O seu
+          aceite (termos, privacidade e idade) fica guardado como prova, com a data e a versão do texto. Nesse
+          registro não guardamos o seu e-mail escrito, só um código calculado a partir dele.
+        </p>
 
         <h2>Cardápio, fotos e pedidos</h2>
         <p>
@@ -67,7 +72,9 @@ export default function TermsPage() {
         <h2>Mensagens</h2>
         <p>
           Só enviaremos e-mail ou WhatsApp para você, ou para clientes do seu restaurante, com permissão de
-          quem recebe, e sempre com um jeito de parar de receber.
+          quem recebe, e sempre com um jeito de parar de receber. No cadastro há uma caixa opcional para
+          receber novidades do Vem Comer por e-mail: ela vem desmarcada e você pode parar de receber quando
+          quiser.
         </p>
 
         <h2>Divulgação do Vem Comer</h2>
