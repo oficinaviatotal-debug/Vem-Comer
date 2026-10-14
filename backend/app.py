@@ -5241,7 +5241,7 @@ def record_subscription_payment(company_id):
 
         today = subscription.today_br()
         start, new_until, anchor = subscription.next_period(sub, today)
-        amount = cents if cents is not None else int(sub['price_cents'])
+        amount = cents if cents is not None else subscription.amount_due_cents(sub)
 
         cur.execute(
             subscription.SQL_INSERT_PAYMENT,

@@ -28,6 +28,10 @@ export type PlanView = {
   days_left: number | null;
   warning: "soon" | "today" | null;
   price_cents: number;
+  /** What the next payment is worth (the first one has the entry discount). Older servers do not send it. */
+  amount_due_cents?: number;
+  /** Entry discount that still applies to the first payment (50 = half price); 0 or absent = none. */
+  intro_discount_percent?: number;
   message: string;
 };
 
@@ -154,12 +158,26 @@ export function whatsappUrl(phone: string | null | undefined, text: string): str
   return number ? `https://wa.me/${number}?text=${encodeURIComponent(text)}` : null;
 }
 
+/** What the next payment is worth. The first one has the entry discount (GD, 14/10/2026: 50% in the first 30 days). */
+export function amountDueCents(plan: PlanView): number {
+  return plan.amount_due_cents ?? plan.price_cents;
+}
+
+/** "R$ 95,00 no 1º mês (50% de desconto)" while the discount applies, otherwise just the monthly price. */
+export function planAmountText(plan: PlanView): string {
+  const discount = plan.intro_discount_percent ?? 0;
+  return discount > 0
+    ? `${reais(amountDueCents(plan))} no 1º mês (${discount}% de desconto)`
+    : reais(plan.price_cents);
+}
+
 /** What the owner sends to ask how to pay, or to say he paid. */
 export function ownerMessage(kind: "pay" | "paid", restaurant: string, plan: PlanView): string {
   const name = restaurant.trim() || "meu restaurante";
+  const value = reais(amountDueCents(plan));
   return kind === "paid"
-    ? `Oi! Já paguei o plano do Vem Comer (${reais(plan.price_cents)}) do restaurante ${name}. Segue o comprovante.`
-    : `Oi! Quero pagar o plano do Vem Comer (${reais(plan.price_cents)}) do restaurante ${name}. Como faço?`;
+    ? `Oi! Já paguei o plano do Vem Comer (${value}) do restaurante ${name}. Segue o comprovante.`
+    : `Oi! Quero pagar o plano do Vem Comer (${value}) do restaurante ${name}. Como faço?`;
 }
 
 /** The message GD sends to a restaurant that is late or about to be: ready, friendly, with what to do. */
@@ -167,7 +185,9 @@ export function chargeMessage(ownerName: string | null, restaurant: string, plan
   const hello = ownerName && ownerName.trim() ? `Oi, ${ownerName.trim().split(/\s+/)[0]}!` : "Oi!";
   const price = reais(plan.price_cents);
   if (plan.state === "awaiting_payment") {
-    return `${hello} Falta o pagamento do primeiro mês do Vem Comer (${price}) do restaurante ${restaurant} para começar a vender. Posso te mandar a chave Pix?`;
+    const discount = plan.intro_discount_percent ?? 0;
+    const first = discount > 0 ? `${reais(amountDueCents(plan))}, com ${discount}% de desconto` : reais(amountDueCents(plan));
+    return `${hello} Falta o pagamento do primeiro mês do Vem Comer (${first}) do restaurante ${restaurant} para começar a vender. Posso te mandar a chave Pix?`;
   }
   if (plan.state === "past_due") {
     return `${hello} O plano do Vem Comer do restaurante ${restaurant} venceu em ${shortDate(plan.due_date)} (${price}). Quando pagar, o restaurante volta na hora e nada foi apagado. Posso te mandar a chave Pix?`;
@@ -205,7 +225,7 @@ export function attentionSummary(count: number): string {
 export type PaymentForm = { amount: string; method: string; reference: string };
 
 export function blankPaymentForm(plan: PlanView): PaymentForm {
-  return { amount: (plan.price_cents / 100).toFixed(2).replace(".", ","), method: "pix", reference: "" };
+  return { amount: (amountDueCents(plan) / 100).toFixed(2).replace(".", ","), method: "pix", reference: "" };
 }
 
 /** The error in words, or null when the form can be sent (the server checks again). */

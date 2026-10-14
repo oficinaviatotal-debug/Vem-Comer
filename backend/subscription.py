@@ -4,6 +4,8 @@ Regras (fala do GD em 07/10/2026, requisito 66):
 - R$ 190 por restaurante por mês; o preço fica COPIADO na assinatura de cada um ("quem entrou mais barato mantém");
 - paga no primeiro dia, sem semana grátis; o vencimento é todo mês no dia em que pagou pela primeira vez
   (quem entrou dia 29, 30 ou 31 vence no último dia do mês mais curto);
+- desconto de entrada (GD, 14/10/2026): os primeiros 30 dias têm 50% de desconto, ou seja, o PRIMEIRO pagamento vale
+  metade do preço (R$ 95,00 de R$ 190,00); do mês seguinte em diante vale o preço cheio da assinatura;
 - venceu no dia 5, no dia 6 não funciona. Aviso 3 dias antes e no dia;
 - bloqueado = o cliente não consegue fazer pedido novo e o painel só mostra a tela de pagar. Pedido em andamento
   termina, nada é apagado e volta na hora em que paga.
@@ -26,6 +28,7 @@ from datetime import date, datetime, timedelta, timezone
 
 PLAN_CODE = "vemcomer_mensal"
 DEFAULT_PRICE_CENTS = 19000
+INTRO_DISCOUNT_PERCENT = 50  # GD, 14/10/2026: primeiro pagamento (primeiros 30 dias) com 50% de desconto
 WARN_DAYS = 3
 MAX_PAYMENT_CENTS = 1_000_000  # R$ 10.000: acima disso é erro de digitação
 PAYMENT_METHODS = ("pix", "dinheiro", "transferencia", "outro")
@@ -100,6 +103,22 @@ def _as_date(value) -> date | None:
 
 # ------------------------------------------------------------------------------------- a situação de hoje
 
+def first_payment_cents(price_cents: int) -> int:
+    """O primeiro pagamento do restaurante novo: o preço menos o desconto de entrada (arredonda para cima no centavo)."""
+    return (int(price_cents) * (100 - INTRO_DISCOUNT_PERCENT) + 99) // 100
+
+
+def is_first_payment(sub: dict | None) -> bool:
+    """Ainda não houve nenhum pagamento (nem registro de período): vale o desconto de entrada."""
+    return not sub or _as_date(sub.get("paid_until")) is None
+
+
+def amount_due_cents(sub: dict | None) -> int:
+    """Quanto vale o próximo pagamento: o primeiro tem o desconto de entrada; os demais, o preço da assinatura."""
+    price = int((sub or {}).get("price_cents") or DEFAULT_PRICE_CENTS)
+    return first_payment_cents(price) if is_first_payment(sub) else price
+
+
 def evaluate(sub: dict | None, today: date) -> dict:
     """O que se sabe da assinatura hoje, pronto para o painel (datas em texto ISO).
 
@@ -108,12 +127,16 @@ def evaluate(sub: dict | None, today: date) -> dict:
     """
     if not sub:
         return {"state": "none", "blocks": False, "due_date": None, "days_left": None, "warning": None,
-                "price_cents": DEFAULT_PRICE_CENTS}
+                "price_cents": DEFAULT_PRICE_CENTS, "amount_due_cents": DEFAULT_PRICE_CENTS,
+                "intro_discount_percent": 0}
 
     price = int(sub.get("price_cents") or DEFAULT_PRICE_CENTS)
     paid_until = _as_date(sub.get("paid_until"))
+    first = is_first_payment(sub)
     base = {"price_cents": price, "due_date": paid_until.isoformat() if paid_until else None,
-            "days_left": None, "warning": None}
+            "days_left": None, "warning": None,
+            "amount_due_cents": amount_due_cents(sub),
+            "intro_discount_percent": INTRO_DISCOUNT_PERCENT if first else 0}
 
     if sub.get("canceled_at"):
         return {**base, "state": "canceled", "blocks": True}
@@ -166,7 +189,12 @@ def owner_message(view: dict) -> str:
     price = reais(view["price_cents"])
     state = view["state"]
     if state == "awaiting_payment":
-        return f"Falta o pagamento do primeiro mês ({price}) para começar a vender."
+        due = reais(view.get("amount_due_cents", view["price_cents"]))
+        discount = view.get("intro_discount_percent") or 0
+        if discount:
+            return (f"Falta o pagamento do primeiro mês ({due}, com {discount}% de desconto de entrada) para começar a "
+                    f"vender. A partir do mês seguinte o plano é {price}.")
+        return f"Falta o pagamento do primeiro mês ({due}) para começar a vender."
     if state == "past_due":
         return (f"Seu plano venceu em {br_date(view['due_date'])}. Pague {price} e o restaurante volta na hora. "
                 "Nada foi apagado.")

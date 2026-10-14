@@ -336,10 +336,11 @@ class RecordPaymentTests(Base):
         self.assertEqual(reply.status_code, 201, reply.get_data(as_text=True))
         body = reply.get_json()
         self.assertEqual((body["period_start"], body["period_end"], body["amount_cents"]),
-                         ("2026-11-06", "2026-12-06", 19000))
+                         ("2026-11-06", "2026-12-06", 9500))  # 50% de desconto de entrada (GD, 14/10/2026)
         self.assertEqual(body["subscription"]["state"], "active")
         self.assertIs(body["subscription"]["blocked"], False)
-        self.assertEqual(self.inserted(), (COMPANY_ID, 19000, date(2026, 11, 6), date(2026, 12, 6), "pix", "Pix do João", ADMIN_USER))
+        self.assertEqual(body["subscription"]["amount_due_cents"], 19000)  # o mês seguinte já é o preço cheio
+        self.assertEqual(self.inserted(), (COMPANY_ID, 9500, date(2026, 11, 6), date(2026, 12, 6), "pix", "Pix do João", ADMIN_USER))
         (apply_sql,) = self.cur.sql("UPDATE subscriptions")
         self.assertEqual(apply_sql[1], (date(2026, 12, 6), 6, COMPANY_ID))
         self.conn.commit.assert_called_once()
@@ -360,10 +361,17 @@ class RecordPaymentTests(Base):
         body = self.post().get_json()
         self.assertEqual((body["period_start"], body["period_end"]), ("2026-11-08", "2026-12-08"))
 
-    def test_the_amount_defaults_to_the_price_the_restaurant_signed_with(self):
+    def test_the_first_payment_defaults_to_half_of_the_price_the_restaurant_signed_with(self):
         self.cur.sub = sub(price=14900)
-        self.assertEqual(self.post().get_json()["amount_cents"], 14900)
-        self.assertEqual(self.inserted()[1], 14900)
+        self.assertEqual(self.post().get_json()["amount_cents"], 7450)
+        self.assertEqual(self.inserted()[1], 7450)
+
+    def test_a_renewal_or_a_late_payment_defaults_to_the_full_signed_price(self):
+        for current in (sub(date(2026, 11, 8), 8, price=14900), sub(date(2026, 11, 5), 5, price=14900)):
+            self.setUp()
+            self.cur.sub = current
+            self.assertEqual(self.post().get_json()["amount_cents"], 14900)
+            self.assertEqual(self.inserted()[1], 14900)
 
     def test_an_amount_that_was_typed_wins(self):
         self.cur.sub = WAITING

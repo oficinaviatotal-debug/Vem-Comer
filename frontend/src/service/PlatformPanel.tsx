@@ -13,7 +13,7 @@ import {
   needsAttention,
   paymentBody,
   paymentFormProblem,
-  reais,
+  planAmountText,
   shortDate,
   stateLabel,
   whatsappUrl,
@@ -172,7 +172,7 @@ export default function PlatformPanel() {
                 </div>
                 <p className="adm-muted plan-co-meta">
                   {company.owner_name || "Sem dono cadastrado"}
-                  {plan.state !== "none" && ` · ${reais(plan.price_cents)}`}
+                  {plan.state !== "none" && ` · ${planAmountText(plan)}`}
                   {plan.due_date && ` · até ${shortDate(plan.due_date)}`}
                 </p>
 
