@@ -50,6 +50,23 @@ export default function TermsPage() {
           registro não guardamos o seu e-mail escrito, só um código calculado a partir dele.
         </p>
 
+        <h2>Quem faz o quê</h2>
+        <p>
+          O Vem Comer é uma plataforma de tecnologia que liga o restaurante aos clientes dele. Quem vende a
+          comida, define preços, prazos e entrega, e responde pelo que vende, é o restaurante. O Vem Comer não
+          vende, não entrega e não recebe o dinheiro dos pedidos.
+        </p>
+        <p>
+          O que você cadastra (cardápio, preços, fotos, promoções e dados do restaurante) é de responsabilidade
+          sua e precisa ser verdadeiro. Quando a leitura por foto sugerir pratos e preços, o que fica salvo é o
+          que você conferiu e confirmou. Se alguém avisar que algum conteúdo fere a lei ou direitos de outra
+          pessoa, vamos analisar e retirar o que for preciso, e podemos pedir explicações a você.{" "}
+          {SUPPORT_CONTACT
+            ? `Para avisar, fale com o suporte: ${SUPPORT_CONTACT}.`
+            : "Para avisar, fale com o suporte do Vem Comer, pelo mesmo canal em que você recebeu o link do cadastro."}
+        </p>
+        <p>Isto não tira nenhum direito que a lei dá a quem compra.</p>
+
         <h2>Cardápio, fotos e pedidos</h2>
         <p>
           O que você cadastra (pratos, preços, fotos e logomarca) e os pedidos dos seus clientes ficam guardados

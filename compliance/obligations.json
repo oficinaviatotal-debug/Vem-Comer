@@ -592,5 +592,42 @@
     "status": "depende_de_advogado",
     "pergunta": "O módulo do motoqueiro (código, painel, status de entrega) cria risco de vínculo entre o motoqueiro e a Vem Tecnologia? Que cláusulas proteger?",
     "a_verificar": true
+  },
+  {
+    "id": "INTERMEDIARIO-PAPEIS",
+    "area": "responsabilidade",
+    "norma": "CDC arts. 7º parágrafo único, 25 §1º, 34 e 51 I (responsabilidade solidária na cadeia e cláusula que exonera é nula); LGPD arts. 5º VI-VII e 39 (controlador e operador); STF Tema 987/533 (marketplaces respondem pelo CDC)",
+    "exige": "A plataforma só se sustenta como intermediária se o sistema deixar claro quem vende ou contrata, quem responde pelo que informa e quem decide sobre os dados, e se ela não controlar preço, entrega nem o dinheiro das partes. Cláusula sozinha não tira a responsabilidade perante o consumidor.",
+    "aplica_a": ["vem_comer", "vem_trabalhar"],
+    "controle": "Seção 'Quem faz o quê' nos termos; Pix vai direto à chave do restaurante; a leitura de foto só vira cardápio depois da conferência do dono; o restaurante é quem define preço, prazo e entrega.",
+    "status": "parcial",
+    "evidencias": ["frontend/src/signup/TermsPage.tsx::Quem faz o quê", "backend/pix.py", "backend/test_pix.py"],
+    "falta": "Mostrar na tela do cliente quem vende (nome do restaurante e, quando houver, CNPJ); declaração de veracidade ao publicar cardápio e vaga; mesma seção nos termos do Vem Trabalhar (empresa, candidato); parecer do advogado sobre os limites da cláusula perante o consumidor.",
+    "fontes": ["cdc", "lgpd", "stf-art19-2025"],
+    "verificado_em": "2026-10-14"
+  },
+  {
+    "id": "INTERMEDIARIO-PARECER",
+    "area": "responsabilidade",
+    "norma": "CDC art. 51 I e Marco Civil arts. 19 e 21, com o julgamento do STF de 26/06/2025",
+    "exige": "Escrever os termos de modo que a divisão de responsabilidade entre plataforma, empresa e pessoa valha onde a lei permite (entre empresas) e não tente valer onde ela proíbe (perante o consumidor).",
+    "aplica_a": ["vem_comer", "vem_trabalhar"],
+    "controle": "Revisão do advogado nos termos e na privacidade antes de abrir para o público.",
+    "status": "depende_de_advogado",
+    "pergunta": "Os termos dizem que o restaurante vende e responde pelo que informa e que a plataforma só fornece o sistema. Isso protege a plataforma perante o cliente final (consumidor) ou ela continua respondendo junto com o restaurante em algum caso? A cláusula vale entre a plataforma e o restaurante? No Vem Trabalhar, a empresa que anuncia a vaga e o candidato que envia o currículo têm que aceitar algo a mais?",
+    "fontes": ["cdc", "mci", "stf-art19-2025"],
+    "verificado_em": "2026-10-14"
+  },
+  {
+    "id": "MCI-DENUNCIA-CONTEUDO",
+    "area": "internet",
+    "norma": "Marco Civil arts. 19 e 21 e tese do STF de 26/06/2025 (Temas 987 e 533): retirada de conteúdo ilegal, canal de notificação e sistemas de autorregulação",
+    "exige": "Ter um canal simples para qualquer pessoa avisar que um cardápio, anúncio, vaga ou imagem fere a lei ou direitos, retirar o que for ilegal no prazo e guardar o registro do aviso e do que foi feito.",
+    "aplica_a": ["vem_comer", "vem_trabalhar"],
+    "controle": "Página pública de denúncia com protocolo, prazo de resposta, retirada do conteúdo por quem administra e registro que não se apaga.",
+    "status": "planejado",
+    "proximo_passo": "Tabela de denúncias (migração), rota pública com limite de envios, página de denúncia e rotina de prazo; por enquanto o aviso chega pelo contato de suporte dos termos.",
+    "fontes": ["mci", "stf-art19-2025"],
+    "verificado_em": "2026-10-14"
   }
 ]
