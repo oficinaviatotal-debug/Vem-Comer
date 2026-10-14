@@ -1,0 +1,100 @@
+name: Vigia legal (leitura semanal das fontes oficiais)
+
+# Toda segunda-feira (06:17 em Brasília) lê as páginas oficiais da lei, compara com a semana anterior e,
+# se algo mudou, abre um aviso no GitHub com o relatório. Com o segredo ANTHROPIC_API_KEY, a IA lê o
+# relatório e propõe o que mudar na engenharia (sempre com conferência humana).
+#
+# IMPORTANTE: este fluxo NUNCA pode terminar vermelho por causa de uma mudança na lei. O atualizador
+# automático do servidor lê as conferências do último commit do main e trava se alguma estiver vermelha.
+# Por isso o resultado vai para um aviso (issue), não para o status do fluxo.
+
+on:
+  schedule:
+    - cron: "17 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: vigia-legal
+  cancel-in-progress: false
+
+jobs:
+  vigiar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Trazer o estado da última leitura
+        run: |
+          mkdir -p .estado
+          if git ls-remote --exit-code --heads origin estado-vigia-legal >/dev/null 2>&1; then
+            git fetch --depth=1 origin estado-vigia-legal
+            git show FETCH_HEAD:watch_state.json > .estado/watch_state.json || rm -f .estado/watch_state.json
+          fi
+          exit 0
+
+      - name: Ler as fontes oficiais
+        id: vigia
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set +e
+          python3 compliance/legal_watch.py --estado .estado/watch_state.json --saida relatorio.md --ia
+          echo "codigo=$?" >> "$GITHUB_OUTPUT"
+          cat relatorio.md >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Abrir ou atualizar o aviso no GitHub
+        if: steps.vigia.outputs.codigo == '3' || steps.vigia.outputs.codigo == '2'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CODIGO: ${{ steps.vigia.outputs.codigo }}
+        run: |
+          set +e
+          data=$(date -u +%d/%m/%Y)
+          if [ "$CODIGO" = "3" ]; then
+            titulo="Vigia legal: mudança nas fontes oficiais ($data)"
+          else
+            titulo="Vigia legal: não consegui ler as fontes ($data)"
+          fi
+          gh label create vigia-legal --color BFD4F2 --description "Mudança em fonte oficial da lei" 2>/dev/null
+          aberto=$(gh issue list --label vigia-legal --state open --json number --jq '.[0].number // empty')
+          if [ -n "$aberto" ]; then
+            gh issue comment "$aberto" --body-file relatorio.md
+          else
+            gh issue create --title "$titulo" --label vigia-legal --body-file relatorio.md
+          fi
+          exit 0
+
+      - name: Guardar o estado no ramo estado-vigia-legal
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          if [ -f .estado/watch_state.json ]; then
+            cd .estado
+            git init -q -b estado-vigia-legal
+            git config user.name "vigia-legal"
+            git config user.email "vigia-legal@users.noreply.github.com"
+            git add watch_state.json
+            git commit -q -m "Estado do vigia legal: $(date -u +%F)"
+            git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            git push -q --force origin estado-vigia-legal
+          fi
+          exit 0
+
+      - name: Guardar o relatório
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-vigia-legal
+          path: relatorio.md
+          if-no-files-found: ignore
