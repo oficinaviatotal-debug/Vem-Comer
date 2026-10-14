@@ -1,0 +1,201 @@
+[
+  {
+    "id": "lgpd",
+    "nome": "Lei 13.709/2018 (LGPD)",
+    "url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709compilado.htm",
+    "modo": "auto",
+    "ancoras": [
+      "Cabe ao controlador o ônus da prova de que o consentimento foi obtido em conformidade com o disposto nesta Lei",
+      "O consentimento deverá referir-se a finalidades determinadas",
+      "O consentimento pode ser revogado a qualquer momento mediante manifestação expressa do titular",
+      "quando necessário para atender aos interesses legítimos do controlador ou de terceiro",
+      "O titular dos dados pessoais tem direito a obter do controlador",
+      "O titular pode opor-se a tratamento realizado com fundamento em uma das hipóteses de dispensa de consentimento",
+      "no prazo de até 15 (quinze) dias, contado da data do requerimento do titular",
+      "O tratamento de dados pessoais de crianças e de adolescentes deverá ser realizado em seu melhor interesse",
+      "Os dados pessoais serão eliminados após o término de seu tratamento",
+      "O controlador deverá indicar encarregado pelo tratamento de dados pessoais",
+      "O controlador deverá comunicar à autoridade nacional e ao titular a ocorrência de incidente de segurança",
+      "multa simples, de até 2% (dois por cento) do faturamento"
+    ],
+    "obrigacoes": [
+      "LGPD-ACEITE-PROVA", "LGPD-CONSENT-ESPECIFICO", "LGPD-REVOGACAO", "LGPD-DIREITOS-TITULAR",
+      "LGPD-ENCARREGADO", "LGPD-INCIDENTE", "LGPD-ELIMINACAO-RETENCAO", "LGPD-CRIANCAS",
+      "EMAIL-PROSPECCAO-EMPRESA", "EMAIL-CANDIDATO-CONFIRMACAO", "EMAIL-CAIXA-DE-ESPERA"
+    ],
+    "verificado_em": "2026-10-14",
+    "como_foi_verificado": "Frases conferidas na página oficial do Planalto em 14/10/2026 (leitura por ferramenta de busca, que resume a página)."
+  },
+  {
+    "id": "mci",
+    "nome": "Lei 12.965/2014 (Marco Civil da Internet)",
+    "url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l12965.htm",
+    "modo": "auto",
+    "ancoras": [
+      "pelo prazo de 6 (seis) meses, nos termos do regulamento",
+      "exclusão definitiva dos dados pessoais que tiver fornecido a determinada aplicação de internet",
+      "pelo prazo de 1 (um) ano, nos termos do regulamento"
+    ],
+    "obrigacoes": ["MCI-LOG-ACESSO", "MCI-EXCLUSAO"],
+    "verificado_em": "2026-10-14",
+    "como_foi_verificado": "Frases conferidas na página oficial do Planalto em 14/10/2026."
+  },
+  {
+    "id": "cdc",
+    "nome": "Lei 8.078/1990 (Código de Defesa do Consumidor)",
+    "url": "https://www.planalto.gov.br/ccivil_03/leis/l8078compilado.htm",
+    "modo": "auto",
+    "ancoras": [
+      "pode desistir do contrato, no prazo de 7 dias a contar de sua assinatura",
+      "serão devolvidos, de imediato, monetariamente atualizados",
+      "enviar ou entregar ao consumidor, sem solicitação prévia, qualquer produto",
+      "informações corretas, claras, precisas, ostensivas e em língua portuguesa"
+    ],
+    "obrigacoes": ["CDC-INFO-CLARA", "CDC-ARREPENDIMENTO"],
+    "verificado_em": "2026-10-14",
+    "como_foi_verificado": "Frases conferidas na página oficial do Planalto em 14/10/2026."
+  },
+  {
+    "id": "decreto-7962",
+    "nome": "Decreto 7.962/2013 (comércio eletrônico)",
+    "url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/decreto/d7962.htm",
+    "modo": "auto",
+    "ancoras": [
+      "confirmar imediatamente o recebimento da aceitação da oferta",
+      "em local de destaque e de fácil visualização"
+    ],
+    "obrigacoes": ["CDC-INFO-CLARA", "CDC-CONTRATO-CONFIRMACAO", "CDC-ATENDIMENTO"],
+    "verificado_em": "2026-10-14",
+    "como_foi_verificado": "Frases conferidas na página oficial do Planalto em 14/10/2026."
+  },
+  {
+    "id": "lei-9609",
+    "nome": "Lei 9.609/1998 (programa de computador)",
+    "url": "https://www.planalto.gov.br/ccivil_03/leis/l9609.htm",
+    "modo": "auto",
+    "ancoras": [
+      "a critério do titular, ser registrados",
+      "independe de registro",
+      "cinquenta anos"
+    ],
+    "obrigacoes": ["PI-SOFTWARE-AVISO", "PI-LICENCA-USO"],
+    "verificado_em": "2026-10-14",
+    "como_foi_verificado": "Frases conferidas na página oficial do Planalto em 14/10/2026."
+  },
+  {
+    "id": "lei-9279",
+    "nome": "Lei 9.279/1996 (propriedade industrial: marcas)",
+    "url": "https://www.planalto.gov.br/ccivil_03/leis/l9279.htm",
+    "modo": "auto",
+    "ancoras": ["a propriedade da marca adquire-se pelo registro validamente expedido"],
+    "obrigacoes": ["PI-MARCA"],
+    "verificado_em": "2026-10-14",
+    "como_foi_verificado": "Frase conferida na página oficial do Planalto em 14/10/2026."
+  },
+  {
+    "id": "lei-9029",
+    "nome": "Lei 9.029/1995 (práticas discriminatórias no acesso ao trabalho)",
+    "url": "https://www.planalto.gov.br/ccivil_03/leis/l9029.htm",
+    "modo": "auto",
+    "ancoras": ["prática discriminatória e limitativa para efeito de acesso"],
+    "obrigacoes": ["TRAB-ANUNCIO-SEM-DISCRIMINACAO"],
+    "verificado_em": "2026-10-14",
+    "como_foi_verificado": "A página traz o texto original e o alterado; a frase-chave está nos dois."
+  },
+  {
+    "id": "lei-9799",
+    "nome": "Lei 9.799/1999 (insere o art. 373-A na CLT: anúncio de emprego)",
+    "url": "https://www.planalto.gov.br/ccivil_03/leis/l9799.htm",
+    "modo": "auto",
+    "ancoras": ["publicar ou fazer publicar anúncio de emprego no qual haja referência ao sexo, à idade, à cor ou situação familiar"],
+    "obrigacoes": ["TRAB-ANUNCIO-SEM-DISCRIMINACAO"],
+    "verificado_em": "2026-10-14",
+    "como_foi_verificado": "Frase conferida na página oficial do Planalto em 14/10/2026 (art. 373-A, inciso I)."
+  },
+  {
+    "id": "lbi",
+    "nome": "Lei 13.146/2015 (Estatuto da Pessoa com Deficiência)",
+    "url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13146.htm",
+    "modo": "auto",
+    "ancoras": ["É obrigatória a acessibilidade nos sítios da internet mantidos por empresas com sede ou representação comercial no País"],
+    "obrigacoes": ["LBI-ACESSIBILIDADE"],
+    "verificado_em": "2026-10-14",
+    "como_foi_verificado": "Frase conferida na página oficial do Planalto em 14/10/2026 (art. 63)."
+  },
+  {
+    "id": "eca-digital",
+    "nome": "Lei 15.211/2025 (ECA Digital)",
+    "url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2025/lei/l15211.htm",
+    "modo": "auto",
+    "ancoras": [
+      "mecanismos confiáveis de verificação de idade a cada acesso do usuário",
+      "vedada a utilização de técnicas de perfilamento para direcionamento de publicidade comercial a crianças e a adolescentes"
+    ],
+    "obrigacoes": ["LGPD-CRIANCAS"],
+    "verificado_em": "2026-10-14",
+    "como_foi_verificado": "Frases conferidas na página oficial do Planalto em 14/10/2026 (art. 9º §1º e art. 22). Em vigor desde 17/03/2026."
+  },
+  {
+    "id": "anpd-res-2-2022",
+    "nome": "Resolução CD/ANPD 2/2022 (agentes de tratamento de pequeno porte)",
+    "url": "https://www.gov.br/palmares/pt-br/midias/arquivos-menu-acesso-a-informacao/legislacao/resolucao-cd-anpd-n2-2022.pdf",
+    "modo": "manual",
+    "resumo_verificado": "Regime simplificado para microempresa e empresa de pequeno porte, startup e pessoa que trata dados sem fins lucrativos. Fica de fora quem faz tratamento de alto risco: dado sensível, larga escala, decisão automatizada ou tecnologia emergente. Por isso o Vem Trabalhar provavelmente não se enquadra; o Vem Comer talvez. Conferido em 14/10/2026 em PDF hospedado por órgão público (não é o site da ANPD).",
+    "obrigacoes": ["LGPD-PEQUENO-PORTE"],
+    "verificado_em": "2026-10-14"
+  },
+  {
+    "id": "anpd-res-15-2024",
+    "nome": "Resolução CD/ANPD 15/2024 (comunicação de incidente de segurança)",
+    "url": "https://www.mattosfilho.com.br/unico/regulamento-incidente-seguranca/",
+    "modo": "manual",
+    "resumo_verificado": "Comunicação à ANPD e ao titular em até 3 dias úteis do conhecimento do incidente com risco relevante; o controlador mantém registro interno de todo incidente por 5 anos. Conferido em 14/10/2026 em resumo de escritório de advocacia (não é o texto oficial).",
+    "obrigacoes": ["LGPD-INCIDENTE"],
+    "verificado_em": "2026-10-14"
+  },
+  {
+    "id": "anpd-res-19-2024",
+    "nome": "Resolução CD/ANPD 19/2024 (transferência internacional de dados)",
+    "url": "https://confidata.com.br/blog/transferencia-internacional-dados-regras-anpd",
+    "modo": "manual",
+    "resumo_verificado": "Transferir dado pessoal para fornecedor no exterior (inclusive IA hospedada fora) exige base legal do art. 33 da LGPD, como país com nível adequado, cláusulas-padrão da ANPD ou consentimento específico. Conferido em 14/10/2026 em artigo de consultoria (não é o texto oficial).",
+    "obrigacoes": ["LGPD-TRANSF-INTERNACIONAL"],
+    "verificado_em": "2026-10-14"
+  },
+  {
+    "id": "cfp-res-31-2022",
+    "nome": "Resolução CFP 31/2022 (avaliação psicológica)",
+    "url": "https://ses.sp.bvs.br/wp-content/uploads/2022/12/U_RS-CFP-31_151222.pdf",
+    "modo": "manual",
+    "resumo_verificado": "Teste psicológico é de uso privativo do psicólogo e precisa de aprovação no SATEPSI. Por isso o Vem Trabalhar chama de 'questionário de autoconhecimento', não usa para eliminar candidato e não emite laudo psicológico. Conferido em 14/10/2026 em PDF hospedado por secretaria de saúde.",
+    "obrigacoes": ["PSICO-QUESTIONARIO"],
+    "verificado_em": "2026-10-14"
+  },
+  {
+    "id": "gmail-yahoo",
+    "nome": "Regras de remetente do Gmail e do Yahoo (2024 em diante)",
+    "url": "https://www.mailreach.co/pt/blog/gmail-sender-guidelines",
+    "modo": "manual",
+    "resumo_verificado": "Quem envia e-mail em volume precisa de SPF, DKIM e DMARC, descadastro de um clique (RFC 8058) e taxa de reclamação de spam abaixo de 0,3%. Conferido em 14/10/2026 em artigo de terceiro; as regras oficiais ficam nas páginas do Google e do Yahoo para remetentes.",
+    "obrigacoes": ["EMAIL-REMETENTE"],
+    "verificado_em": "2026-10-14"
+  },
+  {
+    "id": "trt-rs-taxa-candidato",
+    "nome": "Decisão do TRT-RS sobre taxa cobrada de candidato por agência de emprego",
+    "url": "https://www.lex.com.br/empresas-de-selecao-nao-podem-cobrar-taxas-de-candidatos-a-emprego-decide-5a-turma-do-trt-rs/",
+    "modo": "manual",
+    "resumo_verificado": "Uma turma do TRT-RS mandou parar a cobrança de taxa do candidato por empresa de seleção; não há lei expressa e o TST só decidiu de quem é a competência (Migalhas). Por isso o Vem Trabalhar cobra o clube de consultoria e não a vaga; a forma exata é pergunta ao advogado. Conferido em 14/10/2026 em notícias jurídicas.",
+    "obrigacoes": ["TRAB-COBRANCA-CANDIDATO"],
+    "verificado_em": "2026-10-14"
+  },
+  {
+    "id": "lei-14297",
+    "nome": "Lei 14.297/2022 (proteção de entregadores durante a emergência de covid-19)",
+    "url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/l14297.htm",
+    "modo": "manual",
+    "resumo_verificado": "Valia durante a emergência de saúde pública da covid-19, que terminou; não se aplica ao motoqueiro do Vem Comer hoje. Conferido em 14/10/2026.",
+    "obrigacoes": ["ENTREG-LEI-14297"],
+    "verificado_em": "2026-10-14"
+  }
+]
