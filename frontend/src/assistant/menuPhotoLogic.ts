@@ -12,6 +12,8 @@ import type { ParsedMenu } from "./assistantFlow.ts";
 const MAX_CATEGORIES = 30;
 const MAX_ITEMS = 300;
 const MAX_NAME = 150;
+const MAX_DESCRIPTION = 300;
+const MAX_SUBCATEGORY = 100;
 
 function text(value: unknown, max: number): string {
   if (typeof value !== "string") return "";
@@ -33,15 +35,20 @@ export function normalizeReading(raw: unknown): ParsedMenu | null {
     if (!rawCategory || typeof rawCategory !== "object") continue;
     const category = rawCategory as { name?: unknown; items?: unknown };
     const name = text(category.name, 100) || "Outros";
-    const items: Array<{ name: string; price: string }> = [];
+    const items: ParsedMenu["categories"][number]["items"] = [];
     for (const rawItem of Array.isArray(category.items) ? category.items : []) {
       if (total >= MAX_ITEMS) break;
       if (!rawItem || typeof rawItem !== "object") continue;
-      const item = rawItem as { name?: unknown; price?: unknown };
+      const item = rawItem as { name?: unknown; price?: unknown; description?: unknown; subcategory?: unknown };
       const itemName = text(item.name, MAX_NAME);
       if (!itemName) continue;
       const price = typeof item.price === "string" || typeof item.price === "number" ? normalizePrice(String(item.price)) : null;
-      items.push({ name: itemName, price: price ?? "" });
+      const entry: ParsedMenu["categories"][number]["items"][number] = { name: itemName, price: price ?? "" };
+      const description = text(item.description, MAX_DESCRIPTION);
+      const subcategory = text(item.subcategory, MAX_SUBCATEGORY);
+      if (description) entry.description = description;
+      if (subcategory && subcategory.toLowerCase() !== name.toLowerCase()) entry.subcategory = subcategory;
+      items.push(entry);
       total += 1;
     }
     if (items.length > 0) categories.push({ name, items });

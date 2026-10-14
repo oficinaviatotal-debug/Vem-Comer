@@ -820,7 +820,7 @@ def get_company_products(company_id):
     try:
         products = query_db(
             """
-            SELECT id, company_id, menu_id, name, description, price, image_key, sold_out
+            SELECT id, company_id, menu_id, name, description, subcategory, price, image_key, sold_out
             FROM products
             WHERE company_id = %s;
             """,

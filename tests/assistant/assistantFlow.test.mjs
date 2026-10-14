@@ -467,3 +467,23 @@ test("prompts and progress for the photo road", () => {
   assert.match(promptFor(list), /Estes são os pratos que li/);
   assert.match(progressText(list), /^Pratos · Pizzas \(1 de 2\)$/);
 });
+
+test("description and subsection read from the menu travel to the server, and only when there are any", () => {
+  const state = startFromParsed({
+    readable: true,
+    notes: "",
+    categories: [
+      {
+        name: "Pizzas",
+        items: [
+          { name: "Calabresa", price: "42.00", description: "Molho e cebola", subcategory: "Tradicionais" },
+          { name: "Mussarela", price: "40.00" },
+        ],
+      },
+    ],
+  });
+  assert.equal(state.step, "review");
+  const [first, second] = importPayload(state).categories[0].items;
+  assert.deepEqual(first, { name: "Calabresa", price: "42.00", description: "Molho e cebola", subcategory: "Tradicionais" });
+  assert.deepEqual(second, { name: "Mussarela", price: "40.00" });
+});

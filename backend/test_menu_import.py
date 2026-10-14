@@ -132,7 +132,7 @@ class ValidatePayloadTests(unittest.TestCase):
         self.assertEqual(
             categories,
             [{"name": "Lanches", "items": [
-                {"name": "X-Burguer", "price": Decimal("18.50"), "description": "com queijo"}
+                {"name": "X-Burguer", "price": Decimal("18.50"), "description": "com queijo", "subcategory": ""}
             ]}],
         )
 
@@ -215,6 +215,25 @@ class ImportMenuTests(unittest.TestCase):
         names = [params[2] for params in db.inserted_products]
         self.assertEqual(names, ["X-Burguer", "X-Salada", "Suco de laranja"])
         self.assertEqual(db.inserted_products[0][4], Decimal("18.50"))
+
+    def test_subcategory_is_written_and_empty_becomes_null(self):
+        db = FakeDatabase()
+        self.run_import(
+            db,
+            {"name": "Pizzas", "items": [
+                {"name": "Calabresa", "price": "40", "subcategory": "  Tradicionais "},
+                {"name": "Banana com canela", "price": "42", "subcategory": ""},
+                {"name": "Frango", "price": "41"},
+            ]},
+        )
+        self.assertEqual([p[5] for p in db.inserted_products], ["Tradicionais", None, None])
+
+    def test_subcategory_is_cut_to_the_column_size(self):
+        categories, problem = menu_import.validate_payload(
+            {"categories": [{"name": "Pizzas", "items": [{"name": "A", "price": "1", "subcategory": "S" * 300}]}]}
+        )
+        self.assertIsNone(problem)
+        self.assertEqual(len(categories[0]["items"][0]["subcategory"]), menu_import.MAX_SUBCATEGORY)
 
     def test_company_row_is_locked_first(self):
         db = FakeDatabase()

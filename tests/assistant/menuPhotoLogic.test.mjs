@@ -190,3 +190,24 @@ test("the ready-menu card follows what the server can read", () => {
   // an older server without the file route: the PDF flag alone does not turn files on
   assert.deepEqual(readyMenuOptions({ photo_menu: true, file_menu: false, pdf_menu: true }), { photo: true, file: false, pdf: false });
 });
+
+test("description and subsection from the menu are kept, trimmed and limited", () => {
+  const parsed = normalizeReading({
+    readable: true,
+    notes: "",
+    categories: [
+      {
+        name: "Pizzas",
+        items: [
+          { name: "Calabresa", price: "42.00", description: "  Molho,   calabresa e cebola ", subcategory: "Tradicionais" },
+          { name: "Mussarela", price: "40.00", description: "", subcategory: "Pizzas" },
+          { name: "Portuguesa", price: "45.00", description: "x".repeat(500) },
+        ],
+      },
+    ],
+  });
+  const [calabresa, mussarela, portuguesa] = parsed.categories[0].items;
+  assert.deepEqual(calabresa, { name: "Calabresa", price: "42.00", description: "Molho, calabresa e cebola", subcategory: "Tradicionais" });
+  assert.deepEqual(mussarela, { name: "Mussarela", price: "40.00" }); // same name as the category: no subsection; empty text: no key
+  assert.equal(portuguesa.description.length, 300);
+});
