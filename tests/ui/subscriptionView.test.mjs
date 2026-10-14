@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  amountDueCents,
   attentionSummary,
   bannerOf,
   blankPaymentForm,
@@ -14,6 +15,7 @@ import {
   ownerMessage,
   paymentBody,
   paymentFormProblem,
+  planAmountText,
   reais,
   shortDate,
   stateLabel,
@@ -190,4 +192,39 @@ test("method labels", () => {
   assert.equal(methodLabel("pix"), "Pix");
   assert.equal(methodLabel("transferencia"), "Transferência");
   assert.equal(methodLabel("novo"), "novo");
+});
+
+// GD, 14/10/2026: os primeiros 30 dias têm 50% de desconto (o servidor manda o valor do próximo pagamento).
+const firstMonth = (over = {}) =>
+  plan({ state: "awaiting_payment", due_date: null, amount_due_cents: 9500, intro_discount_percent: 50, ...over });
+
+test("the next payment is the discounted first one, or the price when the server does not say", () => {
+  assert.equal(amountDueCents(firstMonth()), 9500);
+  assert.equal(amountDueCents(plan()), 19000);
+  assert.equal(amountDueCents(plan({ price_cents: 14900 })), 14900);
+});
+
+test("the plan amount text names the discount only while it applies", () => {
+  assert.equal(planAmountText(firstMonth()), "R$ 95,00 no 1º mês (50% de desconto)");
+  assert.equal(planAmountText(plan()), "R$ 190,00");
+  assert.equal(planAmountText(plan({ intro_discount_percent: 0, amount_due_cents: 19000 })), "R$ 190,00");
+});
+
+test("the owner's and GD's messages and the payment form carry the discounted first payment", () => {
+  assert.match(ownerMessage("pay", "Pastelaria da Ana", firstMonth()), /R\$ 95,00.*Pastelaria da Ana/);
+  assert.match(ownerMessage("paid", "Pastelaria da Ana", firstMonth()), /\(R\$ 95,00\)/);
+  const charge = chargeMessage(null, "Pastelaria da Ana", firstMonth());
+  assert.match(charge, /primeiro mês do Vem Comer \(R\$ 95,00, com 50% de desconto\)/);
+  assert.deepEqual(blankPaymentForm(firstMonth()), { amount: "95,00", method: "pix", reference: "" });
+  assert.deepEqual(blankPaymentForm(firstMonth({ price_cents: 14900, amount_due_cents: 7450 })), {
+    amount: "74,50",
+    method: "pix",
+    reference: "",
+  });
+});
+
+test("a renewal or a late payment is charged the full price", () => {
+  const late = plan({ state: "past_due", due_date: "2026-11-05", amount_due_cents: 19000, intro_discount_percent: 0 });
+  assert.match(chargeMessage(null, "X", late), /\(R\$ 190,00\)/);
+  assert.deepEqual(blankPaymentForm(late), { amount: "190,00", method: "pix", reference: "" });
 });

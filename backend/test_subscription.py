@@ -148,6 +148,45 @@ class NextPeriodTests(unittest.TestCase):
         self.assertFalse(sub.evaluate(row(until, anchor), today)["blocks"])
 
 
+class IntroDiscountTests(unittest.TestCase):
+    """GD, 14/10/2026: os primeiros 30 dias têm 50% de desconto; o mês seguinte já é o preço cheio."""
+
+    def test_the_first_payment_is_half_the_price(self):
+        self.assertEqual(sub.first_payment_cents(19000), 9500)
+        self.assertEqual(sub.reais(sub.first_payment_cents(19000)), "R$ 95,00")
+
+    def test_an_odd_cent_rounds_up_so_the_discount_never_goes_below_half(self):
+        self.assertEqual(sub.first_payment_cents(19001), 9501)
+        self.assertEqual(sub.first_payment_cents(14900), 7450)
+
+    def test_the_discount_is_in_the_signed_price_not_the_table_price(self):
+        self.assertEqual(sub.amount_due_cents(row(price=14900)), 7450)
+
+    def test_only_the_first_payment_has_the_discount(self):
+        self.assertEqual(sub.amount_due_cents(row()), 9500)
+        self.assertEqual(sub.amount_due_cents(row(date(2026, 11, 5), 5)), 19000)  # em dia: próximo mês cheio
+        self.assertEqual(sub.amount_due_cents(row(date(2026, 10, 5), 5)), 19000)  # vencido: volta pagando cheio
+
+    def test_a_restaurant_with_no_subscription_row_is_priced_as_a_new_one(self):
+        self.assertEqual(sub.amount_due_cents(None), 9500)
+
+    def test_the_view_tells_the_panel_the_amount_and_the_discount(self):
+        waiting = sub.evaluate(row(), date(2026, 10, 14))
+        self.assertEqual((waiting["price_cents"], waiting["amount_due_cents"], waiting["intro_discount_percent"]),
+                         (19000, 9500, 50))
+        paid = sub.evaluate(row(date(2026, 11, 14), 14), date(2026, 10, 20))
+        self.assertEqual((paid["price_cents"], paid["amount_due_cents"], paid["intro_discount_percent"]),
+                         (19000, 19000, 0))
+
+    def test_an_exempt_restaurant_shows_no_discount(self):
+        self.assertEqual(sub.evaluate(None, date(2026, 10, 14))["intro_discount_percent"], 0)
+
+    def test_the_price_after_the_first_month_is_still_in_the_message(self):
+        text = sub.owner_message(sub.evaluate(row(price=14900), date(2026, 10, 14)))
+        self.assertIn("R$ 74,50", text)
+        self.assertIn("R$ 149,00", text)
+
+
 class TodayTests(unittest.TestCase):
     def test_the_day_is_the_brazilian_one(self):
         # 02:30 UTC de 6/11 ainda é 23:30 de 5/11 em Brasília: o dia 5 ainda vale.
@@ -159,9 +198,10 @@ class MessageTests(unittest.TestCase):
     def view(self, paid_until, anchor, today):
         return sub.evaluate(row(paid_until, anchor), today)
 
-    def test_waiting_for_the_first_payment(self):
+    def test_waiting_for_the_first_payment_says_the_discount_and_the_price_after_it(self):
         self.assertEqual(sub.owner_message(sub.evaluate(row(), date(2026, 10, 13))),
-                         "Falta o pagamento do primeiro mês (R$ 190,00) para começar a vender.")
+                         "Falta o pagamento do primeiro mês (R$ 95,00, com 50% de desconto de entrada) para começar a "
+                         "vender. A partir do mês seguinte o plano é R$ 190,00.")
 
     def test_overdue_says_nothing_was_deleted_and_what_to_do(self):
         text = sub.owner_message(self.view(date(2026, 11, 5), 5, date(2026, 11, 6)))

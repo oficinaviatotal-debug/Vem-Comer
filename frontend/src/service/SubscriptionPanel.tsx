@@ -3,6 +3,7 @@ import "../ui.css";
 import "../admin.css";
 import "../plan.css";
 import {
+  amountDueCents,
   fullDate,
   methodLabel,
   ownerMessage,
@@ -59,6 +60,14 @@ export default function SubscriptionPanel({ plan, restaurantName }: Props) {
           <dt>Valor por mês</dt>
           <dd>{reais(plan.price_cents)}</dd>
         </div>
+        {(plan.intro_discount_percent ?? 0) > 0 && (
+          <div>
+            <dt>Primeiro pagamento</dt>
+            <dd>
+              {reais(amountDueCents(plan))} ({plan.intro_discount_percent}% de desconto)
+            </dd>
+          </div>
+        )}
         {plan.due_date && (
           <div>
             <dt>{plan.state === "past_due" ? "Venceu em" : "Pago até"}</dt>
