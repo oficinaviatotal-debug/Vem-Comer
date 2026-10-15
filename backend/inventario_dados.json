@@ -180,6 +180,28 @@
       "guarda": "Não guardamos a imagem enviada para leitura.",
       "eliminacao": "Não se aplica: nada fica guardado aqui.",
       "revisao_juridica": "pendente_do_advogado"
+    },
+    {
+      "id": "decisoes-do-dono-do-sistema",
+      "titular": "O dono do software (quem aprova ou recusa as ações dos agentes) e, se algum texto citar, alguém de fora",
+      "papel_da_plataforma": "controlador",
+      "dados": "identificador interno de quem decidiu (sem nome nem e-mail), a nota da decisão, o texto do cartão (o quê, por quê, evidência, risco, resultado) escrito pelo agente, e o histórico de cada passo",
+      "campos": [
+        "agent_actions.decided_by",
+        "agent_actions.decision_note",
+        "agent_actions.what",
+        "agent_actions.why",
+        "agent_actions.evidence",
+        "agent_actions.result",
+        "agent_action_events.actor_user",
+        "agent_action_events.note"
+      ],
+      "finalidade": "Provar o que cada agente propôs, quem decidiu e quando (prestação de contas e segurança), para que nenhuma ação de maior impacto ande sem o aval do dono do software.",
+      "base_legal": "interesse_legitimo",
+      "compartilha_com": "Ninguém além da equipe da plataforma. Nenhum agente envia nada a ninguém por este registro.",
+      "guarda": "Proposta da engenharia: enquanto o sistema existir, porque é a prova do que foi decidido. Regra de projeto, ainda não conferida por código: o cartão descreve a decisão e não carrega dado de cliente, de candidato nem de contato de empresa. Se o usuário que decidiu for apagado, o banco tira o identificador dele da ação sozinho; o histórico não é alterado.",
+      "eliminacao": "O identificador de quem decidiu some quando a conta é apagada (o banco faz). O texto não tem rotina de apagar: por regra não deve conter dado de pessoa.",
+      "revisao_juridica": "pendente_do_advogado"
     }
   ],
   "tabelas_sem_dado_pessoal": {
