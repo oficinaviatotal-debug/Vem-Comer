@@ -8,7 +8,8 @@
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
-		Permissions-Policy "camera=(), geolocation=()"
+		# A câmera só abre para o próprio site (o garçom lê o QR da mesa em "Abrir mesa"); nenhuma página embutida a usa.
+		Permissions-Policy "camera=(self), geolocation=()"
 		-Server
 	}
 

@@ -45,6 +45,13 @@ aparelho avisa mais uma vez. Qualquer pessoa da equipe do restaurante vê e aten
   Entra no build do site (`deploy/vps/docker-compose.yml`, argumento de build). Só funciona quando o domínio do
   Vem Trabalhar existir.
 
+## Do lado do garçom: "Abrir mesa" (15/10/2026)
+
+O garçom não precisa mais esperar a mesa chamar. No menu, **Abrir mesa** (também o primeiro botão grande dele em "Hoje")
+lê o QR da mesa com a câmera, ou aceita o número digitado, ou a lista de mesas, e abre a mesa: chamados dela, pedidos em
+andamento e o botão para pedir por ela. Detalhes e limites (leitor do navegador, iPhone, câmera liberada pelo servidor):
+`docs/navegacao-e-conversa.md` e `docs/security.md`. Só lê e atende chamada: não muda pedido nem dinheiro.
+
 ## Próximos passos
 
 Modo garçom (requisito 65: mesas por área e por garçom, alerta de ticket, sugestão de venda), "Como foi?" ao
