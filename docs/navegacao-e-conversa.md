@@ -8,10 +8,12 @@ Desenho e estado de 15/10/2026, a partir das falas do GD de 06:10 e 06:13 (itens
 
 1. A tela inicial do painel não deve começar em "criar cardápio". As funções ficam num **menu de três tracinhos
    do lado esquerdo**; a tela principal mostra **as atividades**.
-2. O **link do cliente** abre **direto no cardápio**.
+2. O **link do cliente** abre **direto no cardápio** (e cada restaurante tem o seu link).
 3. Quem trabalha (cozinha, motoqueiro, garçom, caixa, dono) entra por uma **tela inicial com um botão por função**.
    O garçom vai **direto à mesa**, lendo o QR Code.
 4. A IA conversa com **os dois lados** (currículo e vaga) e a redução de custo vem de tudo ser automatizado.
+5. (06:39) A imagem da prancha com os celulares é o **norte**; o que faltar entra no **menu de três tracinhos**,
+   inclusive a **parte do dono do software**, com login e senha só dele. A **página do Vem Comer só vende o serviço**.
 
 ## 2. Benchmark "Viver de IA" (agente "Nina")
 
@@ -28,16 +30,22 @@ promessa de "150 soluções".
 
 ## 3. Como as pessoas entram (no código desde esta entrega)
 
+O GD disse (15/10/2026, 06:39) que **cada restaurante tem o seu link**, que o dono manda pelo WhatsApp e coloca no
+Instagram, e que a **página do Vem Comer só trabalha a venda do serviço**. Por isso o endereço principal **não** é
+tela de cliente nem lista de restaurantes.
+
 | Quem | Por onde entra | O que vê primeiro |
 |---|---|---|
+| Quem quer **comprar o sistema** | Endereço principal (ou `?sistema=1`) | A página de venda: "Seu restaurante no próximo nível!" |
 | Cliente na mesa | QR da mesa (`?empresa=…&mesa=…`) | A tela da mesa (chamar garçom, pedir a conta, ver o cardápio) |
-| Cliente sem mesa | Link do restaurante (`?empresa=…`) | **O cardápio, direto** |
-| Cozinha, garçom, caixa, entregador | Endereço sem restaurante → botão da função → entrada (`?entrar=1&funcao=…`) | A entrada com o título da função; depois, a tela "Hoje" da função |
-| Dono e gerente | Botão "Entrar no painel" | "Hoje": pedidos por etapa, vendas e avisos, e o menu |
-| Já entrou antes | Qualquer endereço, com o restaurante lembrado | Direto no painel |
+| Cliente pelo link do restaurante | Link do restaurante (`?empresa=…`), no WhatsApp ou no Instagram | **O cardápio daquele restaurante, direto** |
+| Cozinha, garçom, caixa, entregador, dono e gerente | **Entrar** (na página de venda ou no rodapé do cardápio: "Sou da equipe ou dono") → botão da função → e-mail e senha | A tela "Hoje" da função |
+| Já entrou antes neste aparelho | Qualquer endereço sem restaurante | Direto no painel |
+| GD (dono do software) | A mesma entrada: e-mail e senha | "Hoje" com a faixa "Só você, dono do sistema" e o grupo **Dono do sistema** no menu |
 
 Todo botão de função leva à **mesma entrada**: quem decide o que abre é o **cadastro da pessoa**, não o botão.
-Escolher "Cozinha" sendo garçom não dá acesso a nada que não seja dela.
+Escolher "Cozinha" sendo garçom não dá acesso a nada que não seja dela. Quem é administrador da plataforma é
+decidido **no servidor** (`PLATFORM_ADMIN_EMAILS`), nunca pelo que o navegador manda (ver `SECURITY.md`).
 
 ## 4. O painel agora
 
@@ -45,10 +53,31 @@ Escolher "Cozinha" sendo garçom não dá acesso a nada que não seja dela.
   conferir, conforme a função), vendas de hoje e avisos (só dono e gerente) e os botões grandes do que a função mais faz.
   Nada é estimado: os cartões contam os pedidos que o painel já busca; vendas e avisos vêm dos mesmos números de
   "Seu negócio".
-- **Menu de três tracinhos** (esquerda), em grupos: Vender, Cardápio, Números, Minha loja (e Plataforma, só para quem
-  administra a plataforma). Cada função só vê as telas que já via antes; há teste que compara a lista antiga com a nova.
+- **Menu de três tracinhos** (esquerda), em grupos: Vender, Cardápio, Números, Minha loja e **Dono do sistema** (só
+  para quem o servidor reconhece como administrador). Cada função só vê as telas que já via antes; há teste que
+  compara a lista antiga com a nova. A única tela nova é **Meu link**, só para dono e gerente.
+- **Meu link:** o link do restaurante (`?empresa=…`) com copiar, mandar no WhatsApp e abrir para conferir, e onde
+  colocar (WhatsApp, Instagram, QR de cada mesa). O link abre só aquele cardápio: não mostra outros restaurantes.
+- **Parte do dono do software:** a faixa "Só você, dono do sistema" em "Hoje" (assinaturas que precisam dele, chamados
+  de ajuda esperando) e, no menu, **Assinaturas** (todos os restaurantes, cobrar, registrar pagamento) e **Chamados**.
+  Os números vêm do servidor; se não der para ler, aparece um traço, nunca um zero inventado.
 - Plano vencido: o menu continua mostrando só o que já era permitido (Pedidos, Entregas, Acerto de caixa e Plano).
 - O **guia passo a passo** abre e fecha o menu sozinho nos passos que apontam para uma tela dentro dele.
+
+### O que a área do dono do software **ainda não** tem (só desenho)
+
+O GD pediu que o que faltar entre no menu da esquerda, inclusive a parte dele. Hoje existem Assinaturas e Chamados.
+Faltam, em ordem sugerida: **fila de aprovação** das ações de maior impacto (nada de alto impacto roda sem o aval
+dele), **cadastros** (quem se cadastrou, ligar e desligar o cadastro público pela tela hoje só pelo servidor),
+**saúde do sistema** (versão no ar, falhas, backup) e **uso de IA** (custo por restaurante). Nenhuma está programada.
+
+### Para a área do GD aparecer (depende de acesso ao servidor)
+
+1. A conta dele precisa existir (o cadastro público está fechado: `deploy/vps/criar-restaurante.sh`).
+2. O e-mail dele precisa estar em `PLATFORM_ADMIN_EMAILS` (`deploy/vps/cobranca.sh dados --admin <e-mail>`).
+
+Sem isso, ele entra como dono comum e o grupo "Dono do sistema" não aparece. **Não confirmei se isso já está feito
+no servidor.**
 
 ### Decisão que é do GD
 
@@ -122,6 +151,7 @@ o match comparar **respostas com requisitos** e explicar o porquê.
 ## 8. O que depende do GD
 
 - Ver as telas novas e aprovar ou pedir ajuste (nada foi aberto ao público).
+- Dizer qual e-mail é o login dele como dono do software e liberar o acesso ao servidor para criar a conta e ligar a área (itens acima).
 - Decidir se o QR da mesa abre direto no cardápio.
 - Senha da chave de acesso ao servidor, chave de IA (por script), domínio e e-mail do sistema, CNPJ e endereço,
   encarregado de dados, advogado e contador: ver as pendências em `docs/requisitos-do-dono-vem-comer.md`.

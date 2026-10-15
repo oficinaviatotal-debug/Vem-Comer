@@ -16,11 +16,14 @@ import {
   isManager,
   menuFor,
   menuViews,
+  platformCards,
   roleLine,
+  shareMessage,
   shortcutsFor,
   viewTitle,
   waitText,
   waitingMinutes,
+  whatsappShareUrl,
 } from "../../frontend/src/nav/navLogic.ts";
 import {
   STATUS_DONE,
@@ -45,6 +48,7 @@ const viewsOf = (context) => menuFor(context).flatMap((group) => group.items.map
 
 test("the menu shows each role exactly what the old tabs showed", () => {
   // The rules below are the ones the row of tabs in AdminPanel had before the menu existed.
+  // "meulink" (Meu link) is the one screen that is new: only the owner and the manager see it.
   const staff = ["inicio", "pedidos", "mesas", "produtos", "categorias", "dashboard"];
   assert.deepEqual(new Set(viewsOf(base("WAITER", { hasPlanTab: false }))), new Set(staff));
   assert.deepEqual(new Set(viewsOf(base("KITCHEN", { hasPlanTab: false }))), new Set(staff));
@@ -60,6 +64,7 @@ test("the menu shows each role exactly what the old tabs showed", () => {
     "acerto",
     "pagamento",
     "marca",
+    "meulink",
     "plano",
   ];
   assert.deepEqual(new Set(viewsOf(base("MANAGER"))), new Set(manager));
@@ -284,10 +289,10 @@ test("every tile opens a screen the role can really open", () => {
   }
 });
 
-test("every role has between two and four big buttons, each with a verb and a hint", () => {
+test("every role has between two and five big buttons, each with a verb and a hint", () => {
   for (const role of ["OWNER", "MANAGER", "KITCHEN", "CASHIER", "WAITER"]) {
     const list = shortcutsFor(role);
-    assert.ok(list.length >= 2 && list.length <= 4, role);
+    assert.ok(list.length >= 2 && list.length <= 5, role);
     for (const item of list) {
       assert.ok(item.label.trim() && item.hint.trim(), role);
     }
@@ -347,4 +352,66 @@ test("the button is read back from the address, and anything else is ignored", (
   assert.equal(entryRoleFromSearch("?entrar=1&funcao=hacker"), null);
   assert.equal(entryRoleFromSearch("?entrar=1"), null);
   assert.equal(entryRoleFromSearch(""), null);
+});
+
+// ---------------------------------------------------------------- the restaurant's own link
+
+test("Meu link is for the owner and the manager, and waits while the plan is blocked", () => {
+  assert.ok(viewsOf(base("OWNER")).includes("meulink"));
+  assert.ok(viewsOf(base("MANAGER")).includes("meulink"));
+  for (const role of ["WAITER", "KITCHEN", "CASHIER"]) {
+    assert.ok(!viewsOf(base(role)).includes("meulink"), role);
+  }
+  const blocked = base("OWNER", { allowed: (view) => viewAllowed(view, true) });
+  assert.ok(!viewsOf(blocked).includes("meulink"));
+  assert.equal(viewTitle("meulink", "OWNER"), "Meu link");
+  assert.ok(shortcutsFor("OWNER").some((item) => item.view === "meulink"));
+});
+
+test("the message that goes with the link carries the name and the link, and WhatsApp gets it encoded", () => {
+  const url = "https://vemcomer.example/?empresa=acaiteria-do-joao";
+  const text = shareMessage("Açaiteria do João", url);
+  assert.ok(text.startsWith("Açaiteria do João:"));
+  assert.ok(text.endsWith(url));
+  // Without a name the message still works.
+  assert.ok(shareMessage("  ", url).endsWith(url));
+  assert.ok(shareMessage(null, url).endsWith(url));
+
+  const wa = new URL(whatsappShareUrl(text));
+  assert.equal(wa.origin, "https://wa.me");
+  assert.equal(wa.searchParams.get("text"), text);
+});
+
+// ---------------------------------------------------------------- only for the owner of the platform
+
+test("the platform strip shows what the server counted and a dash when it does not know", () => {
+  const [plans, help] = platformCards({ needsAttention: 2, helpOpen: 0 });
+  assert.equal(plans.count, 2);
+  assert.equal(plans.note, "2 restaurantes precisam de você");
+  assert.equal(plans.tone, "wait");
+  assert.equal(plans.go, "assinaturas");
+  assert.equal(help.count, 0);
+  assert.equal(help.tone, "ok");
+  assert.equal(help.go, "ajuda");
+
+  assert.equal(platformCards({ needsAttention: 1, helpOpen: 3 })[0].note, "1 restaurante precisa de você");
+  assert.equal(platformCards({ needsAttention: 0, helpOpen: 3 })[0].note, "Todos os restaurantes em dia");
+  assert.equal(platformCards({ needsAttention: 0, helpOpen: 3 })[0].tone, "ok");
+  assert.equal(platformCards({ needsAttention: 0, helpOpen: 3 })[1].tone, "wait");
+
+  // Not known (still loading or failed): never a made-up zero.
+  const unknown = platformCards({ needsAttention: null, helpOpen: null });
+  for (const card of unknown) {
+    assert.equal(card.count, null);
+    assert.equal(card.tone, "wait");
+  }
+});
+
+test("the platform cards open screens that only the platform owner's menu has", () => {
+  const owner = viewsOf(base("OWNER", { platformAdmin: true }));
+  const plain = viewsOf(base("OWNER", { platformAdmin: false }));
+  for (const card of platformCards({ needsAttention: 1, helpOpen: 1 })) {
+    assert.ok(owner.includes(card.go), card.go);
+    assert.ok(!plain.includes(card.go), card.go);
+  }
 });

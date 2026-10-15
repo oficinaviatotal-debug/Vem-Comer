@@ -1,31 +1,19 @@
-import { useEffect, useState } from "react";
 import "../ui.css";
 import "../admin.css";
 import "./nav.css";
 import NavIcon from "./NavIcon";
-import { fetchSignupStatus } from "../service/api";
-import { salesUrl, signupUrl } from "../service/links";
 import { TEAM_ENTRIES, entryRoleUrl } from "./navLogic";
 
 /**
- * The first screen of the bare address (no restaurant chosen): one button per function.
- * The customer needs nothing here (the table's QR Code or the restaurant's link opens the menu directly);
- * the team taps what they do (kitchen, waiter, cashier, courier) and the owner taps the last button.
- * Every button leads to the same sign-in, so the account decides what opens: nobody gets a screen that is not theirs.
+ * "Entrar": one big button per function, reached from the sales page (and from the small link at the bottom of each
+ * restaurant's own page). The cook, the waiter, the cashier and the courier tap what they do; the owner and the
+ * manager tap the last button. Every button leads to the same sign-in, so the account decides what opens: nobody gets a
+ * screen that is not theirs.
+ *
+ * The bare address is NOT this screen: it is only the sales page of the service. Customers never come here; they open
+ * the link of the restaurant they want, which goes straight to that menu.
  */
 export default function StartScreen() {
-  const [signupOpen, setSignupOpen] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    fetchSignupStatus().then((status) => {
-      if (alive) setSignupOpen(status === "open");
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
   const { origin, pathname } = window.location;
 
   return (
@@ -33,20 +21,10 @@ export default function StartScreen() {
       <div className="st-wrap">
         <img className="st-logo" src="/logo-vem-comer.png" alt="Vem Comer" />
 
-        <section className="st-card st-customer" aria-labelledby="st-customer-title">
-          <span className="st-customer-icon" aria-hidden="true">
-            <NavIcon name="qr" size={30} />
-          </span>
-          <div>
-            <h1 id="st-customer-title" className="st-customer-title">
-              Quer pedir?
-            </h1>
-            <p className="st-customer-text">
-              Aponte a câmera do celular para o QR Code da sua mesa. O cardápio abre na hora, sem baixar nada. Ou abra o link que o
-              restaurante mandou.
-            </p>
-          </div>
-        </section>
+        <header className="st-head">
+          <h1 className="st-title">Entrar</h1>
+          <p className="st-lead">Toque no que você faz. Depois é só o e-mail e a senha que o restaurante criou para você.</p>
+        </header>
 
         <section aria-labelledby="st-team-title" className="st-section">
           <h2 id="st-team-title" className="st-heading">
@@ -79,13 +57,8 @@ export default function StartScreen() {
             </span>
             <NavIcon name="chevron" size={22} />
           </a>
-          {signupOpen && (
-            <a className="btn btn-primary btn-block" href={signupUrl(origin, pathname)}>
-              Cadastrar meu restaurante
-            </a>
-          )}
-          <a className="btn btn-quiet btn-block" href={salesUrl(origin, pathname)}>
-            Conhecer o sistema
+          <a className="btn btn-quiet btn-block" href={pathname || "/"}>
+            Voltar
           </a>
         </section>
       </div>

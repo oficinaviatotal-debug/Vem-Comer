@@ -559,7 +559,7 @@ html.nav-open body {
   color: var(--nevoa);
 }
 
-/* ---------- start screen (bare address) ---------- */
+/* ---------- "Entrar": one button per function ---------- */
 
 .st {
   min-height: 100vh;
@@ -582,38 +582,19 @@ html.nav-open body {
   margin: 0 auto;
 }
 
-.st-card {
-  border-radius: var(--r-md);
-  box-shadow: var(--sombra-folha);
+.st-head {
+  text-align: center;
 }
 
-.st-customer {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--s4);
-  padding: var(--s5);
-  background: var(--brasa);
-  color: #fff;
-}
-
-.st-customer-icon {
-  display: grid;
-  flex: none;
-  width: 56px;
-  height: 56px;
-  place-items: center;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.18);
-}
-
-.st-customer-title {
+.st-title {
   margin: 0;
-  color: #fff;
+  color: var(--folha);
   font: 700 var(--t-2xl) / 1.1 var(--font-display);
 }
 
-.st-customer-text {
+.st-lead {
   margin: var(--s2) 0 0;
+  color: var(--nevoa);
   line-height: 1.4;
 }
 
@@ -743,4 +724,89 @@ html.nav-open body {
   color: var(--folha);
   font-size: var(--t-sm);
   text-align: center;
+}
+
+/* ---------- "Hoje": the strip only the owner of the platform sees ---------- */
+
+.hm-platform {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+/* ---------- "Meu link": the restaurant's own link, ready to send ---------- */
+
+.sl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.sl-lead {
+  margin: 0;
+  color: var(--tinta);
+  line-height: 1.45;
+}
+
+.sl-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.sl-url {
+  width: 100%;
+  resize: none;
+  padding: var(--s3);
+  border: 2px solid var(--linha);
+  border-radius: var(--r-sm);
+  background: var(--papel);
+  color: var(--folha);
+  font: 600 var(--t-md) / 1.35 var(--font-ui);
+  overflow-wrap: anywhere;
+}
+
+.sl-status {
+  min-height: 1.4em;
+  margin: 0;
+  color: var(--mata);
+  font-weight: 600;
+}
+
+.sl-h2 {
+  margin: var(--s2) 0 0;
+  font: 700 var(--t-xl) / 1.2 var(--font-display);
+}
+
+.sl-where {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sl-where li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-md);
+  background: #fff;
+}
+
+.sl-where strong {
+  color: var(--folha);
+}
+
+.sl-where span {
+  color: var(--nevoa);
+  line-height: 1.4;
+}
+
+.sl-where .btn {
+  margin-top: var(--s2);
 }

@@ -5,6 +5,7 @@ import "./nav.css";
 import NavIcon from "./NavIcon";
 import PauseStrip from "../service/PauseStrip";
 import { fetchBusiness } from "../business/businessApi";
+import { fetchPlatformList } from "../service/subscriptionApi";
 import {
   LEVEL_ICON,
   LEVEL_NAME,
@@ -24,6 +25,7 @@ import {
   firstName,
   greeting,
   isManager,
+  platformCards,
   roleLine,
   shortcutsFor,
   type OrderLite,
@@ -41,6 +43,10 @@ type Props = {
   place: string;
   /** The orders the panel already polls every few seconds. */
   orders: OrderLite[];
+  /** The person who owns the platform: sees his own strip (restaurants that need him, help requests). */
+  platformAdmin?: boolean;
+  /** Help requests waiting, as the panel already counts them (null: not known). */
+  helpCount?: number | null;
   onGo: (view: string) => void;
 };
 
@@ -52,7 +58,7 @@ type Props = {
  * Nothing here is estimated: the tiles count the orders the panel already has, the sales and the warnings come
  * from the same server numbers as "Seu negócio".
  */
-export default function HomeView({ companyId, role, name, place, orders, onGo }: Props) {
+export default function HomeView({ companyId, role, name, place, orders, platformAdmin = false, helpCount = null, onGo }: Props) {
   const manager = isManager(role);
   const cards = activityCards(role, orders, Date.now());
   const shortcuts = shortcutsFor(role);
@@ -88,6 +94,8 @@ export default function HomeView({ companyId, role, name, place, orders, onGo }:
 
       {manager && <TodaySales companyId={companyId} onGo={onGo} />}
 
+      {platformAdmin && <PlatformStrip helpCount={helpCount} onGo={onGo} />}
+
       <h2 className="hm-section">O que você quer fazer?</h2>
       <div className="hm-shortcuts">
         {shortcuts.map((item) => (
@@ -102,6 +110,51 @@ export default function HomeView({ companyId, role, name, place, orders, onGo }:
             <span className="hm-shortcut-go">
               <NavIcon name="chevron" size={22} />
             </span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Only for the owner of the platform: how many restaurants need him (late or about to be late) and how many help
+ * requests wait for an answer. Both numbers come from the server; a number that cannot be read shows a dash.
+ */
+function PlatformStrip({ helpCount, onGo }: { helpCount: number | null; onGo: (view: string) => void }) {
+  const [attention, setAttention] = useState<number | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      fetchPlatformList()
+        .then((list) => {
+          if (alive) setAttention(list.needs_attention);
+        })
+        .catch(() => undefined); // a failed read keeps what is on screen (or the dash)
+    void load();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, REFRESH_MS);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  const cards = platformCards({ needsAttention: attention, helpOpen: helpCount });
+
+  return (
+    <section className="hm-platform" aria-labelledby="hm-platform-title">
+      <h2 id="hm-platform-title" className="hm-section">
+        Só você, dono do sistema
+      </h2>
+      <div className="hm-tiles">
+        {cards.map((card) => (
+          <button key={card.key} type="button" className={`hm-tile hm-tile-${card.tone}`} onClick={() => onGo(card.go)}>
+            <span className="hm-tile-count">{card.count === null ? "–" : countText(card.count)}</span>
+            <span className="hm-tile-label">{card.label}</span>
+            <span className="hm-tile-note">{card.note}</span>
           </button>
         ))}
       </div>

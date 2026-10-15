@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import "./styles.css";
 import { fetchCompanyBySlug, getToken } from "./service/api";
 import { lastCompany } from "./service/lastCompany";
-import { entryScreen, panelUrl, wantsPanel } from "./service/links";
+import { entryScreen, ownerLoginUrl, wantsPanel } from "./service/links";
 import AdminPanel from "./service/AdminPanel";
 import CustomerApp from "./customer/CustomerApp";
 import StartScreen from "./nav/StartScreen";
+import { entryRoleFromSearch } from "./nav/navLogic";
 import OwnerLogin from "./signup/OwnerLogin";
 import SalesPage from "./signup/SalesPage";
 import SignupPage from "./signup/SignupPage";
@@ -16,8 +17,13 @@ import type { Company } from "./customer/types";
  * Entry point. The address decides what opens:
  *   ?empresa=<slug>&mesa=<id>      customer menu (what the table QR code opens)
  *   ?empresa=<slug>&painel=1       owner panel
- *   ?cadastro=1 | ?entrar=1 | ?termos=1 | ?sistema=1   owner sign-up, owner sign-in, terms of use, sales page
- *   nothing                        start screen with one button per function (or the panel, for someone signed in)
+ *   ?cadastro=1 | ?entrar=1 | ?termos=1 | ?sistema=1   owner sign-up, sign-in, terms of use, sales page
+ *   ?entrar=1                      one button per function (cook, waiter, cashier, courier, owner)
+ *   ?entrar=1&funcao=<function>    sign-in for that function
+ *   nothing                        the sales page of the service ONLY (or the panel, for someone signed in)
+ *
+ * Each restaurant has its own link (?empresa=<slug>): it opens that menu directly. The bare address never lists
+ * restaurants and never takes orders: it only sells the service.
  */
 export default function App() {
   const params = new URLSearchParams(location.search);
@@ -56,11 +62,11 @@ export default function App() {
     // Telas de entrada do dono (sem restaurante escolhido ainda)
     const screen = entryScreen(location.search);
     if (screen === "signup") return <SignupPage />;
-    if (screen === "login") return <OwnerLogin />;
+    if (screen === "login") return entryRoleFromSearch(location.search) ? <OwnerLogin /> : <StartScreen />;
     if (screen === "terms") return <TermsPage />;
-    if (screen === "sales") return <SalesPage />;
 
-    return <StartScreen />;
+    // The bare address and ?sistema=1 are the same page: the sales page of the service.
+    return <SalesPage />;
   }
 
   if (loading) {
@@ -86,7 +92,7 @@ export default function App() {
     <CustomerApp
       company={company}
       tableId={tableId}
-      panelHref={panelUrl(location.origin, location.pathname, company.slug)}
+      teamHref={ownerLoginUrl(location.origin, location.pathname)}
     />
   );
 }

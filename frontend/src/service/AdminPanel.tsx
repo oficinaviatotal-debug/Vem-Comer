@@ -80,6 +80,7 @@ import BusinessPanel from "../business/BusinessPanel";
 import CallsBar from "../mesa/CallsBar";
 import AdminDrawer, { type DrawerAction } from "../nav/AdminDrawer";
 import HomeView from "../nav/HomeView";
+import ShareLinkView from "../nav/ShareLinkView";
 import NavIcon from "../nav/NavIcon";
 import { menuFor, viewTitle } from "../nav/navLogic";
 import TablePoster from "../mesa/TablePoster";
@@ -165,6 +166,7 @@ type AdminView =
   | "mesas"
   | "pagamento"
   | "marca"
+  | "meulink"
   | "entrega"
   | "entregas"
   | "acerto"
@@ -185,6 +187,7 @@ const ADMIN_VIEWS: string[] = [
   "mesas",
   "pagamento",
   "marca",
+  "meulink",
   "entrega",
   "entregas",
   "acerto",
@@ -1031,6 +1034,19 @@ export default function AdminPanel({
           name={currentUser?.name ?? ""}
           place={companyName ?? ""}
           orders={orders}
+          platformAdmin={isPlatformAdmin}
+          helpCount={helpCount}
+          onGo={(target) => {
+            if (isAdminView(target)) setView(target);
+            window.scrollTo({ top: 0 });
+          }}
+        />
+      ) : view === "meulink" &&
+        (currentUser?.role === "OWNER" ||
+          currentUser?.role === "MANAGER") ? (
+        <ShareLinkView
+          slug={companySlug}
+          name={companyName ?? companySlug}
           onGo={(target) => {
             if (isAdminView(target)) setView(target);
             window.scrollTo({ top: 0 });

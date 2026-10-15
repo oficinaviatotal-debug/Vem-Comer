@@ -55,7 +55,8 @@ export type IconName =
   | "cashier"
   | "courier"
   | "customer"
-  | "owner";
+  | "owner"
+  | "link";
 
 export type NavGroupKey = "hoje" | "vender" | "cardapio" | "numeros" | "loja" | "plataforma";
 
@@ -125,6 +126,7 @@ const CATALOG: Entry[] = [
   { group: "numeros", view: "custos", label: "Custos", hint: "Custo de cada prato e CMV", icon: "costs", roles: MANAGERS },
   { group: "numeros", view: "pagamento", label: "Pagamento", hint: "Pix direto na sua conta", icon: "payment", roles: MANAGERS },
 
+  { group: "loja", view: "meulink", label: "Meu link", hint: "Para mandar no WhatsApp e no Instagram", icon: "link", roles: MANAGERS },
   { group: "loja", view: "horario", label: "Horário", hint: "Abrir, pausar e fechar", icon: "hours", roles: MANAGERS },
   { group: "loja", view: "entrega", label: "Regiões de entrega", hint: "Taxas por região e retirada", icon: "zones", roles: MANAGERS },
   { group: "loja", view: "marca", label: "Marca", hint: "Logomarca e cores", icon: "brand", roles: MANAGERS },
@@ -141,7 +143,7 @@ const GROUP_TITLES: Record<NavGroupKey, string | null> = {
   cardapio: "Cardápio",
   numeros: "Números",
   loja: "Minha loja",
-  plataforma: "Plataforma",
+  plataforma: "Dono do sistema",
 };
 
 const GROUP_ORDER: NavGroupKey[] = ["hoje", "vender", "cardapio", "numeros", "loja", "plataforma"];
@@ -352,6 +354,7 @@ export function shortcutsFor(roleInput: string | null | undefined): Shortcut[] {
       { view: "pedidos", label: "Ver pedidos", hint: "Aceitar e acompanhar", icon: "orders" },
       { view: "assistente", label: "Falar o cardápio", hint: "Cadastre por voz ou foto", icon: "assistant" },
       { view: "mesas", label: "Mesas e QR Code", hint: "Imprima o cartaz da mesa", icon: "tables" },
+      { view: "meulink", label: "Mandar meu link", hint: "WhatsApp e Instagram", icon: "link" },
       { view: "dashboard", label: "Ver os números", hint: "Vendas, lucro e horários", icon: "business" },
     ];
   }
@@ -372,6 +375,63 @@ export function shortcutsFor(roleInput: string | null | undefined): Shortcut[] {
     { view: "pedidos", label: "Ver pedidos", hint: "O que a cozinha está fazendo", icon: "orders" },
     { view: "produtos", label: "Marcar o que esgotou", hint: "O cliente deixa de pedir", icon: "products" },
   ];
+}
+
+/** The words that go with the restaurant's link when the owner sends it to customers. */
+export function shareMessage(placeName: string | null | undefined, url: string): string {
+  const name = String(placeName ?? "").trim();
+  return name ? `${name}: veja o cardápio e faça o seu pedido pelo celular.\n${url}` : `Veja o cardápio e faça o seu pedido pelo celular.\n${url}`;
+}
+
+/** Opens WhatsApp with the message ready; the person picks who gets it. */
+export function whatsappShareUrl(text: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(text)}`;
+}
+
+export type PlatformCard = {
+  key: string;
+  label: string;
+  /** null: the number is not known yet or could not be read (the card shows a dash, never a made-up zero). */
+  count: number | null;
+  note: string;
+  tone: "wait" | "ok";
+  go: string;
+};
+
+/**
+ * What only the owner of the platform sees on "Hoje": the restaurants that need him (plan late or about to be) and the
+ * help requests waiting for an answer. The numbers come from the server; nothing is estimated here.
+ */
+export function platformCards(input: { needsAttention: number | null; helpOpen: number | null }): PlatformCard[] {
+  const { needsAttention, helpOpen } = input;
+  const plans: PlatformCard =
+    needsAttention === null
+      ? { key: "plataforma-planos", label: "Assinaturas", count: null, note: "Toque para ver", tone: "wait", go: "assinaturas" }
+      : {
+          key: "plataforma-planos",
+          label: "Assinaturas",
+          count: needsAttention,
+          note:
+            needsAttention === 0
+              ? "Todos os restaurantes em dia"
+              : needsAttention === 1
+                ? "1 restaurante precisa de você"
+                : `${needsAttention} restaurantes precisam de você`,
+          tone: needsAttention === 0 ? "ok" : "wait",
+          go: "assinaturas",
+        };
+  const help: PlatformCard =
+    helpOpen === null
+      ? { key: "plataforma-ajuda", label: "Chamados", count: null, note: "Toque para ver", tone: "wait", go: "ajuda" }
+      : {
+          key: "plataforma-ajuda",
+          label: "Chamados",
+          count: helpOpen,
+          note: helpOpen === 0 ? "Nenhum pedido de ajuda" : "Donos esperando resposta",
+          tone: helpOpen === 0 ? "ok" : "wait",
+          go: "ajuda",
+        };
+  return [plans, help];
 }
 
 /** "Bom dia", "Boa tarde" or "Boa noite" by the hour on the person's own clock (0 to 23). */
