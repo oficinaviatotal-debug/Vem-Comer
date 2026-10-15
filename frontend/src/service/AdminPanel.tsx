@@ -86,6 +86,7 @@ import ShareLinkView from "../nav/ShareLinkView";
 import NavIcon from "../nav/NavIcon";
 import { menuFor, viewTitle } from "../nav/navLogic";
 import TablePoster from "../mesa/TablePoster";
+import TableDesk from "../mesa/TableDesk";
 import "../ui.css";
 import "../admin.css";
 
@@ -166,6 +167,7 @@ type AdminView =
   | "dashboard"
   | "usuarios"
   | "mesas"
+  | "mesa"
   | "pagamento"
   | "marca"
   | "meulink"
@@ -188,6 +190,7 @@ const ADMIN_VIEWS: string[] = [
   "dashboard",
   "usuarios",
   "mesas",
+  "mesa",
   "pagamento",
   "marca",
   "meulink",
@@ -1164,6 +1167,8 @@ export default function AdminPanel({
           plan={plan}
           restaurantName={companyName ?? companySlug}
         />
+      ) : view === "mesa" && ["OWNER", "MANAGER", "WAITER", "CASHIER"].includes(String(currentUser?.role)) ? (
+        <TableDesk companyId={companyId} slug={companySlug} orders={orders} tableUrl={tableOrderUrl} />
       ) : view === "aprovacoes" && plan?.platform_admin ? (
         <ApprovalsView onCount={setApprovalsCount} />
       ) : view === "assinaturas" && plan?.platform_admin ? (

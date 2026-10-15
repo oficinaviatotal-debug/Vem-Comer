@@ -57,7 +57,8 @@ export type IconName =
   | "customer"
   | "owner"
   | "link"
-  | "approvals";
+  | "approvals"
+  | "qr";
 
 export type NavGroupKey = "hoje" | "vender" | "cardapio" | "numeros" | "loja" | "plataforma";
 
@@ -102,6 +103,8 @@ type Entry = {
 
 const MANAGERS = MANAGER_ROLES;
 const CASH = ["OWNER", "MANAGER", "CASHIER"];
+/** Who goes to a table: "Abrir mesa" (read the QR, see its calls and orders). The kitchen and the couriers do not. */
+const TABLE_ROLES = ["OWNER", "MANAGER", "WAITER", "CASHIER"];
 
 /**
  * Every screen of the panel, in the order of the menu. The visibility rules are the ones the tabs always had
@@ -111,6 +114,7 @@ const CATALOG: Entry[] = [
   { group: "hoje", view: "inicio", label: "Hoje", hint: "O que está acontecendo agora", icon: "home" },
 
   { group: "vender", view: "pedidos", label: "Pedidos", hint: "Aceitar, preparar e entregar", icon: "orders" },
+  { group: "vender", view: "mesa", label: "Abrir mesa", hint: "Leia o QR ou digite o número", icon: "qr", roles: TABLE_ROLES },
   { group: "vender", view: "mesas", label: "Mesas", hint: "QR Code e chamados do salão", icon: "tables" },
   { group: "vender", view: "entregas", label: "Entregas", hint: "Quem está na rua e o que falta", icon: "deliveries", roles: MANAGERS },
   { group: "vender", view: "acerto", label: "Acerto de caixa", hint: "Dinheiro que os entregadores trouxeram", icon: "settle", roles: CASH },
@@ -376,6 +380,7 @@ export function shortcutsFor(roleInput: string | null | undefined): Shortcut[] {
     ];
   }
   return [
+    { view: "mesa", label: "Abrir uma mesa", hint: "Leia o QR ou digite o número", icon: "qr" },
     { view: "mesas", label: "Ver as mesas", hint: "Chamados e QR Code", icon: "waiter" },
     { view: "pedidos", label: "Ver pedidos", hint: "O que a cozinha está fazendo", icon: "orders" },
     { view: "produtos", label: "Marcar o que esgotou", hint: "O cliente deixa de pedir", icon: "products" },

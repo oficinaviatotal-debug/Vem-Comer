@@ -70,6 +70,16 @@ decidido **no servidor** (`PLATFORM_ADMIN_EMAILS`), nunca pelo que o navegador m
   alterar nem apagar. Só quem o servidor reconhece como administrador abre a tela e decide, e quem decidiu vem do login,
   nunca do que a tela manda. Código: `backend/approvals.py`, migração `020_registro_de_acoes.sql`,
   `frontend/src/nav/ApprovalsView.tsx`.
+- **Abrir mesa** (grupo Vender; dono, gerente, garçom e caixa; é o primeiro botão grande do garçom em "Hoje"): o garçom
+  chega na mesa lendo o **QR com a câmera dentro do aplicativo**, ou **digitando o número**, ou **tocando na lista** de
+  mesas (cada ficha diz o que foi contado: "Chamando", "2 pedidos" ou "Sem pedido"; nunca "livre" ou "ocupada", porque
+  o sistema não sabe). A mesa aberta mostra os **chamados** dela (com Atender, o mesmo botão da faixa do topo), os
+  **pedidos em andamento** (nome, etapa, há quanto tempo, valor) e o botão **Fazer um pedido para esta mesa**, que abre
+  o cardápio da mesa como o cliente vê. **Não mexe em pedido nem em dinheiro** e **não calcula conta**: o sistema ainda
+  não tem o conceito de "conta da mesa" (item 49). O QR de outro restaurante, de outro tipo ou de uma mesa fora do
+  cadastro é recusado em palavras. A leitura usa o leitor de QR do navegador (Chrome no Android, sem baixar
+  biblioteca); **onde ele não existe, como no iPhone, a tela avisa e fica o número e a lista**. A imagem da câmera
+  não é gravada nem enviada. Código: `frontend/src/mesa/TableDesk.tsx`, `QrScanner.tsx`, `tableDeskLogic.ts`.
 - Plano vencido: o menu continua mostrando só o que já era permitido (Pedidos, Entregas, Acerto de caixa e Plano).
 - O **guia passo a passo** abre e fecha o menu sozinho nos passos que apontam para uma tela dentro dele.
 
@@ -88,8 +98,10 @@ custo (a regra já existe no servidor: só uma ação aprovada pode ser concluí
    no painel (09:03). **Dois nomes saíram misturados com texto colado** (o do restaurante e o do dono) e o GD disse
    "deixa assim, depois mudamos": ficam como estão até ele pedir. Não há tela para mudar o nome do restaurante nem o do
    dono: quando ele pedir, a correção é uma linha no banco (ou uma tela nova).
-2. O e-mail dele precisa estar em `PLATFORM_ADMIN_EMAILS` (`deploy/vps/cobranca.sh dados --admin <e-mail>`, e conferir
-   com `cobranca.sh status`: "Administradores" = 1). **Não vi o resultado: não sei se este passo foi feito.**
+2. O e-mail dele precisa estar em `PLATFORM_ADMIN_EMAILS` (`bash /opt/vem-comer/app/deploy/vps/cobranca.sh dados --admin <e-mail>`,
+   e conferir com `... cobranca.sh status`: "Administradores" = 1). **Não vi o resultado: não sei se este passo foi feito.**
+   O GD mandou (15/10/2026, 11:01) **deixar na pendência e seguir a construção, sem login e senha por ora**: o passo
+   fica pendente até ele pedir.
 
 Sem o passo 2, ele entra como dono comum e o grupo "Dono do sistema" não aparece. O painel que está no ar hoje é o
 desenho antigo; o novo (menu, Hoje, Aprovações) está no PR #70 e no PR seguinte, e **só entra no ar com o "pode" dele**.

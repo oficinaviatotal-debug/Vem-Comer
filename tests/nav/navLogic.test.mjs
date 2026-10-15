@@ -48,14 +48,16 @@ const viewsOf = (context) => menuFor(context).flatMap((group) => group.items.map
 
 test("the menu shows each role exactly what the old tabs showed", () => {
   // The rules below are the ones the row of tabs in AdminPanel had before the menu existed.
-  // "meulink" (Meu link) is the one screen that is new: only the owner and the manager see it.
+  // Two screens are new: "meulink" (Meu link, only the owner and the manager) and "mesa" (Abrir mesa, who serves the
+  // floor: owner, manager, waiter and cashier; the kitchen does not go to tables).
   const staff = ["inicio", "pedidos", "mesas", "produtos", "categorias", "dashboard"];
-  assert.deepEqual(new Set(viewsOf(base("WAITER", { hasPlanTab: false }))), new Set(staff));
+  assert.deepEqual(new Set(viewsOf(base("WAITER", { hasPlanTab: false }))), new Set([...staff, "mesa"]));
   assert.deepEqual(new Set(viewsOf(base("KITCHEN", { hasPlanTab: false }))), new Set(staff));
-  assert.deepEqual(new Set(viewsOf(base("CASHIER", { hasPlanTab: false }))), new Set([...staff, "acerto"]));
+  assert.deepEqual(new Set(viewsOf(base("CASHIER", { hasPlanTab: false }))), new Set([...staff, "acerto", "mesa"]));
 
   const manager = [
     ...staff,
+    "mesa",
     "assistente",
     "custos",
     "entrega",
