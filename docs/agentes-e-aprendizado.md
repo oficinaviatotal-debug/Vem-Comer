@@ -80,9 +80,32 @@ Assinaturas e Chamados. **Não existe ainda.**
 ## 6. Onde aplicar primeiro (ordem proposta)
 
 1. **Captação do Vem Comer (o padrão do Harvey).** É o único motor de receita. O agente **só prepara** (lista, pesquisa com
-   fonte, primeira mensagem) e **o GD aprova cada envio** nos primeiros 30 dias. Origens de contato que o `outreach.py` já
-   aceita: anúncio público, site da empresa, indicação, parceiro, pedido do contato. Tirar dado do Google por raspagem costuma
-   contrariar os termos; usar a interface oficial e **conferir os termos**.
+   fonte, primeira mensagem) e **o GD aprova cada envio** nos primeiros 30 dias.
+
+   **Alvo definido pelo GD (15/10/2026, 08:42): o estado do Rio Grande do Norte inteiro, todo tipo de operação de comida:
+   bares, restaurantes, lanchonetes, hotéis e qualquer loja de refeição, "buscando no Instagram".**
+
+   De onde vêm os contatos (o que é permitido e o que não é):
+   - **Lista base: cadastro público de empresas (dados abertos do CNPJ, Receita Federal), filtrado por RN e pelas atividades
+     de alimentação (CNAE, divisão 56) e hospedagem (divisão 55).** É a única fonte que dá a lista **completa** e oficial.
+     Limites: só quem tem CNPJ (ambulante e delivery caseiro sem registro ficam de fora); o e-mail do cadastro muitas
+     vezes é o do contador, não o do dono; o telefone costuma ser mais útil. **Hoje o `outreach.py` não aceita "cadastro
+     público do CNPJ" como origem** (aceita: anúncio público, site da empresa, indicação, parceiro, pedido do contato). Incluir
+     essa origem muda regra de conformidade (nível 3, decisão do GD) e **precisa da revisão do advogado**. Baixar e filtrar esses
+     arquivos roda no servidor ou no notebook, não no meu ambiente de trabalho (a rede daqui é restrita).
+   - **Enriquecimento:** o site da própria empresa, o perfil dela no Google (pela interface oficial, conferindo termos e
+     custo) e o **endereço do Instagram que a empresa publica nos próprios canais**.
+   - **Instagram:** a API oficial (Business Discovery) **consulta uma conta cujo @ já se conhece**, a partir de uma conta
+     profissional sua, e devolve seguidores, quantidade de publicações e métricas. **Ela não busca por cidade nem por tipo de
+     negócio.** Coleta automática no Instagram sem permissão contraria os termos da Meta e pode **derrubar as contas do
+     GD** (Vem Tecnologia, Via Total). Por isso: a busca por cidade e tipo é **feita por você** (como já faz, mandando prints,
+     que eu leio) ou por indicação; a mensagem direta no Instagram é **enviada por você**, preparada por mim.
+   - **Hotel** entra pelo restaurante e pelo bar do hotel. **Pedido por quarto não está no produto hoje** (a conferir).
+
+   **Prioridade da lista (pontuação com fonte):** sem cardápio digital nem site, boa nota e muitas avaliações, região turística
+   ou de muito movimento. Ordem sugerida: Grande Natal (Natal, Parnamirim), litoral (Tibau do Sul e Pipa, Nísia Floresta, litoral
+   norte), Mossoró e depois o interior (Caicó e o Seridó).
+
    **Antes de enviar qualquer e-mail:** domínio com SPF, DKIM e DMARC; provedor de envio; revisão do advogado (LGPD,
    interesse legítimo, identificação de quem envia, descadastro).
    **WhatsApp e Instagram não entram como envio automático de mensagem fria:** costumam bloquear a conta; as regras de cada
@@ -120,6 +143,6 @@ testes) e a tela **Aprovações** no grupo "Dono do sistema". Nada envia e nada 
 **Depende do GD:**
 1. Começar pela captação do Vem Comer?
 2. Nos primeiros 30 dias, **nada sai sem o aval dele** (minha recomendação).
-3. Região e tipos de negócio da primeira lista.
+3. ~~Região e tipos de negócio~~ **Respondido em 15/10, 08:42: Rio Grande do Norte inteiro, todo tipo de operação de comida e hotéis.**
 4. Domínio e e-mail de envio (itens já pendentes).
 5. Advogado para a revisão do e-mail para empresas.
