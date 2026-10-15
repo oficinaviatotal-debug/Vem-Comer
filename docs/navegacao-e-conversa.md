@@ -41,7 +41,7 @@ tela de cliente nem lista de restaurantes.
 | Cliente pelo link do restaurante | Link do restaurante (`?empresa=…`), no WhatsApp ou no Instagram | **O cardápio daquele restaurante, direto** |
 | Cozinha, garçom, caixa, entregador, dono e gerente | **Entrar** (na página de venda ou no rodapé do cardápio: "Sou da equipe ou dono") → botão da função → e-mail e senha | A tela "Hoje" da função |
 | Já entrou antes neste aparelho | Qualquer endereço sem restaurante | Direto no painel |
-| GD (dono do software) | A mesma entrada: e-mail e senha | "Hoje" com a faixa "Só você, dono do sistema" e o grupo **Dono do sistema** no menu |
+| GD (dono do software) | A mesma entrada: e-mail e senha | "Hoje" com a faixa "Só você, dono do sistema" (aprovações, assinaturas e chamados) e o grupo **Dono do sistema** no menu |
 
 Todo botão de função leva à **mesma entrada**: quem decide o que abre é o **cadastro da pessoa**, não o botão.
 Escolher "Cozinha" sendo garçom não dá acesso a nada que não seja dela. Quem é administrador da plataforma é
@@ -58,26 +58,41 @@ decidido **no servidor** (`PLATFORM_ADMIN_EMAILS`), nunca pelo que o navegador m
   compara a lista antiga com a nova. A única tela nova é **Meu link**, só para dono e gerente.
 - **Meu link:** o link do restaurante (`?empresa=…`) com copiar, mandar no WhatsApp e abrir para conferir, e onde
   colocar (WhatsApp, Instagram, QR de cada mesa). O link abre só aquele cardápio: não mostra outros restaurantes.
-- **Parte do dono do software:** a faixa "Só você, dono do sistema" em "Hoje" (assinaturas que precisam dele, chamados
-  de ajuda esperando) e, no menu, **Assinaturas** (todos os restaurantes, cobrar, registrar pagamento) e **Chamados**.
-  Os números vêm do servidor; se não der para ler, aparece um traço, nunca um zero inventado.
+- **Parte do dono do software:** a faixa "Só você, dono do sistema" em "Hoje" (decisões esperando o aval dele,
+  assinaturas que precisam dele, chamados de ajuda esperando) e, no menu, **Aprovações**, **Assinaturas** (todos os
+  restaurantes, cobrar, registrar pagamento) e **Chamados**. Os números vêm do servidor; se não der para ler, aparece
+  um traço, nunca um zero inventado.
+- **Aprovações:** um cartão por decisão (o quê, por quê, a **evidência** com fonte e data de cada fato, o risco e o que
+  acontece se ele recusar). Ele escolhe **Aprovar, Recusar ou Pedir mudança** e **confirma num segundo toque** (pedir
+  mudança exige dizer o que mudar). Embaixo fica o **Registro** das últimas ações (decididas ou feitas, com resultado e
+  custo). **Aprovar só libera a ação e fica escrito no registro: nada executa, envia ou muda coisa nenhuma, e ainda não
+  existe agente que proponha cartões**, então a fila fica vazia até haver. O histórico de cada ação o banco não deixa
+  alterar nem apagar. Só quem o servidor reconhece como administrador abre a tela e decide, e quem decidiu vem do login,
+  nunca do que a tela manda. Código: `backend/approvals.py`, migração `020_registro_de_acoes.sql`,
+  `frontend/src/nav/ApprovalsView.tsx`.
 - Plano vencido: o menu continua mostrando só o que já era permitido (Pedidos, Entregas, Acerto de caixa e Plano).
 - O **guia passo a passo** abre e fecha o menu sozinho nos passos que apontam para uma tela dentro dele.
 
 ### O que a área do dono do software **ainda não** tem (só desenho)
 
-O GD pediu que o que faltar entre no menu da esquerda, inclusive a parte dele. Hoje existem Assinaturas e Chamados.
-Faltam, em ordem sugerida: **fila de aprovação** das ações de maior impacto (nada de alto impacto roda sem o aval
-dele), **cadastros** (quem se cadastrou, ligar e desligar o cadastro público pela tela hoje só pelo servidor),
-**saúde do sistema** (versão no ar, falhas, backup) e **uso de IA** (custo por restaurante). Nenhuma está programada.
+O GD pediu que o que faltar entre no menu da esquerda, inclusive a parte dele. Hoje existem **Aprovações**, Assinaturas
+e Chamados. Faltam, em ordem sugerida: **cadastros** (quem se cadastrou, ligar e desligar o cadastro público pela tela,
+hoje só pelo servidor), **saúde do sistema** (versão no ar, falhas, backup) e **uso de IA** (custo por restaurante).
+Nenhuma está programada. Em Aprovações, falta o **executor** que, depois do aval, faz a ação e conta o resultado e o
+custo (a regra já existe no servidor: só uma ação aprovada pode ser concluída).
 
 ### Para a área do GD aparecer (depende de acesso ao servidor)
 
 1. A conta dele precisa existir (o cadastro público está fechado: `deploy/vps/criar-restaurante.sh`).
-2. O e-mail dele precisa estar em `PLATFORM_ADMIN_EMAILS` (`deploy/vps/cobranca.sh dados --admin <e-mail>`).
+   **Feito em 15/10/2026, 09:01** (print do GD: "Restaurante criado", login `gerdianoribeiro@gmail.com`); ele já entrou
+   no painel (09:03). **Dois nomes saíram misturados com texto colado** (o do restaurante e o do dono) e o GD disse
+   "deixa assim, depois mudamos": ficam como estão até ele pedir. Não há tela para mudar o nome do restaurante nem o do
+   dono: quando ele pedir, a correção é uma linha no banco (ou uma tela nova).
+2. O e-mail dele precisa estar em `PLATFORM_ADMIN_EMAILS` (`deploy/vps/cobranca.sh dados --admin <e-mail>`, e conferir
+   com `cobranca.sh status`: "Administradores" = 1). **Não vi o resultado: não sei se este passo foi feito.**
 
-Sem isso, ele entra como dono comum e o grupo "Dono do sistema" não aparece. **Não confirmei se isso já está feito
-no servidor.**
+Sem o passo 2, ele entra como dono comum e o grupo "Dono do sistema" não aparece. O painel que está no ar hoje é o
+desenho antigo; o novo (menu, Hoje, Aprovações) está no PR #70 e no PR seguinte, e **só entra no ar com o "pode" dele**.
 
 ### Decisão que é do GD
 
