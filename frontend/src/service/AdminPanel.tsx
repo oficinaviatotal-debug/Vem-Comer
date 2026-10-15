@@ -44,6 +44,8 @@ import HelpSheet from "./HelpSheet";
 import HelpInbox from "./HelpInbox";
 import TitularInbox from "./TitularInbox";
 import { fetchPlatformHelp } from "./helpApi";
+import { fetchApprovals } from "./approvalsApi";
+import ApprovalsView from "../nav/ApprovalsView";
 import { suggestedTopic } from "./helpLogic";
 import { useOwnerPlan } from "./useOwnerPlan";
 import { bannerOf, hasPlanTab, viewAllowed } from "./subscriptionView";
@@ -172,6 +174,7 @@ type AdminView =
   | "acerto"
   | "horario"
   | "plano"
+  | "aprovacoes"
   | "assinaturas"
   | "ajuda";
 
@@ -193,6 +196,7 @@ const ADMIN_VIEWS: string[] = [
   "acerto",
   "horario",
   "plano",
+  "aprovacoes",
   "assinaturas",
   "ajuda",
 ];
@@ -280,6 +284,8 @@ export default function AdminPanel({
   // "Preciso de ajuda": the owner's sheet, and (GD only) how many requests are waiting, shown on the Chamados tab.
   const [helpOpen, setHelpOpen] = useState(false);
   const [helpCount, setHelpCount] = useState<number | null>(null);
+  // GD only: decisions waiting for his go-ahead (the number on the menu and on "Hoje"); null until the server says.
+  const [approvalsCount, setApprovalsCount] = useState<number | null>(null);
   const isPlatformAdmin = plan?.platform_admin === true;
 
   useEffect(() => {
@@ -292,6 +298,25 @@ export default function AdminPanel({
       .catch(() => undefined); // the count is a courtesy: the tab still opens and says what went wrong
     return () => {
       alive = false;
+    };
+  }, [isPlatformAdmin]);
+
+  useEffect(() => {
+    if (!isPlatformAdmin) return;
+    let alive = true;
+    const load = () =>
+      fetchApprovals()
+        .then((approvals) => {
+          if (alive) setApprovalsCount(approvals.pending_count);
+        })
+        .catch(() => undefined); // the count is a courtesy: the screen still opens and says what went wrong
+    void load();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, 60_000);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
     };
   }, [isPlatformAdmin]);
 
@@ -746,6 +771,7 @@ export default function AdminPanel({
     platformAdmin: Boolean(plan?.platform_admin),
     openOrders: openOrdersCount,
     helpCount,
+    approvalsCount,
   });
 
   const drawerActions: DrawerAction[] = [
@@ -1036,6 +1062,7 @@ export default function AdminPanel({
           orders={orders}
           platformAdmin={isPlatformAdmin}
           helpCount={helpCount}
+          approvalsCount={approvalsCount}
           onGo={(target) => {
             if (isAdminView(target)) setView(target);
             window.scrollTo({ top: 0 });
@@ -1137,6 +1164,8 @@ export default function AdminPanel({
           plan={plan}
           restaurantName={companyName ?? companySlug}
         />
+      ) : view === "aprovacoes" && plan?.platform_admin ? (
+        <ApprovalsView onCount={setApprovalsCount} />
       ) : view === "assinaturas" && plan?.platform_admin ? (
         <PlatformPanel />
       ) : view === "ajuda" && plan?.platform_admin ? (

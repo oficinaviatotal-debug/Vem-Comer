@@ -5,8 +5,10 @@ potencializar, deixar sempre em evolução e aprendizado e implementar nos ecoss
 `docs/requisitos-do-dono-vem-comer.md`). O vídeo e a leitura dele ficam no repositório privado do Vem Trabalhar
 (`docs/referencias-visuais/`), porque são de terceiro.
 
-Este arquivo diz **o que já existe**, **o que é só desenho** e **o que depende do GD**. **Nada deste desenho está
-programado ainda.**
+Este arquivo diz **o que já existe**, **o que é só desenho** e **o que depende do GD**. **Nenhum agente roda ainda.**
+Estão programados só o **registro de ações** e a **fila de aprovação** (migração 020, `backend/approvals.py`, tela
+**Aprovações**): são o lugar onde os agentes vão propor e esperar o aval do GD, e **nada neles executa, envia ou muda
+coisa nenhuma**.
 
 ## 1. O que o vídeo mostra, e o que não verifiquei
 
@@ -28,6 +30,7 @@ painel local, com uma **fila de e-mails esperando aprovação**.
 | O laço de 12 passos (observar até renovar), os agentes, os **três níveis de mudança** e o **God Mode** do GD, o "segundo cérebro" | `LIVING_SYSTEM_SPINE.md` | Só texto |
 | O laço de benchmark (sinal até mudança no produto) | `BENCHMARK_INTELLIGENCE.md` | Só texto |
 | A **trava** de e-mail para empresas: só empresa, origem e base legal anotadas, lista de bloqueio única, no máximo 3 envios, limite diário que cresce aos poucos, freio automático por reclamação ou devolução, descadastro de um clique | `backend/outreach.py` | **Código com teste. Nada envia:** não existe provedor de envio |
+| **Registro de ações** (quem propôs, quem decidiu, resultado, custo; histórico que o banco não deixa alterar) e **fila de aprovação** do dono do software (nível 3) | `backend/approvals.py`, migração `020_registro_de_acoes.sql`, tela "Aprovações" | **Código com teste, inclusive no banco de verdade.** Ainda **não há agente** que proponha cartões, então a fila fica vazia |
 | Números do restaurante com "falar sempre a verdade" (sem dado, a resposta é "poucos dados") | `backend/insights.py`, painel "Seu negócio" | Código |
 | Assistente do cardápio por voz, foto e planilha | `docs/assistente-cardapio-voz.md` | Voz e planilha funcionam; **foto e PDF dependem da chave de IA, ainda não instalada** |
 | Notebook ligado 24 horas com o Claude | `docs/notebook-24h.md` | Guia pronto; **não sei se o GD já fez** |
@@ -35,8 +38,8 @@ painel local, com uma **fila de e-mails esperando aprovação**.
 | **Não** existe | O que falta |
 |---|---|
 | Qualquer **agente que rode sozinho** | Executor, agenda e botão de parar |
-| **Registro de ações e resultados** (o "placar") | Tabelas e API |
-| **Fila de aprovação** do dono do software | Tela "Aprovações" no grupo "Dono do sistema" |
+| O **placar** por agente (taxa de resposta, reuniões, custo por reunião) | Cálculo sobre o registro, depois que houver ações de verdade |
+| O **executor** que, depois do aval, faz a ação e conta o resultado e o custo | Código; a regra já existe (`approvals.finish`: só ação aprovada conclui) |
 | Envio de e-mail | Domínio, SPF, DKIM, DMARC e provedor |
 | Chave de IA no servidor | Script do servidor (nunca no chat) |
 | Captação de contatos | Fontes permitidas, pesquisa, redação com fonte |
@@ -75,7 +78,24 @@ Aprender não é o agente mudar sozinho; é **medir, propor e passar por aprova�
 
 É o God Mode do GD: um cartão por decisão, com **o quê, por quê, a evidência, o risco, o que acontece se recusar** e
 três botões (aprovar, recusar, pedir mudança). Fica no menu da esquerda, no grupo **Dono do sistema**, junto de
-Assinaturas e Chamados. **Não existe ainda.**
+Assinaturas e Chamados. **Existe desde 15/10/2026** (aguardando o aval do GD para entrar no ar).
+
+Como funciona, em regras que o servidor e o banco aplicam (todas com teste):
+- **Dois jeitos de entrar.** Nível 1 (reversível e pequeno): o sistema faz e conta; entra no registro já como "feita" ou
+  "falhou" e **nunca espera ninguém**. Nível 3 (método, dinheiro, texto legal, canal novo, custo novo, dado pessoal,
+  código em produção): entra "pendente" e **só o dono do software decide**. O nível 2 (o dono do restaurante aprova)
+  entra quando houver a fila do restaurante; por isso o banco ainda não o aceita.
+- **Sem evidência não entra na fila:** cada fato do cartão precisa de **fonte e data** ("sem fonte, a frase não sai"),
+  e o cartão precisa dizer o risco e o que acontece se recusar.
+- **Aprovar só libera.** Quem executa conta o resultado e o custo depois, e **só uma ação aprovada pode ser concluída**.
+- **Decide-se uma vez.** Repetir a mesma decisão não é erro; mudar de ideia depois é recusado (o agente propõe um cartão
+  novo). Pedir mudança exige dizer o que mudar.
+- **Quem decidiu vem do login**, nunca do que a tela manda, e só administrador da plataforma abre e decide.
+- **Histórico que não se altera:** cada passo (proposta, decisão, conclusão) vira uma linha que o banco não deixa
+  mudar nem apagar; apagar o usuário que decidiu não mexe no histórico.
+
+**O que a tela ainda não faz:** o "placar" por agente, o aviso no celular quando chega um cartão (o aviso dos
+administradores já existe para pagamentos; falta ligar) e a revisão semanal do agente de aprendizado.
 
 ## 6. Onde aplicar primeiro (ordem proposta)
 
@@ -137,8 +157,11 @@ Assinaturas e Chamados. **Não existe ainda.**
 
 ## 9. Próximos passos
 
-Do meu lado, **sem esperar resposta**: criar o **registro de ações** e a **fila de aprovação** no servidor (tabelas, API,
-testes) e a tela **Aprovações** no grupo "Dono do sistema". Nada envia e nada roda sozinho nessa etapa.
+**Feito (15/10/2026, aguardando o aval do GD):** o **registro de ações** e a **fila de aprovação** no servidor (tabelas,
+API, testes) e a tela **Aprovações** no grupo "Dono do sistema". Nada envia e nada roda sozinho.
+
+**Do meu lado, sem esperar resposta:** o modelo da **lista de captação** do RN (empresas com fonte, data e situação,
+sem enviar nada) e o aviso no celular do GD quando chegar um cartão.
 
 **Depende do GD:**
 1. Começar pela captação do Vem Comer?

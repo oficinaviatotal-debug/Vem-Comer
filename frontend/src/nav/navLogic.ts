@@ -56,7 +56,8 @@ export type IconName =
   | "courier"
   | "customer"
   | "owner"
-  | "link";
+  | "link"
+  | "approvals";
 
 export type NavGroupKey = "hoje" | "vender" | "cardapio" | "numeros" | "loja" | "plataforma";
 
@@ -79,10 +80,12 @@ export type NavContext = {
   allowed: (view: string) => boolean;
   /** The restaurant has a plan to talk about. */
   hasPlanTab: boolean;
-  /** The person who owns the platform (sees Assinaturas and Chamados). */
+  /** The person who owns the platform (sees Aprovações, Assinaturas and Chamados). */
   platformAdmin: boolean;
   openOrders: number;
   helpCount: number | null;
+  /** Decisions waiting for the owner of the platform (null or missing: not known). */
+  approvalsCount?: number | null;
 };
 
 type Entry = {
@@ -133,6 +136,7 @@ const CATALOG: Entry[] = [
   { group: "loja", view: "usuarios", label: "Equipe", hint: "Quem entra no painel", icon: "team", roles: ["OWNER"] },
   { group: "loja", view: "plano", label: "Plano", hint: "Pagamento e vencimento", icon: "plan", need: "plan" },
 
+  { group: "plataforma", view: "aprovacoes", label: "Aprovações", hint: "O que espera o seu aval", icon: "approvals", need: "platform" },
   { group: "plataforma", view: "assinaturas", label: "Assinaturas", hint: "Restaurantes e planos", icon: "subscriptions", need: "platform" },
   { group: "plataforma", view: "ajuda", label: "Chamados", hint: "Pedidos de ajuda dos donos", icon: "help", need: "platform" },
 ];
@@ -166,6 +170,7 @@ export function menuFor(context: NavContext): NavGroup[] {
     let badge: number | null = null;
     if (entry.view === "pedidos" && context.openOrders > 0) badge = context.openOrders;
     if (entry.view === "ajuda" && context.helpCount) badge = context.helpCount;
+    if (entry.view === "aprovacoes" && context.approvalsCount) badge = context.approvalsCount;
 
     const group = groups.find((item) => item.key === entry.group);
     group?.items.push({ view: entry.view, label: labelOf(entry, role), hint: entry.hint, icon: entry.icon, badge });
@@ -399,11 +404,33 @@ export type PlatformCard = {
 };
 
 /**
- * What only the owner of the platform sees on "Hoje": the restaurants that need him (plan late or about to be) and the
- * help requests waiting for an answer. The numbers come from the server; nothing is estimated here.
+ * What only the owner of the platform sees on "Hoje": the decisions waiting for his go-ahead, the restaurants that need
+ * him (plan late or about to be) and the help requests waiting for an answer. The numbers come from the server;
+ * nothing is estimated here.
  */
-export function platformCards(input: { needsAttention: number | null; helpOpen: number | null }): PlatformCard[] {
+export function platformCards(input: {
+  needsAttention: number | null;
+  helpOpen: number | null;
+  approvalsPending?: number | null;
+}): PlatformCard[] {
   const { needsAttention, helpOpen } = input;
+  const approvalsPending = input.approvalsPending ?? null;
+  const approvals: PlatformCard =
+    approvalsPending === null
+      ? { key: "plataforma-aprovacoes", label: "Aprovações", count: null, note: "Toque para ver", tone: "wait", go: "aprovacoes" }
+      : {
+          key: "plataforma-aprovacoes",
+          label: "Aprovações",
+          count: approvalsPending,
+          note:
+            approvalsPending === 0
+              ? "Nada espera o seu aval"
+              : approvalsPending === 1
+                ? "1 decisão espera o seu aval"
+                : `${approvalsPending} decisões esperam o seu aval`,
+          tone: approvalsPending === 0 ? "ok" : "wait",
+          go: "aprovacoes",
+        };
   const plans: PlatformCard =
     needsAttention === null
       ? { key: "plataforma-planos", label: "Assinaturas", count: null, note: "Toque para ver", tone: "wait", go: "assinaturas" }
@@ -431,7 +458,7 @@ export function platformCards(input: { needsAttention: number | null; helpOpen: 
           tone: helpOpen === 0 ? "ok" : "wait",
           go: "ajuda",
         };
-  return [plans, help];
+  return [approvals, plans, help];
 }
 
 /** "Bom dia", "Boa tarde" or "Boa noite" by the hour on the person's own clock (0 to 23). */

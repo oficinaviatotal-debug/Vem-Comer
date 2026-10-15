@@ -47,6 +47,8 @@ type Props = {
   platformAdmin?: boolean;
   /** Help requests waiting, as the panel already counts them (null: not known). */
   helpCount?: number | null;
+  /** Decisions waiting for the owner of the platform, as the panel already counts them (null: not known). */
+  approvalsCount?: number | null;
   onGo: (view: string) => void;
 };
 
@@ -58,7 +60,17 @@ type Props = {
  * Nothing here is estimated: the tiles count the orders the panel already has, the sales and the warnings come
  * from the same server numbers as "Seu negócio".
  */
-export default function HomeView({ companyId, role, name, place, orders, platformAdmin = false, helpCount = null, onGo }: Props) {
+export default function HomeView({
+  companyId,
+  role,
+  name,
+  place,
+  orders,
+  platformAdmin = false,
+  helpCount = null,
+  approvalsCount = null,
+  onGo,
+}: Props) {
   const manager = isManager(role);
   const cards = activityCards(role, orders, Date.now());
   const shortcuts = shortcutsFor(role);
@@ -94,7 +106,7 @@ export default function HomeView({ companyId, role, name, place, orders, platfor
 
       {manager && <TodaySales companyId={companyId} onGo={onGo} />}
 
-      {platformAdmin && <PlatformStrip helpCount={helpCount} onGo={onGo} />}
+      {platformAdmin && <PlatformStrip helpCount={helpCount} approvalsCount={approvalsCount} onGo={onGo} />}
 
       <h2 className="hm-section">O que você quer fazer?</h2>
       <div className="hm-shortcuts">
@@ -118,10 +130,19 @@ export default function HomeView({ companyId, role, name, place, orders, platfor
 }
 
 /**
- * Only for the owner of the platform: how many restaurants need him (late or about to be late) and how many help
- * requests wait for an answer. Both numbers come from the server; a number that cannot be read shows a dash.
+ * Only for the owner of the platform: how many decisions wait for his go-ahead, how many restaurants need him (late or
+ * about to be late) and how many help requests wait for an answer. The numbers come from the server; a number that
+ * cannot be read shows a dash.
  */
-function PlatformStrip({ helpCount, onGo }: { helpCount: number | null; onGo: (view: string) => void }) {
+function PlatformStrip({
+  helpCount,
+  approvalsCount,
+  onGo,
+}: {
+  helpCount: number | null;
+  approvalsCount: number | null;
+  onGo: (view: string) => void;
+}) {
   const [attention, setAttention] = useState<number | null>(null);
 
   useEffect(() => {
@@ -142,7 +163,7 @@ function PlatformStrip({ helpCount, onGo }: { helpCount: number | null; onGo: (v
     };
   }, []);
 
-  const cards = platformCards({ needsAttention: attention, helpOpen: helpCount });
+  const cards = platformCards({ needsAttention: attention, helpOpen: helpCount, approvalsPending: approvalsCount });
 
   return (
     <section className="hm-platform" aria-labelledby="hm-platform-title">

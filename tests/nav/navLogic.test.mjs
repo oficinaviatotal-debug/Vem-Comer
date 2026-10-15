@@ -78,11 +78,16 @@ test("Equipe is only for the owner, and Plano only when there is a plan to talk 
   assert.ok(viewsOf(base("OWNER")).includes("plano"));
 });
 
-test("Assinaturas and Chamados are only for the platform owner", () => {
-  assert.ok(!viewsOf(base("OWNER")).includes("assinaturas"));
-  assert.ok(!viewsOf(base("OWNER")).includes("ajuda"));
+test("Aprovações, Assinaturas and Chamados are only for the platform owner, and Aprovações comes first", () => {
+  for (const role of ["OWNER", "MANAGER", "WAITER", "KITCHEN", "CASHIER"]) {
+    for (const view of ["aprovacoes", "assinaturas", "ajuda"]) {
+      assert.ok(!viewsOf(base(role)).includes(view), `${role} must not see ${view}`);
+    }
+  }
   const platform = viewsOf(base("OWNER", { platformAdmin: true }));
-  assert.ok(platform.includes("assinaturas") && platform.includes("ajuda"));
+  assert.ok(platform.includes("aprovacoes") && platform.includes("assinaturas") && platform.includes("ajuda"));
+  const group = menuFor(base("OWNER", { platformAdmin: true })).find((item) => item.key === "plataforma");
+  assert.deepEqual(group.items.map((item) => item.view), ["aprovacoes", "assinaturas", "ajuda"]);
 });
 
 test("a blocked plan keeps only the orders in progress, the deliveries, the cash and the way to pay", () => {
@@ -156,14 +161,19 @@ test("the numbers screen is 'Seu negócio' for the owner and 'Resumo' for the te
   assert.equal(viewTitle("nao-existe", "OWNER"), "Painel");
 });
 
-test("badges: orders in progress on Pedidos, open requests on Chamados, nothing when zero", () => {
+test("badges: orders in progress on Pedidos, open requests on Chamados, decisions on Aprovações, nothing when zero", () => {
   const find = (groups, view) => groups.flatMap((g) => g.items).find((i) => i.view === view);
-  const withOrders = menuFor(base("OWNER", { openOrders: 4, platformAdmin: true, helpCount: 2 }));
+  const withOrders = menuFor(base("OWNER", { openOrders: 4, platformAdmin: true, helpCount: 2, approvalsCount: 3 }));
   assert.equal(find(withOrders, "pedidos").badge, 4);
   assert.equal(find(withOrders, "ajuda").badge, 2);
-  const quiet = menuFor(base("OWNER", { platformAdmin: true, helpCount: 0 }));
+  assert.equal(find(withOrders, "aprovacoes").badge, 3);
+  const quiet = menuFor(base("OWNER", { platformAdmin: true, helpCount: 0, approvalsCount: 0 }));
   assert.equal(find(quiet, "pedidos").badge, null);
   assert.equal(find(quiet, "ajuda").badge, null);
+  assert.equal(find(quiet, "aprovacoes").badge, null);
+  // not known (still loading or failed): no number, never a made-up one
+  assert.equal(find(menuFor(base("OWNER", { platformAdmin: true })), "aprovacoes").badge, null);
+  assert.equal(find(menuFor(base("OWNER", { platformAdmin: true, approvalsCount: null })), "aprovacoes").badge, null);
 });
 
 test("every screen the menu opens exists in AdminPanel.tsx (and Hoje is the only addition)", () => {
@@ -385,7 +395,14 @@ test("the message that goes with the link carries the name and the link, and Wha
 // ---------------------------------------------------------------- only for the owner of the platform
 
 test("the platform strip shows what the server counted and a dash when it does not know", () => {
-  const [plans, help] = platformCards({ needsAttention: 2, helpOpen: 0 });
+  const [approvals, plans, help] = platformCards({ needsAttention: 2, helpOpen: 0, approvalsPending: 3 });
+  assert.equal(approvals.count, 3);
+  assert.equal(approvals.note, "3 decisões esperam o seu aval");
+  assert.equal(approvals.tone, "wait");
+  assert.equal(approvals.go, "aprovacoes");
+  assert.equal(platformCards({ needsAttention: 0, helpOpen: 0, approvalsPending: 1 })[0].note, "1 decisão espera o seu aval");
+  assert.equal(platformCards({ needsAttention: 0, helpOpen: 0, approvalsPending: 0 })[0].note, "Nada espera o seu aval");
+  assert.equal(platformCards({ needsAttention: 0, helpOpen: 0, approvalsPending: 0 })[0].tone, "ok");
   assert.equal(plans.count, 2);
   assert.equal(plans.note, "2 restaurantes precisam de você");
   assert.equal(plans.tone, "wait");
@@ -394,23 +411,25 @@ test("the platform strip shows what the server counted and a dash when it does n
   assert.equal(help.tone, "ok");
   assert.equal(help.go, "ajuda");
 
-  assert.equal(platformCards({ needsAttention: 1, helpOpen: 3 })[0].note, "1 restaurante precisa de você");
-  assert.equal(platformCards({ needsAttention: 0, helpOpen: 3 })[0].note, "Todos os restaurantes em dia");
-  assert.equal(platformCards({ needsAttention: 0, helpOpen: 3 })[0].tone, "ok");
-  assert.equal(platformCards({ needsAttention: 0, helpOpen: 3 })[1].tone, "wait");
+  assert.equal(platformCards({ needsAttention: 1, helpOpen: 3 })[1].note, "1 restaurante precisa de você");
+  assert.equal(platformCards({ needsAttention: 0, helpOpen: 3 })[1].note, "Todos os restaurantes em dia");
+  assert.equal(platformCards({ needsAttention: 0, helpOpen: 3 })[1].tone, "ok");
+  assert.equal(platformCards({ needsAttention: 0, helpOpen: 3 })[2].tone, "wait");
 
   // Not known (still loading or failed): never a made-up zero.
-  const unknown = platformCards({ needsAttention: null, helpOpen: null });
+  const unknown = platformCards({ needsAttention: null, helpOpen: null, approvalsPending: null });
+  assert.equal(unknown.length, 3);
   for (const card of unknown) {
     assert.equal(card.count, null);
     assert.equal(card.tone, "wait");
   }
+  assert.equal(platformCards({ needsAttention: 1, helpOpen: 1 })[0].count, null);
 });
 
 test("the platform cards open screens that only the platform owner's menu has", () => {
   const owner = viewsOf(base("OWNER", { platformAdmin: true }));
   const plain = viewsOf(base("OWNER", { platformAdmin: false }));
-  for (const card of platformCards({ needsAttention: 1, helpOpen: 1 })) {
+  for (const card of platformCards({ needsAttention: 1, helpOpen: 1, approvalsPending: 1 })) {
     assert.ok(owner.includes(card.go), card.go);
     assert.ok(!plain.includes(card.go), card.go);
   }

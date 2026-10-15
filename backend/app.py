@@ -37,6 +37,7 @@ import media_store
 import menu_photo
 import menu_file
 import voice_tts
+import approvals
 import feedback
 import help_requests
 import hours
@@ -5422,6 +5423,63 @@ def resolve_platform_help(request_id):
     except Exception as e:
         _close_quietly(conn, cur)
         return error_response("Erro ao resolver o pedido", e)
+
+
+# ------------------------------------------------------------------------------------------------------------
+# Registro de acoes dos agentes e fila de aprovacao do dono do software (approvals.py, migracao 020).
+# So o administrador da plataforma. Aprovar SO LIBERA: nada aqui executa, envia ou muda coisa nenhuma.
+
+@app.route('/api/platform/approvals', methods=['GET'])
+@require_platform_admin
+def list_platform_approvals():
+    """A fila (o que espera o aval do dono do sistema) e o registro (as ultimas acoes, decididas ou feitas)."""
+    try:
+        pending = [approvals.card_view(row) for row in query_db(approvals.SQL_PENDING)]
+        recent = [approvals.card_view(row) for row in query_db(approvals.SQL_RECENT)]
+        response = jsonify({
+            "pending": pending,
+            "pending_count": len(pending),
+            "recent": recent,
+        })
+        response.headers['Cache-Control'] = 'no-store'
+        return response, 200
+    except Exception as e:
+        return error_response("Erro ao abrir as aprovacoes", e)
+
+
+@app.route('/api/platform/approvals/<uuid:action_id>/decision', methods=['POST'])
+@require_platform_admin
+def decide_platform_approval(action_id):
+    """Aprovar, recusar ou pedir mudanca. Decidir de novo a mesma coisa nao e erro; mudar de ideia depois, sim (409)."""
+    conn = None
+    cur = None
+
+    try:
+        try:
+            decision = approvals.clean_decision(request.get_json(silent=True))
+        except approvals.ApprovalError as error:
+            return jsonify({"error": error.message}), error.status
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        try:
+            result = approvals.decide(cur, str(action_id), decision, str(request.user.get('user_id')))
+        except approvals.ApprovalError as error:
+            _close_quietly(conn, cur)
+            return jsonify({"error": error.message}), error.status
+
+        conn.commit()
+        _close_quietly(conn, cur, rollback=False)
+        return jsonify({
+            "ok": True,
+            "already": result["already"],
+            "status": result["status"],
+            "status_label": approvals.STATUS_LABELS[result["status"]],
+        }), 200
+    except Exception as e:
+        _close_quietly(conn, cur)
+        return error_response("Erro ao registrar a decisao", e)
 
 
 if __name__ == '__main__':
