@@ -68,8 +68,8 @@ import TableHub from "../mesa/TableHub";
 type Props = {
   company: Company;
   tableId: string | null;
-  /** Link to the owner panel, shown small at the bottom. */
-  panelHref: string;
+  /** Where the team and the owner sign in (the "Entrar" screen), shown small at the bottom. */
+  teamHref: string;
 };
 
 type Load = "loading" | "ready" | "error";
@@ -81,7 +81,7 @@ const JOBS_URL = import.meta.env.VITE_VEM_TRABALHAR_URL as string | undefined;
 /** Search only helps once the menu is long enough to scroll. */
 const SEARCH_FROM = 8;
 
-export default function CustomerApp({ company, tableId, panelHref }: Props) {
+export default function CustomerApp({ company, tableId, teamHref }: Props) {
   const [load, setLoad] = useState<Load>("loading");
   const [products, setProducts] = useState<Product[]>([]);
   const [menus, setMenus] = useState<Menu[]>([]);
@@ -669,7 +669,7 @@ export default function CustomerApp({ company, tableId, panelHref }: Props) {
       <footer className="cust-wrap cust-foot">
         <img src="/logo-vem-comer.png" alt="Vem Comer" className="cust-foot-logo" />
         <p>Cardápio digital Vem Comer</p>
-        <a href={panelHref}>Área do restaurante</a>
+        <a href={teamHref}>Sou da equipe ou dono</a>
       </footer>
 
       {screen === "menu" && count > 0 && !sheetOpen && !closed && (

@@ -17,6 +17,8 @@ export type TourStep = {
   target?: string;
   /** Screen/tab this step belongs to; the host app navigates there. */
   view?: string;
+  /** The target lives in the side menu: the host opens the menu for this step and closes it on the next one. */
+  menu?: boolean;
   /** Example of what the user can say, shown as a hint. */
   say?: string;
   /** Go to the next step as soon as the user taps the highlighted element. */

@@ -1,7 +1,7 @@
 import type { TourStep } from "./tourEngine";
 
 /** Bump the id when the script changes a lot, so owners see the new guide. */
-export const ADMIN_TOUR_ID = "admin-v3";
+export const ADMIN_TOUR_ID = "admin-v4";
 
 /**
  * Guided tour of a restaurant owner's panel: tables and QR codes, Pix and
@@ -26,18 +26,29 @@ export const ADMIN_TOUR: TourStep[] = [
     say: "próximo",
   },
   {
+    id: "menu",
+    title: "Este é o seu menu",
+    text:
+      "Toque em Menu, aqui em cima. Ele guarda tudo o que o painel faz: " +
+      "pedidos, cardápio, mesas e números.",
+    target: "#admin-menu-button",
+    advanceOnClick: true,
+  },
+  {
     id: "assistente",
     title: "O cardápio é no Assistente",
     text:
-      "Para montar o cardápio, use a aba Assistente. " +
+      "Para montar o cardápio, use o Assistente. " +
       "Ele pergunta e você só fala ou toca. Não precisa escrever.",
     target: "#admin-tab-assistente",
+    menu: true,
   },
   {
     id: "aba-mesas",
     title: "Agora, as mesas",
     text: "Toque em Mesas. Cada mesa recebe um QR Code só dela.",
     target: "#admin-tab-mesas",
+    menu: true,
     advanceOnClick: true,
   },
   {
@@ -72,6 +83,7 @@ export const ADMIN_TOUR: TourStep[] = [
       "Toque em Pagamento. Aqui você coloca a sua chave Pix " +
       "e o cliente paga direto na sua conta.",
     target: "#admin-tab-pagamento",
+    menu: true,
     advanceOnClick: true,
   },
   {
@@ -99,6 +111,7 @@ export const ADMIN_TOUR: TourStep[] = [
       "Quando um cliente pedir, o pedido aparece em Pedidos e o painel avisa você. " +
       "Toque em Pedidos para ver essa tela.",
     target: "#admin-tab-pedidos",
+    menu: true,
     advanceOnClick: true,
   },
   {
@@ -106,8 +119,9 @@ export const ADMIN_TOUR: TourStep[] = [
     title: "Tudo pronto!",
     text:
       "Seu cardápio está montado. Se quiser ouvir este guia de novo, " +
-      "toque em Guia, aqui em cima.",
+      "abra o Menu e toque em Guia passo a passo.",
     target: "#admin-btn-guide",
+    menu: true,
     say: "pronto",
   },
 ];
