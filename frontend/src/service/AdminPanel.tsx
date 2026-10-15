@@ -78,6 +78,10 @@ import MenuAssistant from "../assistant/MenuAssistant";
 import CostsPanel from "../costs/CostsPanel";
 import BusinessPanel from "../business/BusinessPanel";
 import CallsBar from "../mesa/CallsBar";
+import AdminDrawer, { type DrawerAction } from "../nav/AdminDrawer";
+import HomeView from "../nav/HomeView";
+import NavIcon from "../nav/NavIcon";
+import { menuFor, viewTitle } from "../nav/navLogic";
 import TablePoster from "../mesa/TablePoster";
 import "../ui.css";
 import "../admin.css";
@@ -150,6 +154,7 @@ type TableRow = {
 };
 
 type AdminView =
+  | "inicio"
   | "pedidos"
   | "assistente"
   | "produtos"
@@ -169,6 +174,7 @@ type AdminView =
   | "ajuda";
 
 const ADMIN_VIEWS: string[] = [
+  "inicio",
   "pedidos",
   "assistente",
   "produtos",
@@ -223,7 +229,8 @@ export default function AdminPanel({
   const knownOrdersRef = useRef<Set<string> | null>(null);
   const [showNewOrderAlert, setShowNewOrderAlert] = useState(false);
 
-  const [view, setView] = useState<AdminView>("pedidos");
+  // The first screen is "Hoje": what is happening now. The functions are in the menu of three lines.
+  const [view, setView] = useState<AdminView>("inicio");
 
   const [products, setProducts] = useState<Product[]>([]);
   const [soldOutError, setSoldOutError] = useState("");
@@ -258,6 +265,7 @@ export default function AdminPanel({
   // Guided onboarding. Declared here, before any early return, so the hook
   // order never changes between renders.
   const [guideOpen, setGuideOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const canUseGuide =
     currentUser?.role === "OWNER" || currentUser?.role === "MANAGER";
 
@@ -420,7 +428,8 @@ export default function AdminPanel({
     logout();
     setCurrentUser(null);
     setIsAuthenticated(false);
-    setView("pedidos");
+    setView("inicio");
+    setMenuOpen(false);
   }
 
   async function handleStatusChange(
@@ -723,12 +732,59 @@ export default function AdminPanel({
 
   const planBanner = bannerOf(plan, view);
 
-  function tabClass(name: AdminView) {
-    return view === name ? "adm-tab is-active" : "adm-tab";
-  }
-
   const role = currentUser?.role;
   const canSettleCash = role === "OWNER" || role === "MANAGER" || role === "CASHIER";
+
+  // The side menu: the same screens and the same permissions the row of tabs had, grouped by subject.
+  const navGroups = menuFor({
+    role,
+    allowed: (screen) => viewAllowed(screen, planBlocked),
+    hasPlanTab: Boolean(plan && hasPlanTab(plan)),
+    platformAdmin: Boolean(plan?.platform_admin),
+    openOrders: openOrdersCount,
+    helpCount,
+  });
+
+  const drawerActions: DrawerAction[] = [
+    {
+      id: "admin-btn-customer",
+      label: "Ver o cardápio do cliente",
+      icon: "store",
+      onClick: () => {
+        setMenuOpen(false);
+        onBack();
+      },
+    },
+    ...(canUseGuide
+      ? ([
+          {
+            id: "admin-btn-guide",
+            label: "Guia passo a passo",
+            icon: "guide",
+            onClick: () => {
+              setMenuOpen(false);
+              setGuideOpen(true);
+            },
+          },
+          {
+            id: "admin-btn-help",
+            label: "Preciso de ajuda",
+            icon: "help",
+            onClick: () => {
+              setMenuOpen(false);
+              setHelpOpen(true);
+            },
+          },
+        ] as DrawerAction[])
+      : []),
+    {
+      id: "admin-btn-logout",
+      label: "Sair",
+      icon: "logout",
+      quiet: true,
+      onClick: handleLogout,
+    },
+  ];
 
   if (isAuthenticated && role === "COURIER") {
     return (
@@ -865,6 +921,7 @@ export default function AdminPanel({
           onNavigate={(target) => {
             if (isAdminView(target)) setView(target);
           }}
+          onMenu={setMenuOpen}
           onClose={() => {
             if (currentUser) markGuideSeen(ADMIN_TOUR_ID, currentUser.id);
             setGuideOpen(false);
@@ -889,68 +946,60 @@ export default function AdminPanel({
         </div>
       )}
 
-      <header className="adm-bar">
-        <img
-          className="adm-logo"
-          src="/logo-vem-comer.png"
-          alt="Vem Comer"
-        />
+      <header className="nav-bar">
+        <button
+          id="admin-menu-button"
+          type="button"
+          className="nav-burger"
+          aria-label="Abrir o menu"
+          aria-expanded={menuOpen}
+          aria-controls="admin-menu"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <NavIcon name="menu" size={26} />
+          <span>Menu</span>
+        </button>
 
-        <div className="adm-bar-actions">
-          {canUseGuide && (
-            <button
-              id="admin-btn-help"
-              type="button"
-              className="btn btn-outline btn-sm"
-              aria-expanded={helpOpen}
-              onClick={() => setHelpOpen(true)}
-            >
-              Ajuda
-            </button>
-          )}
+        <img className="nav-bar-logo" src="/logo-vem-comer.png" alt="Vem Comer" />
 
-          {canUseGuide && (
-            <button
-              id="admin-btn-guide"
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={() => setGuideOpen(true)}
-            >
-              Guia
-            </button>
-          )}
-
-          <button
-            type="button"
-            className="btn btn-quiet btn-sm"
-            onClick={onBack}
-          >
-            Cardápio
+        {openOrdersCount > 0 && view !== "pedidos" && (
+          <button type="button" className="nav-bar-orders" onClick={() => setView("pedidos")}>
+            {openOrdersCount} {openOrdersCount === 1 ? "pedido" : "pedidos"}
           </button>
-
-          <button
-            id="admin-btn-logout"
-            type="button"
-            className="btn btn-quiet btn-sm"
-            onClick={handleLogout}
-          >
-            Sair
-          </button>
-        </div>
+        )}
       </header>
+
+      {menuOpen && (
+        <AdminDrawer
+          groups={navGroups}
+          current={view}
+          place={companyName || "Meu restaurante"}
+          person={currentUser ? `${currentUser.name}, ${roleLabel(currentUser.role)}` : ""}
+          actions={drawerActions}
+          guided={guideOpen}
+          onClose={() => setMenuOpen(false)}
+          onSelect={(next) => {
+            if (isAdminView(next)) setView(next);
+            setMenuOpen(false);
+            window.scrollTo({ top: 0 });
+          }}
+        />
+      )}
 
       {helpOpen && canUseGuide && (
         <HelpSheet screen={view} suggested={suggestedTopic(view)} onClose={() => setHelpOpen(false)} />
       )}
 
-      <div className="adm-who">
-        <h1 className="adm-title">Painel</h1>
-        {currentUser && (
-          <p className="adm-lead">
-            {currentUser.name}, {roleLabel(currentUser.role)}
-          </p>
-        )}
-      </div>
+      {view !== "inicio" && (
+        <div className="nav-who">
+          <h1 className="adm-title">{viewTitle(view, currentUser?.role)}</h1>
+          {currentUser && (
+            <p className="adm-lead">
+              {currentUser.name}, {roleLabel(currentUser.role)}
+            </p>
+          )}
+        </div>
+      )}
 
       <CallsBar companyId={companyId} />
 
@@ -970,228 +1019,24 @@ export default function AdminPanel({
         </div>
       )}
 
-      <nav
-        className={planBlocked ? "adm-tabs is-locked" : "adm-tabs"}
-        aria-label="Seções do painel"
-      >
-        <button
-          id="admin-tab-pedidos"
-          type="button"
-          className={tabClass("pedidos")}
-          aria-current={view === "pedidos" ? "page" : undefined}
-          onClick={() => setView("pedidos")}
-        >
-          Pedidos
-          {openOrdersCount > 0 && (
-            <span
-              className="adm-count"
-              aria-label={`${openOrdersCount} em aberto`}
-            >
-              {openOrdersCount}
-            </span>
-          )}
-        </button>
-
-        {(currentUser?.role === "OWNER" ||
-          currentUser?.role === "MANAGER") && (
-          <button
-            id="admin-tab-assistente"
-            type="button"
-            className={tabClass("assistente")}
-            aria-current={view === "assistente" ? "page" : undefined}
-            onClick={() => setView("assistente")}
-          >
-            Assistente
-          </button>
-        )}
-
-        <button
-          id="admin-tab-produtos"
-          type="button"
-          className={tabClass("produtos")}
-          aria-current={view === "produtos" ? "page" : undefined}
-          onClick={() => setView("produtos")}
-        >
-          Produtos
-        </button>
-
-        {(currentUser?.role === "OWNER" ||
-          currentUser?.role === "MANAGER") && (
-          <button
-            id="admin-tab-custos"
-            type="button"
-            className={tabClass("custos")}
-            aria-current={view === "custos" ? "page" : undefined}
-            onClick={() => setView("custos")}
-          >
-            Custos
-          </button>
-        )}
-
-        <button
-          id="admin-tab-categorias"
-          type="button"
-          className={tabClass("categorias")}
-          aria-current={view === "categorias" ? "page" : undefined}
-          onClick={() => setView("categorias")}
-        >
-          Categorias
-        </button>
-
-        <button
-          id="admin-tab-mesas"
-          type="button"
-          className={tabClass("mesas")}
-          aria-current={view === "mesas" ? "page" : undefined}
-          onClick={() => setView("mesas")}
-        >
-          Mesas
-        </button>
-
-        {(currentUser?.role === "OWNER" ||
-          currentUser?.role === "MANAGER") && (
-          <button
-            id="admin-tab-entrega"
-            type="button"
-            className={tabClass("entrega")}
-            aria-current={view === "entrega" ? "page" : undefined}
-            onClick={() => setView("entrega")}
-          >
-            Entrega
-          </button>
-        )}
-
-        {(currentUser?.role === "OWNER" ||
-          currentUser?.role === "MANAGER") && (
-          <button
-            id="admin-tab-horario"
-            type="button"
-            className={tabClass("horario")}
-            aria-current={view === "horario" ? "page" : undefined}
-            onClick={() => setView("horario")}
-          >
-            Horário
-          </button>
-        )}
-
-        {(currentUser?.role === "OWNER" ||
-          currentUser?.role === "MANAGER") && (
-          <button
-            id="admin-tab-entregas"
-            type="button"
-            className={tabClass("entregas")}
-            aria-current={view === "entregas" ? "page" : undefined}
-            onClick={() => setView("entregas")}
-          >
-            Entregas
-          </button>
-        )}
-
-        {canSettleCash && (
-          <button
-            id="admin-tab-acerto"
-            type="button"
-            className={tabClass("acerto")}
-            aria-current={view === "acerto" ? "page" : undefined}
-            onClick={() => setView("acerto")}
-          >
-            Acerto
-          </button>
-        )}
-
-        <button
-          id="admin-tab-dashboard"
-          type="button"
-          className={tabClass("dashboard")}
-          aria-current={view === "dashboard" ? "page" : undefined}
-          onClick={() => setView("dashboard")}
-        >
-          {currentUser?.role === "OWNER" || currentUser?.role === "MANAGER"
-            ? "Seu negócio"
-            : "Resumo"}
-        </button>
-
-        {(currentUser?.role === "OWNER" ||
-          currentUser?.role === "MANAGER") && (
-          <button
-            id="admin-tab-pagamento"
-            type="button"
-            className={tabClass("pagamento")}
-            aria-current={view === "pagamento" ? "page" : undefined}
-            onClick={() => setView("pagamento")}
-          >
-            Pagamento
-          </button>
-        )}
-
-        {(currentUser?.role === "OWNER" ||
-          currentUser?.role === "MANAGER") && (
-          <button
-            id="admin-tab-marca"
-            type="button"
-            className={tabClass("marca")}
-            aria-current={view === "marca" ? "page" : undefined}
-            onClick={() => setView("marca")}
-          >
-            Marca
-          </button>
-        )}
-
-        {currentUser?.role === "OWNER" && (
-          <button
-            id="admin-tab-usuarios"
-            type="button"
-            className={tabClass("usuarios")}
-            aria-current={view === "usuarios" ? "page" : undefined}
-            onClick={() => setView("usuarios")}
-          >
-            Equipe
-          </button>
-        )}
-
-        {plan && hasPlanTab(plan) && (
-          <button
-            id="admin-tab-plano"
-            type="button"
-            className={tabClass("plano")}
-            aria-current={view === "plano" ? "page" : undefined}
-            onClick={() => setView("plano")}
-          >
-            Plano
-          </button>
-        )}
-
-        {plan?.platform_admin && (
-          <button
-            id="admin-tab-assinaturas"
-            type="button"
-            className={tabClass("assinaturas")}
-            aria-current={view === "assinaturas" ? "page" : undefined}
-            onClick={() => setView("assinaturas")}
-          >
-            Assinaturas
-          </button>
-        )}
-
-        {plan?.platform_admin && (
-          <button
-            id="admin-tab-ajuda"
-            type="button"
-            className={tabClass("ajuda")}
-            aria-current={view === "ajuda" ? "page" : undefined}
-            onClick={() => setView("ajuda")}
-          >
-            {helpCount ? `Chamados (${helpCount})` : "Chamados"}
-          </button>
-        )}
-      </nav>
-
       {view === "pedidos" &&
         (currentUser?.role === "OWNER" ||
           currentUser?.role === "MANAGER" ||
           currentUser?.role === "KITCHEN") && <PauseStrip />}
 
-      {view === "custos" &&
+      {view === "inicio" ? (
+        <HomeView
+          companyId={companyId}
+          role={currentUser?.role}
+          name={currentUser?.name ?? ""}
+          place={companyName ?? ""}
+          orders={orders}
+          onGo={(target) => {
+            if (isAdminView(target)) setView(target);
+            window.scrollTo({ top: 0 });
+          }}
+        />
+      ) : view === "custos" &&
       (currentUser?.role === "OWNER" ||
         currentUser?.role === "MANAGER") ? (
         <CostsPanel companyId={companyId} />

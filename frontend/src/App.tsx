@@ -5,7 +5,7 @@ import { lastCompany } from "./service/lastCompany";
 import { entryScreen, panelUrl, wantsPanel } from "./service/links";
 import AdminPanel from "./service/AdminPanel";
 import CustomerApp from "./customer/CustomerApp";
-import OwnerLinks from "./signup/OwnerLinks";
+import StartScreen from "./nav/StartScreen";
 import OwnerLogin from "./signup/OwnerLogin";
 import SalesPage from "./signup/SalesPage";
 import SignupPage from "./signup/SignupPage";
@@ -17,7 +17,7 @@ import type { Company } from "./customer/types";
  *   ?empresa=<slug>&mesa=<id>      customer menu (what the table QR code opens)
  *   ?empresa=<slug>&painel=1       owner panel
  *   ?cadastro=1 | ?entrar=1 | ?termos=1 | ?sistema=1   owner sign-up, owner sign-in, terms of use, sales page
- *   nothing                        short explanation (or the panel, for a signed-in owner)
+ *   nothing                        start screen with one button per function (or the panel, for someone signed in)
  */
 export default function App() {
   const params = new URLSearchParams(location.search);
@@ -60,23 +60,7 @@ export default function App() {
     if (screen === "terms") return <TermsPage />;
     if (screen === "sales") return <SalesPage />;
 
-    return (
-      <main className="adm adm-login-page">
-        <section className="adm-login sheet">
-          <img className="adm-login-logo" src="/logo-vem-comer.png" alt="Vem Comer" />
-
-          <div>
-            <h1 className="adm-title">Escaneie o QR code da mesa</h1>
-            <p className="adm-lead">
-              Aponte a câmera do celular para o QR code da sua mesa. O cardápio abre na hora e você
-              pede sem chamar o garçom.
-            </p>
-          </div>
-
-          <OwnerLinks />
-        </section>
-      </main>
-    );
+    return <StartScreen />;
   }
 
   if (loading) {
