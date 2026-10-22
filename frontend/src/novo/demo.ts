@@ -572,6 +572,51 @@ export const MENU_READ_EXAMPLE = {
   ],
 };
 
+/** Os tipos de negócio que o servidor oferece, de EXEMPLO (no formato do servidor: identificador, nome e desenho). */
+export const MODEL_TYPES_EXAMPLE = [
+  { id: "lanchonete", name: "Lanchonete", icon: "🥪" },
+  { id: "pizzaria", name: "Pizzaria", icon: "🍕" },
+  { id: "marmitaria", name: "Restaurante e marmitaria", icon: "🍛" },
+  { id: "bar", name: "Bar e boteco", icon: "🍺" },
+  { id: "acai", name: "Açaí e sorveteria", icon: "🍧" },
+  { id: "padaria", name: "Padaria e cafeteria", icon: "🥐" },
+  { id: "churrasco", name: "Churrasco e espetinho", icon: "🍖" },
+  { id: "japonesa", name: "Comida japonesa", icon: "🍣" },
+  { id: "tapiocaria", name: "Tapiocaria", icon: "🥙" },
+  { id: "salgados", name: "Salgados e coxinhas", icon: "🧆" },
+  { id: "pastelaria", name: "Pastelaria", icon: "🥟" },
+  { id: "hamburgueria", name: "Hamburgueria", icon: "🍔" },
+];
+
+/** O modelo "Lanchonete" que o servidor manda ao tocar no tipo, de EXEMPLO e mais curto que o de verdade (sem preços, só os nomes). */
+export const MODEL_EXAMPLE = {
+  id: "lanchonete",
+  name: "Lanchonete",
+  icon: "🥪",
+  categories: [
+    {
+      name: "Lanches",
+      items: ["X-Burguer", "X-Salada", "X-Bacon", "X-Egg", "X-Tudo", "X-Frango", "Hambúrguer simples", "Misto quente", "Cachorro-quente", "Pão na chapa"].map((name) => ({ name })),
+    },
+    {
+      name: "Salgados",
+      items: ["Pastel de carne", "Pastel de queijo", "Coxinha", "Empada", "Pão de queijo", "Tapioca de queijo"].map((name) => ({ name })),
+    },
+    {
+      name: "Porções",
+      items: ["Batata frita", "Batata frita com cheddar e bacon", "Mandioca frita", "Calabresa acebolada", "Frango a passarinho"].map((name) => ({ name })),
+    },
+    {
+      name: "Bebidas",
+      items: ["Coca-Cola lata", "Guaraná lata", "Suco de laranja", "Suco de abacaxi", "Vitamina de banana", "Água mineral", "Café"].map((name) => ({ name })),
+    },
+    {
+      name: "Sobremesas",
+      items: ["Pudim", "Mousse de maracujá", "Brigadeiro", "Milkshake"].map((name) => ({ name })),
+    },
+  ],
+};
+
 /** O que a pessoa falou, de EXEMPLO, passando pela conta de verdade (`takeSpoken`). */
 export const MENU_SPOKEN_EXAMPLE = ["x-tudo 25, x-salada 22, hambúrguer 28", "bebidas coca lata 6, suco de laranja 9, água"];
 

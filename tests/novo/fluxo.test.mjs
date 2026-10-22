@@ -474,6 +474,77 @@ test("o cardápio do painel: nome de prato, texto falado e frase do servidor nun
   }
 });
 
+test("começar de um modelo: a conta só usa as contas puras do assistente, não fala com o servidor nem com o navegador, e as telas de desenho não falam com ninguém", () => {
+  const logic = read("painel/menuModelLogic.ts");
+  const screen = read("novo/MenuModel.tsx");
+  const PURE = /^(assistantFlow|doorLogic)(\.ts)?$/;
+  for (const [, from] of logic.matchAll(/from ["']\.\.\/assistant\/([^"']+)["']/g)) assert.ok(PURE.test(from), `menuModelLogic importa ../assistant/${from}`);
+  assert.ok(!/from ["']\.\.\/(styles|ui|admin|mesa|nav)/.test(logic), "a conta importa o antigo");
+  assert.ok(!/service\/api|voiceIO|photoFiles|document\.|window\./.test(logic), "a conta não fala com o servidor nem com o navegador");
+  assert.ok(!/from ["']\.\.\/(service|painel|assistant|photos|styles|ui|admin|mesa|nav)/.test(screen), "a tela de desenho não fala com o servidor nem com a conta");
+  assert.ok(!/import ["']\.\.\//.test(screen), "a tela importa CSS de fora");
+});
+
+test("começar de um modelo: a lista de tipos e o modelo escolhido são lidos com desconfiança, e resposta velha nunca passa por cima da tela", () => {
+  const text = read("painel/MenuSetupScreen.tsx");
+  assert.match(text, /const tiles = modelTypesOf\(await fetchMenuTemplates\(\)\);/);
+  assert.match(text, /const model = modelOf\(await fetchMenuTemplate\(id\), id\);/);
+  assert.match(text, /if \(mine !== typesRun\.current \|\| !alive\.current\) return;/);
+  assert.match(text, /if \(mine !== openRun\.current \|\| !alive\.current\) return;/);
+  // Um tipo por vez: o segundo toque enquanto o modelo abre não faz nada.
+  assert.match(text, /if \(openingRef\.current\) return;/);
+  // Voltar à porta cancela a abertura que estiver a caminho.
+  assert.match(text, /openRun\.current \+= 1;\s*openingRef\.current = false;\s*setOpening\(false\);/);
+  // Sair da tela solta as duas esperas.
+  assert.match(text, /typesRun\.current \+= 1;\s*openRun\.current \+= 1;/);
+  // Lista que não é lista, ou vazia, não vira "nenhum tipo": vira frase e botão de tentar de novo.
+  assert.match(text, /if \(!tiles\) return setTypesError\(MENU_READ_ODD\);/);
+  assert.match(text, /if \(tiles\.length === 0\) return setTypesError\(MENU_MODEL_NONE\);/);
+  assert.match(text, /if \(!model\) return setTypesError\(MENU_MODEL_EMPTY\);/);
+});
+
+test("começar de um modelo: nada vai ao servidor até Cadastrar (marcar, anotar e pôr preço são só do aparelho)", () => {
+  const text = read("painel/MenuSetupScreen.tsx");
+  assert.equal((text.match(/importMenu\(/g) ?? []).length, 1, "só o Cadastrar manda o cardápio");
+  const from = text.indexOf("começar de um modelo");
+  const to = text.indexOf("// ---", from + 10);
+  const block = text.slice(from, to);
+  assert.ok(!/importMenu|fetch\(/.test(block), "o bloco do modelo só lê (tipos e modelo), nunca escreve");
+  // O preço de cada prato é o que a pessoa escreveu: o campo vazio sem preço anterior não segue.
+  assert.match(read("painel/menuModelLogic.ts"), /if \(!wanted \|\| !priceIsUsable\(wanted\)\) return \{ flow, problem: "price" \};/);
+});
+
+test("começar de um modelo: o foco vai para a frase de aviso a cada etapa e a cada categoria, e nos preços fica no campo do preço", () => {
+  const text = read("painel/MenuSetupScreen.tsx");
+  assert.match(text, /const stepKey = where === "pick" \? `pick-\$\{flow\.categoryIndex\}` : where;/);
+  assert.match(text, /if \(stepKey === "prices"\) return;\s*document\.getElementById\("nv-menu-live"\)\?\.focus\(\);/);
+  const screen = read("novo/MenuModel.tsx");
+  assert.match(screen, /useEffect\(\(\) => \{\s*field\.current\?\.focus\(\);\s*\}, \[view\.dishId\]\);/);
+  assert.match(screen, /<form\s+key=\{view\.dishId\}/, "cada prato recomeça o campo com o preço que já tem");
+});
+
+test("começar de um modelo: voltar anda um passo de cada vez (preço → prato anterior; primeira categoria → tipos; conferência → último preço)", () => {
+  const text = read("painel/MenuSetupScreen.tsx");
+  assert.match(text, /if \(where === "types"\) return goDoor\(\);/);
+  assert.match(text, /const earlier = goBackPick\(flowRef\.current\);\s*setPickNotice\(""\);\s*if \(!earlier\) return setWhere\("types"\);\s*return go\(earlier\);/);
+  assert.match(text, /if \(where === "prices"\) \{\s*setPriceProblem\(""\);\s*return go\(backPrice\(flowRef\.current\)\);/);
+  assert.match(text, /if \(flowRef\.current\.source === "template"\) return go\(backPrice\(flowRef\.current\)\);/);
+  // A tela certa sai sempre do estado do assistente (uma conta só), nunca de um segundo controle.
+  assert.match(read("painel/menuModelLogic.ts"), /export const whereOf = \(flow: FlowState\)/);
+});
+
+test("começar de um modelo: 'sem sinal' ao abrir não afirma o que não sabe, e nome de prato e frase do servidor nunca entram como HTML", () => {
+  const copy = read("novo/copy.ts");
+  for (const name of ["MENU_MODEL_ERROR", "MENU_MODEL_OPEN_ERROR"]) {
+    const line = copy.match(new RegExp(`export const ${name} = "([^"]*)"`))[1];
+    assert.match(line, /Sem sinal/);
+    assert.ok(!/nada (foi|entrou|mudou)/i.test(line), `${name} afirma o que não sabe`);
+  }
+  for (const name of ["painel/menuModelLogic.ts", "novo/MenuModel.tsx", "painel/MenuSetupScreen.tsx"]) {
+    assert.ok(!/dangerouslySetInnerHTML|innerHTML|document\.write|eval\(/.test(read(name)), `${name} injeta HTML`);
+  }
+});
+
 test("pratos e categorias do painel: só contas puras de fora, a lógica não fala com o servidor nem com o navegador, e a tela de desenho não fala com ninguém", () => {
   const files = {
     dishesLogic: read("painel/dishesLogic.ts"),

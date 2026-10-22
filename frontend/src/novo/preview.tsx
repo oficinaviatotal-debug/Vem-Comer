@@ -59,10 +59,27 @@ import {
   type FlowState,
 } from "../painel/menuSetupLogic";
 import { selectedItems, startFromParsed, startSpeak } from "../assistant/assistantFlow";
+import {
+  backPrice,
+  dropDish,
+  goBackPick,
+  goNext,
+  modelOf,
+  modelTypesOf,
+  pickViewOf,
+  pricesViewOf,
+  startModel,
+  takeDish,
+  takePrice,
+  toggleCategory,
+  toggleDish,
+  typesViewOf,
+  whereOf,
+} from "../painel/menuModelLogic";
 import { codeIsComplete, deliveredText, onlyCodeDigits } from "../courier/courierLogic";
 import type { CashView } from "../courier/courierLogic";
 import { emptyText, isKitchenTab, kitchenTabs, ticketsFor, type KitchenTabId } from "../cozinha/kitchenLogic";
-import { DISH_MENUS_EXAMPLE, DISH_PRODUCTS_EXAMPLE, MENU_READ_EXAMPLE, MENU_SPOKEN_EXAMPLE, ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
+import { DISH_MENUS_EXAMPLE, DISH_PRODUCTS_EXAMPLE, MENU_READ_EXAMPLE, MENU_SPOKEN_EXAMPLE, MODEL_EXAMPLE, MODEL_TYPES_EXAMPLE, ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
 import { choicesViewOf, confirmChoices, nextQuantity, pressOption } from "../loja/choicesLogic";
 import { bagProblem, bagViewOf } from "../loja/bagLogic";
 import { copiedOutcome, pixOf, ratingOf, trackOf } from "../loja/trackingLogic";
@@ -690,7 +707,20 @@ type MenuStage =
   | "sem-preco"
   | "vazio"
   | "erro-cadastro"
-  | "cadastrado";
+  | "cadastrado"
+  | "modelo"
+  | "modelo-carregando"
+  | "modelo-erro"
+  | "modelo-busca"
+  | "modelo-sem-resultado"
+  | "modelo-abrindo"
+  | "modelo-erro-abrir"
+  | "modelo-marcar"
+  | "modelo-marcar-ultima"
+  | "modelo-marcar-nenhum"
+  | "modelo-preco"
+  | "modelo-preco-erro"
+  | "modelo-conferir";
 
 /** Uma "foto de página" de exemplo, só para a miniatura: um endereço blob: de verdade, como o do aparelho. */
 function pageUrl(index: number): string {
@@ -711,15 +741,61 @@ const spokenFlow = () => {
   return { flow, heading };
 };
 
+const MODEL_TYPES = modelTypesOf(MODEL_TYPES_EXAMPLE) ?? [];
+const MODEL = modelOf(MODEL_EXAMPLE, "lanchonete");
+
+/** O estado de cada etapa do modelo, chegando lá pelos mesmos passos da pessoa: marcar os 3 primeiros pratos de cada categoria, seguir, pôr preço. */
+function modelFlowFor(stage: MenuStage) {
+  let flow = MODEL ? startModel(MODEL) : startSpeak();
+  const marks = (category: number, many: number) => {
+    for (let i = 0; i < many; i += 1) flow = toggleDish(flow, `${category}-${i}`);
+  };
+  if (stage === "modelo-marcar") {
+    marks(0, 3);
+    return flow;
+  }
+  if (stage === "modelo-marcar-nenhum") {
+    for (let c = 0; c < flow.categories.length - 1; c += 1) flow = goNext(flow);
+    return flow;
+  }
+  const last = flow.categories.length - 1;
+  for (let c = 0; c < last; c += 1) {
+    marks(c, 3);
+    flow = goNext(flow);
+  }
+  if (stage === "modelo-marcar-ultima") return flow;
+  marks(last, 2);
+  flow = goNext(flow);
+  if (stage === "modelo-conferir") {
+    // Um preço para cada prato; o terceiro fica em branco e sai da lista (é o \"Tirar este prato\"); o 300 vai parecer engano na conferência.
+    const prices = ["25", "22", "", "8", "6,5", "300", "12", "18,50", "20", "5", "4", "9", "7", "10"];
+    for (const price of prices) {
+      const out = takePrice(flow, price);
+      flow = out.problem ? dropDish(flow) : out.flow;
+      if (flow.step !== "prices") break;
+    }
+  }
+  return flow;
+}
+
 /** Montar o cardápio: cada etapa passa pela conta de verdade (`menuSetupLogic`); a leitura da foto é de exemplo e o cadastro não vai a lugar nenhum. */
 function MenuSetupPreview({ stage }: { stage: MenuStage }) {
-  type Where = "door" | "pages" | "reading" | "speak" | "review" | "done";
+  type Where = "door" | "types" | "pick" | "prices" | "pages" | "reading" | "speak" | "review" | "done";
   const first: Where =
-    stage === "foto" || stage === "foto-erro" ? "pages" : stage === "lendo" ? "reading" : stage === "falar" || stage === "ouvindo" || stage === "sem-microfone" ? "speak" : stage === "cadastrado" ? "done" : stage === "conferir" || stage === "editando" || stage === "sem-preco" || stage === "vazio" || stage === "erro-cadastro" ? "review" : "door";
+    stage === "modelo" || stage === "modelo-carregando" || stage === "modelo-erro" || stage === "modelo-busca" || stage === "modelo-sem-resultado" || stage === "modelo-abrindo" || stage === "modelo-erro-abrir"
+      ? "types"
+      : stage === "modelo-marcar" || stage === "modelo-marcar-ultima" || stage === "modelo-marcar-nenhum"
+        ? "pick"
+        : stage === "modelo-preco" || stage === "modelo-preco-erro"
+          ? "prices"
+          : stage === "modelo-conferir"
+            ? "review"
+            : stage === "foto" || stage === "foto-erro" ? "pages" : stage === "lendo" ? "reading" : stage === "falar" || stage === "ouvindo" || stage === "sem-microfone" ? "speak" : stage === "cadastrado" ? "done" : stage === "conferir" || stage === "editando" || stage === "sem-preco" || stage === "vazio" || stage === "erro-cadastro" ? "review" : "door";
   const [where, setWhere] = useState<Where>(first);
   const [pages, setPages] = useState(() => (first === "pages" ? [{ id: 1, url: pageUrl(0) }, { id: 2, url: pageUrl(1) }] : []));
   const [nextPage, setNextPage] = useState(3);
   const [flow, setFlow] = useState<FlowState>(() => {
+    if (stage.startsWith("modelo")) return modelFlowFor(stage);
     if (stage === "falar" || stage === "ouvindo" || stage === "sem-microfone") return spokenFlow().flow;
     if (stage === "sem-preco") return startFromParsed({ readable: true, notes: "", categories: [{ name: "Lanches", items: [{ name: "X-tudo", price: "" }, { name: "X-salada", price: "" }] }] });
     if (stage === "vazio") return startFromParsed({ readable: true, notes: "", categories: [] });
@@ -731,11 +807,35 @@ function MenuSetupPreview({ stage }: { stage: MenuStage }) {
   const [listening, setListening] = useState(stage === "ouvindo");
   const [editing, setEditing] = useState<string | null>(stage === "editando" ? "0-3" : null);
   const [error, setError] = useState(stage === "erro-cadastro" ? "Sem sinal. Nada foi cadastrado. Tente de novo." : "");
+  const [models, setModels] = useState<typeof MODEL_TYPES | null>(stage === "modelo-carregando" || stage === "modelo-erro" ? null : MODEL_TYPES);
+  const [query, setQuery] = useState(stage === "modelo-busca" ? "pizza" : stage === "modelo-sem-resultado" ? "sushi bar" : "");
+  const [typesError, setTypesError] = useState(
+    stage === "modelo-erro"
+      ? "Sem sinal. Veja se o celular tem internet e toque em Tentar de novo."
+      : stage === "modelo-erro-abrir"
+        ? "Sem sinal. Veja se o celular tem internet e toque no tipo do seu negócio de novo."
+        : "",
+  );
+  const [opening, setOpening] = useState(stage === "modelo-abrindo");
+  const [pickNotice, setPickNotice] = useState(stage === "modelo-marcar" ? "Anotei Pastel de queijo." : "");
+  const [priceProblem, setPriceProblem] = useState<"" | "price">(stage === "modelo-preco-erro" ? "price" : "");
+  function go(next: FlowState) {
+    setFlow(next);
+    const target = whereOf(next);
+    if (target === "review") setEditing(null);
+    setWhere(target);
+  }
   const [saving, setSaving] = useState(false);
   const options = stage === "porta-sem-foto" ? { photo: false, file: true, pdf: false } : stage === "porta-sem-ia" ? { photo: false, file: false, pdf: false } : stage === "porta-carregando" ? null : { photo: true, file: true, pdf: true };
 
   const view =
-    where === "door"
+    where === "types"
+      ? typesViewOf({ types: models, query, error: typesError, opening })
+      : where === "pick"
+        ? pickViewOf({ flow, notice: pickNotice })
+        : where === "prices"
+          ? (pricesViewOf({ flow, problem: priceProblem }) ?? reviewViewOf({ flow, editing, error }))
+          : where === "door"
       ? doorViewOf({ options, voiceWorks: stage !== "sem-microfone", error: stage === "porta-erro" ? "Não consegui falar com o servidor. Mostrei só o que funciona sem ele." : "" })
       : where === "pages"
         ? pagesViewOf({ pages, busy: false, photoEnabled: true, room: 4 - pages.length, failed: stage === "foto-erro", message: stage === "foto-erro" ? "Não consegui ler esta foto. Tire de novo, de frente e com mais luz." : "" })
@@ -777,13 +877,71 @@ function MenuSetupPreview({ stage }: { stage: MenuStage }) {
         setFlow(startSpeak());
         setWhere("speak");
       }}
+      onModel={() => {
+        setQuery("");
+        setWhere("types");
+      }}
+      onQuery={(text) => {
+        setQuery(text);
+        setTypesError("");
+      }}
+      onChooseType={() => {
+        if (!MODEL) return;
+        setOpening(true);
+        window.setTimeout(() => {
+          setOpening(false);
+          setPickNotice("");
+          go(startModel(MODEL));
+        }, 900);
+      }}
+      onRetryTypes={() => {
+        setTypesError("");
+        window.setTimeout(() => setModels(MODEL_TYPES), 700);
+      }}
+      onToggleDish={(id) => {
+        setPickNotice("");
+        setFlow((current) => toggleDish(current, id));
+      }}
+      onToggleAll={() => {
+        setPickNotice("");
+        setFlow(toggleCategory);
+      }}
+      onAddDish={(text) => {
+        const out = takeDish(flow, text);
+        setFlow(out.flow);
+        setPickNotice(out.notice);
+      }}
+      onNext={() => {
+        setPickNotice("");
+        go(goNext(flow));
+      }}
+      onPrice={(text) => {
+        const out = takePrice(flow, text);
+        setPriceProblem(out.problem);
+        if (!out.problem) go(out.flow);
+      }}
+      onDropDish={() => {
+        setPriceProblem("");
+        go(dropDish(flow));
+      }}
       onAddPhotos={(files) => {
         setPages((current) => [...current, ...files.map((_, i) => ({ id: nextPage + i, url: pageUrl(nextPage + i) }))].slice(0, 4));
         setNextPage((n) => n + files.length);
       }}
       onRemovePage={(id) => setPages((current) => current.filter((page) => page.id !== id))}
       onRead={read}
-      onBack={() => setWhere(where === "review" && flow.source === "speech" ? "speak" : "door")}
+      onBack={() => {
+        if (where === "types") return setWhere("door");
+        if (where === "pick") {
+          const earlier = goBackPick(flow);
+          return earlier ? go(earlier) : setWhere("types");
+        }
+        if (where === "prices" || (where === "review" && flow.source === "template")) {
+          setPriceProblem("");
+          return go(backPrice(flow));
+        }
+        setWhere(where === "review" && flow.source === "speech" ? "speak" : "door");
+      }}
       onCancel={() => setWhere("pages")}
       onMic={() => setListening((on) => !on)}
       onText={say}
@@ -848,6 +1006,19 @@ function Screen() {
     "cardapio-vazio": "vazio",
     "cardapio-erro-cadastro": "erro-cadastro",
     "cardapio-cadastrado": "cadastrado",
+    "cardapio-modelo": "modelo",
+    "cardapio-modelo-carregando": "modelo-carregando",
+    "cardapio-modelo-erro": "modelo-erro",
+    "cardapio-modelo-busca": "modelo-busca",
+    "cardapio-modelo-sem-resultado": "modelo-sem-resultado",
+    "cardapio-modelo-abrindo": "modelo-abrindo",
+    "cardapio-modelo-erro-abrir": "modelo-erro-abrir",
+    "cardapio-modelo-marcar": "modelo-marcar",
+    "cardapio-modelo-marcar-ultima": "modelo-marcar-ultima",
+    "cardapio-modelo-marcar-nenhum": "modelo-marcar-nenhum",
+    "cardapio-modelo-preco": "modelo-preco",
+    "cardapio-modelo-preco-erro": "modelo-preco-erro",
+    "cardapio-modelo-conferir": "modelo-conferir",
   };
   if (menuRoutes[route]) return <MenuSetupPreview stage={menuRoutes[route]} />;
   const dishRoutes: Record<string, DishesStage> = {

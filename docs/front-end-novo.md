@@ -637,6 +637,78 @@ Pratos no modo "O que esgotou"; Categorias é só de dono e gerente.
 
 **Ainda não está ligado ao painel público** (o painel antigo continua mandando).
 
+## Décima quinta rodada: começar de um modelo (22/10/2026)
+
+Quarto jeito de montar o cardápio, o que mais serve a quem escreve pouco: **escolher o tipo do negócio e tocar nos pratos que vende**, sem digitar nenhum
+nome. Continua o que o GD delegou ("Prossiga", 22/10, 18:45, depois de eu perguntar qual item vinha agora) e segue o princípio dele: **menos escrita, menos
+dado**. Nada vai ao ar sem o "pode", e **nada vai ao servidor até o Cadastrar**.
+
+**Telas** (`novo/MenuModel.tsx`, ligada na tela de montar `novo/MenuSetup.tsx` e em `painel/MenuSetupScreen.tsx`; as contas estão em
+`painel/menuModelLogic.ts`, que usa as contas testadas do assistente antigo, sem mudar nenhuma regra):
+
+1. **A porta** ganhou o quarto cartão, **"Começar de um modelo"**. Ele só precisa da lista de tipos, que o servidor sempre tem; por isso fica sempre pronto
+   (depois dos que leem foto e arquivo quando eles funcionam, e logo depois de "Falar os pratos" quando não funcionam).
+2. **O tipo do negócio.** "O que você vende?", um campo de busca ("tapioca, bolo, pizza…", sem ligar para maiúscula nem acento) e os tipos em teclas
+   grandes, duas por linha, com o desenho que o servidor manda (🥪 Lanchonete, 🍕 Pizzaria, 🥙 Tapiocaria…). Tocar abre o modelo; enquanto abre, as teclas esperam e a
+   frase diz "Abrindo o modelo…". Enter na busca não manda nada. **Voltar nunca trava.**
+3. **Tocar nos pratos, categoria por categoria.** O nome da categoria grande, quantos estão marcados, **Marcar todos / Tirar todos**, e cada prato é uma tecla de
+   marcar (a caixa afunda e fica verde; o leitor de tela ouve "marcado"). **"Falta um prato? Escreva aqui"** acrescenta um prato que o modelo não tem, já
+   marcado (se já existe, só marca; se já está marcado, diz isso). A tecla presa embaixo diz para onde vai: "Próxima: Salgados" e, na última, "Colocar os
+   preços (5)". Se **nenhum** prato ficou marcado em lugar nenhum, ela não segue e diz "Marque pelo menos um prato para seguir." Uma categoria sem nada marcado
+   simplesmente fica de fora ("Nenhum marcado. Esta categoria fica de fora."). Voltar anda uma categoria e **o que foi marcado fica**; da primeira, volta
+   aos tipos.
+4. **O preço, um prato por vez.** Categoria pequena em cima, o nome do prato grande, "Quanto você cobra?" e um campo grande de número (teclado de números),
+   já com o foco. "Próximo prato" (no último, "Conferir tudo"); vírgula, ponto e "R$" valem; texto que não é número, ou campo vazio num prato sem preço,
+   **não segue** e diz "Não entendi esse preço. Escreva só números, por exemplo 18,50." **"Tirar este prato"** tira da lista e já mostra o seguinte. Voltar
+   mostra o prato de antes **com o preço que a pessoa já escreveu**, e Enter com esse preço segue sem pedir de novo.
+5. **Conferir e cadastrar** são as da conferência de sempre (a mesma de foto, arquivo e voz): lápis para mudar nome e preço, lixeira, aviso de preço que
+   parece engano, "Cadastrar N pratos". O texto de cima diz "Confira os pratos e os preços. Corrija o que precisar e cadastre." Voltar da conferência volta
+   ao último preço. O prato do modelo cujo nome a pessoa muda passa a ser dela (assim o nome novo vale).
+
+**Honestidade e cuidado:**
+
+- **O preço de cada prato é sempre o que a pessoa escreveu**: o modelo vem sem preço e nenhum palpite é preenchido.
+- A lista de tipos e o modelo escolhido que vêm do servidor são lidos com desconfiança: só entra o que tem identificador simples e nome, repetido sai, categoria
+  sem prato sai, e há tetos (60 tipos, 40 categorias, 200 pratos por categoria). Resposta que não é uma lista vira frase ("O servidor respondeu algo que não
+  entendi."), lista vazia vira "Ainda não há modelos prontos." e modelo sem nenhum prato vira "Esse modelo veio sem pratos."; nenhuma dessas mostra "não achei"
+  nem "nenhum tipo" como se fosse verdade, e todas têm **Tentar de novo** (ou tocar no tipo outra vez).
+- "Sem sinal" ao abrir a lista ou o modelo só manda olhar a internet e tentar de novo; **não afirma nada que não se sabe**. A frase de recusa do próprio
+  servidor (por exemplo "Modelo nao encontrado") passa como veio.
+- Um tipo por vez: dois toques seguidos pedem o modelo **uma vez**. Voltar enquanto o modelo abre leva à porta na hora, e **a resposta que chega tarde não muda a
+  tela** (cada espera tem o seu número, e sair da tela solta as duas). Voltar aos tipos reaproveita a lista que já veio.
+- O foco vai para a frase de aviso a cada etapa **e a cada categoria nova** (o leitor de tela fala o nome da categoria e quantos estão marcados); nos preços fica
+  no campo do preço, que recomeça vazio (ou com o preço já escrito) a cada prato.
+- Nome de categoria e de prato, e o desenho do tipo, **nunca entram como HTML**.
+
+**Servidor:** nenhuma mudança. As rotas `GET /api/admin/menu/templates` e `/templates/<id>` (só dono e gerente) já existiam e o cadastro só acrescenta (o que já
+existe não repete), como nos outros jeitos de montar. O PR #76 (rota do lápis dos pratos) continua precisando entrar antes da tela de pratos ir ao ar; este item
+não depende dele.
+
+**O que a tela não faz:**
+
+- Os tipos e os pratos de cada modelo são os que o servidor tem hoje (18 tipos). Trocar ou ampliar os modelos é mudança no servidor, e é do GD decidir o que vender
+  em cada tipo.
+- Não guarda um rascunho: sair no meio do marcar volta ao começo (nada tinha ido ao servidor, então nada se perde fora do que foi tocado).
+
+**Como foi conferido:** `tests/novo/menuModelLogic.test.mjs` (31), `fluxo.test.mjs` (+6), `toque.test.mjs` (+5; e três que liam o código da tela de montar
+passaram a ler o arquivo compartilhado), `menuSetupLogic.test.mjs` (porta de quatro cartões); 488 testes passam só na pasta do visual novo (1.311 no CI inteiro),
+com tipos, build, segurança e conformidade. Em 320, 360, 390 e 480 px, nas telas de conferência do modelo (mais a porta): sem rolagem lateral, nenhum botão
+com menos de 44 px e nenhum toque coberto. No navegador, com a tela de verdade e um servidor de mentira (159 conferências, contando as da porta e das outras
+maneiras de montar): a busca filtra na hora e ignora acento; "não achei" com a palavra escrita; Enter na busca não sai da tela; marcar, desmarcar, Marcar todos,
+Tirar todos; anotar o prato que faltava (e anotar de novo não repete); a conta do botão muda a cada prato marcado; Voltar guarda o que foi marcado; preço ruim,
+vazio e "R$ 25" (vale 25); Tirar este prato; Voltar mostra o preço já escrito; conferência com os preços do jeito escrito; lápis muda o nome; **um** cadastro só, com
+os pratos que ficaram e o preço de cada um (e antes dele, nenhum envio); lista de tipos sem sinal, torta e vazia mostram a frase certa e o Tentar de novo traz a
+lista; espera da lista e do modelo; dois toques pedem uma vez; Voltar durante a espera leva à porta e a resposta tardia não muda a tela; modelo sem sinal, não
+achado e sem pratos deixam os tipos para tocar de novo; HTML no nome, na categoria e no desenho aparece como texto; o foco da tela de preço não é tomado.
+Para ver: `preview-novo.html#/cardapio-modelo` (os tipos), `#/cardapio-modelo-carregando`, `#/cardapio-modelo-erro`, `#/cardapio-modelo-busca`, `#/cardapio-modelo-sem-resultado`,
+`#/cardapio-modelo-abrindo`, `#/cardapio-modelo-erro-abrir`, `#/cardapio-modelo-marcar`, `#/cardapio-modelo-marcar-ultima`, `#/cardapio-modelo-marcar-nenhum`, `#/cardapio-modelo-preco`,
+`#/cardapio-modelo-preco-erro` e `#/cardapio-modelo-conferir`; a porta com os quatro cartões é `#/cardapio`.
+
+**O que ainda falta no cadastro do cardápio:** foto do prato e opções do prato; a Logomarca; a bolinha de voz que escuta e navega (o que passa de navegar e ler
+precisa da chave da IA, que ele mesmo digita em `configurar-ia.sh`); e a regra de quem abre cada tela na casca do painel.
+
+**Ainda não está ligado ao painel público** (o painel antigo continua mandando).
+
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
 - Tudo mora em `frontend/src/novo/` e **não é importado pelo aplicativo**: o `index.html` e o `main.tsx` não mudam.

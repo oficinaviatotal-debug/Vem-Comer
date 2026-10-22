@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MenuSetup from "../novo/MenuSetup";
 import {
   MENU_FULL,
+  MENU_MODEL_EMPTY,
+  MENU_MODEL_ERROR,
+  MENU_MODEL_NONE,
+  MENU_MODEL_OPEN_ERROR,
   MENU_NAME_BAD,
   MENU_ONLY_FIT,
   MENU_PRICE_BAD,
@@ -10,7 +14,7 @@ import {
   MENU_SPEAK_EMPTY,
   MENU_TOO_HEAVY,
 } from "../novo/copy";
-import { fetchMenuCapabilities, HttpError, importMenu, readMenuFile, readMenuPhotos } from "../service/api";
+import { fetchMenuCapabilities, fetchMenuTemplate, fetchMenuTemplates, HttpError, importMenu, readMenuFile, readMenuPhotos } from "../service/api";
 import { prepareMenuPage } from "../photos/photoFiles";
 import { photoErrorText } from "../photos/photoLogic";
 import { canListen, DICTATION_PATIENCE_MS, hear, type Hearing } from "../assistant/voiceIO";
@@ -25,6 +29,24 @@ import {
   unreadableText,
   type ReadyMenuOptions,
 } from "../assistant/menuPhotoLogic";
+import {
+  backPrice,
+  dropDish,
+  goBackPick,
+  goNext,
+  modelOf,
+  modelTypesOf,
+  pickViewOf,
+  pricesViewOf,
+  startModel,
+  takeDish,
+  takePrice,
+  toggleCategory,
+  toggleDish,
+  typesViewOf,
+  whereOf,
+  type MenuModelTile,
+} from "./menuModelLogic";
 import {
   addUnclear,
   applyEdit,
@@ -51,7 +73,7 @@ type Props = {
   onSeeMenu?: () => void;
 };
 
-type Where = "door" | "pages" | "reading" | "speak" | "review" | "done";
+type Where = "door" | "types" | "pick" | "prices" | "pages" | "reading" | "speak" | "review" | "done";
 type Page = { id: number; blob: Blob; url: string };
 
 /** O servidor espera até 85 s pela leitura; aqui um pouco mais que isso. */
@@ -82,10 +104,21 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
   const [reviewError, setReviewError] = useState("");
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<MenuSaveResult | null>(null);
+  // Começar de um modelo: a lista de tipos (guardada enquanto a tela está aberta), a busca, e os avisos de cada etapa.
+  const [models, setModels] = useState<MenuModelTile[] | null>(null);
+  const [typesError, setTypesError] = useState("");
+  const [query, setQuery] = useState("");
+  const [opening, setOpening] = useState(false);
+  const [pickNotice, setPickNotice] = useState("");
+  const [priceProblem, setPriceProblem] = useState<"" | "price">("");
 
   const alive = useRef(true);
   /** Cada ação nova leva um número; uma ação antiga que termina tarde vê que passou da vez e para. */
   const run = useRef(0);
+  /** A lista de tipos e a abertura de um modelo têm número próprio: voltar e entrar de novo não cancela uma e não deixa a outra passar da vez. */
+  const typesRun = useRef(0);
+  const openRun = useRef(0);
+  const openingRef = useRef(false);
   const controller = useRef<AbortController | null>(null);
   const readKind = useRef<"photo" | "file">("photo");
   const nextId = useRef(1);
@@ -109,6 +142,8 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
     return () => {
       alive.current = false;
       run.current += 1;
+      typesRun.current += 1;
+      openRun.current += 1;
       session.current += 1;
       controller.current?.abort();
       hearing.current?.cancel();
@@ -117,14 +152,17 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
   }, []);
 
   // A cada etapa nova o foco vai para a frase de aviso: o leitor de tela fala o que mudou e o teclado não fica para trás.
+  // Marcando pratos, cada categoria nova também conta como etapa nova. Nos preços o foco fica no campo do preço, que já o toma.
   const first = useRef(true);
+  const stepKey = where === "pick" ? `pick-${flow.categoryIndex}` : where;
   useEffect(() => {
     if (first.current) {
       first.current = false;
       return;
     }
+    if (stepKey === "prices") return;
     document.getElementById("nv-menu-live")?.focus();
-  }, [where]);
+  }, [stepKey]);
 
   // ------------------------------------------------------------------------------------------ a foto
 
@@ -342,10 +380,89 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
     }
   }, [companyId]);
 
+  // ------------------------------------------------------------------------------------------ começar de um modelo
+
+  /** Troca o estado do assistente e vai para a tela que ele pede: marcar, preço ou conferir. */
+  const go = useCallback((next: FlowState) => {
+    flowRef.current = next;
+    setFlow(next);
+    const target = whereOf(next);
+    if (target === "review") {
+      setEditing(null);
+      setReviewError("");
+    }
+    setWhere(target);
+  }, []);
+
+  /** Muda o estado sem trocar de tela (marcar, desmarcar, anotar um prato). */
+  const update = useCallback((change: (current: FlowState) => FlowState) => {
+    const next = change(flowRef.current);
+    flowRef.current = next;
+    setFlow(next);
+  }, []);
+
+  const loadTypes = useCallback(async () => {
+    const mine = ++typesRun.current;
+    setTypesError("");
+    setModels(null);
+    try {
+      const tiles = modelTypesOf(await fetchMenuTemplates());
+      if (mine !== typesRun.current || !alive.current) return;
+      if (!tiles) return setTypesError(MENU_READ_ODD);
+      if (tiles.length === 0) return setTypesError(MENU_MODEL_NONE);
+      setModels(tiles);
+    } catch (reason) {
+      if (mine !== typesRun.current || !alive.current) return;
+      setTypesError(wordsOf(reason, MENU_MODEL_ERROR));
+    }
+  }, []);
+
+  const openTypes = useCallback(() => {
+    setQuery("");
+    setTypesError("");
+    setWhere("types");
+    if (models === null) void loadTypes();
+  }, [loadTypes, models]);
+
+  const chooseType = useCallback(
+    async (id: string) => {
+      if (openingRef.current) return;
+      const mine = ++openRun.current;
+      openingRef.current = true;
+      setOpening(true);
+      setTypesError("");
+      try {
+        const model = modelOf(await fetchMenuTemplate(id), id);
+        if (mine !== openRun.current || !alive.current) return;
+        if (!model) return setTypesError(MENU_MODEL_EMPTY);
+        headingRef.current = "";
+        setPickNotice("");
+        setPriceProblem("");
+        go(startModel(model));
+      } catch (reason) {
+        if (mine !== openRun.current || !alive.current) return;
+        setTypesError(wordsOf(reason, MENU_MODEL_OPEN_ERROR));
+      } finally {
+        if (mine === openRun.current) {
+          openingRef.current = false;
+          if (alive.current) setOpening(false);
+        }
+      }
+    },
+    [go],
+  );
+
   // ------------------------------------------------------------------------------------------ voltar
 
   const goDoor = useCallback(() => {
     run.current += 1;
+    openRun.current += 1;
+    openingRef.current = false;
+    setOpening(false);
+    setTypesError("");
+    setQuery("");
+    setPickNotice("");
+    setPriceProblem("");
     stopListening();
     clearPages();
     setPagesMessage("");
@@ -362,15 +479,28 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
   const back = useCallback(() => {
     if (where === "pages") return goDoor();
     if (where === "speak") return goDoor();
+    if (where === "types") return goDoor();
+    if (where === "pick") {
+      // Primeira categoria: volta à escolha do tipo (o que foi marcado só se perde se escolher outro tipo).
+      const earlier = goBackPick(flowRef.current);
+      setPickNotice("");
+      if (!earlier) return setWhere("types");
+      return go(earlier);
+    }
+    if (where === "prices") {
+      setPriceProblem("");
+      return go(backPrice(flowRef.current));
+    }
     if (where === "review") {
       setEditing(null);
       setReviewError("");
+      if (flowRef.current.source === "template") return go(backPrice(flowRef.current));
       if (flowRef.current.source === "speech") return setWhere("speak");
       if (pagesRef.current.length > 0) return setWhere("pages");
       return goDoor();
     }
     goDoor();
-  }, [goDoor, where]);
+  }, [go, goDoor, where]);
 
   const startSpeaking = useCallback(() => {
     const fresh = startSpeak();
@@ -389,6 +519,13 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
     switch (where) {
       case "door":
         return doorViewOf({ options, voiceWorks, error: doorError });
+      case "types":
+        return typesViewOf({ types: models, query, error: typesError, opening });
+      case "pick":
+        return pickViewOf({ flow, notice: pickNotice });
+      case "prices":
+        // Sem prato esperando preço não há o que perguntar: a conferência é a tela certa.
+        return pricesViewOf({ flow, problem: priceProblem }) ?? reviewViewOf({ flow, editing, error: reviewError });
       case "pages":
         return pagesViewOf({ pages, busy: preparing, photoEnabled: options?.photo === true, room: pagesLeft(pages.length), failed, message: pagesMessage });
       case "reading":
@@ -412,6 +549,40 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
       }}
       onFile={readFile}
       onSpeak={startSpeaking}
+      onModel={openTypes}
+      onQuery={(text) => {
+        setQuery(text);
+        setTypesError((current) => (models === null ? current : ""));
+      }}
+      onChooseType={(id) => void chooseType(id)}
+      onRetryTypes={() => void loadTypes()}
+      onToggleDish={(id) => {
+        setPickNotice("");
+        update((current) => toggleDish(current, id));
+      }}
+      onToggleAll={() => {
+        setPickNotice("");
+        update(toggleCategory);
+      }}
+      onAddDish={(text) => {
+        const out = takeDish(flowRef.current, text);
+        update(() => out.flow);
+        setPickNotice(out.notice);
+      }}
+      onNext={() => {
+        setPickNotice("");
+        setPriceProblem("");
+        go(goNext(flowRef.current));
+      }}
+      onPrice={(text) => {
+        const out = takePrice(flowRef.current, text);
+        setPriceProblem(out.problem);
+        if (!out.problem) go(out.flow);
+      }}
+      onDropDish={() => {
+        setPriceProblem("");
+        go(dropDish(flowRef.current));
+      }}
       onAddPhotos={(files) => void addFiles(files)}
       onRemovePage={removePage}
       onRead={read}

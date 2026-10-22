@@ -19,6 +19,20 @@ export function Photo({ src, art, alt }: { src?: string; art?: string; alt: stri
   );
 }
 
+/** A roda que gira enquanto o servidor responde. Só enfeite: a frase ao lado diz o que acontece. */
+export function Spinner() {
+  return <span className="nv-spin" aria-hidden="true" />;
+}
+
+/** A frase que o leitor de tela ouve a cada mudança no montar o cardápio. Sempre na página: só se anuncia o que muda dentro de uma região que já existia. */
+export function MenuLive({ text }: { text: string }) {
+  return (
+    <p className="nv-sr" id="nv-menu-live" role="status" aria-live="polite" tabIndex={-1}>
+      {text}
+    </p>
+  );
+}
+
 /** A bolinha de voz: o elemento de personalidade do Vem. Toda tela tem uma. */
 export function VoiceOrb({ label = "Falar" }: { label?: string }) {
   return (

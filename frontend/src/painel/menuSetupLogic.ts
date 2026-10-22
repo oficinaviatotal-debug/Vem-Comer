@@ -33,11 +33,13 @@ import {
   MENU_DOOR_FILE,
   MENU_DOOR_FOOT,
   MENU_DOOR_LOADING,
+  MENU_DOOR_MODEL,
   MENU_DOOR_PHOTO,
   MENU_DOOR_SPEAK,
   MENU_DOOR_SUB,
   MENU_DONE_SUB,
   MENU_FINISH,
+  MENU_MODEL_HINT,
   MENU_NOT_HEARD_HELP,
   MENU_NOT_HEARD_ONCE,
   MENU_READ_TIMEOUT,
@@ -46,6 +48,7 @@ import {
   MENU_READ_AGAIN,
   MENU_READING,
   MENU_READING_SUB,
+  MENU_REVIEW_INTRO_MODEL,
   MENU_REVIEW_INTRO_READ,
   MENU_REVIEW_INTRO_SPOKEN,
   MENU_REVIEW_SUB,
@@ -107,7 +110,9 @@ export function doorViewOf(input: { options: ReadyMenuOptions | null; voiceWorks
     badge: "",
     accept: "",
   };
-  const all = [photo, file, speak];
+  // Começar de um modelo só precisa da lista de tipos, que o servidor sempre tem: está sempre pronto, depois dos que lêem.
+  const model: MenuDoorCard = { id: "model", title: MENU_DOOR_MODEL, hint: MENU_MODEL_HINT, state: "ready", badge: "", accept: "" };
+  const all = [photo, file, speak, model];
   const cards = [...all.filter((card) => card.state === "ready"), ...all.filter((card) => card.state !== "ready")];
   return { stage: "door", sub: MENU_DOOR_SUB, loading: false, cards, foot: MENU_DOOR_FOOT, error: input.error };
 }
@@ -310,7 +315,7 @@ export function reviewViewOf(input: ReviewInput): MenuSetupView {
   return {
     stage: "review",
     sub: totals.items > 0 ? `${plural(totals.items, "prato", "pratos")} em ${plural(totals.categories, "categoria", "categorias")}` : MENU_REVIEW_SUB,
-    intro: input.flow.source === "speech" ? MENU_REVIEW_INTRO_SPOKEN : MENU_REVIEW_INTRO_READ,
+    intro: input.flow.source === "speech" ? MENU_REVIEW_INTRO_SPOKEN : input.flow.source === "template" ? MENU_REVIEW_INTRO_MODEL : MENU_REVIEW_INTRO_READ,
     missing,
     groups,
     editing: input.editing,
@@ -324,7 +329,19 @@ export function reviewViewOf(input: ReviewInput): MenuSetupView {
 /** Cada mudança devolve o mesmo estado quando não vale (nome vazio ou repetido, preço que não é número): a tela diz o porquê. */
 export function changeName(flow: FlowState, id: string, text: string): FlowState {
   const at = parseDishId(id);
-  return at ? renameItem(flow, at.categoryIndex, at.itemIndex, text) : flow;
+  const item = at ? flow.categories[at.categoryIndex]?.items[at.itemIndex] : undefined;
+  if (!at || !item) return flow;
+  // O nome de um prato da lista pronta do modelo a regra do assistente não muda. Quando a pessoa escreve outro, o prato passa a ser dela.
+  const own: FlowState = item.custom
+    ? flow
+    : {
+        ...flow,
+        categories: flow.categories.map((category, c) =>
+          c !== at.categoryIndex ? category : { ...category, items: category.items.map((entry, i) => (i === at.itemIndex ? { ...entry, custom: true } : entry)) },
+        ),
+      };
+  const renamed = renameItem(own, at.categoryIndex, at.itemIndex, text);
+  return renamed === own ? flow : renamed;
 }
 
 export function changePrice(flow: FlowState, id: string, text: string): FlowState {

@@ -4248,6 +4248,138 @@ button.nv-now-cell:active {
   }
 }
 
+/* ---------- Começar de um modelo: o tipo do negócio, os pratos que se tocam, o preço de um prato por vez ---------- */
+
+.nv-page-menu.is-types,
+.nv-page-menu.is-prices {
+  padding-bottom: 32px;
+}
+
+/* Marcar os pratos é longo: a tecla de seguir fica presa embaixo, como a de cadastrar. */
+.nv-page-menu.is-pick {
+  padding-bottom: 24px;
+}
+
+/* Os tipos de negócio: teclas grandes, duas por linha, com o desenho em cima e o nome embaixo. */
+.nv-typetiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-typetile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 108px;
+  padding: 12px 10px;
+  border: 0;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-card-3d);
+  color: var(--nv-ink);
+  text-align: center;
+  cursor: pointer;
+}
+
+.nv-typetile:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+.nv-typetile:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.nv-typetile-icon {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.nv-typetile-name {
+  font: 700 18px/1.15 var(--nv-display);
+  overflow-wrap: anywhere;
+}
+
+/* A categoria que está na tela: o nome grande, a dica, quantos já estão marcados e "Marcar todos". */
+.nv-pickhead {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nv-pickhead .nv-lead {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-pickbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nv-pickcount {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--nv-green);
+  font: 700 18px/1.2 var(--nv-display);
+}
+
+/* O preço: um prato por vez, o campo grande já com o foco, o botão logo abaixo. */
+.nv-pricing {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 16px;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbfcff);
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-pricing-group {
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.nv-pricing .nv-lead {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-field.is-price {
+  min-height: 76px;
+}
+
+.nv-field.is-price input {
+  min-height: 68px;
+  font: 700 34px/1 var(--nv-display);
+}
+
+/* O exemplo "Ex.: 18,50" fica menor e mais leve que o número: não parece um preço já escrito. */
+.nv-field.is-price input::placeholder {
+  font: 500 20px/1 var(--nv-ui);
+}
+
+.nv-price-cur {
+  flex: none;
+  color: var(--nv-muted);
+  font: 700 24px/1 var(--nv-display);
+}
+
 /* ---------- Pratos e categorias: cuidar do cardápio ---------- */
 
 /* O cartão do prato só informa (sombra macia). Quem toca são os botões de baixo: Esgotou/Voltou e a lixeira. */

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import "./novo.css";
 import NvIcon from "./Icons";
-import { TopBar, VoiceOrb } from "./parts";
+import { ModelPick, ModelPrices, ModelTypes, type MenuModelHandlers } from "./MenuModel";
+import { MenuLive as Live, Spinner, TopBar, VoiceOrb } from "./parts";
 import {
   MENU_ADD_PAGE,
   MENU_BACK,
@@ -39,11 +40,12 @@ import type { MenuDoorCard, MenuReviewDish, MenuReviewGroup, MenuSetupView } fro
 
 type Stage<K extends MenuSetupView["stage"]> = Extract<MenuSetupView, { stage: K }>;
 
-export type MenuSetupHandlers = {
+export type MenuSetupHandlers = MenuModelHandlers & {
   /** A porta: fotos tiradas ou escolhidas, um arquivo, ou falar os pratos. */
   onPhotos?: (files: File[]) => void;
   onFile?: (file: File) => void;
   onSpeak?: () => void;
+  onModel?: () => void;
   /** As páginas da foto. */
   onAddPhotos?: (files: File[]) => void;
   onRemovePage?: (id: number) => void;
@@ -83,22 +85,9 @@ function takeFiles(event: ChangeEvent<HTMLInputElement>): File[] {
   return chosen;
 }
 
-function Spinner() {
-  return <span className="nv-spin" aria-hidden="true" />;
-}
-
-/** A frase que o leitor de tela ouve a cada mudança. Sempre na página: só se anuncia o que muda dentro de uma região que já existia. */
-function Live({ text }: { text: string }) {
-  return (
-    <p className="nv-sr" id="nv-menu-live" role="status" aria-live="polite" tabIndex={-1}>
-      {text}
-    </p>
-  );
-}
-
 // ------------------------------------------------------------------------------------------------ a porta
 
-const DOOR_ICON = { photo: "camera", file: "doc", speak: "mic" } as const;
+const DOOR_ICON = { photo: "camera", file: "doc", speak: "mic", model: "categories" } as const;
 
 function DoorBody({ card }: { card: MenuDoorCard }) {
   return (
@@ -120,7 +109,7 @@ function DoorBody({ card }: { card: MenuDoorCard }) {
   );
 }
 
-function Door({ view, onPhotos, onFile, onSpeak, onMenu, showMenu }: { view: Stage<"door"> } & MenuSetupHandlers) {
+function Door({ view, onPhotos, onFile, onSpeak, onModel, onMenu, showMenu }: { view: Stage<"door"> } & MenuSetupHandlers) {
   return (
     <>
       <TopBar title={MENU_TITLE} sub={view.sub} onMenu={onMenu} showMenu={showMenu} />
@@ -143,8 +132,8 @@ function Door({ view, onPhotos, onFile, onSpeak, onMenu, showMenu }: { view: Sta
                 <div className="nv-doorcard is-off" aria-disabled="true">
                   <DoorBody card={card} />
                 </div>
-              ) : card.id === "speak" ? (
-                <button type="button" className="nv-doorcard is-ready" onClick={onSpeak}>
+              ) : card.id === "speak" || card.id === "model" ? (
+                <button type="button" className="nv-doorcard is-ready" onClick={card.id === "speak" ? onSpeak : onModel}>
                   <DoorBody card={card} />
                 </button>
               ) : (
@@ -610,8 +599,8 @@ function Done({ view, onMore, onSeeMenu }: { view: Stage<"done"> } & MenuSetupHa
 }
 
 /**
- * Montar o cardápio: a porta (foto, arquivo ou falar os pratos), as páginas fotografadas, a leitura, o falar, a conferência e o
- * cadastrado. Só desenha o que recebe; ler a foto, entender a fala e cadastrar são do servidor e da lógica testada.
+ * Montar o cardápio: a porta (foto, arquivo, falar os pratos ou começar de um modelo), as páginas fotografadas, a leitura, o falar,
+ * as três telas do modelo (o tipo, os pratos, os preços), a conferência e o cadastrado. Só desenha o que recebe; ler a foto, entender a fala e cadastrar são do servidor e da lógica testada.
  * Quem cadastra confere cada prato: o que está sem preço fica separado no alto e não entra no cadastro.
  */
 export default function MenuSetup({ view, busy = false, ...handlers }: Props) {
@@ -621,6 +610,9 @@ export default function MenuSetup({ view, busy = false, ...handlers }: Props) {
       <main className={`nv-screen nv-page-menu is-${view.stage}`}>
         {view.stage === "door" ? <Door view={view} {...handlers} /> : null}
         {view.stage === "pages" ? <Pages view={view} {...handlers} /> : null}
+        {view.stage === "types" ? <ModelTypes view={view} {...handlers} /> : null}
+        {view.stage === "pick" ? <ModelPick view={view} {...handlers} /> : null}
+        {view.stage === "prices" ? <ModelPrices view={view} {...handlers} /> : null}
         {view.stage === "reading" ? <Reading view={view} {...handlers} /> : null}
         {view.stage === "speak" ? <Speak view={view} {...handlers} /> : null}
         {view.stage === "review" ? <Review view={view} busy={busy} {...handlers} /> : null}

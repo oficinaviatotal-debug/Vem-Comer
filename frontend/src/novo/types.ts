@@ -506,7 +506,7 @@ export type SettleView = {
 
 /** Um jeito de começar: tocável quando `state` é "ready"; senão só informa, liso, e a frase do `hint` diz o porquê. */
 export type MenuDoorCard = {
-  id: "photo" | "file" | "speak";
+  id: "photo" | "file" | "speak" | "model";
   title: string;
   hint: string;
   state: "ready" | "loading" | "off";
@@ -536,8 +536,59 @@ export type MenuReviewDish = {
 };
 export type MenuReviewGroup = { id: string; name: string; dishes: MenuReviewDish[] };
 
+/** Um tipo de negócio na grade do modelo: `icon` é o desenho (emoji) que o servidor manda, sempre texto. */
+export type MenuModelTile = { id: string; name: string; icon: string };
+
+/** Um prato do modelo na lista de quem marca: tocar marca ou desmarca. */
+export type MenuPickDish = { id: string; name: string; selected: boolean };
+
 export type MenuSetupView =
   | { stage: "door"; sub: string; loading: boolean; cards: MenuDoorCard[]; foot: string; error: string }
+  | {
+      stage: "types";
+      sub: string;
+      /** Ainda esperando a lista do servidor (ou o modelo escolhido): não diz "não achei" nem mostra tipos. */
+      loading: boolean;
+      /** O que se faz enquanto espera, escrito ("Abrindo os tipos de negócio…", "Abrindo o modelo…"). */
+      working: string;
+      error: string;
+      /** A busca digitada e os tipos que ela deixou (todos quando está vazia). */
+      query: string;
+      tiles: MenuModelTile[];
+      empty: string;
+      /** A lista não veio: aparece "Tentar de novo". */
+      canRetry: boolean;
+    }
+  | {
+      stage: "pick";
+      sub: string;
+      /** O nome da categoria que está na tela. */
+      title: string;
+      intro: string;
+      /** "3 marcados" ou "Nenhum marcado…". */
+      count: string;
+      dishes: MenuPickDish[];
+      /** "Marcar todos" ou, quando todos já estão marcados, "Tirar todos". */
+      markAll: string;
+      notice: string;
+      next: string;
+      canNext: boolean;
+      note: string;
+      /** O que o leitor de tela fala quando a categoria muda. */
+      live: string;
+    }
+  | {
+      stage: "prices";
+      sub: string;
+      /** Muda a cada prato: quem desenha usa como chave para o campo recomeçar com o foco. */
+      dishId: string;
+      name: string;
+      group: string;
+      /** O preço que já está nele ("12,50") ou vazio. */
+      value: string;
+      problem: string;
+      next: string;
+    }
   | { stage: "pages"; sub: string; pages: MenuPageThumb[]; busy: boolean; canAdd: boolean; canRead: boolean; readLabel: string; message: string }
   | { stage: "reading"; sub: string; text: string }
   | {

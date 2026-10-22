@@ -680,7 +680,9 @@ test("cardápio: a porta sobe do chão quando funciona e fica lisa quando o serv
   const setup = read("MenuSetup.tsx");
   // Foto e arquivo são rótulos com o campo de arquivo dentro: o toque em qualquer ponto do cartão abre a câmera ou o seletor.
   assert.match(setup, /<label className="nv-doorcard is-ready">/);
-  assert.match(setup, /<button type="button" className="nv-doorcard is-ready" onClick=\{onSpeak\}>/);
+  // Falar e começar de um modelo são botões (não há arquivo para abrir): o mesmo cartão, o mesmo toque.
+  assert.match(setup, /<button type="button" className="nv-doorcard is-ready" onClick=\{card\.id === "speak" \? onSpeak : onModel\}>/);
+  assert.match(setup, /card\.id === "speak" \|\| card\.id === "model"/);
   assert.match(setup, /<div className="nv-doorcard is-off" aria-disabled="true">/);
   assert.match(setup, /capture="environment"/);
   assert.match(block(".nv-doorcard"), /box-shadow: var\(--nv-card-3d\)/);
@@ -734,7 +736,10 @@ test("cardápio: o que se escreve é campo afundado, com rótulo de verdade, e o
   assert.match(setup, /<label className="nv-text" htmlFor=\{`nv-dish-name-\$\{dish\.id\}`\}>/);
   assert.match(setup, /<label className="nv-text" htmlFor=\{`nv-dish-price-\$\{dish\.id\}`\}>/);
   assert.match(setup, /inputMode="decimal"/);
-  assert.match(setup, /<p className="nv-sr" id="nv-menu-live" role="status" aria-live="polite" tabIndex=\{-1\}>/);
+  // A região viva é uma peça só (parts.tsx), usada por todas as etapas, as do modelo também.
+  assert.match(read("parts.tsx"), /<p className="nv-sr" id="nv-menu-live" role="status" aria-live="polite" tabIndex=\{-1\}>/);
+  assert.match(setup, /import \{ MenuLive as Live,/);
+  assert.match(read("MenuModel.tsx"), /import \{ MenuLive, Spinner, TopBar \} from "\.\/parts";/);
   assert.match(setup, /role="alert"/);
   // Os campos do prato abrem com o texto que já está e só valem no Pronto: nada muda no meio da digitação.
   assert.match(setup, /defaultValue=\{dish\.name\}/);
@@ -772,10 +777,78 @@ test("cardápio: nas etapas com tecla grande própria (falar, conferir) a bolinh
 
 test("cardápio: a roda de espera é redonda e o texto que a explica não está escondido de quem lê tela", () => {
   const setup = read("MenuSetup.tsx");
-  assert.match(setup, /<span className="nv-spin" aria-hidden="true" \/>/);
+  assert.match(read("parts.tsx"), /<span className="nv-spin" aria-hidden="true" \/>/);
   // A roda e a frase ao lado são só visuais: o leitor de tela ouve a mesma frase pela região viva.
   assert.match(setup, /<Live text=\{view\.text\} \/>/);
   assert.match(setup, /<Live text=\{view\.busy \? MENU_PREPARING : view\.message \|\| view\.sub\} \/>/);
+});
+
+test("modelo: o tipo do negócio é uma tecla grande que sobe do chão, em duas colunas, e o desenho do servidor é só enfeite", () => {
+  const model = read("MenuModel.tsx");
+  assert.match(model, /<button type="button" className="nv-typetile" disabled=\{locked\} onClick=\{\(\) => onChooseType\?\.\(tile\.id\)\}>/);
+  assert.match(model, /<span className="nv-typetile-icon" aria-hidden="true">/);
+  assert.match(block(".nv-typetile"), /box-shadow: var\(--nv-card-3d\)/);
+  assert.match(block(".nv-typetile"), /min-height: 10\dpx/);
+  assert.match(block(".nv-typetile:active:not(:disabled)"), /translateY\(3px\)/);
+  assert.match(block(".nv-typetile:disabled"), /cursor: progress/);
+  assert.match(block(".nv-typetile-name"), /overflow-wrap: anywhere/, "nome comprido quebra em vez de empurrar");
+  assert.match(block(".nv-typetiles"), /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  // Enquanto o modelo abre nenhuma tecla de tipo responde (e a frase diz o que acontece).
+  assert.match(model, /const locked = Boolean\(view\.working\);/);
+});
+
+test("modelo: a busca é campo afundado com rótulo de verdade; Enter não manda nada; a lista que ela deixa é a que se toca", () => {
+  const model = read("MenuModel.tsx");
+  assert.match(model, /<label className="nv-text" htmlFor="nv-model-search">/);
+  assert.match(model, /<input\s+id="nv-model-search"/);
+  assert.match(model, /if \(event\.key === "Enter"\) event\.preventDefault\(\);/);
+  assert.match(model, /enterKeyHint="search"/);
+  // "Não achei" e o erro nunca somem sem a pessoa ver: erro é alerta, a falta de resultado é caixa tracejada.
+  assert.match(model, /role="alert"/);
+  assert.match(model, /<p className="nv-empty">\{view\.empty\}<\/p>/);
+});
+
+test("modelo: marcar pratos usa a mesma tecla de marcar das escolhas (caixa afunda e fica verde) e a tecla de seguir fica presa embaixo", () => {
+  const model = read("MenuModel.tsx");
+  assert.match(model, /role="checkbox"\s+aria-checked=\{dish\.selected\}\s+className=\{`nv-opt\$\{dish\.selected \? " is-on" : ""\}`\}/);
+  assert.match(model, /<div role="group" aria-labelledby="nv-pick-title" className="nv-opts-list">/);
+  assert.match(model, /<h2 className="nv-lead" id="nv-pick-title">/);
+  assert.match(model, /<div className="nv-savebar">/);
+  assert.match(model, /disabled=\{!view\.canNext\} onClick=\{onNext\}/);
+  assert.match(block(".nv-page-menu.is-pick"), /padding-bottom: 24px/, "a barra presa embaixo já reserva o lugar dela");
+  assert.match(block(".nv-pickcount"), /min-width: 0/);
+  // "Falta um prato?": campo afundado com rótulo, botão Anotar só vale com texto.
+  assert.match(model, /<label className="nv-text" htmlFor="nv-model-add">/);
+  assert.match(model, /<button type="submit" className="nv-btn is-green" disabled=\{!ready\}>/);
+});
+
+test("modelo: o preço é um prato por vez, em campo grande de número, com o erro lido e o botão logo abaixo", () => {
+  const model = read("MenuModel.tsx");
+  assert.match(model, /<label className="nv-text" htmlFor="nv-model-price">/);
+  assert.match(model, /inputMode="decimal"/);
+  assert.match(model, /aria-describedby=\{view\.problem \? "nv-price-dish nv-price-problem" : "nv-price-dish"\}/);
+  assert.match(model, /aria-invalid=\{view\.problem \? true : undefined\}/);
+  assert.match(model, /<p className="nv-error" id="nv-price-problem" role="alert">/);
+  assert.match(model, /<button type="submit" className="nv-btn is-green is-tall is-block">/);
+  assert.match(model, /<span className="nv-price-cur" aria-hidden="true">/);
+  assert.match(block(".nv-field.is-price"), /min-height: 7\dpx/);
+  assert.match(block(".nv-field.is-price input"), /font: 700 34px/);
+  // O cartão do prato só informa (liso); quem toca são os botões.
+  assert.match(block(".nv-pricing"), /box-shadow: var\(--nv-panel-3d\)/);
+  assert.ok(!/cursor: pointer/.test(block(".nv-pricing")));
+  // Tirar o prato e voltar são botões comuns, nunca enviam o formulário do preço.
+  const buttons = model.match(/<button type="button" className="nv-btn is-ghost is-block"[^>]*>/g) ?? [];
+  assert.ok(buttons.length >= 4, "voltar de cada tela e tirar o prato");
+});
+
+test("modelo: nas telas do modelo a bolinha de voz não disputa o lugar e a roda de espera só enfeita", () => {
+  const setup = read("MenuSetup.tsx");
+  assert.match(setup, /const orb = view\.stage === "door" \|\| view\.stage === "pages" \|\| view\.stage === "done";/);
+  assert.match(setup, /\{view\.stage === "types" \? <ModelTypes view=\{view\} \{\.\.\.handlers\} \/> : null\}/);
+  assert.match(setup, /\{view\.stage === "pick" \? <ModelPick view=\{view\} \{\.\.\.handlers\} \/> : null\}/);
+  assert.match(setup, /\{view\.stage === "prices" \? <ModelPrices view=\{view\} \{\.\.\.handlers\} \/> : null\}/);
+  assert.match(read("MenuModel.tsx"), /<p className="nv-working" aria-hidden="true">/, "a frase da espera também vai na região viva");
+  assert.match(block(".nv-page-menu.is-prices"), /padding-bottom: 32px/);
 });
 
 test("pratos: o cartão só informa (liso); quem toca é o botão de baixo, e a palavra do botão diz de qual prato fala", () => {

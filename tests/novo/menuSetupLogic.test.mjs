@@ -72,7 +72,7 @@ test("antes de o servidor responder não há cartão nenhum: a ordem só se deci
   assert.equal(view.foot, "", "nada de rodapé antes de haver o que escolher");
 });
 
-test("com tudo ligado: foto (mais rápido), arquivo e falar, nessa ordem, todos tocáveis", () => {
+test("com tudo ligado: foto (mais rápido), arquivo, falar e começar de um modelo, nessa ordem, todos tocáveis", () => {
   const view = doorViewOf({ options: ALL, voiceWorks: true, error: "" });
   assert.equal(view.loading, false);
   assert.deepEqual(
@@ -81,8 +81,11 @@ test("com tudo ligado: foto (mais rápido), arquivo e falar, nessa ordem, todos 
       ["photo", "ready"],
       ["file", "ready"],
       ["speak", "ready"],
+      ["model", "ready"],
     ],
   );
+  assert.equal(view.cards[3].title, "Começar de um modelo");
+  assert.equal(view.cards[3].hint, "Escolha o tipo do seu negócio e toque nos pratos que você vende.");
   assert.equal(view.cards[0].badge, "Mais rápido");
   assert.equal(view.cards[0].accept, "image/*");
   assert.ok(view.cards[1].accept.includes(".pdf"), "com PDF ligado o seletor aceita PDF");
@@ -96,19 +99,20 @@ test("sem PDF no servidor o seletor de arquivo não oferece PDF", () => {
   assert.ok(!view.cards.find((card) => card.id === "file").accept.includes(".pdf"));
 });
 
-test("o que o servidor não lê vem depois, liso, com a frase do porquê; falar os pratos sempre funciona", () => {
+test("o que o servidor não lê vem depois, liso, com a frase do porquê; falar os pratos e o modelo sempre funcionam", () => {
   const view = doorViewOf({ options: NONE, voiceWorks: false, error: "" });
   assert.deepEqual(
     view.cards.map((card) => [card.id, card.state]),
     [
       ["speak", "ready"],
+      ["model", "ready"],
       ["photo", "off"],
       ["file", "off"],
     ],
   );
   assert.equal(view.cards[0].hint, "Escreva os pratos com o preço. Eu anoto.", "sem microfone o cartão diz que se escreve");
-  assert.equal(view.cards[1].badge, "", "só o que funciona leva o 'mais rápido'");
-  assert.ok(view.cards[1].hint.length > 0 && view.cards[2].hint.length > 0);
+  assert.equal(view.cards[2].badge, "", "só o que funciona leva o 'mais rápido'");
+  assert.ok(view.cards[2].hint.length > 0 && view.cards[3].hint.length > 0);
 });
 
 test("o erro da porta passa como veio", () => {

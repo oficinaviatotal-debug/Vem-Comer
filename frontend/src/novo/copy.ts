@@ -199,6 +199,34 @@ export const MENU_PRICE_BAD = "Não entendi esse preço. Escreva só números, p
 export const MENU_NAME_BAD = "Esse nome ficou vazio ou já existe nesta categoria.";
 export const MENU_USE_GUESS = "Usar";
 
+// ---------------------------------------------------------------- Cardápio: começar de um modelo (tipo de negócio, pratos, preços)
+
+export const MENU_DOOR_MODEL = "Começar de um modelo";
+export const MENU_MODEL_HINT = "Escolha o tipo do seu negócio e toque nos pratos que você vende.";
+export const MENU_MODEL_SUB = "O que você vende?";
+export const MENU_MODEL_LOADING = "Abrindo os tipos de negócio…";
+export const MENU_MODEL_OPENING = "Abrindo o modelo…";
+export const MENU_MODEL_LABEL = "Digite o que você vende";
+export const MENU_MODEL_SEARCH_HINT = "tapioca, bolo, pizza…";
+export const MENU_MODEL_ERROR = "Sem sinal. Veja se o celular tem internet e toque em Tentar de novo.";
+export const MENU_MODEL_OPEN_ERROR = "Sem sinal. Veja se o celular tem internet e toque no tipo do seu negócio de novo.";
+export const MENU_MODEL_EMPTY = "Esse modelo veio sem pratos. Escolha outro, ou volte e fale os pratos.";
+export const MENU_MODEL_RETRY = "Tentar de novo";
+export const MENU_MODEL_NONE = "Ainda não há modelos prontos. Volte e escolha outro jeito de montar.";
+export const MENU_PICK_INTRO = "Toque nos pratos que você vende. Os que você não vende, deixe sem marcar.";
+export const MENU_PICK_MARK_ALL = "Marcar todos";
+export const MENU_PICK_CLEAR_ALL = "Tirar todos";
+export const MENU_PICK_NONE = "Nenhum marcado. Esta categoria fica de fora.";
+export const MENU_PICK_NEED_ONE = "Marque pelo menos um prato para seguir.";
+export const MENU_PICK_ADD_LABEL = "Falta um prato? Escreva aqui";
+export const MENU_PICK_ADD_HINT = "Ex.: Pastel de queijo";
+export const MENU_PICK_PRICES = "Colocar os preços";
+export const MENU_PRICES_ASK = "Quanto você cobra?";
+export const MENU_PRICES_NEXT = "Próximo prato";
+export const MENU_PRICES_LAST = "Conferir tudo";
+export const MENU_PRICES_DROP = "Tirar este prato";
+export const MENU_REVIEW_INTRO_MODEL = "Confira os pratos e os preços. Corrija o que precisar e cadastre.";
+
 export const MENU_FULL = "Já tem 4 páginas. Toque em Ler o cardápio.";
 export const MENU_TOO_HEAVY = "As fotos ficaram pesadas demais juntas. Tire uma página de cada vez, ou tire menos páginas.";
 export const MENU_READ_ODD = "O servidor respondeu algo que não entendi. Tente de novo.";
