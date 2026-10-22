@@ -2,13 +2,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  NO_FACTS,
+  countOf,
   dateLineOf,
   greetingOf,
+  guideOf,
   hourOf,
   salesOf,
   shortcutsOf,
   todayOf,
   todoOf,
+  withoutPhotoOf,
 } from "../../frontend/src/hoje/todayLogic.ts";
 
 // Quarta, 21/10/2026, 20h30 em Brasília (UTC-3).
@@ -273,4 +277,74 @@ test("o texto de cada \"para fazer agora\" leva à tela do assunto: chamada vai 
   const items = todoOf({ role: "OWNER", now: NOW, calls: [call("c1")], orders: [pix(20)] });
   assert.deepEqual(items.map((item) => [item.kind, item.view]), [["call", "mesas"], ["pix", "pedidos"]]);
   for (const item of items) assert.ok(known.has(item.view), `${item.view} não existe no menu`);
+});
+
+
+// ------------------------------------------------------------------------------------------------ o que falta
+
+const facts = (extra = {}) => ({ products: 12, withoutPhoto: 0, tables: 5, pix: true, ...extra });
+
+test("o que falta: restaurante em dia não recebe lista nenhuma (nada de fingir que está tudo pronto)", () => {
+  assert.deepEqual(guideOf("OWNER", facts()), []);
+  assert.deepEqual(guideOf("OWNER", NO_FACTS), []);
+  assert.deepEqual(guideOf("OWNER", null), []);
+  assert.deepEqual(guideOf("OWNER", undefined), []);
+});
+
+test("o que falta: sem resposta do servidor (null) nunca vira 'falta'; só o que foi confirmado entra", () => {
+  assert.deepEqual(guideOf("OWNER", { products: null, withoutPhoto: null, tables: null, pix: null }), []);
+  const only = guideOf("OWNER", { ...NO_FACTS, pix: false });
+  assert.deepEqual(only.map((step) => step.id), ["pix"]);
+});
+
+test("o que falta: cada passo diz o que falta, como resolver e leva à tela certa", () => {
+  const all = guideOf("OWNER", { products: 0, withoutPhoto: 0, tables: 0, pix: false });
+  assert.deepEqual(all.map((step) => [step.id, step.view]), [["menu", "assistente"], ["pix", "pagamento"], ["tables", "mesas"]]);
+  for (const step of all) {
+    assert.ok(step.title.length > 0 && step.note.length > 0 && step.action.length > 0, step.id);
+    assert.match(step.note, /[.]$/, "a explicação é uma frase inteira");
+    assert.ok(!/\b(dashboard|checkout|onboarding|template|upload|click here)\b/i.test(`${step.title} ${step.note} ${step.action}`), `${step.id} tem palavra de jargão`);
+  }
+  assert.equal(all[0].title, "Seu cardápio está vazio");
+  assert.match(all[0].note, /foto/);
+  assert.match(all[0].note, /falar|fale/);
+});
+
+test("o que falta: fotos pelo número de verdade, no singular e no plural, só com cardápio", () => {
+  assert.equal(guideOf("OWNER", facts({ withoutPhoto: 1 }))[0].title, "1 prato sem foto");
+  assert.equal(guideOf("OWNER", facts({ withoutPhoto: 5 }))[0].title, "5 pratos sem foto");
+  assert.equal(guideOf("OWNER", facts({ withoutPhoto: 5 }))[0].view, "produtos");
+  assert.deepEqual(guideOf("OWNER", facts({ products: 0, withoutPhoto: 3 })).map((step) => step.id), ["menu"], "sem prato nenhum não se fala de foto");
+});
+
+test("o que falta: no máximo três passos, o do cardápio vazio primeiro", () => {
+  const steps = guideOf("OWNER", { products: 8, withoutPhoto: 8, tables: 0, pix: false });
+  assert.deepEqual(steps.map((step) => step.id), ["pix", "tables", "photos"]);
+  assert.ok(guideOf("MANAGER", { products: 0, withoutPhoto: 0, tables: 0, pix: false }).length <= 3);
+});
+
+test("o que falta: só dono e gerente veem; cozinha, caixa, garçom e entregador não", () => {
+  const gaps = { products: 0, withoutPhoto: 0, tables: 0, pix: false };
+  assert.ok(guideOf("OWNER", gaps).length > 0);
+  assert.ok(guideOf("MANAGER", gaps).length > 0);
+  for (const role of ["KITCHEN", "CASHIER", "WAITER", "COURIER", "", null, undefined]) assert.deepEqual(guideOf(role, gaps), [], String(role));
+});
+
+test("o que falta: as contas das respostas do servidor desconfiam do que chega", () => {
+  assert.equal(countOf([1, 2, 3]), 3);
+  assert.equal(countOf([]), 0);
+  assert.equal(countOf(null), null);
+  assert.equal(countOf({ erro: "x" }), null);
+  assert.equal(withoutPhotoOf([{ thumb_url: "/a.png" }, { thumb_url: "" }, { thumb_url: null }, {}, null, { thumb_url: "  " }, { thumb_url: "emoji:🍔" }]), 5, "foto ou emoji contam como foto; vazio, nulo e item torto não");
+  assert.equal(withoutPhotoOf("lista"), null);
+  assert.equal(withoutPhotoOf([]), 0);
+});
+
+test("o que falta: o Hoje leva a lista junto, sem tirar mais nada dele", () => {
+  const base = { name: "João", role: "OWNER", now: NOW, orders: [], calls: [], business: null };
+  assert.deepEqual(todayOf(base).guide, []);
+  const today = todayOf({ ...base, setup: { products: 0, withoutPhoto: 0, tables: 2, pix: true } });
+  assert.deepEqual(today.guide.map((step) => step.id), ["menu"]);
+  assert.deepEqual(todayOf({ ...base, role: "KITCHEN", setup: { products: 0, withoutPhoto: 0, tables: 0, pix: false } }).guide, []);
+  assert.equal(today.greeting, "Boa noite, João");
 });

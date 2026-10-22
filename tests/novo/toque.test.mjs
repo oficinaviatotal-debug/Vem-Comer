@@ -101,6 +101,15 @@ test("caixas do Hoje só viram tecla quando levam a uma tela", () => {
   assert.match(today, /className="nv-todo-icon"/);
 });
 
+test("Hoje: 'O que falta' só aparece quando há passo, e o texto e o botão levam à mesma tela", () => {
+  const today = read("OwnerToday.tsx");
+  assert.match(today, /today\.guide && today\.guide\.length > 0/);
+  assert.match(today, /aria-labelledby="nv-guide-h"/);
+  assert.match(today, /<button type="button" className="nv-todo-text" onClick=\{\(\) => onGo\?\.\(step\.view\)\}>/);
+  assert.match(today, /<button type="button" className="nv-btn is-green" onClick=\{\(\) => onGo\?\.\(step\.view\)\}>/);
+  assert.match(today, /const GUIDE_ICON: Record<GuideItem\["id"\], NvIconName>/);
+});
+
 test("botão de menu que não leva a lugar nenhum não aparece", () => {
   assert.match(read("parts.tsx"), /showMenu = false/);
   for (const name of ["Kitchen.tsx", "OwnerToday.tsx", "JobsHome.tsx"]) {

@@ -757,6 +757,42 @@ de escrever (a conta é a do item 90 dos requisitos).
 
 **Ainda não está ligado ao painel público** (o painel antigo continua mandando).
 
+## Décima sétima rodada: o sistema que conversa, "O que falta" no Hoje (22/10/2026)
+
+O GD aprovou a porta de seis botões do cardápio (20:31: "está perfeito os botões ali de falar, de anexar ou de tirar foto") e deixou um princípio para tudo:
+**o sistema tem de conversar com o cliente e com o empresário, dizendo o que fazer, como fazer, o que falta e o que ficou por fazer**, de um jeito vivo, fácil e
+intuitivo. Ficou como o princípio 8 de `docs/principios-do-produto.md` e o item 92 dos requisitos. Nada vai ao ar sem o "pode".
+
+**A primeira aplicação: "O que falta" no Hoje do dono** (`hoje/todayLogic.ts` faz a conta, `novo/OwnerToday.tsx` desenha, `hoje/TodayScreen.tsx` busca os fatos):
+
+- Até **três passos**, em ordem: **cardápio vazio** ("Tire uma foto do cardápio, fale os pratos ou comece de um modelo." → Montar), **Pix sem cadastrar**
+  ("Cadastre a sua chave. O cliente paga pelo celular e o dinheiro vai para a sua conta." → Cadastrar), **nenhuma mesa** ("Cadastre as mesas e imprima o QR Code.
+  Se você só entrega, pode deixar assim." → Cadastrar) e **N pratos sem foto** ("A foto ajuda o cliente a escolher. Toque para pôr." → Pôr fotos).
+- Cada passo diz **o que falta**, **como resolver** e tem um botão que leva à tela certa (o texto também é tecla, e leva ao mesmo lugar). Os botões têm 44 px ou mais.
+- **Só se diz o que o servidor confirmou.** Cada fato vem de uma busca (pratos, mesas, Pix) que vale sozinha: se uma falha, ela não vira "falta" e a tela
+  guarda o que já sabia; se nada veio, não aparece lista nem frase de erro nova. **Quando nada falta, a tela não diz nada** (não finge que está tudo pronto).
+- **Só dono e gerente** veem a lista, e só eles fazem as buscas de mesas e de Pix. Cozinha, caixa, garçom e entregador não veem nem pedem.
+- Atualiza a cada minuto (junto com as vendas), sem tirar nada do que já está no Hoje.
+
+**O que a lista ainda não faz:**
+
+- Não tem "já sei, não quero" para o passo que o dono não vai fazer (quem só entrega ainda vê "Nenhuma mesa cadastrada", com a frase dizendo que pode deixar assim).
+  Guardar essa escolha pede um lugar para guardar no servidor; fica para decidir.
+- Só olha quatro coisas (cardápio, Pix, mesas, fotos). Horário, regiões de entrega, logomarca e equipe ainda não entram.
+- Pratos sem foto contam pelo que o cardápio público manda (`thumb_url` vazio); um emoji conta como foto.
+
+**Como foi conferido:** `tests/novo/todayLogic.test.mjs` (+8: em dia, sem resposta do servidor, os passos e as telas para onde levam, singular e plural, teto de três,
+quem pode ver, as contas das respostas, o Hoje levando a lista) e `toque.test.mjs` (+1: a seção só aparece quando há passo e o texto e o botão levam à mesma tela).
+512 testes passam só na pasta do visual novo. No navegador, com a tela de verdade e um servidor de mentira (11 conferências): os três passos em ordem e as telas
+certas ao tocar, cardápio vazio sem falar de foto, tudo em dia sem lista, busca que falha não vira "falta", nada veio sem frase de erro, cozinha sem lista e sem
+as buscas do dono, gerente com no máximo três. Em 320 a 480 px: sem rolagem lateral e sem botão menor que 44 px.
+Para ver: `preview-novo.html#/hoje-falta` (Pix, mesas e fotos), `#/hoje-comecando` (cardápio vazio, Pix e mesas) e `#/hoje` (sem lista, como antes).
+
+**Onde o princípio ainda precisa chegar:** o próximo passo depois de cadastrar o cardápio; o cliente (em que passo o pedido está e o que ele faz agora); a conferência
+(o que falta em cada prato); e as mensagens de erro das telas antigas.
+
+**Ainda não está ligado ao painel público** (o painel antigo continua mandando).
+
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
 - Tudo mora em `frontend/src/novo/` e **não é importado pelo aplicativo**: o `index.html` e o `main.tsx` não mudam.

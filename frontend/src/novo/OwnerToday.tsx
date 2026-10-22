@@ -1,7 +1,7 @@
 import NvIcon, { type NvIconName } from "./Icons";
 import { TopBar, VoiceOrb } from "./parts";
 import { minutesText, money } from "./format";
-import type { TodoItem, Today } from "./types";
+import type { GuideItem, TodoItem, Today } from "./types";
 
 type Props = {
   today: Today;
@@ -30,6 +30,9 @@ const SHORTCUT_ICON: Record<string, NvIconName> = {
 };
 
 const TODO_ICON: Record<"call" | "pix", NvIconName> = { call: "bell", pix: "pix" };
+
+/** O ícone de cada passo de "O que falta". */
+const GUIDE_ICON: Record<GuideItem["id"], NvIconName> = { menu: "mic", pix: "pix", tables: "table", photos: "bag" };
 
 function hourLabel(from: number, index: number): string {
   return `${from + index}h`;
@@ -126,6 +129,30 @@ export default function OwnerToday({ today, onGo, onTodo, busyId = null, error =
                     onClick={() => onTodo?.(item)}
                   >
                     {busyId === item.id ? "Enviando…" : item.action}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {today.guide && today.guide.length > 0 ? (
+          <section aria-labelledby="nv-guide-h">
+            <h2 className="nv-h2" id="nv-guide-h" style={{ marginBottom: 14 }}>
+              O que falta
+            </h2>
+            <ul className="nv-todo">
+              {today.guide.map((step) => (
+                <li key={step.id}>
+                  <span className="nv-todo-icon" aria-hidden="true">
+                    <NvIcon name={GUIDE_ICON[step.id]} />
+                  </span>
+                  <button type="button" className="nv-todo-text" onClick={() => onGo?.(step.view)}>
+                    <strong>{step.title}</strong>
+                    <span>{step.note}</span>
+                  </button>
+                  <button type="button" className="nv-btn is-green" onClick={() => onGo?.(step.view)}>
+                    {step.action}
                   </button>
                 </li>
               ))}

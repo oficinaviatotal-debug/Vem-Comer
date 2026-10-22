@@ -8,7 +8,7 @@ import type { MyCall } from "../loja/tableLogic.ts";
 import type { KitchenOrder } from "../cozinha/kitchenLogic";
 import type { PanelOrder } from "../painel/ordersLogic";
 import { normalizeCash, normalizeOrders, type CashView, type CourierOrder } from "../courier/courierLogic";
-import { hourOf, todayOf } from "../hoje/todayLogic";
+import { hourOf, todayOf, type SetupFacts } from "../hoje/todayLogic";
 import { shopViewOf, type ShopView } from "../loja/shopLogic";
 import type { Job, Promo, Today } from "./types";
 import type { OrderView, Product } from "../customer/types";
@@ -101,7 +101,7 @@ export function shopExample(): ShopView {
  * O "Hoje" de EXEMPLO: pedidos, mesa chamando e vendas no formato que o servidor manda, passando pela mesma conta
  * que a tela de verdade usa (hoje/todayLogic). `now` entra de fora para os minutos e as horas baterem com a conferência.
  */
-export function todayExample(now: number): Today {
+export function todayExample(now: number, setup?: SetupFacts): Today {
   const ago = (minutes: number) => new Date(now - minutes * 60000).toISOString();
   const order = (status: string, minutes: number, extra: Record<string, unknown> = {}) => ({
     status,
@@ -121,6 +121,7 @@ export function todayExample(now: number): Today {
     name: "João da Silva",
     role: "OWNER",
     now,
+    setup,
     orders: [
       order("PENDING_PAYMENT", 7, pix),
       order("PENDING_PAYMENT", 3, pix),

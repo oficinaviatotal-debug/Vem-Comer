@@ -49,6 +49,18 @@ export type TodoItem = {
   view?: string | null;
 };
 
+/**
+ * "O que falta" no Hoje do dono: um passo que o sistema sabe, pelos dados de verdade, que ainda não foi dado. Diz o que está faltando (`title`),
+ * como resolver (`note`) e leva à tela certa (`view`). Nada entra aqui por palpite.
+ */
+export type GuideItem = {
+  id: "menu" | "pix" | "tables" | "photos";
+  title: string;
+  note: string;
+  action: string;
+  view: string;
+};
+
 /** As vendas do dia. `hours` vai da primeira hora mostrada até a hora de agora; `nowIndex` é a barra de agora (-1: sem barras). */
 export type Sales = {
   total: number;
@@ -72,6 +84,8 @@ export type Today = {
   onTheWay: number;
   calling: number;
   todo: TodoItem[];
+  /** O que falta montar no restaurante (só para dono e gerente, só o que o servidor confirmou). Vazio: nada a dizer. */
+  guide?: GuideItem[];
   /** null: as vendas ainda não chegaram, ou quem olha não vê vendas. */
   sales: Sales | null;
   /** Frase no lugar das vendas quando não há número ("Carregando…", "Não consegui abrir as vendas agora."). */

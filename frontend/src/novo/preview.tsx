@@ -92,7 +92,7 @@ import type { Selection } from "../customer/options";
 
 /**
  * Página de conferência do visual novo (não faz parte do aplicativo): mostra cada tela com dados de exemplo.
- * Abrir: preview-novo.html#/loja, #/hoje, #/cozinha, #/vagas, #/escolhas (#/escolhas-erro), #/sacola, #/entrega,
+ * Abrir: preview-novo.html#/loja, #/hoje (e #/hoje-falta, #/hoje-comecando: o "O que falta"), #/cozinha, #/vagas, #/escolhas (#/escolhas-erro), #/sacola, #/entrega,
  * #/mesas (quem está chamando), #/mesas-calmo (ninguém chamando), #/mesas-qr (câmera do QR), #/mesas-carregando e #/mesas-erro (lista de mesas), #/mesa-aberta (a mesa 4 aberta),
  * #/pedidos (dono), #/pedidos-caixa (abre no dinheiro a receber), #/pedidos-garcom (sem a aba Receber), #/pedidos-cozinha (sem endereço nem telefone), #/pedidos-calmo (nenhum pedido) e #/pedidos-erro (frase de erro ao tocar) e #/pedidos-enviando (o botão esperando o servidor),
  * #/entregas (entregador: na rua), #/entregas-pegar, #/entregas-entregues, #/entregas-codigo (campo dos 4 números; o código de exemplo é 4821), #/entregas-bloqueado, #/entregas-erro, #/entregas-calmo, #/entregas-carregando e #/entregas-gerente (vê também as de outros motoqueiros),
@@ -1095,6 +1095,9 @@ function Screen() {
   if (route === "sacola") return <BagPreview delivery={false} />;
   if (route === "entrega") return <BagPreview delivery />;
   if (route === "hoje") return <OwnerToday today={todayExample(Date.now())} showMenu />;
+  // O que falta: dois jeitos de ver, o de quem ainda está começando e o de quem já vende mas tem o que acertar. Os números são de exemplo.
+  if (route === "hoje-falta") return <OwnerToday today={todayExample(Date.now(), { products: 14, withoutPhoto: 5, tables: 0, pix: false })} showMenu />;
+  if (route === "hoje-comecando") return <OwnerToday today={todayExample(Date.now(), { products: 0, withoutPhoto: 0, tables: 0, pix: false })} showMenu />;
   if (route === "vagas") return <JobsHome jobs={JOBS} city="Natal - RN" showMenu />;
   if (route === "cozinha") return <KitchenPreview />;
   return <ShopPreview />;

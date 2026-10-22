@@ -55,6 +55,18 @@ resultado.
 Agentes e aprendizado rodando 24 horas, renovando o sistema todo dia. Ação de maior impacto pede a autorização do GD
 (lista na proposta 004).
 
+## 8. O sistema conversa: diz o que fazer, como fazer, o que falta e o que ficou por fazer
+
+Ditado pelo GD em 22/10/2026, 20:31: o sistema "sempre tem que se comunicar com o cliente e com o empresário, orientando o que fazer, como fazer, o que
+falta, o que deixa de fazer. Tem que ser sempre algo vivo, comunicativo, fácil, intuitivo e que dialogue com as pessoas que vão utilizar".
+
+- **Toda tela responde quatro perguntas** sem a pessoa precisar procurar: o que faço agora? como faço? o que falta? o que ficou por fazer? A resposta é uma
+  frase curta e um **botão que leva ao lugar certo**, não um manual.
+- **Só se diz o que o sistema sabe de verdade.** "Falta" nasce de um dado que o servidor confirmou; busca que falhou não vira "falta", e quando nada falta o
+  sistema não finge que está tudo pronto, só não diz nada.
+- Vale para o dono (o que falta para vender: cardápio, Pix, mesas, fotos) e para o cliente (em que passo o pedido está, o que ele precisa fazer, quanto falta).
+- Erro também conversa: diz o que aconteceu e o que fazer, sem culpar a pessoa.
+
 ## Como a pessoa chega: link que vira ícone (proposta, aguarda o OK do GD)
 
 Pergunta do GD (14/10, 08:25): só o link, link sempre no ar, ou baixar aplicativo? O link pode virar ícone na tela inicial com notificação?

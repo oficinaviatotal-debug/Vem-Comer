@@ -4,8 +4,9 @@ import type { TodoItem } from "../novo/types";
 import { fetchBusiness } from "../business/businessApi";
 import type { BusinessView } from "../business/businessLogic";
 import { parsePanelCalls, type PanelCall } from "../mesa/callsLogic";
-import { answerTableCall, fetchAdminOrders, fetchTableCalls } from "../service/api";
-import { VIEWS, todayOf, type TodayOrder } from "./todayLogic";
+import { isManager } from "../nav/navLogic";
+import { answerTableCall, fetchAdminOrders, fetchPixSettings, fetchProducts, fetchTableCalls, fetchTables } from "../service/api";
+import { NO_FACTS, VIEWS, countOf, todayOf, withoutPhotoOf, type SetupFacts, type TodayOrder } from "./todayLogic";
 
 type Props = {
   companyId: string;
@@ -30,6 +31,7 @@ export default function TodayScreen({ companyId, role, name, onGo }: Props) {
   const [calls, setCalls] = useState<PanelCall[]>([]);
   const [business, setBusiness] = useState<BusinessView | null>(null);
   const [businessError, setBusinessError] = useState<string | null>(null);
+  const [setup, setSetup] = useState<SetupFacts>(NO_FACTS);
   const [offline, setOffline] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -73,24 +75,41 @@ export default function TodayScreen({ companyId, role, name, onGo }: Props) {
     }
   }, [companyId]);
 
+  /**
+   * O que falta montar: cada pergunta ao servidor vale sozinha. Se uma falha, o que já se sabia fica e o resto segue; nunca se conclui "falta" de uma busca que falhou.
+   * Só dono e gerente veem a lista, então só eles fazem estas buscas.
+   */
+  const loadSetup = useCallback(async () => {
+    if (document.hidden || !isManager(role)) return;
+    const [products, tables, pix] = await Promise.allSettled([fetchProducts(companyId), fetchTables(companyId), fetchPixSettings(companyId)]);
+    setSetup((before) => ({
+      products: products.status === "fulfilled" ? countOf(products.value) : before.products,
+      withoutPhoto: products.status === "fulfilled" ? withoutPhotoOf(products.value) : before.withoutPhoto,
+      tables: tables.status === "fulfilled" ? countOf(tables.value) : before.tables,
+      pix: pix.status === "fulfilled" && typeof pix.value?.configured === "boolean" ? pix.value.configured : before.pix,
+    }));
+  }, [companyId, role]);
+
   useEffect(() => {
     void loadOrders();
     void loadCalls();
     void loadSales();
+    void loadSetup();
     const timers = [
       window.setInterval(() => void loadOrders(), ORDERS_MS),
       window.setInterval(() => void loadCalls(), CALLS_MS),
       window.setInterval(() => void loadSales(), SALES_MS),
+      window.setInterval(() => void loadSetup(), SALES_MS),
     ];
     return () => {
       timers.forEach((timer) => window.clearInterval(timer));
       salesTicket.current += 1;
     };
-  }, [loadOrders, loadCalls, loadSales]);
+  }, [loadOrders, loadCalls, loadSales, loadSetup]);
 
   const today = useMemo(
-    () => todayOf({ name, role, orders, calls, business, businessError: business ? null : businessError, now }),
-    [name, role, orders, calls, business, businessError, now],
+    () => todayOf({ name, role, orders, calls, business, businessError: business ? null : businessError, setup, now }),
+    [name, role, orders, calls, business, businessError, setup, now],
   );
 
   async function handleTodo(item: TodoItem) {

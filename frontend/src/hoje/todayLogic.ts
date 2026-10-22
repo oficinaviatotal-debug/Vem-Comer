@@ -18,7 +18,7 @@ import {
   shortcutsFor,
   type OrderLite,
 } from "../nav/navLogic.ts";
-import type { Sales, Shortcut, TodoItem, Today } from "../novo/types.ts";
+import type { GuideItem, Sales, Shortcut, TodoItem, Today } from "../novo/types.ts";
 
 export type TodayOrder = OrderLite & { total_price?: number | string | null };
 
@@ -32,8 +32,89 @@ export type TodayInput = {
   business: Pick<BusinessView, "summary" | "hours"> | null;
   /** Frase de erro das vendas, quando a busca falhou e não há número antigo para mostrar. */
   businessError?: string | null;
+  /** O que o servidor já confirmou do restaurante, para a lista "O que falta". Sem isto, ou com `null` em cada campo, a lista fica vazia. */
+  setup?: SetupFacts | null;
   now: number;
 };
+
+/**
+ * Fatos do restaurante, cada um só quando o servidor respondeu. `null` quer dizer "não sei" (a busca falhou ou ainda não voltou): nunca vira "falta".
+ */
+export type SetupFacts = {
+  /** Quantos pratos o cardápio tem. */
+  products: number | null;
+  /** Quantos desses pratos estão sem foto. */
+  withoutPhoto: number | null;
+  /** Quantas mesas estão cadastradas. */
+  tables: number | null;
+  /** Se a chave Pix já está cadastrada. */
+  pix: boolean | null;
+};
+
+export const NO_FACTS: SetupFacts = { products: null, withoutPhoto: null, tables: null, pix: null };
+
+/** Quantos itens a resposta do servidor tem; `null` se ela não é uma lista. */
+export function countOf(list: unknown): number | null {
+  return Array.isArray(list) ? list.length : null;
+}
+
+/** Quantos pratos da lista não têm foto (`thumb_url` vazio ou ausente); `null` se a resposta não é uma lista. */
+export function withoutPhotoOf(list: unknown): number | null {
+  if (!Array.isArray(list)) return null;
+  return list.filter((item) => {
+    const thumb = (item as { thumb_url?: unknown } | null)?.thumb_url;
+    return typeof thumb !== "string" || thumb.trim() === "";
+  }).length;
+}
+
+const MAX_GUIDE = 3;
+
+/**
+ * "O que falta": o que o sistema diz ao dono, em ordem, para o restaurante poder vender. Só dono e gerente, só com fato confirmado.
+ * Cada passo diz o que falta, como resolver e leva à tela certa; quando nada falta, não diz nada (não finge que está tudo pronto).
+ */
+export function guideOf(role: string | null | undefined, facts: SetupFacts | null | undefined): GuideItem[] {
+  if (!isManager(role) || !facts) return [];
+  const items: GuideItem[] = [];
+  if (facts.products === 0) {
+    items.push({
+      id: "menu",
+      title: "Seu cardápio está vazio",
+      note: "Tire uma foto do cardápio, fale os pratos ou comece de um modelo.",
+      action: "Montar",
+      view: "assistente",
+    });
+  }
+  if (facts.pix === false) {
+    items.push({
+      id: "pix",
+      title: "Você ainda não recebe Pix pelo sistema",
+      note: "Cadastre a sua chave. O cliente paga pelo celular e o dinheiro vai para a sua conta.",
+      action: "Cadastrar",
+      view: "pagamento",
+    });
+  }
+  if (facts.tables === 0) {
+    items.push({
+      id: "tables",
+      title: "Nenhuma mesa cadastrada",
+      note: "Cadastre as mesas e imprima o QR Code. Se você só entrega, pode deixar assim.",
+      action: "Cadastrar",
+      view: "mesas",
+    });
+  }
+  if (facts.withoutPhoto !== null && facts.withoutPhoto > 0 && (facts.products ?? 0) > 0) {
+    const n = facts.withoutPhoto;
+    items.push({
+      id: "photos",
+      title: n === 1 ? "1 prato sem foto" : `${n} pratos sem foto`,
+      note: "A foto ajuda o cliente a escolher. Toque para pôr.",
+      action: "Pôr fotos",
+      view: "produtos",
+    });
+  }
+  return items.slice(0, MAX_GUIDE);
+}
 
 /** O restaurante vive no horário de Brasília; o servidor conta as horas assim, então a tela também. */
 const ZONE = "America/Sao_Paulo";
@@ -159,6 +240,7 @@ export function todayOf(input: TodayInput): Today {
     onTheWay: orders.filter((order) => order.status === STATUS.out).length,
     calling: input.calls.length,
     todo: todoOf(input),
+    guide: guideOf(input.role, input.setup),
     sales,
     salesMessage,
     shortcuts: shortcutsOf(input.role),
