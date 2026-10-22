@@ -4,7 +4,8 @@
  * As "fotos" são emojis no lugar da foto do prato; na tela de verdade entra a foto do restaurante.
  */
 
-import type { Cart, Category, Dish, Job, Promo, Shop, Tab, Ticket, Today } from "./types";
+import type { KitchenOrder } from "../cozinha/kitchenLogic";
+import type { Cart, Category, Dish, Job, Promo, Shop, Today } from "./types";
 
 export const SHOP: Shop = {
   name: "Açaí do João",
@@ -56,48 +57,72 @@ export const TODAY: Today = {
   nowIndex: 10,
 };
 
-export const TICKETS: Ticket[] = [
-  {
-    id: "k1",
-    number: "#42",
-    where: "Mesa 4",
-    minutes: 7,
-    lines: [
-      { qty: 2, name: "Açaí 500 ml", detail: "granola e banana" },
-      { qty: 1, name: "Suco de caju" },
-    ],
-    note: "Sem leite condensado",
-    action: "Começar a fazer",
-  },
-  {
-    id: "k2",
-    number: "#43",
-    where: "Entrega",
-    minutes: 3,
-    lines: [
-      { qty: 1, name: "X-Burguer" },
-      { qty: 1, name: "Batata média" },
-    ],
-    action: "Começar a fazer",
-  },
-  {
-    id: "k3",
-    number: "#40",
-    where: "Mesa 2",
-    minutes: 24,
-    lines: [{ qty: 1, name: "Açaí 300 ml", detail: "sem granola" }],
-    action: "Começar a fazer",
-  },
-];
-
 export const JOBS: Job[] = [
   { id: "j1", title: "Atendente de loja", company: "Mercadinho Bom Preço", city: "Natal - RN", mode: "Presencial", contract: "CLT", ago: "Há 2 horas" },
   { id: "j2", title: "Auxiliar de cozinha", company: "Bistrô Sabor e Arte", city: "Natal - RN", mode: "Presencial", contract: "CLT", ago: "Há 5 horas" },
   { id: "j3", title: "Motoboy com moto própria", company: "Açaí do João", city: "Natal - RN", mode: "Presencial", contract: "Por entrega", ago: "Ontem" },
 ];
 
-export const KITCHEN_TABS: Tab[] = [
-  { id: "new", label: "Novos", count: 3 },
-  { id: "doing", label: "Fazendo", count: 2 },
-  { id: "ready", label: "Prontos", count: 1 },
-];
+/**
+ * Pedidos de EXEMPLO no mesmo formato que o servidor manda. A página de conferência passa estes pedidos pela mesma
+ * conta que a cozinha de verdade usa (cozinha/kitchenLogic), então o que se vê ali é o caminho real, não um desenho.
+ * `now` entra de fora para os minutos de espera baterem com a hora da conferência.
+ */
+export function kitchenOrders(now: number): KitchenOrder[] {
+  const ago = (minutes: number) => new Date(now - minutes * 60000).toISOString();
+  return [
+    {
+      id: "0042-exemplo",
+      status: "PENDING_PAYMENT",
+      created_at: ago(7),
+      order_type: "mesa",
+      table_number: "4",
+      items: [
+        { name: "Açaí 500 ml", quantity: 2, options: [{ name: "granola" }, { name: "banana" }], note: "sem leite condensado" },
+        { name: "Suco de caju", quantity: 1 },
+      ],
+    },
+    {
+      id: "0043-exemplo",
+      status: "PENDING_PAYMENT",
+      created_at: ago(3),
+      order_type: "entrega",
+      delivery_address: { street: "Rua das Flores", number: "120", neighborhood: "Centro" },
+      items: [
+        { name: "X-Burguer", quantity: 1 },
+        { name: "Batata média", quantity: 1 },
+      ],
+    },
+    {
+      id: "0040-exemplo",
+      status: "PENDING_PAYMENT",
+      created_at: ago(24),
+      order_type: "mesa",
+      table_number: "2",
+      items: [{ name: "Açaí 300 ml", quantity: 1, options: [{ name: "sem granola" }] }],
+    },
+    {
+      id: "0041-exemplo",
+      status: "em preparo",
+      created_at: ago(12),
+      order_type: "mesa",
+      table_number: "6",
+      items: [{ name: "Pastel de queijo", quantity: 3 }],
+    },
+    {
+      id: "0039-exemplo",
+      status: "em preparo",
+      created_at: ago(18),
+      order_type: "retirada",
+      items: [{ name: "X-Burguer", quantity: 2, note: "um sem cebola" }],
+    },
+    {
+      id: "0038-exemplo",
+      status: "pronto",
+      created_at: ago(25),
+      order_type: "entrega",
+      delivery_address: { street: "Av. Hermes da Fonseca", number: "800" },
+      items: [{ name: "Açaí 500 ml", quantity: 1 }],
+    },
+  ];
+}

@@ -3,13 +3,27 @@ import { TopBar, VoiceOrb } from "./parts";
 import { minutesText, waitTone } from "./format";
 import type { Tab, Ticket } from "./types";
 
-type Props = { tabs: Tab[]; activeTab: string; tickets: Ticket[] };
+type Props = {
+  tabs: Tab[];
+  activeTab: string;
+  tickets: Ticket[];
+  /** Toque numa etapa (Novos, Fazendo, Prontos). Sem isto a tela só mostra, como na página de conferência. */
+  onTab?: (id: string) => void;
+  /** Toque no botão grande da comanda. */
+  onAction?: (id: string) => void;
+  /** A comanda que está sendo enviada ao servidor agora: o botão espera para não mandar duas vezes. */
+  busyId?: string | null;
+  /** Frase pronta quando algo deu errado; diz o que fazer. */
+  error?: string | null;
+  /** O que escrever quando a etapa não tem comanda. */
+  emptyText?: string;
+};
 
 /**
  * Cozinha: uma comanda por pedido, a mais antiga primeiro. A fita no topo muda de cor pelo tempo de espera
  * (verde, amarela, vermelha) e o botão de baixo é grande o bastante para tocar com a mão suja de farinha.
  */
-export default function Kitchen({ tabs, activeTab, tickets }: Props) {
+export default function Kitchen({ tabs, activeTab, tickets, onTab, onAction, busyId = null, error = null, emptyText }: Props) {
   return (
     <div className="nv-root">
       <main className="nv-screen">
@@ -23,12 +37,21 @@ export default function Kitchen({ tabs, activeTab, tickets }: Props) {
               role="tab"
               aria-selected={tab.id === activeTab}
               className={`nv-tab${tab.id === activeTab ? " is-on" : ""}`}
+              onClick={() => onTab?.(tab.id)}
             >
               {tab.label}
               <b>{tab.count}</b>
             </button>
           ))}
         </div>
+
+        {error ? (
+          <p className="nv-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        {tickets.length === 0 && emptyText ? <p className="nv-empty">{emptyText}</p> : null}
 
         <ul className="nv-tickets">
           {[...tickets]
@@ -47,8 +70,8 @@ export default function Kitchen({ tabs, activeTab, tickets }: Props) {
                     </span>
                   </div>
                   <ul className="nv-lines">
-                    {ticket.lines.map((line) => (
-                      <li key={line.name}>
+                    {ticket.lines.map((line, index) => (
+                      <li key={`${index}-${line.name}`}>
                         <b>{line.qty}×</b>
                         {line.name}
                         {line.detail ? <small>{line.detail}</small> : null}
@@ -56,9 +79,16 @@ export default function Kitchen({ tabs, activeTab, tickets }: Props) {
                     ))}
                   </ul>
                   {ticket.note ? <p className="nv-note">{ticket.note}</p> : null}
-                  <button type="button" className="nv-btn is-green is-block">
-                    {ticket.action}
-                  </button>
+                  {ticket.action ? (
+                    <button
+                      type="button"
+                      className="nv-btn is-green is-block"
+                      disabled={busyId === ticket.id}
+                      onClick={() => onAction?.(ticket.id)}
+                    >
+                      {busyId === ticket.id ? "Enviando…" : ticket.action}
+                    </button>
+                  ) : null}
                 </li>
               );
             })}

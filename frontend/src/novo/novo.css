@@ -1111,6 +1111,32 @@
   background: var(--nv-brand-comer);
 }
 
+/* Aviso de erro e etapa vazia: dizem o que fazer, em frase inteira. */
+.nv-error {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-alert-soft);
+  color: var(--nv-alert);
+  font-weight: 700;
+}
+
+.nv-empty {
+  margin: 8px 0 18px;
+  padding: 22px 18px;
+  border: 2px dashed var(--nv-line);
+  border-radius: var(--nv-r-md);
+  color: var(--nv-muted);
+  font-size: 17px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.nv-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 /* Celular bem pequeno (320 px): as etapas da cozinha cabem sem rolar de lado. */
 @media (max-width: 340px) {
   .nv-tab {
