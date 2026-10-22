@@ -211,3 +211,13 @@ restaurante e para o ecossistema. Se ele quis dizer outra coisa, ajusto.
 avaliações já existem; 2) Jurista e Tecnologia, que já rodam como trabalho meu; 3) Humanidade, que já vale como regra de toda tela
 nova; 4) Prospecção, depois do domínio, de SPF, DKIM e DMARC e do advogado; 5) Marketing, Vendas e Campanhas, depois do consentimento
 dos clientes e do envio; 6) Estratégia, quando houver placar de verdade para ela ler.
+
+## 11. O que a diretriz estratégica de 22/10/2026 acrescenta a estes agentes
+
+Resumo; o detalhe está em `docs/diretriz-estrategica.md`.
+
+1. **Princípio de execução, virando regra do cartão de aprovação:** cada campanha tem **objetivo**, cada recomendação **fundamento** (fonte e data, já exigido), cada automação **limite** (teto e botão de parar),
+   cada melhoria é **testada** (pull request com teste) e cada resultado é **medido** (`finish`). Hoje o cartão não tem os campos "objetivo", "como vou medir" e "limite": entram junto do primeiro agente.
+2. **Metas mensais:** quem fixa e eleva é o GD (nível 3). Nenhum agente eleva a própria meta, e meta de volume só vale se a qualidade não piorar.
+3. **Desconto e promoção:** só com a margem à vista, calculada pelo custo cadastrado; sem custo, o agente pede o custo e não sugere desconto.
+4. **Mensagem ao cliente:** um teto por pessoa por dia somando todos os restaurantes, aceite separado para aviso do pedido e para ofertas, saída com um toque.
