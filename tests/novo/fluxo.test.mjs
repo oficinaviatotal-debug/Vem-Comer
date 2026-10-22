@@ -473,3 +473,156 @@ test("o cardápio do painel: nome de prato, texto falado e frase do servidor nun
     assert.ok(!/dangerouslySetInnerHTML|innerHTML|document\.write|eval\(/.test(read(name)), `${name} injeta HTML`);
   }
 });
+
+test("pratos e categorias do painel: só contas puras de fora, a lógica não fala com o servidor nem com o navegador, e a tela de desenho não fala com ninguém", () => {
+  const files = {
+    dishesLogic: read("painel/dishesLogic.ts"),
+    dishesApi: read("painel/dishesApi.ts"),
+    dishesScreen: read("painel/DishesScreen.tsx"),
+    categoriesScreen: read("painel/CategoriesScreen.tsx"),
+    dishes: read("novo/Dishes.tsx"),
+    categories: read("novo/Categories.tsx"),
+  };
+  for (const [name, text] of Object.entries(files)) {
+    assert.ok(!/from ["']\.\.\/(styles|ui|admin)/.test(text), `${name} importa o antigo`);
+    assert.ok(!/from ["']\.\.\/(mesa|nav)\//.test(text), `${name} importa a mesa ou o menu antigos`);
+    assert.ok(!/import ["']\.\.\//.test(text), `${name} importa CSS de fora`);
+    assert.ok(!/dangerouslySetInnerHTML|innerHTML|document\.write|eval\(/.test(text), `${name} injeta HTML (nome de prato e de categoria nunca entram como HTML)`);
+    assert.ok(!/console\./.test(text), `${name} esconde erro no console`);
+  }
+  // Da conta de fora entram só as contas testadas (o agrupar do cardápio do cliente, o preço e o nome do assistente, o selo de opções).
+  assert.ok(!/from ["']\.\.\/service\/(?!optionsDraft)/.test(files.dishesLogic), "a conta importa do servidor");
+  assert.ok(!/voiceIO|photoFiles|document\.|window\./.test(files.dishesLogic), "a conta usa o navegador");
+  assert.ok(!/from ["']\.\.\/(service|painel|assistant|photos|customer|loja)\//.test(files.dishes), "a tela de pratos fala com o servidor ou com a conta");
+  assert.ok(!/from ["']\.\.\/(service|painel|assistant|photos|customer|loja)\//.test(files.categories), "a tela de categorias fala com o servidor ou com a conta");
+});
+
+test("pratos do painel: esgotou e voltou valem na hora e voltam atrás; uma busca velha nunca passa por cima de um toque", () => {
+  const text = read("painel/DishesScreen.tsx");
+  assert.match(text, /if \(!products \|\| working\.current \|\| toggling\.includes\(id\)\) return;/, "um toque por prato, e nada enquanto remove ou volta tudo");
+  assert.match(text, /setProducts\(\(list\) => \(list \? withSoldOut\(list, id, wanted\) : list\)\);/);
+  assert.match(text, /const confirmed = await setSoldOut\(id, wanted\);/);
+  assert.match(text, /setProducts\(\(list\) => \(list \? withSoldOut\(list, id, !wanted\) : list\)\);\s*setError\(wordsOf\(failure, DISHES_SOLD_ERROR\)\);/, "se o servidor recusa, volta atrás e diz");
+  assert.match(text, /\} finally \{\s*pending\.current -= 1;/);
+  assert.match(text, /if \(pending\.current > 0 \|\| changes\.current !== before\) return;/, "a resposta que saiu antes de um toque não vale");
+  assert.match(text, /const poll = window\.setInterval\(\(\) => \{\s*if \(!document\.hidden\) void load\(\);\s*\}, DISHES_POLL_MS\);/);
+  assert.match(text, /document\.addEventListener\("visibilitychange", onVisible\);/);
+});
+
+test("pratos do painel: remover pede dois toques na lixeira e é um por vez; criar e remover são de dono e gerente", () => {
+  const screen = read("painel/DishesScreen.tsx");
+  assert.match(screen, /if \(working\.current \|\| !products\) return;\s*if \(armed !== id\) \{/);
+  assert.match(screen, /timer\.current = window\.setTimeout\(\(\) => setArmed\(null\), ARM_MS\);\s*return;/);
+  assert.match(screen, /await removeDish\(id\);/);
+  assert.match(screen, /\} finally \{\s*working\.current = false;\s*if \(alive\.current\) setRemoving\(null\);/);
+  const view = read("novo/Dishes.tsx");
+  assert.match(view, /\{canManage \? \(\s*<button\s+type="button"\s+className=\{`nv-icon-btn is-danger/, "a cozinha não vê a lixeira");
+  assert.match(view, /view\.canManage && !view\.loading \?/, "a cozinha não vê o Novo prato");
+  const copy = read("novo/copy.ts");
+  assert.match(copy, /DISHES_REMOVE_ERROR = "[^"]*Esgotou[^"]*"/, "se não der para remover, a frase aponta o Esgotou");
+});
+
+test("pratos do painel: adicionar confere antes de mandar, vai uma vez por toque, não trava o que foi digitado e depois olha a lista", () => {
+  const text = read("painel/DishesScreen.tsx");
+  assert.match(text, /if \(working\.current \|\| !form \|\| !products \|\| !menus\) return;\s*const check = dishCheck\(form, products, menus\);\s*if \(!check\.ok\) \{/);
+  assert.match(text, /await addDish\(companyId, check\.dish\);/);
+  assert.match(text, /setForm\(\(current\) => \(current \? formAfterAdd\(current\) : current\)\);/, "o formulário fica aberto com a categoria");
+  assert.match(text, /\} finally \{\s*working\.current = false;\s*if \(alive\.current\) setAdding\(false\);\s*\/\/ [^\n]*\n\s*void load\(\);/, "entrou ou não, olha a lista de novo");
+  const view = read("novo/Dishes.tsx");
+  assert.ok((view.match(/readOnly=\{adding \|\| undefined\}/g) ?? []).length >= 3, "enquanto adiciona, os campos não mudam");
+  assert.match(view, /disabled=\{adding\}/);
+});
+
+test("pratos e categorias do painel: 'sem sinal' ao adicionar não afirma que nada entrou, e erro do servidor usa a nossa frase", () => {
+  const copy = read("novo/copy.ts");
+  for (const name of ["DISHES_ADD_ERROR", "CATS_ADD_ERROR"]) {
+    const line = copy.match(new RegExp(`export const ${name} = "([^"]*)"`))[1];
+    assert.ok(!/nada (foi|entrou)/i.test(line), `${name} afirma o que não sabe (a resposta pode ter se perdido depois de o servidor criar)`);
+    assert.match(line, /veja na lista/, `${name} manda conferir a lista antes de tentar de novo`);
+  }
+  assert.match(read("painel/dishesLogic.ts"), /return status >= 400 && status < 500 && message \? message : fallback;/);
+});
+
+test("pratos e categorias do painel: a camada de rede leva o login, manda o login vencido de volta ao login e usa as rotas do servidor", () => {
+  const text = read("painel/dishesApi.ts");
+  assert.match(text, /if \(response\.status === 401\) expireSession\(\);/);
+  assert.match(text, /\.\.\.authHeaders\(\)/);
+  assert.match(text, /\/companies\/\$\{encodeURIComponent\(companyId\)\}\/admin\/products`/);
+  assert.match(text, /\/admin\/products\/\$\{encodeURIComponent\(productId\)\}`/);
+  assert.match(text, /\/companies\/\$\{encodeURIComponent\(companyId\)\}\/admin\/menus`/);
+  assert.match(text, /\/admin\/menus\/\$\{encodeURIComponent\(menuId\)\}`/);
+  assert.match(text, /menu_id: dish\.menuId/);
+  // Esgotou e voltou tudo já têm a camada própria (horário e pausa); aqui não se repete.
+  assert.ok(!/sold-out/.test(text));
+});
+
+test("pratos e categorias do painel: a busca da lista nunca apaga o erro de uma ação (a frase 'veja na lista' tem de ser lida)", () => {
+  for (const [file, loadError] of [["painel/DishesScreen.tsx", "DISHES_LOAD_ERROR"], ["painel/CategoriesScreen.tsx", "CATS_LOAD_ERROR"]]) {
+    const text = read(file);
+    const load = text.match(/const load = useCallback\(async \(\) => \{[\s\S]*?\}, \[companyId\]\);/)?.[0] ?? "";
+    assert.ok(load, `${file}: não achei a busca da lista`);
+    assert.ok(!/\bsetError\(/.test(load), `${file}: a busca da lista mexe no erro das ações (o 'adicionar' chama a busca logo depois de falhar e apagaria a frase)`);
+    assert.match(load, /setListError\(""\);/, `${file}: a busca que deu certo limpa só o erro da lista`);
+    assert.match(load, new RegExp(`setListError\\(${loadError}\\)`), `${file}: a busca que falhou guarda o erro da lista`);
+    assert.match(text, /error: error \|\| listError/, `${file}: a tela mostra o erro da ação, e na falta dele o da lista`);
+    assert.match(text, /onRefresh=\{\(\) => \{\s*setNotice\(""\);\s*setError\(""\);/, `${file}: Atualizar a lista limpa o erro da ação`);
+  }
+});
+
+test("pratos do painel: o lápis abre o formulário já preenchido, salva uma vez por toque, só manda o que mudou e sem mudança nem fala com o servidor", () => {
+  const text = read("painel/DishesScreen.tsx");
+  assert.match(text, /const edit = \(id: string\) => \{\s*if \(working\.current \|\| !products \|\| !menus\) return;/, "abrir o lápis não vale no meio de outra ação");
+  assert.match(text, /setForm\(formOfDish\(product, menus\)\);/);
+  assert.match(text, /const save = async \(\) => \{\s*if \(working\.current \|\| !form\?\.editId \|\| !products \|\| !menus\) return;/, "salvar é um por vez");
+  assert.match(text, /const check = dishEditCheck\(form, product, products, menus\);\s*if \(!check\.ok\) \{/, "confere antes de mandar");
+  assert.match(text, /if \(Object\.keys\(check\.patch\)\.length === 0\) \{\s*setForm\(null\);/, "sem nada mudado, só fecha");
+  assert.match(text, /await editDish\(product\.id, check\.patch\);/);
+  assert.match(text, /setProducts\(\(list\) => \(list \? withEdit\(list, product\.id, check\.patch\) : list\)\);/, "a tela mostra o que o servidor aceitou");
+  assert.match(text, /\} finally \{\s*working\.current = false;\s*if \(alive\.current\) setAdding\(false\);\s*\/\/ [^\n]*\n\s*void load\(\);/, "salvou ou não, olha a lista de novo");
+  assert.match(text, /onAdd=\{\(\) => void \(form\?\.editId \? save\(\) : add\(\)\)\}/, "o mesmo botão salva quando é um prato que já existe");
+  assert.match(text, /editing: form\?\.editId \?\? null/, "a lista marca o prato que está sendo mudado");
+});
+
+test("pratos do painel: prato que outro aparelho removeu enquanto o formulário estava aberto fecha o formulário e diz, sem mandar nada", () => {
+  const text = read("painel/DishesScreen.tsx");
+  assert.match(text, /if \(!product\) \{[^}]*setForm\(null\);\s*setError\(DISHES_EDIT_GONE\);\s*return;/);
+});
+
+test("pratos do painel: o foco volta para o lápis do prato (ou para Novo prato) ao salvar, cancelar ou fechar", () => {
+  const text = read("painel/DishesScreen.tsx");
+  assert.match(text, /const back = `nv-dish-edit-\$\{product\.id\}`;/);
+  assert.ok((text.match(/focusLater\(back\)/g) ?? []).length >= 3, "sem mudança, salvou e (no cancelar) fecha");
+  assert.match(text, /const back = form\?\.editId \? `nv-dish-edit-\$\{form\.editId\}` : "nv-dishes-new";/);
+  const view = read("novo/Dishes.tsx");
+  assert.match(view, /id=\{`nv-dish-edit-\$\{row\.id\}`\}/);
+  assert.match(view, /id="nv-dishes-new"/);
+});
+
+test("pratos do painel: a camada de rede muda o prato com PUT só com os campos que vieram, e 405 diz que falta atualizar o servidor", () => {
+  const text = read("painel/dishesApi.ts");
+  assert.match(text, /export async function editDish\(productId: string, patch: DishPatch\)/);
+  assert.match(text, /method: "PUT"/);
+  for (const key of ["name", "description", "price"]) assert.match(text, new RegExp(`if \\(patch\\.${key} !== undefined\\) body\\.${key} = patch\\.${key};`), key);
+  assert.match(text, /if \(patch\.menuId !== undefined\) body\.menu_id = patch\.menuId;/);
+  assert.match(text, /if \(response\.status === 405\) throw new HttpError\(DISHES_EDIT_MISSING, 405\);/);
+  assert.match(text, /import \{ DISHES_EDIT_MISSING \} from "\.\.\/novo\/copy";/);
+});
+
+test("pratos do painel: 'sem sinal' ao salvar não afirma que nada mudou (a resposta pode ter se perdido depois de o servidor salvar)", () => {
+  const copy = read("novo/copy.ts");
+  const line = copy.match(/export const DISHES_EDIT_ERROR = "([^"]*)"/)[1];
+  assert.ok(!/nada (foi|mudou)|não (mudou|salvou)/i.test(line), "afirma o que não sabe");
+  assert.match(line, /veja na lista/, "manda conferir a lista antes de tentar de novo");
+  assert.match(read("painel/DishesScreen.tsx"), /setError\(wordsOf\(failure, DISHES_EDIT_ERROR\)\)/);
+});
+
+test("categorias do painel: criar confere nome vazio e repetido, remover pede dois toques e diz que os pratos ficam sem categoria", () => {
+  const screen = read("painel/CategoriesScreen.tsx");
+  assert.match(screen, /const check = categoryCheck\(name, menus\);\s*if \(!check\.ok\) \{\s*setProblem\(check\.problem\);\s*return;/);
+  assert.match(screen, /await addCategory\(companyId, check\.name\);/);
+  assert.match(screen, /if \(armed !== id\) \{/);
+  assert.match(screen, /await removeCategory\(id\);/);
+  assert.match(screen, /const poll = window\.setInterval\(\(\) => \{\s*if \(!document\.hidden\) void load\(\);/);
+  assert.match(read("novo/copy.ts"), /CATS_HELP = "[^"]*ficam sem categoria\.?"/);
+});
+

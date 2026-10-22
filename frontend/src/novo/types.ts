@@ -567,3 +567,72 @@ export type MenuSetupView =
       error: string;
     }
   | { stage: "done"; sub: string; headline: string; detail: string };
+
+// ---------------------------------------------------------------- Pratos e categorias
+
+/** Um prato na lista de quem cuida do cardápio. O botão do dia a dia é "Esgotou" (ou "Voltou", quando já esgotou). */
+export type DishRow = {
+  id: string;
+  name: string;
+  price: string;
+  /** Só vale se for endereço de foto do próprio restaurante (`mediaUrl`); senão fica sem foto. */
+  photo?: string;
+  soldOut: boolean;
+  /** "2 grupos de opções" ou nada: só informa. */
+  badge?: string;
+  /** A palavra do botão ("Esgotou" ou "Voltou") e a frase que o leitor de tela fala ("Pizza esgotou"). */
+  toggle: string;
+  toggleSpoken: string;
+  /** O primeiro toque na lixeira já foi dado: o segundo remove. */
+  armed: boolean;
+  /** O formulário de cima está mudando este prato: o cartão fica de lado e os botões esperam. */
+  editing: boolean;
+};
+
+export type DishListSection = { title: string; rows: DishRow[] };
+
+export type DishList = { key: string; title: string; count: string; sections: DishListSection[] };
+
+export type DishesView = {
+  title: string;
+  sub: string;
+  /** O que o leitor de tela fala quando algo muda. */
+  live: string;
+  loading: boolean;
+  /** Dono e gerente criam e removem; a cozinha só marca o que esgotou. */
+  canManage: boolean;
+  showSearch: boolean;
+  /** "2 pratos esgotados. O cliente vê, mas não consegue pedir." ou vazio. */
+  alert: string;
+  lists: DishList[];
+  empty: string;
+  categories: { id: string; name: string }[];
+  error: string;
+  notice: string;
+};
+
+/**
+ * O que está escrito no formulário do prato. `editId` é o prato que está sendo mudado (o formulário vem preenchido);
+ * `null` é o prato novo.
+ */
+export type DishForm = {
+  name: string;
+  price: string;
+  menuId: string;
+  description: string;
+  problem: "" | "name" | "twice" | "price";
+  editId: string | null;
+};
+
+export type CategoryRow = { id: string; name: string; count: string; armed: boolean };
+
+export type CategoriesView = {
+  sub: string;
+  live: string;
+  loading: boolean;
+  rows: CategoryRow[];
+  empty: string;
+  error: string;
+  notice: string;
+};
+

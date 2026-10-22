@@ -13,6 +13,8 @@ import Orders from "./Orders";
 import Deliveries from "./Deliveries";
 import Settle from "./Settle";
 import MenuSetup from "./MenuSetup";
+import Dishes, { NOT_BUSY } from "./Dishes";
+import Categories from "./Categories";
 import DeskTable from "./DeskTable";
 import QrScan from "./QrScan";
 import PanelMenu from "../painel/PanelMenu";
@@ -20,6 +22,28 @@ import { deskTableViewOf, deskViewOf, openTyped, parsePanelCalls } from "../pain
 import { ORDERS_CHANGED, nextStatusOf, ordersViewOf, type PanelOrder } from "../painel/ordersLogic";
 import { deliveriesViewOf, pickedText, type CourierOrder } from "../painel/deliveriesLogic";
 import { armKey, markedIds, settleViewOf, toggleLeft } from "../painel/settleLogic";
+import {
+  allBack,
+  categoriesViewOf,
+  categoryAddedText,
+  categoryCheck,
+  categoryProblemText,
+  categoryRemovedText,
+  dishAddedText,
+  dishCheck,
+  dishEditCheck,
+  dishProblemText,
+  dishRemovedText,
+  dishSavedText,
+  dishesViewOf,
+  emptyDishForm,
+  formAfterAdd,
+  formOfDish,
+  withEdit,
+  withSoldOut,
+} from "../painel/dishesLogic";
+import type { DishForm } from "./types";
+import type { Menu, Product } from "../customer/types";
 import {
   addUnclear,
   applyEdit,
@@ -38,7 +62,7 @@ import { selectedItems, startFromParsed, startSpeak } from "../assistant/assista
 import { codeIsComplete, deliveredText, onlyCodeDigits } from "../courier/courierLogic";
 import type { CashView } from "../courier/courierLogic";
 import { emptyText, isKitchenTab, kitchenTabs, ticketsFor, type KitchenTabId } from "../cozinha/kitchenLogic";
-import { MENU_READ_EXAMPLE, MENU_SPOKEN_EXAMPLE, ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
+import { DISH_MENUS_EXAMPLE, DISH_PRODUCTS_EXAMPLE, MENU_READ_EXAMPLE, MENU_SPOKEN_EXAMPLE, ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
 import { choicesViewOf, confirmChoices, nextQuantity, pressOption } from "../loja/choicesLogic";
 import { bagProblem, bagViewOf } from "../loja/bagLogic";
 import { copiedOutcome, pixOf, ratingOf, trackOf } from "../loja/trackingLogic";
@@ -57,6 +81,8 @@ import type { Selection } from "../customer/options";
  * #/entregas (entregador: na rua), #/entregas-pegar, #/entregas-entregues, #/entregas-codigo (campo dos 4 números; o código de exemplo é 4821), #/entregas-bloqueado, #/entregas-erro, #/entregas-calmo, #/entregas-carregando e #/entregas-gerente (vê também as de outros motoqueiros),
  * #/acerto (caixa), #/acerto-confirmar (primeiro toque dado), #/acerto-calmo, #/acerto-erro e #/acerto-carregando,
  * #/cardapio (a porta), #/cardapio-sem-foto, #/cardapio-sem-ia, #/cardapio-carregando, #/cardapio-erro, #/cardapio-foto, #/cardapio-foto-erro, #/cardapio-lendo, #/cardapio-falar, #/cardapio-ouvindo, #/cardapio-sem-microfone, #/cardapio-conferir, #/cardapio-editando, #/cardapio-sem-preco, #/cardapio-vazio, #/cardapio-erro-cadastro e #/cardapio-cadastrado,
+ * #/pratos (dono), #/pratos-cozinha (só esgotou/voltou), #/pratos-novo (formulário do prato novo), #/pratos-novo-erro (preço que não entendi), #/pratos-mudar (o lápis: formulário já preenchido), #/pratos-mudar-erro (nome que já existe), #/pratos-remover (primeiro toque na lixeira), #/pratos-busca, #/pratos-sem-resultado, #/pratos-vazio, #/pratos-vazio-cozinha, #/pratos-sem-categorias, #/pratos-carregando e #/pratos-erro,
+ * #/categorias, #/categorias-vazio, #/categorias-remover, #/categorias-repetida, #/categorias-erro e #/categorias-carregando,
  * #/menu (menu geral do dono), #/menu-garcom (o que o garçom vê), #/mesa (QR da mesa), #/mesa-chamada (conta chamada, água atendida, garçom sem resposta), #/loja-mesa (cardápio de quem está na mesa),
  * #/loja-pedido (cardápio de quem já pediu), #/pedido (preparo, Pix a pagar), #/pedido-rua (entrega a caminho) ou #/pedido-pronto (pronto, pago, avaliação).
  */
@@ -498,6 +524,155 @@ function SettlePreview({ stage = "normal" }: { stage?: SettleStage }) {
   );
 }
 
+/** A "foto" de exemplo do prato: um emoji num quadradinho, no endereço `data:` (só na conferência; na tela de verdade é a foto do restaurante). */
+function emojiPhoto(path: string | null | undefined): string {
+  if (!path || !path.startsWith("emoji:")) return "";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" fill="#fdeedf"/><text x="48" y="64" font-size="52" text-anchor="middle">${path.slice(6)}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+type DishesStage =
+  | "normal"
+  | "cozinha"
+  | "novo"
+  | "novo-erro"
+  | "mudar"
+  | "mudar-erro"
+  | "remover"
+  | "busca"
+  | "sem-resultado"
+  | "vazio"
+  | "vazio-cozinha"
+  | "sem-categorias"
+  | "carregando"
+  | "erro";
+
+/** Os pratos da conferência: passam pela conta de verdade (`dishesViewOf`); esgotou, voltou, remover e adicionar funcionam na tela. */
+function DishesPreview({ stage = "normal" }: { stage?: DishesStage }) {
+  const kitchen = stage === "cozinha" || stage === "vazio-cozinha";
+  const [products, setProducts] = useState<Product[] | null>(() => {
+    if (stage === "carregando") return null;
+    if (stage === "vazio" || stage === "vazio-cozinha") return [];
+    if (stage === "sem-categorias") return DISH_PRODUCTS_EXAMPLE.map((dish) => ({ ...dish, menu_id: null })) as Product[];
+    return DISH_PRODUCTS_EXAMPLE as Product[];
+  });
+  const [menus] = useState<Menu[] | null>(() => (stage === "carregando" ? null : stage === "sem-categorias" ? [] : DISH_MENUS_EXAMPLE));
+  const [query, setQuery] = useState(stage === "busca" ? "pur" : stage === "sem-resultado" ? "pizza" : "");
+  const [armed, setArmed] = useState<string | null>(stage === "remover" ? "d6" : null);
+  const [form, setForm] = useState<DishForm | null>(() => {
+    if (stage === "novo") return { ...emptyDishForm("m-bebidas"), name: "Guaraná lata", price: "6" };
+    if (stage === "novo-erro") return { ...emptyDishForm("m-bebidas"), name: "Guaraná lata", price: "seis", problem: "price" };
+    if (stage === "mudar") return formOfDish(DISH_PRODUCTS_EXAMPLE[1] as Product, DISH_MENUS_EXAMPLE);
+    if (stage === "mudar-erro") return { ...formOfDish(DISH_PRODUCTS_EXAMPLE[1] as Product, DISH_MENUS_EXAMPLE), name: "x-tudo", problem: "twice" };
+    return null;
+  });
+  const [notice, setNotice] = useState("");
+  const view = dishesViewOf({
+    products,
+    menus,
+    canManage: !kitchen,
+    query,
+    armed,
+    media: emojiPhoto,
+    error: stage === "erro" ? "Sem sinal. Tente de novo." : "",
+    notice,
+    editing: form?.editId ?? null,
+  });
+  return (
+    <Dishes
+      view={view}
+      query={query}
+      form={form}
+      problemText={form ? dishProblemText(form.problem) : ""}
+      busy={NOT_BUSY}
+      onQuery={setQuery}
+      onToggle={(id) => {
+        setNotice("");
+        setProducts((list) => (list ? withSoldOut(list, id, !list.find((dish) => dish.id === id)?.sold_out) : list));
+      }}
+      onRemove={(id) => {
+        if (armed !== id) return setArmed(id);
+        const gone = products?.find((dish) => dish.id === id);
+        setArmed(null);
+        setProducts((list) => (list ? list.filter((dish) => dish.id !== id) : list));
+        if (gone) setNotice(dishRemovedText(gone.name));
+      }}
+      onReset={() => {
+        setProducts((list) => (list ? allBack(list) : list));
+        setNotice("Todos os pratos voltaram.");
+      }}
+      onOpenForm={() => setForm(emptyDishForm())}
+      onEdit={(id) => {
+        const dish = products?.find((entry) => entry.id === id);
+        if (dish && menus) setForm(formOfDish(dish, menus));
+      }}
+      onForm={(patch) => setForm((current) => (current ? { ...current, ...patch, problem: "" } : current))}
+      onAdd={() => {
+        if (!form || !products || !menus) return;
+        if (form.editId) {
+          const dish = products.find((entry) => entry.id === form.editId);
+          if (!dish) return setForm(null);
+          const edit = dishEditCheck(form, dish, products, menus);
+          if (!edit.ok) return setForm({ ...form, problem: edit.problem });
+          setProducts(withEdit(products, dish.id, edit.patch));
+          if (Object.keys(edit.patch).length > 0) setNotice(dishSavedText(edit.patch.name ?? dish.name));
+          return setForm(null);
+        }
+        const check = dishCheck(form, products, menus);
+        if (!check.ok) return setForm({ ...form, problem: check.problem });
+        setProducts([...products, { id: `novo-${products.length}`, menu_id: check.dish.menuId, name: check.dish.name, price: check.dish.price }]);
+        setNotice(dishAddedText(check.dish.name));
+        setForm(formAfterAdd(form));
+      }}
+      onCloseForm={() => setForm(null)}
+      onMake={() => setNotice("Aqui abriria o montar por foto, arquivo ou voz.")}
+      onRefresh={() => setNotice("")}
+      showMenu
+    />
+  );
+}
+
+type CategoriesStage = "normal" | "vazio" | "remover" | "repetida" | "erro" | "carregando";
+
+/** As categorias da conferência: passam pela conta de verdade (`categoriesViewOf`); adicionar e remover funcionam na tela. */
+function CategoriesPreview({ stage = "normal" }: { stage?: CategoriesStage }) {
+  const [menus, setMenus] = useState<Menu[] | null>(() => (stage === "carregando" ? null : stage === "vazio" ? [] : DISH_MENUS_EXAMPLE));
+  const products = stage === "carregando" ? null : stage === "vazio" ? [] : (DISH_PRODUCTS_EXAMPLE as Product[]);
+  const [name, setName] = useState(stage === "repetida" ? "bebidas" : "");
+  const [problem, setProblem] = useState<"" | "name" | "twice">(stage === "repetida" ? "twice" : "");
+  const [armed, setArmed] = useState<string | null>(stage === "remover" ? "m-bebidas" : null);
+  const [notice, setNotice] = useState("");
+  const view = categoriesViewOf({ menus, products, armed, error: stage === "erro" ? "Sem sinal. Tente de novo." : "", notice });
+  return (
+    <Categories
+      view={view}
+      name={name}
+      problemText={categoryProblemText(problem)}
+      onName={(text) => {
+        setName(text);
+        setProblem("");
+      }}
+      onAdd={() => {
+        if (!menus) return;
+        const check = categoryCheck(name, menus);
+        if (!check.ok) return setProblem(check.problem);
+        setMenus([...menus, { id: `nova-${menus.length}`, name: check.name }]);
+        setNotice(categoryAddedText(check.name));
+        setName("");
+      }}
+      onRemove={(id) => {
+        if (armed !== id) return setArmed(id);
+        const gone = menus?.find((menu) => menu.id === id);
+        setArmed(null);
+        setMenus((list) => (list ? list.filter((menu) => menu.id !== id) : list));
+        if (gone) setNotice(categoryRemovedText(gone.name));
+      }}
+      onRefresh={() => setNotice("")}
+      showMenu
+    />
+  );
+}
+
 type MenuStage =
   | "porta"
   | "porta-sem-foto"
@@ -675,6 +850,32 @@ function Screen() {
     "cardapio-cadastrado": "cadastrado",
   };
   if (menuRoutes[route]) return <MenuSetupPreview stage={menuRoutes[route]} />;
+  const dishRoutes: Record<string, DishesStage> = {
+    pratos: "normal",
+    "pratos-cozinha": "cozinha",
+    "pratos-novo": "novo",
+    "pratos-novo-erro": "novo-erro",
+    "pratos-mudar": "mudar",
+    "pratos-mudar-erro": "mudar-erro",
+    "pratos-remover": "remover",
+    "pratos-busca": "busca",
+    "pratos-sem-resultado": "sem-resultado",
+    "pratos-vazio": "vazio",
+    "pratos-vazio-cozinha": "vazio-cozinha",
+    "pratos-sem-categorias": "sem-categorias",
+    "pratos-carregando": "carregando",
+    "pratos-erro": "erro",
+  };
+  if (dishRoutes[route]) return <DishesPreview stage={dishRoutes[route]} />;
+  const categoryRoutes: Record<string, CategoriesStage> = {
+    categorias: "normal",
+    "categorias-vazio": "vazio",
+    "categorias-remover": "remover",
+    "categorias-repetida": "repetida",
+    "categorias-erro": "erro",
+    "categorias-carregando": "carregando",
+  };
+  if (categoryRoutes[route]) return <CategoriesPreview stage={categoryRoutes[route]} />;
   if (route === "acerto") return <SettlePreview />;
   if (route === "acerto-confirmar") return <SettlePreview stage="confirmar" />;
   if (route === "acerto-calmo") return <SettlePreview stage="calmo" />;

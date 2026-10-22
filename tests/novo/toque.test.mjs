@@ -777,3 +777,88 @@ test("cardápio: a roda de espera é redonda e o texto que a explica não está 
   assert.match(setup, /<Live text=\{view\.text\} \/>/);
   assert.match(setup, /<Live text=\{view\.busy \? MENU_PREPARING : view\.message \|\| view\.sub\} \/>/);
 });
+
+test("pratos: o cartão só informa (liso); quem toca é o botão de baixo, e a palavra do botão diz de qual prato fala", () => {
+  const view = read("Dishes.tsx");
+  assert.match(block(".nv-dishcard"), /box-shadow: var\(--nv-panel-3d\)/, "o cartão do prato é liso");
+  assert.ok(!/cursor: pointer/.test(block(".nv-dishcard")));
+  assert.match(view, /<li className=\{`nv-dishcard\$\{row\.soldOut \? " is-off" : ""\}\$\{row\.editing \? " is-editing" : ""\}`\}>/, "o cartão não é botão");
+  assert.match(view, /className=\{`nv-btn \$\{row\.soldOut \? "is-green" : "is-ghost"\}`\}\s+aria-label=\{row\.toggleSpoken\}/, "Esgotou/Voltou diz o prato: 'Pizza esgotou'");
+  assert.match(view, /aria-label=\{removing \? `\$\{DISHES_REMOVING\} \$\{row\.name\}` : row\.armed \? `\$\{DISHES_REMOVE_ARM\}: \$\{row\.name\}` : `Remover \$\{row\.name\}`\}/);
+  // A foto é enfeite: o nome já está escrito ao lado.
+  assert.match(view, /<Photo src=\{row\.photo\} alt="" \/>/);
+  assert.match(block(".nv-dishcard-name"), /overflow-wrap: anywhere/, "nome comprido quebra em vez de empurrar");
+});
+
+test("pratos: o lápis é um botão redondo de verdade, diz de qual prato fala, só aparece para quem pode mudar e trava com o resto", () => {
+  const view = read("Dishes.tsx");
+  assert.match(
+    view,
+    /\{canManage \? \(\s*<button\s+type="button"\s+id=\{`nv-dish-edit-\$\{row\.id\}`\}\s+className="nv-icon-btn"\s+aria-label=\{`Mudar \$\{row\.name\}`\}\s+disabled=\{locked \|\| waiting\}\s+onClick=\{\(\) => onEdit\?\.\(row\.id\)\}\s*>\s*<NvIcon name="edit" \/>/,
+    "o lápis: botão redondo, com nome do prato, parado enquanto algo está sendo feito",
+  );
+  assert.match(view, /const locked = busy\.resetting \|\| busy\.removing !== null \|\| busy\.adding \|\| row\.editing;/, "o prato que está sendo mudado não pode ser removido nem marcado");
+  assert.match(block(".nv-dishcard.is-editing"), /opacity: 0\.6/);
+  assert.match(view, /\{row\.editing \? <p className="nv-dishcard-note">\{DISHES_EDITING\}<\/p> : null\}/, "o prato em mudança diz em palavra, não só no apagado");
+  assert.ok(!/box-shadow/.test(block(".nv-dishcard-note")), "o aviso só informa");
+});
+
+test("pratos: o formulário vira 'Mudar o prato' com Salvar e Cancelar quando é um prato que já existe, e recomeça limpo ao trocar de prato", () => {
+  const view = read("Dishes.tsx");
+  assert.match(view, /const editing = form\.editId !== null;/);
+  assert.match(view, /editing \? DISH_EDIT_TITLE : /, "o título muda");
+  assert.match(view, /editing \? \(adding \? DISH_SAVING : DISH_SAVE\) : /, "o botão principal vira Salvar (e Salvando… enquanto espera)");
+  assert.match(view, /editing \? DISH_CANCEL : /, "Fechar vira Cancelar");
+  assert.match(view, /key=\{form\.editId \?\? "novo"\}/, "trocar de prato remonta o formulário (foco e campos limpos)");
+});
+
+test("pratos: esgotado é dito em palavra (não só no apagado da foto), e a lixeira armada também avisa em palavra", () => {
+  const view = read("Dishes.tsx");
+  assert.match(view, /\{row\.soldOut \? <span className="nv-order-chip is-wait">\{DISHES_SOLD_CHIP\}<\/span> : null\}/);
+  assert.match(block(".nv-dishcard.is-off .nv-photo"), /opacity: 0\.45/);
+  assert.match(view, /<p className="nv-dishcard-arm">\{removing \? DISHES_REMOVING : DISHES_REMOVE_ARM\}<\/p>/);
+  assert.match(block(".nv-icon-btn.is-armed"), /background: var\(--nv-alert\)/);
+  assert.match(block(".nv-icon-btn.is-armed"), /color: #fff/);
+});
+
+test("pratos: a faixa de esgotados informa (lisa) e traz o botão de voltar tudo; a busca é a do cardápio", () => {
+  const view = read("Dishes.tsx");
+  assert.ok(!/box-shadow/.test(block(".nv-soldbar")), "a faixa só informa");
+  assert.match(view, /<div className="nv-soldbar">\s*<p>\{view\.alert\}<\/p>\s*<button type="button" className="nv-btn is-green is-small"/);
+  assert.match(view, /<label className="nv-search">/);
+  assert.match(view, /aria-label=\{DISHES_SEARCH\}/);
+});
+
+test("pratos: o que se escreve é campo afundado, com rótulo de verdade; o problema vai em palavra, com aria-invalid e ligado ao campo", () => {
+  const view = read("Dishes.tsx");
+  for (const id of ["nv-dish-name", "nv-dish-price", "nv-dish-menu", "nv-dish-text"]) {
+    assert.match(view, new RegExp(`htmlFor="${id}"`), `${id} sem rótulo`);
+    assert.match(view, new RegExp(`id="${id}"`), `${id} sem campo`);
+  }
+  assert.match(view, /<p className="nv-error" id="nv-dish-problem" role="alert">/);
+  assert.match(view, /aria-describedby=\{form\.problem === "price" \? "nv-dish-problem" : undefined\}/);
+  assert.match(view, /inputMode="decimal"/, "o teclado de números sobe no preço");
+  assert.match(view, /<div className="nv-field is-select">/);
+  assert.match(block(".nv-field.is-select select"), /appearance: none/);
+  assert.match(block(".nv-field.is-select svg"), /pointer-events: none/, "a seta não rouba o toque do seletor");
+  assert.match(view, /ref=\{name\}[\s\S]*name\.current\?\.focus\(\)|name\.current\?\.focus\(\);/, "ao abrir, o foco vai para o nome");
+});
+
+test("pratos e categorias: o aviso de cada mudança fica numa região viva que já existia na página", () => {
+  const dishes = read("Dishes.tsx");
+  assert.match(dishes, /<p className="nv-sr" id="nv-dishes-live" role="status" aria-live="polite" tabIndex=\{-1\}>/);
+  const cats = read("Categories.tsx");
+  assert.match(cats, /<p className="nv-sr" id="nv-cats-live" role="status" aria-live="polite" tabIndex=\{-1\}>/);
+  // O aviso desenhado não é lido duas vezes.
+  assert.match(dishes, /<p className="nv-ok" aria-hidden="true">/);
+  assert.match(cats, /<p className="nv-ok" aria-hidden="true">/);
+});
+
+test("categorias: o cartão é liso, tem o nome e a conta de pratos de um lado e a lixeira (com nome da categoria) do outro", () => {
+  const cats = read("Categories.tsx");
+  assert.match(cats, /<li key=\{row\.id\} className="nv-dishcard is-cat">/);
+  assert.match(cats, /aria-label=\{removing \? `\$\{DISHES_REMOVING\} \$\{row\.name\}` : row\.armed \? `\$\{DISHES_REMOVE_ARM\}: \$\{row\.name\}` : `Remover \$\{row\.name\}`\}/);
+  assert.match(block(".nv-dishcard.is-cat"), /align-items: stretch/, "sem isto a lixeira cola no nome em vez de ir para a ponta");
+  assert.match(cats, /<p className="nv-dishcard-arm">/);
+});
+

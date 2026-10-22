@@ -206,3 +206,67 @@ export const MENU_READ_TIMEOUT = "A leitura demorou demais. Tente de novo, ou fa
 export const MENU_ONLY_FIT = "Só cabem 4 páginas; as outras ficaram de fora.";
 export const MENU_NOT_HEARD_ONCE = "Não ouvi nada. Toque em Falar e diga de novo.";
 export const MENU_NOT_HEARD_HELP = "Não estou ouvindo. Veja se o microfone está liberado no navegador (cadeado ao lado do endereço) ou escreva os pratos.";
+
+// ---------------------------------------------------------------- Pratos e categorias (o painel de quem cuida do cardápio)
+
+export const DISHES_TITLE = "Pratos";
+export const DISHES_TITLE_KITCHEN = "O que esgotou";
+export const DISHES_LOADING = "Abrindo os pratos…";
+export const DISHES_NONE_SUB = "Nenhum prato ainda";
+export const DISHES_EMPTY_OWNER = "Nenhum prato ainda. Toque em Novo prato, ou monte o cardápio todo por foto, arquivo ou voz.";
+export const DISHES_EMPTY_KITCHEN = "Ainda não há pratos cadastrados. Peça ao gerente.";
+export const DISHES_NEW = "Novo prato";
+export const DISHES_MAKE_MENU = "Montar por foto, arquivo ou voz";
+export const DISHES_SOLD = "Esgotou";
+export const DISHES_BACK = "Voltou";
+export const DISHES_SOLD_CHIP = "Esgotado";
+export const DISHES_RESET = "Voltou tudo";
+export const DISHES_RESETTING = "Voltando…";
+export const DISHES_REMOVE_ARM = "Toque de novo para remover";
+export const DISHES_REMOVING = "Removendo…";
+export const DISHES_REFRESH = "Atualizar a lista";
+export const DISHES_SEARCH = "Buscar prato";
+export const DISHES_LOAD_ERROR = "Sem sinal. Tente de novo.";
+export const DISHES_SOLD_ERROR = "Não consegui marcar o prato. Tente de novo.";
+export const DISHES_RESET_ERROR = "Não consegui desmarcar os pratos. Tente de novo.";
+export const DISHES_REMOVE_ERROR = "Não consegui remover o prato. Tente de novo. Se não der, toque em Esgotou para ninguém mais pedir.";
+export const DISHES_ADD_ERROR = "Sem sinal. Antes de tentar de novo, veja na lista se o prato já entrou.";
+export const DISHES_RESET_DONE = "Todos os pratos voltaram.";
+export const DISHES_EDITING = "Mudando este prato";
+/** Sem sinal ao salvar: a resposta pode ter se perdido depois de o servidor mudar, então manda olhar a lista antes de repetir. */
+export const DISHES_EDIT_ERROR = "Sem sinal. Antes de tentar de novo, veja na lista se o prato já mudou.";
+export const DISHES_EDIT_MISSING = "O servidor ainda não sabe mudar prato. Falta atualizá-lo.";
+export const DISHES_EDIT_GONE = "Esse prato não está mais na lista. Alguém o removeu.";
+
+export const DISH_FORM_TITLE = "Novo prato";
+export const DISH_EDIT_TITLE = "Mudar o prato";
+export const DISH_SAVE = "Salvar";
+export const DISH_SAVING = "Salvando…";
+export const DISH_CANCEL = "Cancelar";
+export const DISH_NAME_LABEL = "Nome do prato";
+export const DISH_NAME_HINT = "Ex.: Combinado 20 peças";
+export const DISH_PRICE_LABEL = "Preço";
+export const DISH_PRICE_HINT = "Ex.: 49,90";
+export const DISH_MENU_LABEL = "Categoria";
+export const DISH_NO_MENU = "Sem categoria";
+export const DISH_TEXT_LABEL = "O que vem no prato (se quiser)";
+export const DISH_ADD = "Adicionar prato";
+export const DISH_ADDING = "Adicionando…";
+export const DISH_CLOSE = "Fechar";
+export const DISH_NAME_MISSING = "Escreva o nome do prato.";
+export const DISH_NAME_TWICE = "Esse prato já existe nesta categoria.";
+
+export const CATS_TITLE = "Categorias";
+export const CATS_LOADING = "Abrindo as categorias…";
+export const CATS_NONE_SUB = "Nenhuma categoria ainda";
+export const CATS_EMPTY = "Nenhuma categoria ainda. Crie a primeira, por exemplo Pratos, Bebidas ou Sobremesas.";
+export const CATS_HELP = "Categorias são as seções do cardápio. Ao remover uma, os pratos dela não somem: ficam sem categoria.";
+export const CATS_NAME_LABEL = "Nome da categoria";
+export const CATS_NAME_HINT = "Ex.: Bebidas";
+export const CATS_ADD = "Adicionar categoria";
+export const CATS_ADDING = "Adicionando…";
+export const CATS_NAME_MISSING = "Escreva o nome da categoria.";
+export const CATS_NAME_TWICE = "Essa categoria já existe.";
+export const CATS_LOAD_ERROR = "Sem sinal. Tente de novo.";
+export const CATS_ADD_ERROR = "Sem sinal. Antes de tentar de novo, veja na lista se a categoria já entrou.";
+export const CATS_REMOVE_ERROR = "Não consegui remover a categoria. Tente de novo.";

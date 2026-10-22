@@ -4247,3 +4247,232 @@ button.nv-now-cell:active {
     padding: 0 14px;
   }
 }
+
+/* ---------- Pratos e categorias: cuidar do cardápio ---------- */
+
+/* O cartão do prato só informa (sombra macia). Quem toca são os botões de baixo: Esgotou/Voltou e a lixeira. */
+.nv-dishlist {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nv-dishlist-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font: 700 24px/1.1 var(--nv-display);
+}
+
+.nv-dishlist-head span {
+  color: var(--nv-muted);
+  font: 600 15px/1 var(--nv-ui);
+}
+
+.nv-dishsection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nv-dishsection-head {
+  margin: 0;
+  color: var(--nv-muted);
+  font: 700 17px/1.2 var(--nv-ui);
+}
+
+.nv-dishcards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-dishcard {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 10px;
+  align-items: start;
+  padding: 12px;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-panel-3d);
+}
+
+/* A foto fica à esquerda e vale as duas linhas (o nome e o preço; os botões). */
+.nv-dishcard .nv-photo {
+  grid-row: 1 / span 2;
+  width: 56px;
+  font-size: 28px;
+}
+
+.nv-dishcard-text,
+.nv-dishcard-acts {
+  grid-column: 2;
+}
+
+.nv-dishcard-arm {
+  grid-column: 1 / -1;
+}
+
+.nv-dishcard.is-off .nv-photo {
+  opacity: 0.45;
+  filter: grayscale(0.7);
+}
+
+.nv-dishcard-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nv-dishcard-name {
+  font: 700 19px/1.2 var(--nv-display);
+  overflow-wrap: anywhere;
+}
+
+.nv-dishcard-price {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--nv-green);
+}
+
+.nv-dishcard-desc {
+  color: var(--nv-muted);
+  font-size: 15px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.nv-dishcard-acts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nv-dishcard-acts .nv-btn {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-dishcard-arm {
+  margin: 0;
+  color: var(--nv-alert);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* O formulário de cima está mudando este prato: o cartão fica de lado, sem botão que se possa tocar. */
+.nv-dishcard.is-editing {
+  opacity: 0.6;
+}
+
+.nv-dishcard-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* A categoria não tem foto: o nome e a conta de pratos de um lado, a lixeira do outro (uma linha só). */
+.nv-dishcard.is-cat {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.nv-dishcard-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nv-icon-btn.is-armed {
+  background: var(--nv-alert);
+  color: #fff;
+  box-shadow: var(--nv-hi), 0 4px 0 #7a1710, 0 10px 14px -8px var(--nv-floor);
+}
+
+/* A faixa de pratos esgotados informa (lisa) e traz o botão de voltar tudo. */
+.nv-soldbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-call-pill);
+}
+
+.nv-soldbar p {
+  flex: 1 1 200px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+/* O formulário do prato novo e da categoria nova: campos afundados, botões em relevo. */
+.nv-dishform {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 14px;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-dishform-title {
+  margin: 0;
+  font: 700 24px/1.1 var(--nv-display);
+}
+
+.nv-dishform-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nv-dishform .nv-error {
+  margin: 0;
+}
+
+.nv-field.is-select select {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--nv-ink);
+  font: 500 17px/1 var(--nv-ui);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.nv-field.is-select select:focus {
+  outline: none;
+}
+
+/* O ícone de seta aponta para a direita no desenho; no seletor ele aponta para baixo. */
+.nv-field.is-select svg {
+  transform: rotate(90deg);
+  pointer-events: none;
+}
+
+.nv-field input[aria-invalid="true"] {
+  color: var(--nv-alert);
+}

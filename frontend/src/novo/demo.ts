@@ -574,3 +574,25 @@ export const MENU_READ_EXAMPLE = {
 
 /** O que a pessoa falou, de EXEMPLO, passando pela conta de verdade (`takeSpoken`). */
 export const MENU_SPOKEN_EXAMPLE = ["x-tudo 25, x-salada 22, hambúrguer 28", "bebidas coca lata 6, suco de laranja 9, água"];
+
+/** As categorias e os pratos de EXEMPLO de quem cuida do cardápio: dois esgotados, um com opções, um sem categoria. A "foto" é um emoji (`emoji:🍔`). */
+export const DISH_MENUS_EXAMPLE = [
+  { id: "m-lanches", name: "Lanches" },
+  { id: "m-porcoes", name: "Porções" },
+  { id: "m-bebidas", name: "Bebidas" },
+  { id: "m-sobremesas", name: "Sobremesas" },
+];
+
+export const DISH_PRODUCTS_EXAMPLE = [
+  { id: "d1", menu_id: "m-lanches", name: "X-tudo", price: "25.00", description: "Pão, carne, ovo, bacon e queijo", thumb_url: "emoji:🍔" },
+  { id: "d2", menu_id: "m-lanches", name: "X-salada", price: "22.00", description: "Pão, carne, queijo, alface e tomate", thumb_url: "emoji:🥪" },
+  { id: "d3", menu_id: "m-lanches", name: "X-bacon", price: "27.00", description: "Pão, carne, queijo e bastante bacon", thumb_url: "emoji:🥓", sold_out: true },
+  { id: "d4", menu_id: "m-porcoes", name: "Batata frita com cheddar e bacon (serve duas pessoas)", price: "38.00", thumb_url: "emoji:🍟", option_groups: [{}, {}] },
+  { id: "d5", menu_id: "m-porcoes", name: "Calabresa acebolada", price: "34.00", thumb_url: "emoji:🌭" },
+  { id: "d6", menu_id: "m-bebidas", name: "Coca-Cola lata", price: "6.00", thumb_url: "emoji:🥤" },
+  { id: "d7", menu_id: "m-bebidas", name: "Suco de laranja", price: "9.00", thumb_url: "emoji:🍊", sold_out: true },
+  { id: "d8", menu_id: "m-bebidas", name: "Água mineral", price: "4.00" },
+  { id: "d9", menu_id: "m-sobremesas", name: "Pudim de leite", price: "12.00", description: "Fatia grande, com calda de caramelo", thumb_url: "emoji:🍮" },
+  { id: "d10", menu_id: null, name: "Brinde da casa", price: "1.00" },
+];
+

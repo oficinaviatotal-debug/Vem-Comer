@@ -484,7 +484,7 @@ Para ver: `preview-novo.html#/entregas`, `#/entregas-pegar`, `#/entregas-entregu
 | --- | --- |
 | Hoje, Pedidos, Abrir mesa, Mesas, Entregas, Acerto de caixa | **Pronta** (desenho + ligação, fora do painel público) |
 | Assistente (montar o cardápio por foto, arquivo ou voz) | **Pronta** na décima terceira rodada (falta o caminho "começar de um modelo") |
-| Produtos, Categorias | Falta |
+| Produtos, Categorias | **Prontas** na décima quarta rodada (ver, esgotar, criar, **mudar** e remover; faltam foto e opções do prato) |
 | Seu negócio, Custos, Pagamento | Falta |
 | Meu link, Horário, Regiões de entrega, Marca, Equipe, Plano | Falta |
 | Aprovações, Assinaturas, Chamados (dono do sistema) | Falta |
@@ -540,9 +540,100 @@ Para ver: `preview-novo.html#/cardapio`, `#/cardapio-sem-foto`, `#/cardapio-sem-
 | --- | --- |
 | Foto, arquivo e falar os pratos; conferir e cadastrar | **Pronto** (desenho + ligação, fora do painel público) |
 | "Começar de um modelo" (escolher o tipo de negócio e tocar nos pratos) | Falta; esse caminho só existe na tela antiga |
-| Produtos (editar, esconder, foto, opções de um prato) e Categorias | Falta |
+| Produtos (ver, esgotar, criar, mudar, remover) e Categorias | **Prontos** na décima quarta rodada; foto e opções do prato seguem faltando |
 | Logomarca (entrada "Marca" do menu) | Falta |
 | A bolinha de voz que escuta e navega | Falta (o que passa de navegar e ler precisa da chave da IA, que ele mesmo digita em `configurar-ia.sh`) |
+
+**Ainda não está ligado ao painel público** (o painel antigo continua mandando).
+
+## Décima quarta rodada: pratos e categorias (22/10/2026)
+
+Segunda tela do cadastro do cardápio (a primeira foi montar por foto, arquivo ou voz). Continua o que o GD delegou ("Ok, prossiga", 22/10, 14:21) e
+segue o princípio dele: ferramenta fácil, **menos escrita, menos dado**. Nada vai ao ar sem o "pode".
+
+**Telas** (`novo/Dishes.tsx` e `novo/Categories.tsx`, ligadas em `painel/DishesScreen.tsx` e `painel/CategoriesScreen.tsx`; as contas estão em
+`painel/dishesLogic.ts` e a rede em `painel/dishesApi.ts`):
+
+1. **Pratos.** Os pratos do restaurante por categoria, com "Sem categoria" no fim. Cada cartão tem foto (sem foto, um garfo), nome, preço e o selo
+   "Esgotado" (e o de opções, quando o prato tem). Três botões por prato: **Esgotou / Voltou**, o **lápis** (mais abaixo) e a **lixeira** com dois toques (o primeiro só avisa
+   "Toque de novo para remover" e desarma sozinho em 4 s). Esgotou e Voltou valem na hora na tela e **voltam atrás se o servidor recusar**. Quando há
+   esgotados, uma faixa no alto diz quantos e traz **Voltou tudo**. A busca (sem maiúscula nem acento) só aparece a partir de 8 pratos.
+   **Novo prato:** nome, preço, categoria (se houver alguma) e um texto opcional. Antes de mandar, a tela confere nome vazio, preço que não entendeu e
+   prato repetido na mesma categoria. O formulário fica aberto e guarda a categoria, para quem cadastra vários seguidos.
+   **Mudar o prato (o lápis):** entre o Esgotou e a lixeira. Abre o mesmo formulário já preenchido com o que o prato tem (preço escrito como se digita:
+   "25,00"), com **Salvar** e **Cancelar**; o cartão do prato fica apagado com a frase "Mudando este prato" e os botões dele param. **Só vai ao servidor o que
+   a pessoa mexeu**; sem mexer em nada, Salvar só fecha. O nome só é "arrumado" (inicial maiúscula, espaços) se a pessoa mexeu nele: um nome salvo
+   em minúscula não é renomeado sem ninguém pedir. Repetido só conta quando o nome ou a categoria mudam, e o prato não conta contra si mesmo: mudar só o
+   preço nunca é barrado. Quando termina, o foco volta para o lápis do prato.
+2. **O que esgotou** (cozinha). A mesma tela, sem Novo prato e sem lixeira: a cozinha só marca o que esgotou e o que voltou.
+3. **Categorias.** Cada categoria com quantos pratos tem; "Adicionar categoria" (nome limpo e com inicial maiúscula; vazio e repetido não vão ao
+   servidor); lixeira com dois toques. A tela diz que **os pratos não somem: ficam sem categoria**.
+
+**Honestidade e cuidado:**
+
+- A lista é a do servidor; nada é inventado. Antes de ela chegar a tela diz "Abrindo os pratos…" e **não** diz "Nenhum prato ainda" nem oferece criar.
+- Uma busca da lista que saiu antes de um toque **nunca desfaz o toque** (a resposta velha é descartada). Com a tela à vista a lista pergunta de novo
+  a cada 30 s e quando a pessoa volta à tela, para ver o que outro aparelho marcou.
+- Recusa do servidor (erro 4xx) passa como veio; sem sinal ou erro 5xx usa a nossa frase. **"Sem sinal" ao adicionar não afirma que nada entrou**: manda
+  olhar a lista antes de tentar de novo, porque a resposta pode ter se perdido depois de o servidor cadastrar. Login vencido volta ao login.
+- **"Sem sinal" ao salvar uma mudança também não afirma que nada mudou**: manda olhar a lista, porque a resposta pode ter se perdido depois de o servidor
+  salvar (a tela olha a lista de novo logo depois de cada Salvar, tenha dado certo ou não). Se outro aparelho removeu o prato com o formulário aberto,
+  Salvar não manda nada e diz "Esse prato não está mais na lista. Alguém o removeu."
+- Nome de prato e de categoria que vêm do servidor **nunca entram como HTML** (nem dentro do campo do lápis).
+- **Defeito pego pela prova no navegador, já corrigido:** a busca da lista, que roda logo depois de um cadastro que falhou, apagava a frase de erro
+  ("veja na lista se o prato já entrou") antes de alguém lê-la. Agora o erro da ação e o erro da lista são separados, e um teste trava isso.
+
+**Servidor (PR #76, em rascunho) e o que mudou de comportamento:**
+
+- O lápis usa `PUT /api/admin/products/<id>`, **rota nova do PR #76**. Esse PR precisa entrar na `main` **antes** da tela nova ir ao ar. Num servidor sem
+  a rota o lápis responde "O servidor ainda não sabe mudar prato. Falta atualizá-lo." e nada se perde.
+- A rota só aceita dono e gerente, confere de novo nome (1 a 150 letras; passou do limite, recusa em vez de cortar), texto (até 500, uma linha), preço
+  (maior que zero, até 99.999,99) e categoria, recusa prato repetido na mesma categoria (409) e **só muda o que veio** (campo ausente fica como está).
+  Pedidos antigos guardam o preço da época (`order_items.unit_price`), então mudar o preço não mexe no que já foi vendido.
+- **Prato que já foi pedido não se apaga mais** (409, com a frase "Este prato já foi pedido… Para tirar do ar, toque em Esgotou."). Conferi o banco do
+  VPS: o instalador carrega `database/schema.production.sql`, onde os itens de pedido apagam junto (`ON DELETE CASCADE`); sem essa trava, apagar um prato
+  levaria embora os itens dos pedidos antigos e as vendas. O servidor trava a linha do prato antes de decidir, para um pedido novo com ele não entrar no meio; e criar ou mudar um prato passa um de cada vez por restaurante, para dois toques seguidos não furarem a conferência de repetido.
+- Criar prato com preço zero passou a ser recusado (a mesma regra do cadastro por foto, arquivo ou voz).
+
+**O que a tela não faz:**
+
+- **Esconder um prato de verdade** (sem ser "Esgotou"): o banco não tem uma coluna de "ativo" nos pratos. Precisaria de uma mudança no banco, que só faço
+  com o "pode" do GD. Hoje o **Esgotou** faz o papel: o cliente vê o prato, mas não consegue pedir.
+- **Foto e opções do prato** (grupos de escolhas) ficam para a próxima rodada; hoje a tela só mostra o que já existe.
+
+**Como foi conferido:** `tests/novo/dishesLogic.test.mjs` (41), `fluxo.test.mjs` (+13), `toque.test.mjs` (+8) e a lista de palavras proibidas;
+446 testes passam só na pasta do visual novo, e todas as outras pastas de teste do CI também. Em 320, 360, 390 e 480 px, nas 20 telas de conferência de pratos e categorias: sem rolagem lateral, nenhum
+botão com menos de 44 px e nenhum toque coberto. No navegador, com a tela de verdade e um servidor de mentira (167 conferências): Esgotou aparece na
+hora e **volta atrás** quando o servidor recusa (erro, sem sinal e recusa com frase); toque repetido enquanto espera manda **um** pedido só; dois pratos tocados
+juntos chegam os dois; uma busca atrasada não desfaz o toque; remover pede dois toques, desarma em 4 s e trava os outros botões enquanto espera; prato novo sem
+nome, com preço que não entendeu ou repetido **não vai ao servidor**, e vai **uma vez** mesmo com toque e Enter repetidos; resposta perdida depois de cadastrar
+mostra o prato na lista; o login vencido volta ao login; a cozinha não vê Novo prato, lápis nem lixeira; texto com HTML aparece como texto.
+**O lápis:** abre preenchido e com o foco no nome; salvar sem mexer em nada não fala com o servidor; só o campo mexido vai (preço sozinho, nome e categoria
+juntos, texto apagado vai vazio, "Sem categoria" vai como nulo); nome de outro prato da mesma categoria, preço ruim, zero e nome vazio não vão; toque e
+Enter repetidos mandam **um** pedido só; sem sinal, erro, recusa, prato não achado e servidor sem a rota mostram a frase certa e **deixam o formulário
+aberto com o que foi digitado** (e tentar de novo depois funciona); resposta perdida depois de salvar mostra o preço novo na lista; prato removido por outro
+aparelho fecha o formulário com a frase; trocar para o lápis de outro prato recomeça com os dados dele; Cancelar não manda nada e leva o foco de volta; os
+lápis esperam enquanto algo é removido ou salvo; HTML no nome e no texto aparece como texto; prato já pedido não se apaga e a frase do servidor chega à tela.
+Para ver: `preview-novo.html#/pratos`, `#/pratos-cozinha`, `#/pratos-novo`, `#/pratos-novo-erro`, `#/pratos-mudar` (o lápis, formulário preenchido), `#/pratos-mudar-erro` (nome que já existe), `#/pratos-remover`, `#/pratos-busca`,
+`#/pratos-sem-resultado`, `#/pratos-vazio`, `#/pratos-vazio-cozinha`, `#/pratos-sem-categorias`, `#/pratos-carregando`, `#/pratos-erro`, `#/categorias`,
+`#/categorias-vazio`, `#/categorias-remover`, `#/categorias-repetida`, `#/categorias-erro` e `#/categorias-carregando`.
+
+**O que ainda falta no cadastro do cardápio:**
+
+| Item | Situação |
+| --- | --- |
+| Foto, arquivo e falar os pratos; conferir e cadastrar | **Pronto** (décima terceira rodada) |
+| Ver, esgotar, criar e remover pratos; categorias | **Pronto** (desenho + ligação, fora do painel público) |
+| Mudar nome, preço, texto e categoria de um prato | **Pronto** (o lápis); depende da rota nova do PR #76 de servidor, que só entra com o "pode" |
+| Esconder um prato de verdade (sem ser Esgotou) | Falta; precisa de uma coluna nova no banco, só com o "pode" |
+| Foto do prato e opções do prato | Falta (próxima rodada) |
+| "Começar de um modelo" (escolher o tipo de negócio e tocar nos pratos) | Falta; esse caminho só existe na tela antiga |
+| Logomarca (entrada "Marca" do menu) | Falta |
+| A bolinha de voz que escuta e navega | Falta (o que passa de navegar e ler precisa da chave da IA, que ele mesmo digita em `configurar-ia.sh`) |
+
+**Ainda não resolvido:** quem abre cada tela, na casca do painel. O servidor deixa dono e gerente criar e apagar, e deixa dono, gerente e cozinha marcar
+esgotado; o garçom não marca nem cria. O menu antigo mostra Produtos e Categorias ao garçom, e a casca nova precisa decidir o que ele vê. A cozinha entra em
+Pratos no modo "O que esgotou"; Categorias é só de dono e gerente.
 
 **Ainda não está ligado ao painel público** (o painel antigo continua mandando).
 
@@ -552,7 +643,7 @@ Para ver: `preview-novo.html#/cardapio`, `#/cardapio-sem-foto`, `#/cardapio-sem-
   Um teste (`tests/novo`) garante que o visual novo não depende do antigo e que só a página de conferência usa dados
   de exemplo.
 - Para ver: `cd frontend && npx vite build --config vite.preview-novo.config.ts --outDir /tmp/novo` e abrir
-  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu`, `#/menu-garcom`, `#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro`, `#/mesa-aberta`, `#/pedidos`, `#/pedidos-caixa`, `#/pedidos-garcom`, `#/pedidos-cozinha`, `#/pedidos-calmo`, `#/pedidos-erro`, `#/pedidos-enviando`, `#/entregas`, `#/entregas-pegar`, `#/entregas-entregues`, `#/entregas-codigo`, `#/entregas-bloqueado`, `#/entregas-erro`, `#/entregas-calmo`, `#/entregas-carregando`, `#/entregas-gerente`, `#/acerto`, `#/acerto-confirmar`, `#/acerto-calmo`, `#/acerto-erro`, `#/acerto-carregando` ou `#/cardapio` (e as outras 16 telas `#/cardapio-…`, listadas na décima terceira rodada)
+  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu`, `#/menu-garcom`, `#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro`, `#/mesa-aberta`, `#/pedidos`, `#/pedidos-caixa`, `#/pedidos-garcom`, `#/pedidos-cozinha`, `#/pedidos-calmo`, `#/pedidos-erro`, `#/pedidos-enviando`, `#/entregas`, `#/entregas-pegar`, `#/entregas-entregues`, `#/entregas-codigo`, `#/entregas-bloqueado`, `#/entregas-erro`, `#/entregas-calmo`, `#/entregas-carregando`, `#/entregas-gerente`, `#/acerto`, `#/acerto-confirmar`, `#/acerto-calmo`, `#/acerto-erro`, `#/acerto-carregando`, `#/cardapio` (e as outras 16 telas `#/cardapio-…`, listadas na décima terceira rodada), `#/pratos` ou `#/categorias` (e as outras 18 telas `#/pratos-…` e `#/categorias-…`, listadas na décima quarta rodada)
   (a pasta pública vai junto, por causa das fontes).
 - Cada tela ganha um PR próprio: ligada aos dados de verdade (por props), com teste, e a tela antiga correspondente
   sai no mesmo PR. **Nada disso vira o que o público vê sem o "pode" do GD.**
