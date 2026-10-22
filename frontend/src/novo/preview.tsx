@@ -8,9 +8,13 @@ import ChoicesSheet from "./Choices";
 import BagScreen from "./Bag";
 import { TrackSlip, TrackingPage } from "./Tracking";
 import TablePage from "./Table";
+import Desk from "./Desk";
+import DeskTable from "./DeskTable";
+import QrScan from "./QrScan";
 import PanelMenu from "../painel/PanelMenu";
+import { deskTableViewOf, deskViewOf, openTyped, parsePanelCalls } from "../painel/deskLogic";
 import { emptyText, isKitchenTab, kitchenTabs, ticketsFor, type KitchenTabId } from "../cozinha/kitchenLogic";
-import { ACAI_PRODUCT, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, kitchenOrders, orderExample, pixExample, shopExample, todayExample } from "./demo";
+import { ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, pixExample, shopExample, todayExample } from "./demo";
 import { choicesViewOf, confirmChoices, nextQuantity, pressOption } from "../loja/choicesLogic";
 import { bagProblem, bagViewOf } from "../loja/bagLogic";
 import { copiedOutcome, pixOf, ratingOf, trackOf } from "../loja/trackingLogic";
@@ -24,6 +28,7 @@ import type { Selection } from "../customer/options";
 /**
  * Página de conferência do visual novo (não faz parte do aplicativo): mostra cada tela com dados de exemplo.
  * Abrir: preview-novo.html#/loja, #/hoje, #/cozinha, #/vagas, #/escolhas (#/escolhas-erro), #/sacola, #/entrega,
+ * #/mesas (quem está chamando), #/mesas-calmo (ninguém chamando), #/mesas-qr (câmera do QR), #/mesas-carregando e #/mesas-erro (lista de mesas), #/mesa-aberta (a mesa 4 aberta),
  * #/menu (menu geral do dono), #/menu-garcom (o que o garçom vê), #/mesa (QR da mesa), #/mesa-chamada (conta chamada, água atendida, garçom sem resposta), #/loja-mesa (cardápio de quem está na mesa),
  * #/loja-pedido (cardápio de quem já pediu), #/pedido (preparo, Pix a pagar), #/pedido-rua (entrega a caminho) ou #/pedido-pronto (pronto, pago, avaliação).
  */
@@ -242,6 +247,52 @@ function TablePreview({ stage }: { stage: "novo" | "chamado" }) {
 }
 
 /**
+ * A tela de mesas da conferência: os chamados e as fichas passam pela conta de verdade (`deskViewOf`) e respondem ao toque, sem
+ * servidor: "Já atendi" tira o chamado da lista, a ficha abre a mesa, e o número digitado acha a mesa pelo cadastro de exemplo.
+ */
+function DeskPreview({ stage }: { stage: "chamando" | "calmo" | "qr" | "carregando" | "erro" | "aberta" }) {
+  const [calls, setCalls] = useState(() => parsePanelCalls(stage === "calmo" ? [] : deskCallsExample()));
+  const [typed, setTyped] = useState("");
+  const [message, setMessage] = useState("");
+  const [open, setOpen] = useState<string | null>(stage === "aberta" ? "mesa-4" : null);
+  const [now] = useState(() => Date.now());
+  const orders = deskOrdersExample(now);
+  const tables = stage === "carregando" || stage === "erro" ? null : DESK_TABLES;
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
+  const table = open && tables ? tables.find((item) => item.id === open) ?? null : null;
+  if (table) {
+    return (
+      <DeskTable
+        view={deskTableViewOf({ table, calls, tables: DESK_TABLES, orders, now, orderHref: "https://exemplo.vem/?mesa=" + table.id })}
+        onBack={() => setOpen(null)}
+        onAnswer={(id) => setCalls((list) => list.filter((call) => call.id !== id))}
+      />
+    );
+  }
+  return (
+    <Desk
+      view={deskViewOf({ calls, tables, orders, tablesFailed: stage === "erro", message })}
+      typed={typed}
+      onType={(value) => {
+        setTyped(value);
+        setMessage("");
+      }}
+      onSubmitTyped={() => {
+        const found = openTyped(DESK_TABLES, typed);
+        if ("table" in found) setOpen(found.table.id);
+        else setMessage(found.message);
+      }}
+      onOpen={setOpen}
+      onAnswer={(id) => setCalls((list) => list.filter((call) => call.id !== id))}
+      onRetry={() => undefined}
+      onScan={stage === "qr" ? undefined : () => undefined}
+      scanner={stage === "qr" ? <QrScan videoRef={videoRef} onCancel={() => undefined} /> : undefined}
+      showMenu
+    />
+  );
+}
+
+/**
  * O menu geral da conferência: abre por cima do "Hoje" pelo botão de menu, passa pela conta de verdade (`menuViewOf`, que usa
  * as regras de sempre do menu antigo) e tem os mesmos cuidados do menu de verdade (Esc, foco, Tab preso, fundo sem rolar).
  * `dono`: vê tudo (e o que é do dono do sistema); `garcom`: só o que o garçom vê.
@@ -287,6 +338,12 @@ function MenuPreview({ role }: { role: "OWNER" | "WAITER" }) {
 
 function Screen() {
   const route = window.location.hash.replace(/^#\/?/, "");
+  if (route === "mesas") return <DeskPreview stage="chamando" />;
+  if (route === "mesas-calmo") return <DeskPreview stage="calmo" />;
+  if (route === "mesas-qr") return <DeskPreview stage="qr" />;
+  if (route === "mesas-carregando") return <DeskPreview stage="carregando" />;
+  if (route === "mesas-erro") return <DeskPreview stage="erro" />;
+  if (route === "mesa-aberta") return <DeskPreview stage="aberta" />;
   if (route === "menu") return <MenuPreview role="OWNER" />;
   if (route === "menu-garcom") return <MenuPreview role="WAITER" />;
   if (route === "mesa") return <TablePreview stage="novo" />;

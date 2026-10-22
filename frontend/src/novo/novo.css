@@ -2979,3 +2979,408 @@ button.nv-now-cell:active {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* ---------- Mesas do painel: quem chama vem primeiro, com o botão de atender ---------- */
+
+.nv-page-desk .nv-error {
+  margin: 0;
+}
+
+.nv-deskcalls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* O chamado é um painel de sombra macia (informa); a fita de cima muda de cor pela espera; só o botão de baixo toca. */
+.nv-deskcall {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 14px 14px;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-panel-3d);
+  --nv-tape: var(--nv-green);
+}
+
+.nv-deskcall::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 6px;
+  border-radius: var(--nv-r-lg) var(--nv-r-lg) 0 0;
+  background: var(--nv-tape);
+}
+
+.nv-deskcall.is-warn {
+  --nv-tape: var(--nv-sun);
+}
+
+.nv-deskcall.is-late {
+  --nv-tape: var(--nv-alert);
+}
+
+.nv-deskcall-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  min-height: 56px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+}
+
+/* Tocar na mesa abre a mesa: a linha afunda como o resto, e a setinha avisa que leva a algum lugar. */
+.nv-deskcall-head.is-open:active {
+  transform: translateY(2px);
+}
+
+.nv-deskcall-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+}
+
+.nv-deskcall.is-warn .nv-deskcall-icon {
+  background: var(--nv-sun);
+}
+
+.nv-deskcall.is-late .nv-deskcall-icon {
+  background: var(--nv-alert);
+  color: #fff;
+}
+
+.nv-deskcall-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.nv-deskcall-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-deskcall-where {
+  font: 700 24px/1.05 var(--nv-display);
+}
+
+.nv-deskcall-what {
+  color: var(--nv-muted);
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.nv-deskcall.is-warn .nv-wait {
+  background: var(--nv-sun);
+}
+
+.nv-deskcall.is-late .nv-wait {
+  background: var(--nv-alert);
+  color: #fff;
+}
+
+.nv-deskcall-go {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--nv-muted);
+}
+
+.nv-deskcall-go svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* A espera dita em palavra, para quem não vê a cor da fita. Pílulas lisas: só informam. */
+.nv-deskcall-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.nv-deskcall-flag {
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nv-deskcall-flag.is-word {
+  background: var(--nv-call-pill);
+}
+
+.nv-deskcall.is-late .nv-deskcall-flag.is-word {
+  background: var(--nv-alert);
+  color: #fff;
+}
+
+.nv-deskcall .nv-btn {
+  min-height: 64px;
+  font-size: 19px;
+}
+
+/* Abrir uma mesa: ler o QR do cartaz ou digitar o número. */
+.nv-desk-type {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nv-desk-label {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.nv-desk-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.nv-desk-row .nv-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-desk-row .nv-btn {
+  min-height: 56px;
+}
+
+/* A resposta ao que foi digitado: só informa. Vazia, sai do desenho mas continua na página (leitor de tela). */
+.nv-desk-msg {
+  margin: 0;
+  color: var(--nv-alert);
+  font-weight: 700;
+}
+
+.nv-desk-msg:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.nv-scan {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* A câmera, quadrada, com uma moldura por cima para o garçom saber onde apontar. */
+.nv-scan-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--nv-r-lg);
+  background: var(--nv-ink);
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-scan-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nv-scan-guide {
+  position: absolute;
+  inset: 18%;
+  border: 4px solid var(--nv-sun);
+  border-radius: 22px;
+  box-shadow: 0 0 0 999px rgba(27, 67, 50, 0.45);
+  pointer-events: none;
+}
+
+.nv-scan-hint {
+  margin: 0;
+  color: var(--nv-muted);
+  text-align: center;
+}
+
+/* Todas as mesas: cada ficha é uma tecla com o número e o que existe nela agora. */
+.nv-desk-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-desktile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  min-height: 88px;
+  padding: 10px 6px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  color: var(--nv-ink);
+  box-shadow: var(--nv-card-3d);
+}
+
+.nv-desktile:active {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+.nv-desktile-num {
+  font: 700 30px/1 var(--nv-display);
+}
+
+.nv-desktile-note {
+  color: var(--nv-muted);
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* Com pedido andando: verde claro. Chamando: amarela, a que pede atenção. */
+.nv-desktile.is-busy {
+  background: linear-gradient(180deg, #f3f9f1, var(--nv-green-soft));
+  box-shadow: inset 0 2px 0 #fff, 0 4px 0 var(--nv-green-soft-edge), 0 18px 22px -12px var(--nv-floor);
+}
+
+.nv-desktile.is-busy:active {
+  box-shadow: inset 0 2px 0 #fff, 0 1px 0 var(--nv-green-soft-edge), 0 4px 8px -4px var(--nv-floor);
+}
+
+.nv-desktile.is-busy .nv-desktile-note,
+.nv-desktile.is-call .nv-desktile-note {
+  color: var(--nv-ink);
+  font-weight: 700;
+}
+
+.nv-desktile.is-call {
+  background: var(--nv-shine), var(--nv-sun);
+  box-shadow: var(--nv-hi), 0 4px 0 var(--nv-sun-edge), 0 18px 22px -12px var(--nv-floor);
+}
+
+.nv-desktile.is-call:active {
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-sun-edge), 0 4px 8px -4px var(--nv-floor);
+}
+
+/* Uma mesa aberta: os pedidos andando são painéis de sombra macia (só informam). */
+.nv-deskorders {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-deskorder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-deskorder-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-deskorder-text b {
+  font: 700 18px/1.2 var(--nv-display);
+}
+
+.nv-deskorder-text > span {
+  color: var(--nv-muted);
+  font-size: 14px;
+}
+
+.nv-deskorder-chip {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-weight: 700;
+}
+
+.nv-deskorder-chip.is-wait {
+  background: var(--nv-sun);
+}
+
+.nv-deskorder-chip.is-prep {
+  background: var(--nv-ink);
+  color: #fff;
+}
+
+.nv-deskorder-chip.is-go {
+  background: var(--nv-green);
+  color: #fff;
+}
+
+.nv-deskorder-price {
+  flex: none;
+  font: 700 18px/1 var(--nv-display);
+}
+
+.nv-deskmake {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nv-desk-fine {
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+@media (max-width: 340px) {
+  .nv-deskcall-where {
+    font-size: 22px;
+  }
+
+  .nv-deskcall-head {
+    flex-wrap: wrap;
+  }
+
+  .nv-desk-grid {
+    gap: 10px;
+  }
+}

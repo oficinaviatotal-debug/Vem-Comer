@@ -320,3 +320,69 @@ export type MenuView = {
   groups: MenuGroup[];
   actions: MenuAction[];
 };
+
+/** Uma mesa chamando, como o garçom lê: a mesa, o que ela quer, há quanto tempo e a cor da espera. */
+export type DeskCall = {
+  id: string;
+  kind: CallKind;
+  /** "Mesa 4". */
+  where: string;
+  /** "Chama o garçom". */
+  what: string;
+  /** "há 2 min". */
+  wait: string;
+  /** O cliente tocou de novo. */
+  again: boolean;
+  /** A cor da fita pelo que o servidor diz da espera: ok (verde), warn (amarela), late (vermelha). */
+  tone: "ok" | "warn" | "late";
+  /** A mesma espera em palavra, para quem não vê cor: "", "Está demorando", "Urgente". */
+  word: string;
+  /** A mesa no cadastro, para abrir ao tocar; null enquanto a lista de mesas não chegou. */
+  tableId: string | null;
+  /** O botão "Já atendi" lido por inteiro (o leitor de tela repete o botão em cada cartão). */
+  spoken: string;
+};
+
+/** Uma mesa da lista: o número e o que existe agora (chamando, pedidos, nada). */
+export type DeskTile = {
+  id: string;
+  number: number;
+  note: string;
+  tone: "call" | "busy" | "quiet";
+  spoken: string;
+};
+
+/** O que a tela de mesas mostra na lista. `tiles: null` enquanto a lista de mesas não chegou. */
+export type DeskView = {
+  sub: string;
+  calls: DeskCall[];
+  tiles: DeskTile[] | null;
+  /** A frase no lugar da lista: abrindo, sem mesas, ou o erro. Vazia quando há mesas. */
+  tilesMessage: string;
+  tilesFailed: boolean;
+  /** Resposta ao número digitado ou ao QR lido ("Não achei essa mesa..."). */
+  message: string;
+  /** Frase de erro ao marcar como atendida. */
+  error: string;
+};
+
+/** Um pedido andando na mesa aberta. */
+export type DeskOrder = {
+  id: string;
+  name: string;
+  status: string;
+  tone: "wait" | "prep" | "go" | "done";
+  wait: string;
+  price: string;
+};
+
+/** A mesa aberta: título, a frase do que existe, os chamados e os pedidos em andamento. */
+export type DeskTableView = {
+  title: string;
+  headline: string;
+  calls: DeskCall[];
+  orders: DeskOrder[];
+  /** O cardápio desta mesa (para o garçom pedir pelo cliente); null: sem endereço válido, o botão não aparece. */
+  orderHref: string | null;
+  error: string;
+};

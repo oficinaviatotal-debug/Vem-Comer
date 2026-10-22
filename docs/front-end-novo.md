@@ -307,13 +307,66 @@ contraste de cada estado) e `fluxo.test.mjs` (19). Em 320, 360, 390 e 480 px, na
 nenhum botão com menos de 44 px. No navegador: foco entra no título do menu, Esc fecha, o Tab não sai, tocar fora fecha, o
 garçom vê só as sete telas dele. Para ver: `preview-novo.html#/menu` e `#/menu-garcom`.
 
+## Décima rodada: mesas do painel, para atender quem chamou (22/10/2026)
+
+O GD aprovou o menu ("Perfeito, Claude", 11:26) e lembrou para quem tudo isto é feito: gente que mal lê, de quem não tem
+funcionário nenhum a casas com 100, 200, 300 pessoas, garçons e cozinheiros. "Menos burocracia, mais facilidade, menos escrita,
+menos dados, menos informações." Por isso a tela de mesas não tem formulário: **quem chama vem primeiro, e atender é um toque**.
+Segui a ordem que anunciei (a segunda tela). Nada vai ao ar sem o "pode".
+
+**A tela** (`novo/Desk.tsx`): no topo, "Mesas" e a frase "4 mesas chamando" (ou "Ninguém chamando agora"). Embaixo, um cartão por
+chamado, o pior primeiro: nome da mesa grande, o que ela quer, há quanto tempo, e o botão verde **"Já atendi"**. A fita de cima é
+verde, amarela ou vermelha, **pelo que o servidor já diz** (`backend/table_calls.py`: demorando depois de 3 minutos, urgente depois
+de 7 ou quando o cliente tocou duas vezes), e uma pílula repete em palavra ("Está demorando", "Urgente", "Chamou de novo"): a cor
+sozinha nunca informa. Tocar no nome da mesa abre a mesa. Depois, o jeito de abrir uma mesa sem escrever: **Ler o QR da mesa**, ou
+digitar o número (teclado de números), e **Todas as mesas**: uma ficha por mesa, em três colunas, com "Chamando", "2 chamados",
+"1 pedido" ou "Sem pedido" (o sistema nunca diz "livre" ou "ocupada", porque não sabe).
+
+**A mesa aberta** (`novo/DeskTable.tsx`): título, uma frase do que existe ("2 chamados abertos e 2 pedidos em andamento"), os chamados
+dela com o mesmo "Já atendi", os pedidos andando (nome, estado, há quanto tempo, valor) e **"Fazer um pedido para esta mesa"**
+(abre o cardápio do cliente em outra aba, para o garçom pedir por quem não usa o celular). Nada ali muda um pedido nem o dinheiro:
+a única coisa que se faz é atender um chamado. A câmera (`novo/QrScan.tsx`) é um quadrado com moldura, dica e "Cancelar".
+
+**Honestidade:** nenhuma regra mudou. A conta é a da tela antiga: o QR só abre mesa **deste** restaurante (outro restaurante, um
+site qualquer ou uma mesa fora do cadastro dizem por que não abriram), o número aceita "4", "04" e "mesa 4", e o chamado vale por
+2 horas. A ordem (urgente, depois demorando, depois o resto; dentro de cada grupo, quem espera mais) é minha e está testada
+(`painel/deskLogic.ts`, 15 testes). Os chamados aparecem mesmo que a lista de mesas não abra (a ficha vira "Tentar de novo"), e
+nesse caso o cartão só informa, sem abrir mesa.
+
+**Ligação ao servidor** (`painel/DeskScreen.tsx`): pergunta os chamados a cada 6 s e os pedidos a cada 8 s, **só com a aba à vista**.
+Uma busca que falha nunca apaga o que está na tela. **"Já atendi" vai ao servidor e só depois o cartão some**; se não deu, o cartão
+fica e a tela diz "Não deu para marcar como atendida. Confira a internet e toque de novo." Um chamado que acabou de ser atendido
+não volta por uma busca que já tinha saído (`withoutAnswered`). **Chamado novo faz o aparelho vibrar e apitar uma vez**, e o que
+vira urgente apita mais uma; o que já estava aberto quando a tela abriu não faz alarde (as mesmas regras do aviso antigo). O leitor
+de QR (`painel/useQrReader.ts`) usa o leitor do próprio navegador, não grava nem envia nada, e desliga a câmera ao ler, ao
+cancelar e ao sair. Aparelho que não lê QR aqui dentro recebe a frase que diz o que fazer.
+
+**Cuidados de acessibilidade:** a frase de quantas mesas chamam mora sempre na página e é lida em voz alta quando muda; cada botão
+"Já atendi" é lido por inteiro ("Já atendi. Mesa 7. Chama o garçom. há 8 min, chamou de novo. Urgente."); o foco vai para o
+próximo botão depois de atender, para o título ao abrir uma mesa e para a frase ao voltar; o erro é alerta.
+
+**Escolha minha que o GD pode mudar:** o aviso "N mesas chamando" que o painel antigo põe no topo de **todas** as telas
+(`mesa/CallsBar`) não foi recriado aqui. O "Hoje" já mostra os chamados e esta tela os atende. Um aviso que acompanha o garçom em
+qualquer tela é da casca do painel e entra na hora de ligar tudo.
+
+**Ainda não está ligado ao painel público** (o painel antigo continua mandando). A outra tela de mesa do menu antigo, a de
+**cadastrar mesas e imprimir o cartaz com QR**, é do dono, não do garçom, e fica para a rodada do cadastro.
+
+**Como foi conferido:** `tests/novo/deskLogic.test.mjs` (15), `toque.test.mjs` (53, com o 3D, as pílulas, o contraste e o 320 px),
+`fluxo.test.mjs` (23). Em 320, 360, 390 e 480 px, nas 23 telas de conferência: sem rolagem lateral e nenhum botão com menos
+de 44 px. No navegador, com a tela de verdade e um servidor de mentira: abre com os chamados e a lista; a primeira busca é
+silenciosa; chamado novo entra e vibra uma vez; "Já atendi" chega ao servidor com o código certo e o foco vai ao próximo botão;
+atendido não volta mesmo que o servidor ainda o mande; erro deixa o cartão e diz o que fazer; abrir a mesa leva o foco ao título;
+QR da mesa abre a mesa, QR de outro restaurante e QR que não é de mesa dizem por quê, e a câmera desliga em todos os casos.
+Para ver: `preview-novo.html#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro` e `#/mesa-aberta`.
+
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
 - Tudo mora em `frontend/src/novo/` e **não é importado pelo aplicativo**: o `index.html` e o `main.tsx` não mudam.
   Um teste (`tests/novo`) garante que o visual novo não depende do antigo e que só a página de conferência usa dados
   de exemplo.
 - Para ver: `cd frontend && npx vite build --config vite.preview-novo.config.ts --outDir /tmp/novo` e abrir
-  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu` ou `#/menu-garcom`
+  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu`, `#/menu-garcom`, `#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro` ou `#/mesa-aberta`
   (a pasta pública vai junto, por causa das fontes).
 - Cada tela ganha um PR próprio: ligada aos dados de verdade (por props), com teste, e a tela antiga correspondente
   sai no mesmo PR. **Nada disso vira o que o público vê sem o "pode" do GD.**

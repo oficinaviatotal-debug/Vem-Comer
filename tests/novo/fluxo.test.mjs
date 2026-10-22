@@ -202,3 +202,48 @@ test("a folha das escolhas e o menu geral dividem o mesmo cuidado de diálogo (f
   assert.match(loja.choices, /useSheetBehavior\(onClose\)/);
   assert.match(loja.choices, /from "\.\/useSheetBehavior"/);
 });
+
+test("as mesas do painel de verdade: só as contas puras da mesa antiga (nada de tela, CSS, estilos antigos), e a lógica não fala com o servidor", () => {
+  const files = { deskLogic: read("painel/deskLogic.ts"), deskScreen: read("painel/DeskScreen.tsx"), qr: read("painel/useQrReader.ts") };
+  for (const [name, text] of Object.entries(files)) {
+    assert.ok(!/from ["']\.\.\/(styles|ui|admin)/.test(text), `${name} importa o antigo`);
+    assert.ok(!/from ["']\.\.\/mesa\/(?!callsLogic|tableDeskLogic)/.test(text), `${name} importa a tela antiga da mesa`);
+    assert.ok(!/import ["']\.\.\//.test(text), `${name} importa CSS de fora`);
+    assert.ok(!/from ["']\.\.\/nav\/(?!navLogic)/.test(text), `${name} importa tela do menu antigo`);
+  }
+  assert.ok(!/service\/api/.test(files.deskLogic), "a conta não fala com o servidor");
+  assert.ok(!/service\/alertDevice/.test(files.deskLogic), "a conta não apita");
+});
+
+test("as mesas do painel: uma marcação por vez, só tira o chamado depois que o servidor aceitou, e erro deixa o cartão e diz o que fazer", () => {
+  const text = read("painel/DeskScreen.tsx");
+  assert.match(text, /if \(answering\.current\) return;\s*answering\.current = true;/);
+  assert.match(text, /await answerTableCall\(companyId, callId\);\s*answered\.current\.add\(callId\);\s*setCalls\(/);
+  assert.match(text, /\} catch \{\s*setError\(DESK_ANSWER_ERROR\);\s*void loadCalls\(\);/);
+  assert.match(text, /\} finally \{\s*answering\.current = false;\s*setBusyId\(null\);/);
+  assert.match(text, /withoutAnswered\(parsePanelCalls\(await fetchTableCalls\(companyId\)\), answered\.current\)/);
+});
+
+test("as mesas do painel: pergunta de tempos em tempos só com a aba à vista, uma busca que falha não apaga a tela e chamado novo apita", () => {
+  const text = read("painel/DeskScreen.tsx");
+  assert.equal((text.match(/if \(document\.hidden\) return;/g) ?? []).length, 2, "chamados e pedidos pausam com a aba escondida");
+  assert.match(text, /window\.clearInterval\(callsTimer\)/);
+  assert.match(text, /window\.clearInterval\(ordersTimer\)/);
+  assert.match(text, /document\.removeEventListener\("visibilitychange", onVisible\)/);
+  assert.match(text, /if \(step\.alert\) alertDevice\(step\.alert\)/);
+  assert.ok(!/catch \{[^}]*setCalls\(\[\]\)/.test(text), "falha de rede não esvazia a lista");
+  assert.ok(!/catch \{[^}]*setOrders\(\[\]\)/.test(text), "falha de rede não esvazia os pedidos");
+  assert.match(text, /CALLS_MS/);
+  assert.match(text, /ORDERS_MS/);
+});
+
+test("as mesas do painel: o foco acompanha a tela e a câmera fecha ao ler, ao cancelar e ao sair", () => {
+  const text = read("painel/DeskScreen.tsx");
+  assert.match(text, /getElementById\(selected \? "nv-desk-table-title" : "nv-desk-live"\)\?\.focus\(\)/);
+  assert.match(text, /\.nv-page-desk \.nv-deskcall \.nv-btn/);
+  const qr = read("painel/useQrReader.ts");
+  assert.match(qr, /stream\?\.getTracks\(\)\.forEach\(\(track\) => track\.stop\(\)\)/);
+  assert.match(qr, /return stop;/);
+  assert.match(qr, /stop\(\);\s*latest\.current\.onCode\(text\)/);
+  assert.match(qr, /\[active\]/);
+});

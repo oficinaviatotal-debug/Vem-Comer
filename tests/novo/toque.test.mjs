@@ -427,3 +427,95 @@ test("o menu geral: texto pequeno passa de 4,5:1 em cada estado da linha", () =>
   }
   assert.ok(contrast(token("muted"), "#fbf9f4") >= 4.5, "frase da função sobre o fim do degradê do cartão");
 });
+
+test("mesas do painel: 'Já atendi' é a tecla grande e verde de cada chamado; o cartão em volta é painel de sombra macia e só informa", () => {
+  const desk = read("Desk.tsx");
+  assert.match(desk, /className="nv-btn is-green is-block"/);
+  assert.match(desk, /aria-label=\{call\.spoken\}/);
+  assert.match(desk, /disabled=\{busy\}/);
+  assert.match(desk, /aria-busy=\{busy \|\| undefined\}/);
+  assert.match(block(".nv-deskcall .nv-btn"), /min-height: (6[4-9]|[7-9]\d)px/);
+  assert.match(block(".nv-deskcall"), /box-shadow: var\(--nv-panel-3d\)/);
+  assert.ok(!/0 [2-9]px 0/.test(block(".nv-deskcall")), "o cartão do chamado não tem borda grossa");
+  assert.match(block(".nv-deskcall.is-warn"), /--nv-tape: var\(--nv-sun\)/);
+  assert.match(block(".nv-deskcall.is-late"), /--nv-tape: var\(--nv-alert\)/);
+});
+
+test("mesas do painel: o que só informa fica liso (ícone, pílulas, pedido, resposta) e a mesa tocável afunda no toque", () => {
+  for (const selector of [".nv-deskcall-icon", ".nv-deskcall-flag", ".nv-deskorder-chip", ".nv-desk-msg", ".nv-deskcall-go"]) {
+    assert.ok(!/box-shadow/.test(block(selector)), `${selector} parece botão sem ser`);
+  }
+  assert.match(block(".nv-deskorder"), /box-shadow: var\(--nv-panel-3d\)/);
+  assert.match(block(".nv-deskcall-head.is-open:active"), /transform: translateY\(/);
+  assert.match(read("Desk.tsx"), /className="nv-deskcall-head is-open"/);
+  assert.match(read("Desk.tsx"), /aria-label=\{`Abrir a \$\{call\.where\.toLowerCase\(\)\}`\}/);
+});
+
+test("mesas do painel: cada ficha de mesa é tecla de borda grossa, afunda no toque e tem altura de dedo, em cada estado", () => {
+  assert.match(block(".nv-desktile"), /box-shadow: var\(--nv-card-3d\)/);
+  assert.match(block(".nv-desktile"), /min-height: (8[4-9]|9\d|\d{3})px/);
+  assert.match(block(".nv-desktile:active"), /transform: translateY\(/);
+  assert.match(block(".nv-desktile.is-call"), /0 4px 0 var\(--nv-sun-edge\)/);
+  assert.match(block(".nv-desktile.is-call:active"), /0 1px 0 var\(--nv-sun-edge\)/);
+  assert.match(block(".nv-desktile.is-busy"), /0 4px 0 var\(--nv-green-soft-edge\)/);
+  assert.match(block(".nv-desktile.is-busy:active"), /0 1px 0 var\(--nv-green-soft-edge\)/);
+  assert.match(read("Desk.tsx"), /aria-label=\{tile\.spoken\}/);
+});
+
+test("mesas do painel: a frase de quantas mesas chamam vive sempre na página (voz alta), o erro é alerta e o número digitado tem nome e teclado de números", () => {
+  const desk = read("Desk.tsx");
+  assert.match(desk, /<p className="nv-sr" id="nv-desk-live" role="status" aria-live="polite" tabIndex=\{-1\}>/);
+  assert.match(desk, /<p className="nv-error" role="alert">/);
+  assert.match(desk, /role=\{view\.tilesFailed \? "alert" : "status"\}/);
+  assert.match(desk, /<label className="nv-desk-label" htmlFor="nv-desk-number">/);
+  assert.match(desk, /id="nv-desk-number"/);
+  assert.match(desk, /inputMode="numeric"/);
+  assert.match(desk, /<p className="nv-desk-msg" role="status" aria-live="polite">/);
+  assert.match(block(".nv-desk-msg:empty"), /clip: rect\(0 0 0 0\)/);
+  assert.match(block(".nv-field input"), /font: 500 17px/);
+});
+
+test("mesas do painel: a mesa aberta volta pela setinha, anuncia o que existe e o pedido pelo cliente abre fora sem dar poder à outra página", () => {
+  const table = read("DeskTable.tsx");
+  assert.match(table, /aria-label=\{DESK_BACK\}/);
+  assert.match(table, /<h1 className="nv-name" id="nv-desk-table-title" tabIndex=\{-1\}>/);
+  assert.match(table, /<p className="nv-sub" role="status" aria-live="polite">/);
+  assert.match(table, /target="_blank"/);
+  assert.match(table, /rel="noopener noreferrer"/);
+  assert.match(table, /aria-label=\{`\$\{DESK_MAKE_ORDER\} \(abre em outra aba\)`\}/);
+  assert.match(table, /view\.orderHref \?/);
+});
+
+test("mesas do painel: a câmera é desenhada com texto alternativo, dica e botão de cancelar", () => {
+  const scan = read("QrScan.tsx");
+  assert.match(scan, /aria-label="Câmera lendo o QR da mesa"/);
+  assert.match(scan, /role="status"/);
+  assert.match(scan, /onClick=\{onCancel\}/);
+  assert.match(block(".nv-scan-guide"), /pointer-events: none/);
+});
+
+test("mesas do painel: texto pequeno passa de 4,5:1 em cada peça", () => {
+  for (const [front, back, what] of [
+    ["muted", "paper", "o que a mesa quer"],
+    ["ink", "call-pill", "palavra 'Está demorando'"],
+    ["paper", "alert", "espera, palavra e ícone do chamado urgente"],
+    ["ink", "sun", "espera do chamado que demora"],
+    ["ink", "green-soft", "pílulas e ícone do chamado normal"],
+    ["paper", "ink", "'Em preparo'"],
+    ["paper", "green", "'A caminho'"],
+    ["ink", "sun", "ficha que chama e 'Aguardando'"],
+    ["ink", "green-soft", "ficha com pedido"],
+    ["alert", "paper", "resposta ao número digitado"],
+  ]) {
+    const ratio = contrast(token(front), token(back));
+    assert.ok(ratio >= 4.5, `${what}: ${ratio.toFixed(2)}:1`);
+  }
+  assert.ok(contrast(token("muted"), "#fbf9f4") >= 4.5, "o que a mesa quer e a nota da ficha sobre o fim do degradê");
+});
+
+test("mesas do painel: em 320 px a linha do chamado quebra em vez de apertar, e as fichas ficam em três colunas", () => {
+  const small = css.match(/@media \(max-width: 340px\) \{[^@]*\.nv-deskcall-where[\s\S]*?\n\}\n/);
+  assert.ok(small, "não achei o bloco de 320 px das mesas");
+  assert.match(small[0], /\.nv-deskcall-head \{\s*flex-wrap: wrap;/);
+  assert.match(block(".nv-desk-grid"), /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+});

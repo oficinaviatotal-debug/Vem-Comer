@@ -322,3 +322,28 @@ export function callsExample(stage: "novo" | "chamado", now: number): MyCall[] {
     { id: "c3", kind: "garcom", status: "open", savedAt: now - 90_000 },
   ];
 }
+
+/**
+ * As mesas de EXEMPLO da tela de mesas do painel: o cadastro, os chamados abertos (como o servidor os manda) e os pedidos
+ * andando. Passam pela mesma conta da tela de verdade (painel/deskLogic).
+ */
+export const DESK_TABLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((number) => ({ id: `mesa-${number}`, number }));
+
+export function deskCallsExample(): unknown[] {
+  return [
+    { id: "d1", table_id: "mesa-7", table_number: 7, kind: "garcom", label: "Garçom", text: "Mesa 7 chama o garçom", waiting_seconds: 515, repeats: 2, urgency: "urgent" },
+    { id: "d2", table_id: "mesa-4", table_number: 4, kind: "conta", label: "Conta", text: "Mesa 4 pede a conta", waiting_seconds: 215, repeats: 0, urgency: "late" },
+    { id: "d3", table_id: "mesa-12", table_number: 12, kind: "agua", label: "Água", text: "Mesa 12 pede água", waiting_seconds: 35, repeats: 0, urgency: "normal" },
+    { id: "d4", table_id: "mesa-4", table_number: 4, kind: "limpeza", label: "Limpeza", text: "Mesa 4 pede limpeza da mesa", waiting_seconds: 70, repeats: 0, urgency: "normal" },
+  ];
+}
+
+export function deskOrdersExample(now: number): { id: string; status: string; order_type: string; table_number: number; customer_name: string | null; total_price: number; created_at: string }[] {
+  const ago = (minutes: number) => new Date(now - minutes * 60000).toISOString();
+  return [
+    { id: "p1", status: "em preparo", order_type: "mesa", table_number: 4, customer_name: "Ana", total_price: 52.5, created_at: ago(14) },
+    { id: "p2", status: "PENDING_PAYMENT", order_type: "mesa", table_number: 4, customer_name: null, total_price: 18, created_at: ago(1) },
+    { id: "p3", status: "em preparo", order_type: "mesa", table_number: 9, customer_name: "Carlos", total_price: 89.9, created_at: ago(6) },
+    { id: "p4", status: "concluido", order_type: "mesa", table_number: 4, customer_name: "Ana", total_price: 24, created_at: ago(55) },
+  ];
+}

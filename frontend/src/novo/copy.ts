@@ -32,3 +32,35 @@ export const CALL_NOTES = {
   answered: "Toque se precisar de novo.",
   again: "Toque para avisar de novo.",
 } as const;
+
+/** A tela de mesas do painel (novo/Desk.tsx, novo/DeskTable.tsx e painel/deskLogic.ts). */
+export const DESK_TITLE = "Mesas";
+export const DESK_QUIET = "Ninguém chamando agora";
+export const DESK_CALLS_HEADING = "Chamando agora";
+export const DESK_ALL_HEADING = "Todas as mesas";
+export const DESK_ANSWER = "Já atendi";
+export const DESK_SENDING = "Marcando…";
+export const DESK_SCAN = "Ler o QR da mesa";
+export const DESK_TYPE_LABEL = "Ou digite o número da mesa";
+export const DESK_TYPE_HINT = "Ex.: 4";
+export const DESK_OPEN = "Abrir";
+export const DESK_LOADING = "Abrindo as mesas…";
+export const DESK_NO_TABLES = "Ainda não há mesas cadastradas. Cadastre em Mesas, no menu.";
+export const DESK_TABLES_ERROR = "Não consegui abrir a lista de mesas. Confira a internet.";
+export const DESK_RETRY = "Tentar de novo";
+export const DESK_ANSWER_ERROR = "Não deu para marcar como atendida. Confira a internet e toque de novo.";
+export const DESK_TYPE_EMPTY = "Digite o número da mesa.";
+export const DESK_TYPE_UNKNOWN = "Não achei essa mesa no cadastro. Confira o número ou toque na lista.";
+export const DESK_BACK = "Outras mesas";
+export const DESK_NO_CALLS = "Ninguém chamando desta mesa.";
+export const DESK_NO_ORDERS = "Nenhum pedido em andamento nesta mesa.";
+export const DESK_ORDERS_HEADING = "Pedidos em andamento";
+export const DESK_CALLS_OF_TABLE = "Chamados";
+export const DESK_MAKE_ORDER = "Fazer um pedido para esta mesa";
+export const DESK_MAKE_ORDER_NOTE = "Abre o cardápio desta mesa, como o cliente vê, para você pedir por ele.";
+export const DESK_NO_NAME = "Sem nome";
+export const DESK_SCAN_HINT = "Aponte para o QR do cartaz da mesa. A leitura é sozinha.";
+export const DESK_SCAN_CANCEL = "Cancelar";
+export const DESK_AGAIN = "chamou de novo";
+export const DESK_AGAIN_FLAG = "Chamou de novo";
+export const DESK_WORD = { normal: "", late: "Está demorando", urgent: "Urgente" } as const;
