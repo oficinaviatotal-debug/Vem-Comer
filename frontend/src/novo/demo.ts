@@ -8,6 +8,7 @@ import type { KitchenOrder } from "../cozinha/kitchenLogic";
 import { hourOf, todayOf } from "../hoje/todayLogic";
 import { shopViewOf, type ShopView } from "../loja/shopLogic";
 import type { Job, Promo, Today } from "./types";
+import type { Product } from "../customer/types";
 
 /**
  * O cardápio de EXEMPLO: restaurante, categorias e pratos no formato que o servidor manda, passando pela mesma conta
@@ -207,3 +208,44 @@ export function kitchenOrders(now: number): KitchenOrder[] {
     },
   ];
 }
+
+/**
+ * O prato de EXEMPLO das escolhas: um açaí com tamanho (escolha 1, obrigatório) e adicionais (até 3, vários).
+ * Tem o formato que o servidor manda; o preço de cada opção é o que o restaurante cadastra.
+ */
+export const ACAI_PRODUCT: Product = {
+  id: "a1",
+  menu_id: "acai",
+  name: "Açaí no copo",
+  description: "Açaí batido na hora, com banana e granola. Escolha o tamanho e os adicionais que quiser.",
+  price: 14,
+  option_groups: [
+    {
+      id: "g-size",
+      name: "Tamanho",
+      min_choices: 1,
+      max_choices: 1,
+      items: [
+        { id: "o1", name: "300 ml", price_delta: 0 },
+        { id: "o2", name: "500 ml", price_delta: 5 },
+        { id: "o3", name: "700 ml", price_delta: 9 },
+      ],
+    },
+    {
+      id: "g-extra",
+      name: "Adicionais",
+      min_choices: 0,
+      max_choices: 3,
+      items: [
+        { id: "e1", name: "Leite em pó", price_delta: 2 },
+        { id: "e2", name: "Granola extra", price_delta: 2 },
+        { id: "e3", name: "Paçoca", price_delta: 3 },
+        { id: "e4", name: "Leite condensado", price_delta: 3 },
+      ],
+    },
+  ],
+} as Product;
+
+/** O que o servidor anuncia para um CEP de exemplo: entrega no centro, taxa e prazo. */
+export const QUOTE_EXAMPLE = { available: true, zone: "Centro", fee: 6, min_order: 15, eta_minutes: 35 } as const;
+export const QUOTE_NONE_EXAMPLE = { available: false, message: "Ainda não entregamos neste CEP." } as const;

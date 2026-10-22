@@ -122,3 +122,64 @@ test("a cozinha só avança o pedido pelo botão grande: a comanda não é um to
   assert.ok(!/nv-hit/.test(kitchen));
   assert.match(kitchen, /className="nv-btn is-green is-block"/);
 });
+
+test("escolhas e sacola: toda tecla nova tem borda grossa, afunda no toque e tem altura de dedo", () => {
+  for (const selector of [".nv-opt", ".nv-pick"]) {
+    assert.match(block(selector), /box-shadow: var\(--nv-card-3d\)/, selector);
+    assert.match(block(selector), /min-height: [67]\dpx/, selector);
+  }
+  assert.match(block(".nv-opt:active:not(.is-blocked):not(.is-on)"), /transform: translateY\(/);
+  assert.match(block(".nv-pick:active:not(.is-on)"), /transform: translateY\(/);
+  assert.match(block(".nv-btn.is-small"), /min-height: 44px/);
+  assert.match(block(".nv-sheet-foot .nv-btn"), /min-height: 5\dpx/);
+  assert.match(block(".nv-send"), /min-height: 6\dpx/);
+  assert.match(block(".nv-step button:disabled"), /opacity: 0\.4/);
+});
+
+test("a opção marcada afunda e fica verde; a solta sobe", () => {
+  for (const selector of [".nv-opt.is-on", ".nv-pick.is-on"]) {
+    assert.match(block(selector), /box-shadow: inset 0 3px/, selector);
+    assert.match(block(selector), /background: var\(--nv-green-soft\)/, selector);
+  }
+});
+
+test("o que só informa na sacola e nas escolhas fica liso; a comanda é painel de sombra macia", () => {
+  for (const selector of [".nv-rule", ".nv-quote", ".nv-hint", ".nv-slip-detail", ".nv-slip-note"]) {
+    assert.ok(!/box-shadow/.test(block(selector)), `${selector} parece botão sem ser`);
+  }
+  assert.match(block(".nv-slip"), /box-shadow: var\(--nv-panel-3d\)/);
+});
+
+test("campos de escrever da sacola e das escolhas são afundados, com letra de 16 px ou mais (o celular não dá zoom)", () => {
+  const input = block(".nv-text input");
+  assert.match(input, /box-shadow: inset 0 3px/);
+  assert.match(input, /min-height: 5\dpx/);
+  assert.match(input, /font: 500 (1[6-9]|2\d)px/);
+});
+
+test("a folha das escolhas é um diálogo, fecha pelo fundo escurecido e respeita menos movimento", () => {
+  const sheet = read("Choices.tsx");
+  assert.match(sheet, /role="dialog" aria-modal="true" aria-labelledby="nv-sheet-title"/);
+  assert.match(sheet, /event\.target === event\.currentTarget/);
+  assert.match(sheet, /aria-label="Fechar sem adicionar"/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.nv-backdrop,\s*\.nv-sheet \{\s*animation: none;/);
+});
+
+test("cada opção é a linha inteira (botão com papel e estado), e a escolha única é redonda, a de várias é quadrada", () => {
+  const sheet = read("Choices.tsx");
+  assert.match(sheet, /role=\{group\.single \? "radio" : "checkbox"\}/);
+  assert.match(sheet, /aria-checked=\{item\.on\}/);
+  assert.match(sheet, /role=\{group\.single \? "radiogroup" : "group"\}/);
+  assert.match(block(".nv-opt-mark"), /border-radius: 8px/);
+  assert.match(css, /\.nv-opts-list\[role="radiogroup"\] \.nv-opt-mark \{\s*border-radius: 50%/);
+});
+
+test("sacola: o menos de quem está em 1 vira lixeira, o envio espera enquanto envia e o erro é lido em voz alta", () => {
+  const bag = read("Bag.tsx");
+  assert.match(bag, /line\.quantity <= 1 \? <NvIcon name="trash" \/> : "−"/);
+  assert.match(bag, /disabled=\{sending\}/);
+  assert.match(bag, /<p ref=\{errorRef\} className="nv-error" role="alert">/);
+  assert.match(bag, /Enviar pedido/);
+  // Tirar o último é tirar o prato do pedido: o nome do botão diz isso.
+  assert.match(bag, /Tirar \$\{line\.name\} do pedido/);
+});

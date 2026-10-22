@@ -1598,3 +1598,591 @@ button.nv-now-cell:active {
     padding: 1px 6px;
   }
 }
+
+/* ---------- Escolhas do prato: a folha que sobe de baixo ---------- */
+
+/* Cobre a tela inteira. Quem monta cuida de travar a rolagem de trás; aqui só se desenha. */
+.nv-root.nv-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  max-width: none;
+  min-height: 0;
+  margin: 0;
+  background: none;
+}
+
+.nv-backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(10, 34, 24, 0.55);
+  animation: nv-fade 0.18s ease-out;
+}
+
+.nv-sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 480px);
+  max-height: 92vh;
+  max-height: 92dvh;
+  border-radius: var(--nv-r-lg) var(--nv-r-lg) 0 0;
+  background: var(--nv-paper);
+  box-shadow: 0 -18px 34px -12px rgba(10, 34, 24, 0.45);
+  animation: nv-rise 0.22s ease-out;
+}
+
+@keyframes nv-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes nv-rise {
+  from {
+    transform: translateY(36px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-backdrop,
+  .nv-sheet {
+    animation: none;
+  }
+}
+
+.nv-sheet-scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  padding: 18px 16px 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nv-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.nv-sheet-photo {
+  flex: none;
+  width: 68px;
+  font-size: 34px;
+}
+
+.nv-sheet-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-sheet-title h2 {
+  margin: 0;
+  font: 700 22px/1.1 var(--nv-display);
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.nv-sheet-title h2:focus {
+  outline: none;
+}
+
+.nv-sheet-title p {
+  display: -webkit-box;
+  margin: 4px 0 0;
+  overflow: hidden;
+  color: var(--nv-muted);
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.nv-sheet-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--nv-line);
+  background: var(--nv-paper);
+}
+
+.nv-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-sheet-foot .nv-btn {
+  min-height: 56px;
+  padding: 0 12px;
+  font-size: 17px;
+  text-align: center;
+}
+
+.nv-qty {
+  flex: none;
+  width: 124px;
+  margin-top: 0;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+}
+
+.nv-step button:disabled {
+  opacity: 0.4;
+  transform: translateY(2px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-green-edge);
+  cursor: default;
+}
+
+/* ---------- Um conjunto de opções (tamanho, extras...) ---------- */
+
+.nv-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-margin-top: 8px;
+}
+
+.nv-opts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nv-opts-head h3 {
+  margin: 0;
+  font: 700 19px/1.15 var(--nv-display);
+  overflow-wrap: anywhere;
+}
+
+/* Etiqueta que só informa: lisa, sem borda. "Obrigatório" ganha o laranja. */
+.nv-rule {
+  flex: none;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.nv-rule.is-required {
+  background: var(--nv-peach);
+  color: var(--nv-fire-text);
+}
+
+.nv-opts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* A linha inteira é o botão. Solta: sobe, com borda grossa. Marcada: afunda e fica verde. */
+.nv-opt {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 10px 16px 10px 14px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-card-3d);
+  text-align: left;
+}
+
+.nv-opt:active:not(.is-blocked):not(.is-on) {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+.nv-opt.is-on {
+  background: var(--nv-green-soft);
+  box-shadow: inset 0 3px 6px rgba(27, 67, 50, 0.2), inset 0 -2px 0 #fff;
+  transform: translateY(2px);
+}
+
+.nv-opt.is-blocked {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.nv-opt-mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #fff;
+  color: #fff;
+  box-shadow: inset 0 2px 4px rgba(27, 67, 50, 0.22), 0 0 0 2px var(--nv-line);
+}
+
+.nv-opts-list[role="radiogroup"] .nv-opt-mark {
+  border-radius: 50%;
+}
+
+.nv-opt-mark svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+}
+
+.nv-opt.is-on .nv-opt-mark {
+  background: var(--nv-green);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 0 0 2px var(--nv-green-edge);
+}
+
+.nv-opt.is-on .nv-opt-mark svg {
+  opacity: 1;
+}
+
+.nv-opt-name {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.nv-opt-price {
+  color: var(--nv-green);
+  font: 700 16px/1 var(--nv-display);
+  white-space: nowrap;
+}
+
+/* ---------- Campo de escrever (observação, nome, endereço): afundado, o contrário da tecla ---------- */
+
+.nv-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nv-text > span {
+  color: var(--nv-muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.nv-text input {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-peach);
+  box-shadow: inset 0 3px 6px rgba(11, 42, 111, 0.14), inset 0 -2px 0 #fff;
+  color: var(--nv-ink);
+  font: 500 17px/1.2 var(--nv-ui);
+}
+
+.nv-text input::placeholder {
+  color: var(--nv-muted);
+  opacity: 0.8;
+}
+
+.nv-text small {
+  color: var(--nv-muted);
+  font-size: 13px;
+  text-align: right;
+}
+
+/* ---------- Botão pequeno, mas ainda com altura de dedo ---------- */
+
+.nv-btn.is-small {
+  --nv-depth: 3px;
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 15px;
+}
+
+/* ---------- A sacola: comanda, total, como receber, endereço, pagamento ---------- */
+
+.nv-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* A comanda: um painel que informa (sombra macia, sem borda grossa); as teclas dentro dele são as que tocam. */
+.nv-slip {
+  padding: 6px 16px 16px;
+  border-radius: var(--nv-r-lg);
+  background: #fffdf7;
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-slip-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-slip-lines > li {
+  padding: 14px 0;
+}
+
+.nv-slip-lines > li + li {
+  border-top: 2px dashed var(--nv-line);
+}
+
+.nv-slip-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font: 700 18px/1.2 var(--nv-display);
+}
+
+.nv-slip-top > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-slip-top > span:last-child {
+  flex: none;
+}
+
+.nv-slip-detail {
+  margin: 3px 0 0;
+  color: var(--nv-muted);
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.nv-slip-note {
+  margin: 3px 0 0;
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.nv-slip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.nv-slip-actions .nv-step {
+  flex: none;
+  width: 124px;
+  margin-top: 0;
+}
+
+/* "Mudar opções" e "Observação" andam juntos: se não cabem ao lado do mais/menos, descem os dois. */
+.nv-slip-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nv-block > .nv-btn.is-small {
+  align-self: flex-start;
+}
+
+.nv-note-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.nv-note-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.nv-slip-sum {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 2px solid var(--nv-ink);
+}
+
+/* Linha de cardápio com pontinhos: o nome de um lado, o valor do outro. */
+.nv-leader {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: 16px;
+}
+
+.nv-leader i {
+  flex: 1;
+  min-width: 12px;
+  border-bottom: 2px dotted var(--nv-line);
+}
+
+.nv-leader b {
+  font: 700 17px/1 var(--nv-display);
+}
+
+.nv-leader.is-total {
+  font: 700 20px/1.1 var(--nv-display);
+}
+
+.nv-leader.is-total b {
+  color: var(--nv-green);
+  font-size: 26px;
+}
+
+/* Como receber e como pagar: teclas lado a lado; a que vale fica afundada e verde. */
+.nv-picks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nv-picks.is-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.nv-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 72px;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-card-3d);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.nv-pick svg {
+  width: 26px;
+  height: 26px;
+  color: var(--nv-muted);
+}
+
+.nv-pick:active:not(.is-on) {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+.nv-pick.is-on {
+  background: var(--nv-green-soft);
+  box-shadow: inset 0 3px 6px rgba(27, 67, 50, 0.2), inset 0 -2px 0 #fff;
+  transform: translateY(2px);
+}
+
+.nv-pick.is-on svg {
+  color: var(--nv-green);
+}
+
+/* A resposta do servidor sobre o CEP: uma frase que informa, lisa. */
+.nv-quote {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.nv-quote.is-ok {
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+}
+
+.nv-quote.is-wait {
+  background: #fff3cf;
+  color: var(--nv-ink);
+}
+
+.nv-quote.is-no,
+.nv-quote.is-fail {
+  background: var(--nv-alert-soft);
+  color: var(--nv-alert);
+}
+
+.nv-hint {
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.nv-row2 {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  align-items: end;
+  gap: 12px;
+}
+
+.nv-cash {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.nv-cash .nv-text {
+  align-self: stretch;
+}
+
+.nv-send {
+  min-height: 64px;
+  font-size: 19px;
+}
+
+/* Dentro da folha e da sacola o aviso de erro não precisa da folga de baixo: quem manda é o espaço entre as peças. */
+.nv-sheet .nv-error,
+.nv-page-bag .nv-error {
+  margin: 0;
+}
+
+/* Celular bem pequeno (320 px): a folha e a sacola cabem sem rolar de lado. */
+@media (max-width: 340px) {
+  .nv-sheet-foot {
+    gap: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .nv-qty {
+    width: 112px;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+  }
+
+  .nv-sheet-foot .nv-btn {
+    font-size: 15px;
+  }
+
+  .nv-pick {
+    font-size: 14px;
+  }
+}

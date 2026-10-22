@@ -139,14 +139,56 @@ estendido não se mexe sozinho: o cartão é que afunda (se o botão se mexesse,
   querer não é "facilidade", é erro caro.
 - O botão de menu **deixou de aparecer** nas telas que não têm para onde levá-lo (antes aparecia e não fazia nada).
 
-**Ainda sem destino, porque a tela não existe** (aparecem no desenho e avisam quem usa a tela por `onChoose`, `onBag`,
-`onMenu`, `onPromo`): as escolhas do prato (tamanho, extras, observação), a sacola, o acompanhamento do pedido, o menu
-geral e a bolinha de voz. São as próximas da lista, e a facilidade de comprar só se completa quando elas existirem.
+**Ainda sem destino, porque a tela não existe** (aparecem no desenho e avisam quem usa a tela por `onMenu`, `onPromo`): o
+acompanhamento do pedido, o menu geral e a bolinha de voz. As escolhas do prato e a sacola passaram a existir na rodada
+seguinte (abaixo).
 
-**Como foi conferido:** `tests/novo/toque.test.mjs` (14) lê o CSS e as telas e garante a regra (borda grossa só no que toca,
+**Como foi conferido:** `tests/novo/toque.test.mjs` (14 nesta rodada; 21 com a sexta) lê o CSS e as telas e garante a regra (borda grossa só no que toca,
 afundar no toque, toque estendido por cima, nada de botão fantasma). Em 320, 360, 390 e 480 px a conferência mede sem
 rolagem lateral, nenhum botão com menos de 44 px e, ponto a ponto (`elementFromPoint`), que tocar no centro e nos cantos de
 cada cartão cai no botão dele.
+
+## Sexta rodada: escolhas do prato e sacola (22/10/2026)
+
+O GD respondeu "Ok" ao visual em 3D, e eu segui com o que faltava para fechar o caminho de comprar (isso não é o "pode" de
+ir ao ar). Duas telas novas, na mesma linguagem (borda grossa embaixo e afundar no toque = toca; o que só informa fica liso;
+campos de escrever afundados; 44 px ou mais em tudo que se toca):
+
+**Escolhas do prato** (`novo/Choices.tsx`, a folha que sobe de baixo): foto, nome e descrição; cada conjunto do restaurante
+("Tamanho": escolha 1; "Adicionais": até 3) com uma etiqueta lisa que diz a regra (laranja quando é obrigatório); **a linha
+inteira de cada opção é o botão** (60 px): solta, sobe; marcada, afunda e fica verde; escolha única é redonda, a de várias é
+quadrada; quando o limite de extras chega, as outras apagam. Embaixo: observação (contador de 140 letras), mais e menos, e o
+botão grande "Adicionar · R$ 24,00" (ou "Salvar" ao mudar uma linha da sacola). Faltou o tamanho? O aviso em vermelho
+aparece no conjunto e a folha rola até ele. Fecha pelo X, pelo fundo escurecido e pelo Esc; a tela de trás não rola; o Tab
+não sai da folha; o foco volta para onde estava.
+
+**Sacola** (`novo/Bag.tsx`): a comanda (cada prato com o que a pessoa escolheu, mais, menos, "Mudar opções" e "Observação"),
+o total com pontinhos de cardápio e, na entrega, a taxa do CEP. O **menos de quem está em 1 vira lixeira** (tirar o último
+prato é tirar o prato do pedido, e o nome do botão diz isso). Depois: como receber (só quando o restaurante oferece mais de
+um jeito), o nome (obrigatório na entrega), o endereço de entrega (CEP com a resposta do servidor em uma frase: região, taxa,
+prazo, ou por que não entrega; rua, número, complemento, bairro, referência, telefone com DDD; "Esquecer meu endereço neste
+aparelho"), como pagar (Pix só se o restaurante cadastrou a chave; no dinheiro, "vou pagar com" e "Tenho o valor certinho") e
+o botão grande "Enviar pedido · R$ 73,00" fixo embaixo. O aviso de erro vem em frase inteira, em voz alta para quem usa
+leitor de tela, e a tela o traz para a vista.
+
+**De onde vem cada número (nada inventado):** a conta é toda das regras antigas, que já eram testadas
+(`customer/options.ts`, `cart.ts`, `delivery.ts`, `payment.ts`, `labels.ts`), agora em dois arquivos de conta pura:
+`loja/choicesLogic.ts` (18 testes) e `loja/bagLogic.ts` (23 testes). O preço de cada prato, a taxa, o pedido mínimo e a
+região são do servidor; a tela só **mostra** o que ele anunciou e diz em palavras o que falta. O que vai ao servidor é a
+carga pronta (`orderPayloadOf`): códigos e quantidades, **nunca preço**.
+
+**Ligação ao servidor** (ainda fora do aplicativo público): `loja/useShop.ts` (busca restaurante, cardápio, mesa, entrega e
+Pix; mantém a sacola; repete o que o servidor diz a cada minuto e ao voltar para a tela; prato que acaba sai da sacola e a
+tela avisa uma vez), `ShopScreen.tsx` (cardápio, agora só desenha), `ChoicesScreen.tsx` (a folha como diálogo),
+`BagScreen.tsx` (nome, endereço, telefone, pagamento; taxa do CEP; **envia uma vez só**: dois toques seguidos mandam um
+pedido; confere antes; só guarda nome, endereço e pedido neste aparelho depois que o servidor aceitou) e `OrderFlow.tsx`
+(cardápio → escolhas → sacola → enviado). **Ainda sem destino:** o acompanhamento do pedido e o código Pix depois de enviar;
+por enquanto o fluxo termina em "Pedido enviado ao restaurante." e avisa quem o monta por `onSent`. Esse é o próximo passo.
+
+**Como foi conferido:** 41 testes de conta (18 + 23), `tests/novo/toque.test.mjs` (regras do desenho, 21 testes) e
+`tests/novo/fluxo.test.mjs` (9 testes: ordem do envio, nada de preço, nada importado do antigo, folha como diálogo). Em 320,
+360, 390 e 480 px: sem rolagem lateral, nenhum botão com menos de 44 px e o toque cai onde deve. Para ver:
+`preview-novo.html#/escolhas`, `#/escolhas-erro`, `#/sacola` e `#/entrega` (tudo funciona na página, com dados de exemplo).
 
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
@@ -154,7 +196,8 @@ cada cartão cai no botão dele.
   Um teste (`tests/novo`) garante que o visual novo não depende do antigo e que só a página de conferência usa dados
   de exemplo.
 - Para ver: `cd frontend && npx vite build --config vite.preview-novo.config.ts --outDir /tmp/novo` e abrir
-  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha` ou `#/vagas` (a pasta pública vai junto, por causa das fontes).
+  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola` ou `#/entrega`
+  (a pasta pública vai junto, por causa das fontes).
 - Cada tela ganha um PR próprio: ligada aos dados de verdade (por props), com teste, e a tela antiga correspondente
   sai no mesmo PR. **Nada disso vira o que o público vê sem o "pode" do GD.**
 

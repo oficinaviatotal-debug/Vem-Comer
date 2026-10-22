@@ -104,3 +104,95 @@ export type Job = {
 };
 
 export type Tab = { id: string; label: string; count: number };
+
+/** Uma opção dentro de um grupo ("300 ml", "Bacon"). `blocked`: o grupo já está cheio e esta opção não está marcada. */
+export type ChoiceItem = { id: string; name: string; priceText: string; on: boolean; blocked: boolean };
+
+export type ChoiceGroup = {
+  id: string;
+  name: string;
+  /** A regra em poucas palavras ("Escolha 1", "Opcional, até 5"). */
+  rule: string;
+  required: boolean;
+  /** Escolha única: tocar numa opção troca a anterior. Senão, liga e desliga até o máximo. */
+  single: boolean;
+  items: ChoiceItem[];
+  /** O que falta neste grupo, só depois de a pessoa tentar confirmar. */
+  problem: string | null;
+  emptyText?: string;
+};
+
+/** A folha de escolhas de um prato: o que escolher, a observação, a quantidade e o total. */
+export type Choices = {
+  title: string;
+  description?: string;
+  photo?: string;
+  /** Só a página de conferência usa (um emoji no lugar da foto). */
+  art?: string;
+  groups: ChoiceGroup[];
+  note: { value: string; count: number; max: number; problem: string | null };
+  quantity: number;
+  canLess: boolean;
+  canMore: boolean;
+  total: number;
+  /** "Adicionar" ou, ao mudar uma linha que já está na sacola, "Salvar". */
+  confirmLabel: string;
+};
+
+/** Uma opção de um conjunto em que só uma vale (como receber, como pagar). */
+export type Option = { id: string; label: string; on: boolean };
+
+/** Uma linha da comanda: o prato, o que o cliente escolheu nele, a observação, a quantidade e o total da linha. */
+export type BagLine = {
+  key: string;
+  name: string;
+  /** "Grande, Bacon": o que o cliente escolheu no prato. */
+  detail?: string;
+  note?: string;
+  quantity: number;
+  total: number;
+  /** Tem escolhas e o prato ainda está no cardápio: "Mudar opções" aparece. */
+  canEdit: boolean;
+};
+
+/** A resposta do servidor sobre o CEP, em uma frase. `fail`: a resposta não chegou (sem internet). */
+export type QuoteLine = { text: string; tone: "ok" | "no" | "wait" | "fail" };
+
+/** O endereço de entrega, já com máscara de CEP e de telefone. */
+export type BagDelivery = {
+  cep: string;
+  quote: QuoteLine | null;
+  /** Antes de o CEP ter 8 números: o que fazer. */
+  hint?: string;
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  reference: string;
+  phone: string;
+  /** O endereço da tela veio da memória deste aparelho: aparece "Esquecer meu endereço". */
+  remembered: boolean;
+};
+
+/** A sacola de verdade: a comanda com o total, como receber, o nome, o endereço, o pagamento. */
+export type Bag = {
+  /** "Mesa 4", "Entrega", "Retirada" ou "Pedido". */
+  where: string;
+  lines: BagLine[];
+  emptyText: string;
+  subtotal: number;
+  /** A taxa que o servidor anunciou para o CEP; null: sem taxa para mostrar. */
+  fee: number | null;
+  total: number;
+  notices: string[];
+  /** Só tem itens quando o restaurante oferece mais de uma forma de receber. */
+  modes: Option[];
+  pausedNote: string | null;
+  nameLabel: string;
+  name: string;
+  delivery: BagDelivery | null;
+  payments: Option[];
+  /** Só no dinheiro: com quanto a pessoa vai pagar, e o valor certinho para o botão "Tenho o valor certinho". */
+  cash: { value: string; exact: string } | null;
+  paymentNote: string;
+};
