@@ -2,15 +2,42 @@ import { useState } from "react";
 import NvIcon from "./Icons";
 import { Photo, TopBar, VoiceOrb } from "./parts";
 import { money } from "./format";
-import type { Cart, Category, Dish, Promo, Shop } from "./types";
+import type { Cart, Category, Dish, DishGroup, Fact, Promo, Shop } from "./types";
 
 type Props = {
   shop: Shop;
+  /** Informações em pílula embaixo do nome ("Aberto até 23h"). Só entra o que o servidor sabe. */
+  facts?: Fact[];
+  /** Avisos acima do cardápio (restaurante fechado, em pausa, prato que saiu do pedido). */
+  notices?: string[];
+  /** Mostra o campo de busca (só vale a pena quando o cardápio é longo). */
+  showSearch?: boolean;
+  query?: string;
+  onQuery?: (query: string) => void;
   categories: Category[];
-  promo: Promo | null;
-  dishes: Dish[];
+  /** Promoções: o servidor ainda não tem esse dado, então com dados de verdade vem null e a seção some. */
+  promo?: Promo | null;
+  groups: DishGroup[];
+  /** O que escrever quando não há prato para mostrar. */
+  emptyText?: string;
   cart: Cart;
+  onAdd?: (id: string) => void;
+  onLess?: (id: string) => void;
+  onChoose?: (id: string) => void;
+  onBag?: () => void;
+  onMenu?: () => void;
+  /** Endereço do Vem Trabalhar para o balãozinho. Sem endereço configurado, o balão não aparece. */
+  jobsHref?: string | null;
+  /** Só a conferência mostra o botão de menu sem ele levar a lugar nenhum. */
+  showMenu?: boolean;
 };
+
+function scrollToGroup(key: string) {
+  const target = document.getElementById(`nv-cat-${key}`);
+  if (!target) return;
+  const calm = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  target.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "start" });
+}
 
 /**
  * O cardápio que o cliente vê ao tocar no link do restaurante. É a casa do restaurante, não um catálogo: o nome e a
@@ -18,39 +45,85 @@ type Props = {
  * Pedir é com o dedo ou com a bolinha de voz. O balãozinho do Vem Trabalhar é pequeno, fecha com um toque e fica
  * longe do botão de pedir.
  */
-export default function ShopMenu({ shop, categories, promo, dishes, cart }: Props) {
+export default function ShopMenu({
+  shop,
+  facts = [],
+  notices = [],
+  showSearch = false,
+  query = "",
+  onQuery,
+  categories,
+  promo = null,
+  groups,
+  emptyText,
+  cart,
+  onAdd,
+  onLess,
+  onChoose,
+  onBag,
+  onMenu,
+  jobsHref = null,
+  showMenu = false,
+}: Props) {
   const [crossOpen, setCrossOpen] = useState(true);
+  const [activeCat, setActiveCat] = useState<string | null>(null);
+  const cross = Boolean(jobsHref) && crossOpen;
 
   return (
     <div className="nv-root">
-      <main className="nv-screen" style={crossOpen ? { paddingBottom: 188 } : undefined}>
-        <TopBar mark={shop.mark} title={shop.name} sub={shop.city} />
+      <main className="nv-screen" style={cross ? { paddingBottom: 188 } : undefined}>
+        <TopBar mark={shop.mark} logo={shop.logo} title={shop.name} sub={shop.sub} onMenu={onMenu} showMenu={showMenu} />
 
-        <div className="nv-facts" aria-label="Informações do restaurante">
-          <span className="nv-fact is-open">
-            <NvIcon name="clock" /> Aberto até {shop.openUntil}
-          </span>
-          <span className="nv-fact">
-            <NvIcon name="bike" /> {shop.eta}
-          </span>
-          <span className="nv-fact">Taxa {money(shop.fee).replace(",00", "")}</span>
-        </div>
-
-        <label className="nv-search">
-          <NvIcon name="search" />
-          <span>Buscar no cardápio</span>
-        </label>
-
-        <nav className="nv-cats" aria-label="Categorias">
-          {categories.map((cat) => (
-            <button key={cat.id} type="button" className={`nv-cat${cat.on ? " is-on" : ""}`}>
-              <span className="nv-cat-tile" aria-hidden="true">
-                {cat.art}
+        {facts.length > 0 ? (
+          <div className="nv-facts" aria-label="Informações do restaurante">
+            {facts.map((fact) => (
+              <span key={fact.text} className={`nv-fact ${fact.tone === "open" ? "is-open" : "is-closed"}`}>
+                <NvIcon name="clock" /> {fact.text}
               </span>
-              {cat.label}
-            </button>
-          ))}
-        </nav>
+            ))}
+          </div>
+        ) : null}
+
+        {notices.map((text) => (
+          <p key={text} className="nv-notice" role="status">
+            {text}
+          </p>
+        ))}
+
+        {showSearch ? (
+          <label className="nv-search">
+            <NvIcon name="search" />
+            <input
+              type="search"
+              className="nv-search-input"
+              placeholder="Buscar no cardápio"
+              aria-label="Buscar no cardápio"
+              value={query}
+              onChange={(event) => onQuery?.(event.target.value)}
+            />
+          </label>
+        ) : null}
+
+        {categories.length > 0 ? (
+          <nav className="nv-cats" aria-label="Categorias">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                className={`nv-cat${cat.on || activeCat === cat.id ? " is-on" : ""}`}
+                onClick={() => {
+                  setActiveCat(cat.id);
+                  scrollToGroup(cat.id);
+                }}
+              >
+                <span className="nv-cat-tile" aria-hidden="true">
+                  {cat.photo ? <img src={cat.photo} alt="" loading="lazy" /> : (cat.art ?? <NvIcon name="fork" />)}
+                </span>
+                {cat.label}
+              </button>
+            ))}
+          </nav>
+        ) : null}
 
         {promo ? (
           <section aria-labelledby="nv-promo-h">
@@ -78,34 +151,36 @@ export default function ShopMenu({ shop, categories, promo, dishes, cart }: Prop
           </section>
         ) : null}
 
-        <section aria-labelledby="nv-top-h">
-          <div className="nv-h2-row">
-            <h2 className="nv-h2" id="nv-top-h">
-              Mais pedidos
-            </h2>
-          </div>
-          <div className="nv-grid" style={{ marginTop: 14 }}>
-            {dishes.map((dish) => (
-              <div key={dish.id} className="nv-dish">
-                <div style={{ position: "relative" }}>
-                  <Photo src={dish.photo} art={dish.art} alt={dish.name} />
-                  <button type="button" className="nv-add" aria-label={`Colocar ${dish.name} na sacola`}>
-                    <NvIcon name="plus" />
-                  </button>
+        {groups.length === 0 && emptyText ? <p className="nv-empty">{emptyText}</p> : null}
+
+        {groups.map((group) => (
+          <section key={group.key} id={`nv-cat-${group.key}`} className="nv-group" aria-labelledby={`nv-h-${group.key}`}>
+            <div className="nv-h2-row">
+              <h2 className="nv-h2" id={`nv-h-${group.key}`}>
+                {group.title}
+              </h2>
+            </div>
+            {group.sections.map((section) => (
+              <div key={section.title || "_"} className="nv-section">
+                {section.title ? <h3 className="nv-h3">{section.title}</h3> : null}
+                <div className="nv-grid">
+                  {section.dishes.map((dish) => (
+                    <DishTile key={dish.id} dish={dish} onAdd={onAdd} onLess={onLess} onChoose={onChoose} />
+                  ))}
                 </div>
-                <span className="nv-dish-name">{dish.name}</span>
-                <span className="nv-dish-price">{money(dish.price)}</span>
               </div>
             ))}
-          </div>
-        </section>
+          </section>
+        ))}
       </main>
 
-      {crossOpen ? (
+      {cross ? (
         <div className="nv-cross">
           <span className="nv-cross-bubble">
             <NvIcon name="briefcase" />
-            Precisa de trabalho? Toque aqui
+            <a className="nv-cross-link" href={jobsHref ?? undefined}>
+              Precisa de trabalho? Toque aqui
+            </a>
             <button type="button" className="nv-cross-close" aria-label="Fechar o aviso" onClick={() => setCrossOpen(false)}>
               <NvIcon name="close" />
             </button>
@@ -114,15 +189,66 @@ export default function ShopMenu({ shop, categories, promo, dishes, cart }: Prop
       ) : null}
 
       <div className="nv-dock">
-        <button type="button" className="nv-bag">
+        <button type="button" className="nv-bag" onClick={onBag} disabled={cart.items === 0}>
           <span>
-            Ver sacola
+            {cart.items === 0 ? "Sacola vazia" : "Ver sacola"}
             <small>{cart.items === 1 ? "1 item" : `${cart.items} itens`}</small>
           </span>
           <strong>{money(cart.total)}</strong>
         </button>
         <VoiceOrb label="Falar o pedido" />
       </div>
+    </div>
+  );
+}
+
+/** Um prato: foto grande, nome, o que é, preço e o botão do que o toque faz. */
+function DishTile({
+  dish,
+  onAdd,
+  onLess,
+  onChoose,
+}: {
+  dish: Dish;
+  onAdd?: (id: string) => void;
+  onLess?: (id: string) => void;
+  onChoose?: (id: string) => void;
+}) {
+  const stepper = dish.action === "add" && dish.quantity > 0;
+  return (
+    <div className={`nv-dish${dish.action === "none" ? " is-off" : ""}`}>
+      <div style={{ position: "relative" }}>
+        <Photo src={dish.photo} art={dish.art} alt={dish.name} />
+        {dish.action === "add" && !stepper ? (
+          <button type="button" className="nv-add" aria-label={`Colocar ${dish.name} na sacola`} onClick={() => onAdd?.(dish.id)}>
+            <NvIcon name="plus" />
+          </button>
+        ) : null}
+        {dish.action === "choose" ? (
+          <button type="button" className="nv-add" aria-label={`Escolher opções de ${dish.name}`} onClick={() => onChoose?.(dish.id)}>
+            <NvIcon name="plus" />
+          </button>
+        ) : null}
+        {dish.action === "none" && dish.stateText ? <span className="nv-dish-state">{dish.stateText}</span> : null}
+      </div>
+      <span className="nv-dish-name">{dish.name}</span>
+      {dish.description ? <span className="nv-dish-desc">{dish.description}</span> : null}
+      <span className="nv-dish-price">
+        {dish.priceFrom ? <small>a partir de </small> : null}
+        {money(dish.price)}
+      </span>
+      {stepper ? (
+        <span className="nv-step">
+          <button type="button" aria-label={`Tirar um ${dish.name}`} onClick={() => onLess?.(dish.id)}>
+            −
+          </button>
+          <b aria-live="polite">{dish.quantity}</b>
+          <button type="button" aria-label={`Colocar mais um ${dish.name}`} onClick={() => onAdd?.(dish.id)}>
+            +
+          </button>
+        </span>
+      ) : null}
+      {dish.action === "choose" && dish.quantity > 0 ? <span className="nv-inorder">{dish.quantity} na sacola</span> : null}
     </div>
   );
 }

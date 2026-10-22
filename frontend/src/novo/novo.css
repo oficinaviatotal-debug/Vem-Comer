@@ -1113,6 +1113,165 @@
   background: var(--nv-brand-comer);
 }
 
+/* ---------- Cardápio do cliente com dados de verdade ---------- */
+
+.nv-mark-img {
+  background: var(--nv-paper);
+  object-fit: cover;
+}
+
+.nv-fact.is-closed {
+  background: var(--nv-alert-soft);
+  color: var(--nv-alert);
+}
+
+.nv-fact.is-closed svg {
+  color: var(--nv-alert);
+}
+
+.nv-notice {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: #fff3cf;
+  color: var(--nv-ink);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.nv-search-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  border: 0;
+  background: none;
+  color: var(--nv-ink);
+  font: 500 17px/1 var(--nv-ui);
+}
+
+.nv-search-input::placeholder {
+  color: var(--nv-muted);
+}
+
+.nv-search-input:focus {
+  outline: none;
+}
+
+.nv-search:focus-within {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 2px;
+}
+
+.nv-cat-tile img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.nv-cat-tile {
+  overflow: hidden;
+}
+
+.nv-group {
+  scroll-margin-top: 12px;
+}
+
+.nv-section {
+  margin-top: 14px;
+}
+
+.nv-h3 {
+  margin: 0 0 10px;
+  color: var(--nv-muted);
+  font: 700 15px/1.2 var(--nv-ui);
+}
+
+.nv-photo-empty svg {
+  width: 38px;
+  height: 38px;
+  color: rgba(27, 67, 50, 0.28);
+}
+
+.nv-dish.is-off .nv-photo {
+  opacity: 0.55;
+  filter: grayscale(0.7);
+}
+
+.nv-dish-state {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  padding: 6px 4px;
+  border-radius: 999px;
+  background: rgba(27, 67, 50, 0.88);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.nv-dish-desc {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--nv-muted);
+  font-size: 12.5px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.nv-dish-price small {
+  color: var(--nv-muted);
+  font: 600 11.5px/1 var(--nv-ui);
+}
+
+.nv-step {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  text-align: center;
+}
+
+.nv-step button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--nv-green);
+  color: #fff;
+  font: 700 24px/1 var(--nv-display);
+}
+
+.nv-step b {
+  font: 700 17px/1 var(--nv-display);
+}
+
+.nv-inorder {
+  color: var(--nv-green);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.nv-cross-link {
+  color: #fff;
+  text-decoration: none;
+}
+
+.nv-bag:disabled {
+  opacity: 0.65;
+}
+
 /* Aviso de erro e etapa vazia: dizem o que fazer, em frase inteira. */
 .nv-error {
   margin: 0 0 14px;

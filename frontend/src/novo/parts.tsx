@@ -6,7 +6,15 @@ import NvIcon from "./Icons";
 export function Photo({ src, art, alt }: { src?: string; art?: string; alt: string }) {
   return (
     <span className="nv-photo">
-      {src ? <img src={src} alt={alt} loading="lazy" /> : <span aria-hidden="true">{art}</span>}
+      {src ? (
+        <img src={src} alt={alt} loading="lazy" />
+      ) : art ? (
+        <span aria-hidden="true">{art}</span>
+      ) : (
+        <span className="nv-photo-empty" aria-hidden="true">
+          <NvIcon name="fork" />
+        </span>
+      )}
     </span>
   );
 }
@@ -20,10 +28,30 @@ export function VoiceOrb({ label = "Falar" }: { label?: string }) {
   );
 }
 
-export function TopBar({ mark, title, sub }: { mark?: string; title: string; sub?: string }) {
+/**
+ * O topo de toda tela. `logo` é a logomarca de verdade do restaurante; `mark` é um emoji (só na conferência).
+ * O botão de menu só aparece quando a tela tem para onde levar (`onMenu`) ou na conferência (`showMenu`).
+ */
+export function TopBar({
+  mark,
+  logo,
+  title,
+  sub,
+  onMenu,
+  showMenu = true,
+}: {
+  mark?: string;
+  logo?: string;
+  title: string;
+  sub?: string;
+  onMenu?: () => void;
+  showMenu?: boolean;
+}) {
   return (
     <header className="nv-top">
-      {mark ? (
+      {logo ? (
+        <img className="nv-mark nv-mark-img" src={logo} alt="" width={52} height={52} />
+      ) : mark ? (
         <span className="nv-mark" aria-hidden="true">
           {mark}
         </span>
@@ -32,9 +60,11 @@ export function TopBar({ mark, title, sub }: { mark?: string; title: string; sub
         <h1 className="nv-name">{title}</h1>
         {sub ? <p className="nv-sub">{sub}</p> : null}
       </div>
-      <button type="button" className="nv-icon-btn" aria-label="Abrir o menu">
-        <NvIcon name="menu" />
-      </button>
+      {showMenu || onMenu ? (
+        <button type="button" className="nv-icon-btn" aria-label="Abrir o menu" onClick={onMenu}>
+          <NvIcon name="menu" />
+        </button>
+      ) : null}
     </header>
   );
 }

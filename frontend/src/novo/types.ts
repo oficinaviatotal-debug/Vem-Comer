@@ -1,12 +1,40 @@
 /** Formas dos dados que as telas novas recebem por props. Quem liga ao servidor monta estes objetos. */
 
-export type Dish = { id: string; name: string; price: number; photo?: string; art?: string };
+/** O que o botão do prato faz: `add` põe um na sacola com um toque; `choose` abre as escolhas (tamanho, extras); `none` não faz nada. */
+export type DishAction = "add" | "choose" | "none";
 
-export type Category = { id: string; label: string; art: string; on?: boolean };
+export type Dish = {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  /** O preço muda conforme as escolhas (tamanho, extras): a tela escreve "a partir de". */
+  priceFrom?: boolean;
+  photo?: string;
+  /** Só a página de conferência usa (um emoji no lugar da foto). Com dados de verdade vem vazio. */
+  art?: string;
+  action: DishAction;
+  /** Com `action: "none"`: a frase do porquê ("Esgotado", "Sem pedidos agora", "Indisponível agora"). */
+  stateText?: string;
+  /** Quantos já estão na sacola, somando todas as linhas do prato. */
+  quantity: number;
+};
+
+/** Dentro da categoria, um subtítulo ("Tradicionais" em "Pizzas"). Sem subtítulo, `title` é vazio. */
+export type DishSection = { title: string; dishes: Dish[] };
+
+export type DishGroup = { key: string; title: string; sections: DishSection[] };
+
+/** `photo` é a foto do primeiro prato da categoria; sem foto, a tela mostra `art` (só na conferência) ou um garfo. */
+export type Category = { id: string; label: string; photo?: string; art?: string; on?: boolean };
 
 export type Promo = { title: string; price: number; note: string; art: string };
 
-export type Shop = { name: string; mark: string; city: string; openUntil: string; eta: string; fee: number };
+/** A casa do restaurante: `logo` é a logomarca de verdade; `mark` é um emoji só da conferência. */
+export type Shop = { name: string; logo?: string; mark?: string; sub?: string };
+
+/** Uma informação em pílula ("Aberto até 23h"): verde quando está aberto, vermelha quando está fechado. */
+export type Fact = { text: string; tone: "open" | "closed" };
 
 export type Cart = { items: number; total: number };
 

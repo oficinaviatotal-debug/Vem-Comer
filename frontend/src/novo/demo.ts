@@ -6,37 +6,92 @@
 
 import type { KitchenOrder } from "../cozinha/kitchenLogic";
 import { hourOf, todayOf } from "../hoje/todayLogic";
-import type { Cart, Category, Dish, Job, Promo, Shop, Today } from "./types";
+import { shopViewOf, type ShopView } from "../loja/shopLogic";
+import type { Job, Promo, Today } from "./types";
 
-export const SHOP: Shop = {
-  name: "Açaí do João",
-  mark: "🍇",
-  city: "Natal - RN",
-  openUntil: "23h",
-  eta: "30–40 min",
-  fee: 5,
+/**
+ * O cardápio de EXEMPLO: restaurante, categorias e pratos no formato que o servidor manda, passando pela mesma conta
+ * que a tela de verdade usa (loja/shopLogic). Só os emojis (no lugar da foto do prato) e o card de promoção são
+ * enfeite da conferência: o servidor ainda não tem promoção, e com dados de verdade essa seção não aparece.
+ */
+const ART: Record<string, string> = {
+  a1: "🍇",
+  a2: "🍧",
+  a3: "🥣",
+  l1: "🍔",
+  l2: "🥟",
+  b1: "🥤",
+  b2: "🧃",
+  s1: "🍨",
+  s2: "🍰",
 };
-
-export const CATEGORIES: Category[] = [
-  { id: "promo", label: "Promoções", art: "🔥", on: true },
-  { id: "acai", label: "Açaí", art: "🍇" },
-  { id: "lanches", label: "Lanches", art: "🍔" },
-  { id: "bebidas", label: "Bebidas", art: "🥤" },
-  { id: "doces", label: "Sobremesas", art: "🍨" },
-];
+const CATEGORY_ART: Record<string, string> = { acai: "🍇", lanches: "🍔", bebidas: "🥤", doces: "🍨" };
 
 export const PROMO: Promo = { title: "Combo Especial", price: 29.9, note: "Açaí 500 ml e um suco de caju", art: "🍇" };
 
-export const DISHES: Dish[] = [
-  { id: "d1", name: "Açaí 300 ml", price: 14, art: "🍇" },
-  { id: "d2", name: "Açaí 500 ml", price: 19, art: "🍧" },
-  { id: "d3", name: "X-Burguer", price: 18, art: "🍔" },
-  { id: "d4", name: "Suco de caju", price: 7, art: "🥤" },
-  { id: "d5", name: "Pastel de queijo", price: 9, art: "🥟" },
-  { id: "d6", name: "Sorvete 2 bolas", price: 10, art: "🍨" },
-];
-
-export const CART: Cart = { items: 2, total: 33 };
+export function shopExample(): ShopView {
+  const sizes = [
+    {
+      id: "g-size",
+      name: "Tamanho",
+      min_choices: 1,
+      max_choices: 1,
+      items: [
+        { id: "o1", name: "300 ml", price_delta: 0 },
+        { id: "o2", name: "500 ml", price_delta: 5 },
+      ],
+    },
+  ];
+  const product = (id: string, menu_id: string, name: string, price: number, extra: Record<string, unknown> = {}) => ({
+    id,
+    menu_id,
+    name,
+    price,
+    ...extra,
+  });
+  const view = shopViewOf({
+    company: {
+      name: "Açaí do João",
+      logo_thumb_url: null,
+      accepting_orders: true,
+      hours: { configured: true, open_now: true, message: "Aberto até 23h.", paused: false },
+    },
+    fromTable: false,
+    tableNumber: null,
+    menus: [
+      { id: "acai", name: "Açaí" },
+      { id: "lanches", name: "Lanches" },
+      { id: "bebidas", name: "Bebidas" },
+      { id: "doces", name: "Sobremesas" },
+    ],
+    products: [
+      product("a1", "acai", "Açaí no copo", 14, { description: "Com banana e granola", option_groups: sizes }),
+      product("a2", "acai", "Açaí 500 ml", 19, { description: "Granola, banana e leite em pó" }),
+      product("a3", "acai", "Tigela de açaí", 24, { description: "Frutas da época" }),
+      product("l1", "lanches", "X-Burguer", 18, { description: "Pão, carne de 150 g e queijo" }),
+      product("l2", "lanches", "Pastel de queijo", 9),
+      product("b1", "bebidas", "Suco de caju", 7, { description: "Natural, sem açúcar" }),
+      product("b2", "bebidas", "Suco de acerola", 7, { sold_out: true }),
+      product("s1", "doces", "Sorvete 2 bolas", 10),
+      product("s2", "doces", "Bolo de pote", 12),
+    ] as never,
+    cart: [{ id: "a2", name: "Açaí 500 ml", price: 19, quantity: 2 }],
+    query: "",
+    media: () => "",
+  });
+  return {
+    ...view,
+    shop: { ...view.shop, mark: "🍇" },
+    categories: view.categories.map((cat) => ({ ...cat, art: CATEGORY_ART[cat.id] })),
+    groups: view.groups.map((group) => ({
+      ...group,
+      sections: group.sections.map((section) => ({
+        ...section,
+        dishes: section.dishes.map((dish) => ({ ...dish, art: ART[dish.id] })),
+      })),
+    })),
+  };
+}
 
 /**
  * O "Hoje" de EXEMPLO: pedidos, mesa chamando e vendas no formato que o servidor manda, passando pela mesma conta

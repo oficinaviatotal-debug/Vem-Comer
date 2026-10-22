@@ -74,3 +74,11 @@ test("nenhuma tela do visual novo escreve texto de interface que o dono não ent
     assert.ok(!banned.test(read(name)), `${name} tem palavra de jargão`);
   }
 });
+
+test("os botões de mais e menos do prato têm 44 px, e o campo de busca tem altura de dedo", () => {
+  const css = read("novo.css");
+  const step = css.match(/\.nv-step button \{[^}]*\}/)[0];
+  assert.match(step, /width: 44px/);
+  assert.match(step, /height: 44px/);
+  assert.match(css.match(/\.nv-search-input \{[^}]*\}/)[0], /min-height: 5\dpx/);
+});

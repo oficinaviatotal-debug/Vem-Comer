@@ -35,8 +35,9 @@ Regra: a lógica antiga só é reaproveitada se tiver teste. O que não tem test
 
 ## Telas da primeira rodada (só desenhadas, com dados de exemplo)
 
-1. **Cardápio do cliente** (o link do restaurante): marca do restaurante, aberto até, tempo e taxa, busca, categorias,
-   promoção, pratos em 3 por linha com foto grande, sacola, bolinha de voz e o balãozinho do Vem Trabalhar.
+1. **Cardápio do cliente** (o link do restaurante): marca do restaurante, aberto até, busca, categorias, pratos em 3 por
+   linha com foto grande, sacola, bolinha de voz e o balãozinho do Vem Trabalhar. (O desenho também tinha tempo de
+   entrega, taxa, cidade e promoção; o servidor não tem esses dados no cardápio e a tela de verdade não os mostra.)
 2. **Hoje do dono:** o que está esperando (número grande), o que fazer agora (mesa chamando, Pix a conferir), vendas
    do dia com as horas, e quatro atalhos.
 3. **Cozinha:** uma comanda por pedido, a mais antiga primeiro, fita que muda de cor pelo tempo, observação do cliente
@@ -80,6 +81,29 @@ dia (as contas do servidor, `backend/insights.py`). Nada é estimado; onde o ser
 - Não faz ainda: o apito de mesa chamando e de pedido novo no Hoje (a cozinha nova já apita); isso continua na barra de
   chamadas do painel antigo até a casca nova entrar.
 - Só para dono e gerente. Cozinha, caixa e garçom terão a própria tela inicial (itens 1, 5 e 6 da ordem abaixo).
+
+## Quarta rodada: o cardápio do cliente ligado aos dados (22/10/2026)
+
+A vitrine que o cliente vê ao tocar no link do restaurante ou ler o QR da mesa. Repete o que o servidor diz, com as
+regras da tela antiga (`customer/menuGroups.ts`, `options.ts`, `openness.ts`, `cart.ts`).
+
+- `frontend/src/loja/shopLogic.ts`: a conta, sem tela. Categorias na ordem do restaurante e pratos dentro delas
+  (com os subtítulos), "a partir de" quando tamanho ou extras mudam o preço, Esgotado, Indisponível agora, "Sem pedidos
+  agora" quando o restaurante está em pausa, sem receber pedido ou fora do horário (quem está na mesa nunca vê "fechado
+  pelo horário"), a pílula "Aberto até 23h", busca sem acento (só em cardápio de 8 pratos ou mais), azulejos de categoria
+  com a foto do primeiro prato que tem foto, sacola em centavos exatos.
+- `frontend/src/loja/ShopScreen.tsx`: busca restaurante, categorias e pratos; pergunta de novo a cada minuto se o
+  restaurante abriu, fechou ou pausou; o prato que acaba sai da sacola e a tela avisa uma vez. Falha não apaga a tela.
+- `frontend/src/novo/ShopMenu.tsx`: agora recebe pratos agrupados, aviso, busca de verdade, sacola e os toques.
+- Testes: `tests/novo/shopLogic.test.mjs` (17).
+- **O que o desenho tinha e o servidor não tem, e por isso a tela de verdade não mostra:** promoção ("Promoções da
+  semana"), cidade, taxa e tempo de entrega no topo (a taxa depende do endereço) e "Mais pedidos" (o servidor não manda
+  popularidade; os pratos vêm por categoria). Se o GD quiser promoção, é um recurso novo (servidor, painel do dono e
+  tela), e fica para ele decidir.
+- **O que falta para o cliente conseguir pedir:** a tela das escolhas (tamanho, extras, observação), a sacola (mudar
+  quantidade, nome, pagamento em Pix, entrega ou retirada), o acompanhamento do pedido e a tela da mesa. "Escolher" e
+  "Ver sacola" já avisam quem usa a tela (`onChoose`, `onBag`); a tela antiga continua sendo a que vai ao ar.
+- A bolinha de voz continua sendo desenho (a busca por voz da tela antiga ainda não foi refeita).
 
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
