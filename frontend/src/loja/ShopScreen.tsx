@@ -3,6 +3,7 @@ import ShopMenu from "../novo/ShopMenu";
 import { TopBar } from "../novo/parts";
 import { addToCart, decrementItem } from "../customer/cart";
 import type { Product } from "../customer/types";
+import { safeJobsUrl } from "../mesa/callsLogic";
 import { mediaUrl } from "../service/api";
 import { shopViewOf } from "./shopLogic";
 import type { ShopState } from "./useShop";
@@ -91,7 +92,7 @@ export default function ShopScreen({ shop, tableId, jobsHref = null, onChoose, o
       onTrack={onTrack}
       tableLabel={onTable ? (tableNumber !== null && tableNumber > 0 ? `Mesa ${tableNumber}` : "Sua mesa") : null}
       onTable={onTable}
-      jobsHref={jobsHref}
+      jobsHref={safeJobsUrl(jobsHref)}
     />
   );
 }

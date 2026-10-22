@@ -109,6 +109,16 @@ export function advanceOf(order: KitchenOrder): { label: string; next: string } 
   return next ? { label: next.label, next: next.next } : null;
 }
 
+/** As linhas da comanda: quantidade, nome e escolhas. Serve à cozinha e ao caixa, para os dois lerem a mesma coisa. */
+export function linesOf(items: readonly KitchenItem[]): Ticket["lines"] {
+  return items.map((item, index) => ({
+    // O servidor sempre manda a quantidade; se faltar, um prato conta como 1 e nunca some da comanda.
+    qty: Number.isFinite(Number(item.quantity)) && Number(item.quantity) > 0 ? Number(item.quantity) : 1,
+    name: clean(item.name) || `Item ${index + 1}`,
+    detail: detailOf(item),
+  }));
+}
+
 export function ticketOf(order: KitchenOrder, now: number): Ticket {
   const items = order.items ?? [];
   const step = advanceOf(order);
@@ -117,12 +127,7 @@ export function ticketOf(order: KitchenOrder, now: number): Ticket {
     number: shortOrderCode(order.id),
     where: handlingView(order).title,
     minutes: minutesSince(order.created_at, now),
-    lines: items.map((item, index) => ({
-      // O servidor sempre manda a quantidade; se faltar, um prato conta como 1 e nunca some da comanda.
-      qty: Number.isFinite(Number(item.quantity)) && Number(item.quantity) > 0 ? Number(item.quantity) : 1,
-      name: clean(item.name) || `Item ${index + 1}`,
-      detail: detailOf(item),
-    })),
+    lines: linesOf(items),
     note: noteOf(items),
     action: step?.label ?? "",
   };

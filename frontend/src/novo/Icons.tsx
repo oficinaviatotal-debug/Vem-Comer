@@ -58,7 +58,8 @@ export type NvIconName =
   | "chevron"
   | "logout"
   | "guide"
-  | "qr";
+  | "qr"
+  | "phone";
 
 const PATHS: Record<NvIconName, ReactNode> = {
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
@@ -188,6 +189,7 @@ const PATHS: Record<NvIconName, ReactNode> = {
   chevron: <path d="M9.5 6l6 6-6 6" />,
   logout: <path d="M10 4H5v16h5 M15 8l4 4-4 4 M19 12H9" />,
   guide: <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0 M9.5 9.5a2.6 2.6 0 0 1 5 .8c0 1.7-2.5 2-2.5 3.7 M12 17.2h.01" />,
+  phone: <path d="M6.5 3.5h3l1.5 4-2.1 1.5a11 11 0 0 0 6.1 6.1L16.5 13l4 1.5v3a2 2 0 0 1-2.2 2A15.8 15.8 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2Z" />,
   qr: <path d="M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h2.5v2.5H14z M18 14h2v2 M14 18.5h2 M18.5 18.5h1.5V20 M17.5 17.5v0" />,
 };
 

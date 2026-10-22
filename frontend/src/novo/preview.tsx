@@ -9,12 +9,14 @@ import BagScreen from "./Bag";
 import { TrackSlip, TrackingPage } from "./Tracking";
 import TablePage from "./Table";
 import Desk from "./Desk";
+import Orders from "./Orders";
 import DeskTable from "./DeskTable";
 import QrScan from "./QrScan";
 import PanelMenu from "../painel/PanelMenu";
 import { deskTableViewOf, deskViewOf, openTyped, parsePanelCalls } from "../painel/deskLogic";
+import { ORDERS_CHANGED, nextStatusOf, ordersViewOf, type PanelOrder } from "../painel/ordersLogic";
 import { emptyText, isKitchenTab, kitchenTabs, ticketsFor, type KitchenTabId } from "../cozinha/kitchenLogic";
-import { ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, pixExample, shopExample, todayExample } from "./demo";
+import { ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
 import { choicesViewOf, confirmChoices, nextQuantity, pressOption } from "../loja/choicesLogic";
 import { bagProblem, bagViewOf } from "../loja/bagLogic";
 import { copiedOutcome, pixOf, ratingOf, trackOf } from "../loja/trackingLogic";
@@ -29,6 +31,7 @@ import type { Selection } from "../customer/options";
  * Página de conferência do visual novo (não faz parte do aplicativo): mostra cada tela com dados de exemplo.
  * Abrir: preview-novo.html#/loja, #/hoje, #/cozinha, #/vagas, #/escolhas (#/escolhas-erro), #/sacola, #/entrega,
  * #/mesas (quem está chamando), #/mesas-calmo (ninguém chamando), #/mesas-qr (câmera do QR), #/mesas-carregando e #/mesas-erro (lista de mesas), #/mesa-aberta (a mesa 4 aberta),
+ * #/pedidos (dono), #/pedidos-caixa (abre no dinheiro a receber), #/pedidos-garcom (sem a aba Receber), #/pedidos-cozinha (sem endereço nem telefone), #/pedidos-calmo (nenhum pedido) e #/pedidos-erro (frase de erro ao tocar) e #/pedidos-enviando (o botão esperando o servidor),
  * #/menu (menu geral do dono), #/menu-garcom (o que o garçom vê), #/mesa (QR da mesa), #/mesa-chamada (conta chamada, água atendida, garçom sem resposta), #/loja-mesa (cardápio de quem está na mesa),
  * #/loja-pedido (cardápio de quem já pediu), #/pedido (preparo, Pix a pagar), #/pedido-rua (entrega a caminho) ou #/pedido-pronto (pronto, pago, avaliação).
  */
@@ -79,6 +82,43 @@ function KitchenPreview() {
       tickets={ticketsFor(orders, tab, now)}
       onTab={(id) => (isKitchenTab(id) ? setTab(id) : undefined)}
       emptyText={emptyText(tab)}
+      showMenu
+    />
+  );
+}
+
+/**
+ * Pedidos e caixa da conferência: os pedidos de exemplo passam pela conta de verdade (`ordersViewOf`) e respondem ao toque, sem
+ * servidor: o botão grande avança o pedido, "Pagamento recebido" marca como pago, as etapas trocam. `papel` mostra o que cada
+ * pessoa vê (dono e caixa recebem; o garçom não tem a aba Receber; a cozinha não vê endereço nem telefone).
+ */
+function OrdersPreview({ role, stage = "normal" }: { role: string; stage?: "normal" | "calmo" | "erro" | "enviando" }) {
+  const [now] = useState(() => Date.now());
+  const [orders, setOrders] = useState<PanelOrder[]>(() => (stage === "calmo" ? [] : panelOrders(Date.now())));
+  const [chosen, setChosen] = useState<string | null>(null);
+  const [error, setError] = useState(stage === "erro" ? "Não deu para mudar o pedido. Confira a internet e toque de novo." : "");
+  const view = ordersViewOf({ orders, role, now, chosen, error });
+  const busy = stage === "enviando" && view.cards[0] ? { id: view.cards[0].id, kind: "advance" as const } : null;
+  const change = (id: string, patch: (order: PanelOrder) => PanelOrder) => setOrders((list) => list.map((order) => (order.id === id ? patch(order) : order)));
+  return (
+    <Orders
+      view={view}
+      busy={busy}
+      onTab={(id) => {
+        setChosen(id);
+        setError("");
+      }}
+      onAction={(id, which) => {
+        const order = orders.find((entry) => entry.id === id);
+        const next = order ? nextStatusOf(order, which) : null;
+        if (!next) return setError(ORDERS_CHANGED);
+        setError("");
+        change(id, (current) => ({ ...current, status: next }));
+      }}
+      onReceive={(id) => {
+        setError("");
+        change(id, (current) => ({ ...current, payment_status: "PAID" }));
+      }}
       showMenu
     />
   );
@@ -338,6 +378,13 @@ function MenuPreview({ role }: { role: "OWNER" | "WAITER" }) {
 
 function Screen() {
   const route = window.location.hash.replace(/^#\/?/, "");
+  if (route === "pedidos") return <OrdersPreview role="OWNER" />;
+  if (route === "pedidos-caixa") return <OrdersPreview role="CASHIER" />;
+  if (route === "pedidos-garcom") return <OrdersPreview role="WAITER" />;
+  if (route === "pedidos-cozinha") return <OrdersPreview role="KITCHEN" />;
+  if (route === "pedidos-calmo") return <OrdersPreview role="OWNER" stage="calmo" />;
+  if (route === "pedidos-erro") return <OrdersPreview role="OWNER" stage="erro" />;
+  if (route === "pedidos-enviando") return <OrdersPreview role="OWNER" stage="enviando" />;
   if (route === "mesas") return <DeskPreview stage="chamando" />;
   if (route === "mesas-calmo") return <DeskPreview stage="calmo" />;
   if (route === "mesas-qr") return <DeskPreview stage="qr" />;

@@ -519,3 +519,73 @@ test("mesas do painel: em 320 px a linha do chamado quebra em vez de apertar, e 
   assert.match(small[0], /\.nv-deskcall-head \{\s*flex-wrap: wrap;/);
   assert.match(block(".nv-desk-grid"), /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
 });
+
+test("pedidos do painel: os botões do pedido são teclas grandes (dinheiro laranja, avançar verde, atalho claro), cada um lido com a mesa e o código", () => {
+  const orders = read("Orders.tsx");
+  assert.match(orders, /className="nv-btn is-fire is-block"/);
+  assert.match(orders, /className="nv-btn is-green is-block"/);
+  assert.match(orders, /className="nv-btn is-ghost is-block"/);
+  for (const spoken of ["receiveSpoken", "actionSpoken", "skipSpoken"]) assert.match(orders, new RegExp(`aria-label=\\{mine === "[a-z]+" \\? undefined : card\\.${spoken}\\}`));
+  assert.equal((orders.match(/disabled=\{locked\}/g) ?? []).length, 3, "enquanto um toque vai ao servidor, nenhum botão manda outro");
+  assert.equal((orders.match(/aria-busy=/g) ?? []).length, 3);
+  assert.match(block(".nv-order .nv-btn"), /min-height: (5[6-9]|[6-9]\d)px/);
+  assert.ok(!/position:/.test(block(".nv-order .nv-btn")), "o botão não pode ter position (o toque estendido depende disso)");
+});
+
+test("pedidos do painel: o cartão é painel de sombra macia e só informa; fita pela espera; o que não é botão fica liso", () => {
+  assert.match(block(".nv-order"), /box-shadow: var\(--nv-panel-3d\)/);
+  assert.ok(!/0 [2-9]px 0/.test(block(".nv-order")), "o cartão do pedido não tem borda grossa");
+  assert.match(block(".nv-order.is-warn"), /--nv-tape: var\(--nv-sun\)/);
+  assert.match(block(".nv-order.is-late"), /--nv-tape: var\(--nv-alert\)/);
+  for (const selector of [".nv-order-chip", ".nv-order-ship", ".nv-order-money", ".nv-order-change", ".nv-order-total"]) {
+    assert.ok(!/box-shadow/.test(block(selector)), `${selector} parece botão sem ser`);
+  }
+  assert.ok(!/<(button|a)[^>]*nv-order-chip/.test(read("Orders.tsx")), "as pílulas não são botões");
+});
+
+test("pedidos do painel: só o telefone vira link, e só pelo que a conta entregou (tel: com dígitos); o resto é texto", () => {
+  const orders = read("Orders.tsx");
+  const hrefs = orders.match(/href=\{[^}]*\}/g) ?? [];
+  assert.deepEqual(hrefs, ["href={card.ship.phoneHref}"]);
+  assert.ok(!/dangerouslySetInnerHTML|innerHTML/.test(orders));
+  assert.match(orders, /card\.ship\.phoneHref \?/);
+});
+
+test("pedidos do painel: as etapas são abas de verdade (lista, aba, painel ligado à aba) e a frase de cima fala sozinha", () => {
+  const orders = read("Orders.tsx");
+  assert.match(orders, /role="tablist"/);
+  assert.match(orders, /role="tab"/);
+  assert.match(orders, /aria-selected=\{tab\.id === view\.active\}/);
+  assert.match(orders, /aria-controls="nv-orders-panel"/);
+  assert.match(orders, /role="tabpanel" id="nv-orders-panel" aria-labelledby=\{`nv-orders-tab-\$\{view\.active\}`\}/);
+  assert.match(orders, /<p className="nv-sr" id="nv-orders-live" role="status" aria-live="polite" tabIndex=\{-1\}>/);
+  assert.match(orders, /<p className="nv-error" role="alert">/);
+  assert.match(orders, /<h2 className="nv-order-where" id=\{`nv-order-\$\{card\.id\}`\} tabIndex=\{-1\}>/);
+  assert.match(block(".nv-tab"), /min-height: (4[8-9]|[5-9]\d)px/);
+});
+
+test("pedidos do painel: com quatro etapas ficam duas por linha, para o dedo acertar e o texto caber em 320 px", () => {
+  assert.match(block(".nv-tabs.is-four"), /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(read("Orders.tsx"), /view\.tabs\.length === 4 \? " is-four" : ""/);
+  assert.match(block(".nv-order-text"), /overflow-wrap: anywhere/);
+  assert.match(block(".nv-order-ship-main"), /overflow-wrap: anywhere/);
+});
+
+test("pedidos do painel: texto pequeno passa de 4,5:1 em cada peça", () => {
+  for (const [front, back, what] of [
+    ["ink", "sun", "'Aguardando' e a espera que demora"],
+    ["paper", "ink", "'Em preparo'"],
+    ["paper", "green", "'A caminho'"],
+    ["paper", "alert", "espera de pedido atrasado"],
+    ["ink", "green-soft", "etapas, espera e 'Pronto'"],
+    ["ink", "answered-pill", "pagamento feito"],
+    ["ink", "call-pill", "Pix aguardando e o troco a devolver"],
+    ["ink", "peach", "pagamento a receber e o endereço"],
+    ["muted", "peach", "região e referência sobre o bloco do endereço"],
+    ["alert", "alert-soft", "observação do cliente"],
+  ]) {
+    const ratio = contrast(token(front), token(back));
+    assert.ok(ratio >= 4.5, `${what}: ${ratio.toFixed(2)}:1`);
+  }
+  assert.ok(contrast(token("muted"), "#fbf9f4") >= 4.5, "meta, 'Total' e a taxa sobre o fim do degradê do cartão");
+});

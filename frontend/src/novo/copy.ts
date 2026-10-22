@@ -64,3 +64,25 @@ export const DESK_SCAN_CANCEL = "Cancelar";
 export const DESK_AGAIN = "chamou de novo";
 export const DESK_AGAIN_FLAG = "Chamou de novo";
 export const DESK_WORD = { normal: "", late: "Está demorando", urgent: "Urgente" } as const;
+
+// ---------------------------------------------------------------- Pedidos e caixa (painel)
+
+export const ORDERS_TITLE = "Pedidos";
+export const ORDERS_QUIET = "Nenhum pedido agora";
+export const ORDERS_TABS_LABEL = "Etapas dos pedidos";
+export const ORDERS_RECEIVE = "Pagamento recebido";
+export const ORDERS_RECEIVING = "Marcando…";
+export const ORDERS_SENDING = "Enviando…";
+export const ORDERS_CALL = "Ligar para o cliente";
+export const ORDERS_NO_ADDRESS = "Sem endereço: ligue para o cliente";
+export const ORDERS_PICKUP = "Cliente retira no balcão";
+export const ORDERS_LOAD_ERROR = "Sem conexão com o servidor. Os pedidos na tela podem estar desatualizados.";
+export const ORDERS_ADVANCE_ERROR = "Não deu para mudar o pedido. Confira a internet e toque de novo.";
+export const ORDERS_RECEIVE_ERROR = "Não deu para marcar como pago. Confira a internet e toque de novo.";
+export const ORDERS_EMPTY = {
+  new: "Nenhum pedido novo. Quando um cliente pedir, o pedido aparece aqui e o aparelho avisa.",
+  doing: "Nada em andamento agora.",
+  receive: "Nada esperando pagamento.",
+  done: "Ainda não há pedidos encerrados.",
+} as const;
+export const ORDERS_CHANGED = "Este pedido já mudou. A tela foi atualizada.";

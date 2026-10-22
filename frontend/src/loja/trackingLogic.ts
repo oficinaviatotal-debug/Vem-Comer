@@ -124,6 +124,13 @@ export function afterPoll(result: { order: OrderView } | { failedWith: number | 
 /** O resultado do toque em "Copiar código Pix". */
 export const copiedOutcome = (done: boolean): Pix["copied"] => (done ? "ok" : "manual");
 
+/** A imagem do QR Pix vem do servidor como `data:image/png;base64,…`. Só essa forma (e de tamanho razoável) vira imagem na tela; qualquer outra some. */
+export const QR_IMAGE_MAX = 200_000;
+export function safeQrImage(raw: unknown): string | undefined {
+  if (typeof raw !== "string" || raw.length > QR_IMAGE_MAX) return undefined;
+  return /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(raw) ? raw : undefined;
+}
+
 /** O que a busca do código Pix devolveu para a tela (404: o restaurante já não tem Pix; outra falha: tenta de novo). */
 export function pixOf(
   state: Pix["state"],
@@ -131,7 +138,7 @@ export function pixOf(
   copied: Pix["copied"],
 ): Pix {
   if (state !== "ready" || !code) return { state, copied };
-  return { state, amount: toNumber(code.amount), receiver: code.receiver_name, payload: code.payload, qr: code.qr_data_url, copied };
+  return { state, amount: toNumber(code.amount), receiver: code.receiver_name, payload: code.payload, qr: safeQrImage(code.qr_data_url), copied };
 }
 
 /** O erro da busca do Pix vira o estado da tela. */

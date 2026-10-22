@@ -6,6 +6,7 @@
 
 import type { MyCall } from "../loja/tableLogic.ts";
 import type { KitchenOrder } from "../cozinha/kitchenLogic";
+import type { PanelOrder } from "../painel/ordersLogic";
 import { hourOf, todayOf } from "../hoje/todayLogic";
 import { shopViewOf, type ShopView } from "../loja/shopLogic";
 import type { Job, Promo, Today } from "./types";
@@ -345,5 +346,148 @@ export function deskOrdersExample(now: number): { id: string; status: string; or
     { id: "p2", status: "PENDING_PAYMENT", order_type: "mesa", table_number: 4, customer_name: null, total_price: 18, created_at: ago(1) },
     { id: "p3", status: "em preparo", order_type: "mesa", table_number: 9, customer_name: "Carlos", total_price: 89.9, created_at: ago(6) },
     { id: "p4", status: "concluido", order_type: "mesa", table_number: 4, customer_name: "Ana", total_price: 24, created_at: ago(55) },
+  ];
+}
+
+/**
+ * Pedidos de EXEMPLO do painel, de todo jeito: mesa, entrega, retirada, dinheiro com troco, Pix a receber e já pago,
+ * entrega a caminho e encerrados. Só a conferência usa isto; a tela de verdade lê o que o servidor manda.
+ */
+export function panelOrders(now: number): PanelOrder[] {
+  const ago = (minutes: number) => new Date(now - minutes * 60000).toISOString();
+  return [
+    {
+      id: "0042-exemplo",
+      customer_name: "Dona Lúcia",
+      status: "PENDING_PAYMENT",
+      created_at: ago(7),
+      order_type: "mesa",
+      table_number: "4",
+      total_price: 42,
+      payment_method: "dinheiro",
+      payment_status: "PENDING",
+      payment_change: 50,
+      items: [
+        { name: "Açaí 500 ml", quantity: 2, options: [{ name: "granola" }, { name: "banana" }], note: "sem leite condensado" },
+        { name: "Suco de caju", quantity: 1 },
+      ],
+    },
+    {
+      id: "0043-exemplo",
+      customer_name: "Marcos",
+      status: "PENDING_PAYMENT",
+      created_at: ago(3),
+      order_type: "entrega",
+      delivery_fee: 6,
+      delivery_zone: "Centro",
+      delivery_address: { street: "Rua das Flores", number: "120", complement: "apto 3", neighborhood: "Centro", cep: "59000000", reference: "Portão azul" },
+      customer_phone: "84999998888",
+      total_price: 48,
+      payment_method: "pix",
+      payment_status: "PENDING",
+      payment_change: 0,
+      items: [
+        { name: "X-Burguer", quantity: 1 },
+        { name: "Batata média", quantity: 1 },
+      ],
+    },
+    {
+      id: "0040-exemplo",
+      customer_name: "Cliente Balcão",
+      status: "PENDING_PAYMENT",
+      created_at: ago(24),
+      order_type: "mesa",
+      table_number: "2",
+      total_price: 18.5,
+      payment_method: "cartao",
+      payment_status: "PENDING",
+      payment_change: 0,
+      items: [{ name: "Açaí 300 ml", quantity: 1, options: [{ name: "sem granola" }] }],
+    },
+    {
+      id: "0041-exemplo",
+      customer_name: "Rafael",
+      status: "em preparo",
+      created_at: ago(12),
+      order_type: "mesa",
+      table_number: "6",
+      total_price: 31.5,
+      payment_method: "pix",
+      payment_status: "PAID",
+      payment_change: 0,
+      items: [{ name: "Pastel de queijo", quantity: 3 }],
+    },
+    {
+      id: "0039-exemplo",
+      customer_name: "Paula",
+      status: "em preparo",
+      created_at: ago(18),
+      order_type: "retirada",
+      customer_phone: "84988887777",
+      total_price: 59.8,
+      payment_method: "dinheiro",
+      payment_status: "PENDING",
+      payment_change: 100,
+      items: [{ name: "X-Burguer", quantity: 2, note: "um sem cebola" }],
+    },
+    {
+      id: "0038-exemplo",
+      customer_name: "Seu Zé",
+      status: "pronto",
+      created_at: ago(25),
+      order_type: "entrega",
+      delivery_fee: 6,
+      delivery_zone: "Tirol",
+      delivery_address: { street: "Av. Hermes da Fonseca", number: "800", neighborhood: "Tirol", cep: "59020000" },
+      customer_phone: "84977776666",
+      total_price: 33,
+      payment_method: "dinheiro",
+      payment_status: "PENDING",
+      payment_change: 50,
+      items: [{ name: "Açaí 500 ml", quantity: 1 }],
+    },
+    {
+      id: "0035-exemplo",
+      customer_name: "Ana",
+      status: "saiu para entrega",
+      created_at: ago(40),
+      order_type: "entrega",
+      delivery_fee: 5,
+      delivery_zone: "Centro",
+      delivery_address: { street: "Rua do Sol", number: "45", neighborhood: "Centro" },
+      customer_phone: "84966665555",
+      courier_name: "Carlos",
+      total_price: 27,
+      payment_method: "pix",
+      payment_status: "PAID",
+      payment_change: 0,
+      items: [{ name: "Pastel de carne", quantity: 2 }],
+    },
+    {
+      id: "0037-exemplo",
+      customer_name: "Beto",
+      status: "concluido",
+      created_at: ago(55),
+      order_type: "mesa",
+      table_number: "3",
+      total_price: 22,
+      payment_method: "cartao",
+      payment_status: "PENDING",
+      payment_change: 0,
+      items: [{ name: "Suco de caju", quantity: 2 }],
+    },
+    {
+      id: "0036-exemplo",
+      customer_name: "Cliente Balcão",
+      status: "concluido",
+      created_at: ago(70),
+      order_type: "mesa",
+      table_number: "1",
+      total_price: 36,
+      payment_method: "dinheiro",
+      payment_status: "PAID",
+      payment_change: 40,
+      items: [{ name: "Pastel de queijo", quantity: 4 }],
+    },
   ];
 }

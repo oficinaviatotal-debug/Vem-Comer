@@ -360,13 +360,84 @@ atendido não volta mesmo que o servidor ainda o mande; erro deixa o cartão e d
 QR da mesa abre a mesa, QR de outro restaurante e QR que não é de mesa dizem por quê, e a câmera desliga em todos os casos.
 Para ver: `preview-novo.html#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro` e `#/mesa-aberta`.
 
+## Décima primeira rodada: pedidos e caixa (22/10/2026)
+
+O GD pediu "segurança de todas as entradas e acessos, ataques, e front-end profissional" (11:53). Esta é a terceira tela da sequência
+(depois do menu e das mesas): **onde o pedido é aceito, andado e pago**. Primeiro fiz uma varredura de segurança do visual novo, depois a
+tela. Nada vai ao ar sem o "pode".
+
+**A tela** (`novo/Orders.tsx`): "Pedidos" e uma frase ("3 pedidos novos para aceitar"). Quatro etapas, duas por linha: **Novos**
+(esperando aceite), **Andamento** (em preparo, pronto, a caminho), **Receber** (tudo que ainda não foi pago, em qualquer etapa) e **Feitos**
+(os 20 mais novos já encerrados). Quem não confirma pagamento (garçom, cozinha) **não tem a aba Receber**. Um cartão por pedido, o que
+espera mais em cima, com a fita verde, amarela ou vermelha pelo tempo (até 10 min, até 20, depois) e a espera também em número:
+mesa, entrega ou retirada em letra grande; nome e código curto (#A1B2); a etapa e o pagamento **em palavra** ("Aguardando", "Dinheiro:
+receber", "Pix pago"); para entrega e retirada, o endereço, a região, a referência, **o telefone como botão de ligar** e quem está com a
+entrega; os itens com as escolhas e a observação do cliente; o total (e "Itens R$ 42,00 + entrega R$ 6,00" quando há taxa); e, no
+dinheiro, **"Cliente paga com R$ 50,00 · devolver R$ 8,00"**. Embaixo, no máximo três botões: **"Pagamento recebido"** (laranja, só dono,
+gerente e caixa, só enquanto não está pago), o **botão grande que avança o pedido** (verde: "Aceitar pedido", "Pedido pronto", "Pronto
+para entrega", "Saiu para entrega", "Entregue") e o atalho pequeno "Já saiu para entrega". Na aba Receber o dinheiro vem primeiro; nas
+outras, o avanço. O caixa abre direto em Receber. Cada botão é lido com a mesa e o código ("Aceitar pedido. Mesa 7, pedido A1B2."), para
+dois botões iguais nunca soarem iguais.
+
+**Honestidade:** nenhuma regra mudou. As palavras e o próximo passo do pedido vêm de `service/orderStatus.ts` (o que o servidor aceita);
+como o pedido sai, de `service/orderHandling.ts`; o chip de pagamento e quem confirma o dinheiro, de `customer/payment.ts`. O valor, a
+taxa e o total são os que o servidor gravou. **O troco a devolver é a única conta nova: o que o cliente entrega menos o total** (o servidor
+já exige que ele entregue pelo menos o total). Uma comanda de cozinha e um cartão de caixa leem as mesmas linhas (`linesOf`).
+
+**Ligação ao servidor** (`painel/OrdersScreen.tsx`): pergunta os pedidos a cada 5 s, **também com a aba escondida** (como a tela antiga e a
+cozinha: o aparelho precisa apitar pedido novo mesmo com a tela em segundo plano). Apita pedido novo **por número do pedido**, não por
+quantidade (o servidor só manda os 200 mais recentes). Uma busca que falha nunca apaga a tela: aparece "Sem conexão com o servidor. Os
+pedidos na tela podem estar desatualizados." e some sozinha quando volta. **Um toque por vez.** **Antes de mandar um toque, a tela olha o
+pedido de novo no servidor**: se outra pessoa já mexeu (já aceitou, já saiu, já foi pago), **não manda**, atualiza e diz "Este pedido já
+mudou. A tela foi atualizada." Isso existe porque o servidor aceita qualquer estado vindo de qualquer estado (ver abaixo): sem isso, um
+toque velho levaria um pedido encerrado de volta para "Aguardando". A tela antiga só escrevia o erro no console; esta diz o que fazer:
+"Não deu para mudar o pedido. Confira a internet e toque de novo." e "Não deu para marcar como pago. Confira a internet e toque de novo."
+
+**Segurança: o que achei e o que fiz**
+
+Consertado agora, no visual novo (com teste):
+1. **Link do Vem Trabalhar no cardápio** vinha do servidor e ia direto para `href`. Agora só vale endereço `https` (a mesa já fazia assim).
+2. **Imagem do QR Pix** vinha do servidor e ia direto para `src`. Agora só vale `data:image/png;base64,…` de tamanho razoável; qualquer outra
+   coisa (endereço de fora, SVG, texto) some.
+3. Varredura: nenhum HTML injetado (`dangerouslySetInnerHTML`, `innerHTML`, `eval`) nas telas novas, links externos com `noopener noreferrer`,
+   o telefone só vira `tel:` com dígitos, nada de dado pessoal guardado no aparelho. Um teste cobre cada ponto.
+4. **No papel de cada pessoa:** a cozinha e o entregador **não veem endereço nem telefone** de quem pediu (só a região); garçom, caixa,
+   gerente e dono veem. Isto é só o mínimo na tela.
+
+**Não consertado, e é do servidor** (digo com franqueza; proponho um PR à parte, com teste, e não junto nada sem o "pode"):
+- **S1. Quem vê telefone e endereço de todos os clientes.** `GET /companies/<id>/admin/orders` manda o telefone e o endereço dos últimos 200
+  pedidos para **qualquer login do restaurante** (menos entregador). Pela LGPD (mínimo necessário), cozinha e garçom não deveriam receber. A tela
+  esconde, mas o dado ainda chega ao aparelho. Só o servidor resolve.
+- **S2. Qualquer estado a partir de qualquer estado.** `PUT /orders/<id>/status` aceita qualquer das cinco palavras vinda de qualquer outra, para
+  qualquer papel (menos entregador). Um toque errado, ou um login de cozinha compartilhado e comprometido, pode reabrir pedido encerrado ou
+  encerrar pedido que ninguém fez. A tela nova confere antes de mandar, o que encurta a janela, mas **só o servidor pode impedir**.
+- **S3. Ninguém assina o que fez.** `order_events` e `payments` não guardam **quem** mudou o pedido ou confirmou o dinheiro (só a hora).
+  Num caso de dinheiro faltando no caixa não há como saber quem marcou "Pagamento recebido".
+
+**Escolhas minhas que o GD pode mudar:**
+- Os "Feitos" mostram só os 20 mais novos (para conferir, não para arquivo); histórico e números ficam em "Seu negócio".
+- Pedido entregue e ainda não pago **continua em Receber** (e só depois de pago vai para Feitos); quem não tem a aba Receber o vê em Feitos.
+- **Não há botão de cancelar:** o servidor não tem estado "cancelado".
+- As telas de **entregas** (entregador, com código do cliente) e de **acerto do caixa** ainda são as antigas; entram na rodada seguinte.
+- Esta tela ainda **não guarda a regra de quem pode abrir** (rota por papel): isso é da casca do painel, na hora de ligar tudo.
+
+**Ainda não está ligado ao painel público** (o painel antigo continua mandando).
+
+**Como foi conferido:** `tests/novo/ordersLogic.test.mjs` (28), `toque.test.mjs` (59), `fluxo.test.mjs` (28), `trackingLogic.test.mjs` (+1);
+1102 testes passam no total. Em 320, 360, 390 e 480 px, nas 30 telas de conferência: sem rolagem lateral e nenhum botão com menos de 44 px.
+No navegador, com a tela de verdade e um servidor de mentira: dois toques seguidos mandam um envio só; "Aceitar" e "Pagamento recebido"
+chegam com o código certo; o foco volta ao pedido; pedido novo vibra uma vez; pedido que já mudou **não** é mandado e não volta para trás;
+erro ao avançar e ao receber deixam o botão pronto de novo; sem servidor, os pedidos ficam e a frase some quando volta; garçom não tem a
+aba nem o botão de pagamento; cozinha não vê telefone nem rua; o caixa abre em Receber.
+Para ver: `preview-novo.html#/pedidos`, `#/pedidos-caixa`, `#/pedidos-garcom`, `#/pedidos-cozinha`, `#/pedidos-calmo`, `#/pedidos-erro` e `#/pedidos-enviando`.
+
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
 - Tudo mora em `frontend/src/novo/` e **não é importado pelo aplicativo**: o `index.html` e o `main.tsx` não mudam.
   Um teste (`tests/novo`) garante que o visual novo não depende do antigo e que só a página de conferência usa dados
   de exemplo.
 - Para ver: `cd frontend && npx vite build --config vite.preview-novo.config.ts --outDir /tmp/novo` e abrir
-  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu`, `#/menu-garcom`, `#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro` ou `#/mesa-aberta`
+  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu`, `#/menu-garcom`, `#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro`, `#/mesa-aberta`, `#/pedidos`, `#/pedidos-caixa`, `#/pedidos-garcom`, `#/pedidos-cozinha`, `#/pedidos-calmo`, `#/pedidos-erro` ou `#/pedidos-enviando`
   (a pasta pública vai junto, por causa das fontes).
 - Cada tela ganha um PR próprio: ligada aos dados de verdade (por props), com teste, e a tela antiga correspondente
   sai no mesmo PR. **Nada disso vira o que o público vê sem o "pode" do GD.**

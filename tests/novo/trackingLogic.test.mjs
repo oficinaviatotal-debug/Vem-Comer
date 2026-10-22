@@ -12,6 +12,8 @@ import {
   copiedOutcome,
   copiedText,
   pixOf,
+  safeQrImage,
+  QR_IMAGE_MAX,
   pixStateOfError,
   ratingOf,
   ratingTarget,
@@ -182,6 +184,32 @@ test("Pix pronto traz valor, recebedor, código e QR; os outros estados não tra
     assert.equal(view.amount, undefined, state);
   }
   assert.equal(pixOf("ready", null, "").payload, undefined);
+});
+
+test("a imagem do QR Pix só vale como PNG em base64 de tamanho razoável; o resto some (nada de endereço de fora, svg ou script)", () => {
+  assert.equal(safeQrImage("data:image/png;base64,iVBORw0KGgo="), "data:image/png;base64,iVBORw0KGgo=");
+  assert.equal(safeQrImage("data:image/png;base64,AAAA"), "data:image/png;base64,AAAA");
+  const bad = [
+    "https://evil.example/qr.png",
+    "http://evil.example/qr.png",
+    "//evil.example/qr.png",
+    "javascript:alert(1)",
+    "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=",
+    "data:text/html;base64,PHNjcmlwdD4=",
+    "data:image/png;base64,AAAA\" onerror=\"alert(1)",
+    "data:image/png;base64,",
+    "data:image/png,AAAA",
+    "",
+    null,
+    undefined,
+    42,
+    {},
+  ];
+  for (const value of bad) assert.equal(safeQrImage(value), undefined, String(value));
+  assert.equal(safeQrImage(`data:image/png;base64,${"A".repeat(QR_IMAGE_MAX)}`), undefined, "grande demais");
+  // E o Pix pronto só leva a imagem que passou na conferência.
+  assert.equal(pixOf("ready", { ...code, qr_data_url: "https://evil.example/qr.png" }, "").qr, undefined);
+  assert.equal(pixOf("ready", { ...code, qr_data_url: "data:image/png;base64,AAAA" }, "").qr, "data:image/png;base64,AAAA");
 });
 
 test("Pix: 404 quer dizer 'sem Pix neste restaurante'; qualquer outra falha, tentar de novo", () => {

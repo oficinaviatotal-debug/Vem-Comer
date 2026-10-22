@@ -3384,3 +3384,227 @@ button.nv-now-cell:active {
     gap: 10px;
   }
 }
+
+/* ---------- Pedidos e caixa do painel: um cartão por pedido, botões embaixo ---------- */
+
+.nv-page-orders .nv-error {
+  margin: 0;
+}
+
+/* Com quatro etapas (quem recebe o dinheiro), duas em cima e duas embaixo: o dedo acerta e o texto cabe em 320 px. */
+.nv-tabs.is-four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-radius: var(--nv-r-lg);
+}
+
+.nv-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* O pedido é um painel de sombra macia (informa); a fita de cima muda de cor pela espera; só os botões de baixo tocam. */
+.nv-order {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 14px 14px;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-panel-3d);
+  --nv-tape: var(--nv-green);
+}
+
+.nv-order::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 6px;
+  border-radius: var(--nv-r-lg) var(--nv-r-lg) 0 0;
+  background: var(--nv-tape);
+}
+
+.nv-order.is-warn {
+  --nv-tape: var(--nv-sun);
+}
+
+.nv-order.is-late {
+  --nv-tape: var(--nv-alert);
+}
+
+/* Pedido encerrado: sem cor de espera, só para conferir. */
+.nv-order.is-closed {
+  --nv-tape: var(--nv-slab-edge);
+}
+
+.nv-order.is-warn .nv-wait {
+  background: var(--nv-sun);
+}
+
+.nv-order.is-late .nv-wait {
+  background: var(--nv-alert);
+  color: #fff;
+}
+
+.nv-order-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.nv-order-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-order-where {
+  margin: 0;
+  font: 700 28px/1.05 var(--nv-display);
+}
+
+.nv-order-meta {
+  margin: 4px 0 0;
+  color: var(--nv-muted);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.nv-order-head .nv-wait {
+  flex: none;
+}
+
+/* A etapa e o pagamento em palavra, para quem não vê a cor. Pílulas lisas: só informam. */
+.nv-order-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.nv-order-chip {
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nv-order-chip.is-wait {
+  background: var(--nv-sun);
+}
+
+.nv-order-chip.is-prep {
+  background: var(--nv-ink);
+  color: #fff;
+}
+
+.nv-order-chip.is-go {
+  background: var(--nv-green);
+  color: #fff;
+}
+
+.nv-order-chip.is-pay-ok {
+  background: var(--nv-answered-pill);
+}
+
+.nv-order-chip.is-pay-wait {
+  background: var(--nv-call-pill);
+}
+
+.nv-order-chip.is-pay-info {
+  background: var(--nv-peach);
+}
+
+/* Para onde vai, quem leva e como ligar: um bloco liso, o endereço em letra grande. */
+.nv-order-ship {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-peach);
+}
+
+.nv-order-ship-main {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.nv-order-ship-sub {
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 15px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.nv-order-ship .nv-btn {
+  margin-top: 8px;
+}
+
+.nv-order .nv-lines,
+.nv-order .nv-note {
+  margin: 0;
+}
+
+.nv-order-money {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1.5px solid var(--nv-line);
+}
+
+.nv-order-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+}
+
+.nv-order-total span {
+  color: var(--nv-muted);
+  font-size: 16px;
+}
+
+.nv-order-total b {
+  font: 700 28px/1 var(--nv-display);
+}
+
+.nv-order-split {
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 14px;
+}
+
+.nv-order-change {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-call-pill);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.nv-order .nv-btn {
+  min-height: 56px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  line-height: 1.15;
+  text-align: center;
+}

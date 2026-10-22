@@ -34,6 +34,11 @@ test("as telas novas do cliente não dependem das antigas (nem do CSS, nem das t
   }
 });
 
+test("o endereço do Vem Trabalhar só chega às telas já conferido (https), no cardápio como na mesa", () => {
+  assert.match(loja.shop, /safeJobsUrl\(jobsHref\)/, "o cardápio passa o endereço sem conferir");
+  assert.match(loja.tableLogic, /safeJobsUrl\(input\.jobsHref\)/, "a mesa passa o endereço sem conferir");
+});
+
 test("só o useShop busca o cardápio: a tela do cardápio recebe tudo pronto", () => {
   assert.ok(!/fetchProducts|fetchMenus|fetchTable|fetchCompanyBySlug/.test(loja.shop), "ShopScreen busca sozinha");
   for (const call of ["fetchProducts", "fetchMenus", "fetchTable", "fetchCompanyBySlug", "fetchPaymentOptions", "fetchDeliveryInfo"]) {
@@ -246,4 +251,60 @@ test("as mesas do painel: o foco acompanha a tela e a câmera fecha ao ler, ao c
   assert.match(qr, /return stop;/);
   assert.match(qr, /stop\(\);\s*latest\.current\.onCode\(text\)/);
   assert.match(qr, /\[active\]/);
+});
+
+test("os pedidos do painel de verdade: só as contas puras de fora (nada de tela, CSS ou estilos antigos), e a lógica não fala com o servidor nem apita", () => {
+  const files = { ordersLogic: read("painel/ordersLogic.ts"), ordersScreen: read("painel/OrdersScreen.tsx"), orders: read("novo/Orders.tsx") };
+  for (const [name, text] of Object.entries(files)) {
+    assert.ok(!/from ["']\.\.\/(styles|ui|admin)/.test(text), `${name} importa o antigo`);
+    assert.ok(!/from ["']\.\.\/mesa\//.test(text), `${name} importa a mesa antiga`);
+    assert.ok(!/from ["']\.\.\/nav\//.test(text), `${name} importa o menu antigo`);
+    assert.ok(!/import ["']\.\.\//.test(text), `${name} importa CSS de fora`);
+  }
+  assert.ok(!/service\/api/.test(files.ordersLogic), "a conta não fala com o servidor");
+  assert.ok(!/service\/alertDevice/.test(files.ordersLogic), "a conta não apita");
+  assert.ok(!/from ["']\.\.\/service\//.test(files.orders), "a tela de desenho não fala com o servidor");
+});
+
+test("os pedidos do painel: um toque por vez, o estado de destino sai do que o servidor mandou e o pedido é conferido no servidor antes de mandar", () => {
+  const text = read("painel/OrdersScreen.tsx");
+  assert.match(text, /if \(working\.current\) return;/);
+  assert.match(text, /const target = kind === "receive" \? null : nextStatusOf\(seen, kind\);/);
+  assert.match(text, /const seen = latest\.current\.find\(\(order\) => order\.id === id\);/);
+  // A conferência vem antes de qualquer envio, e quem confere é a lista nova do servidor.
+  const check = text.indexOf("moveCheck(seen, fresh)");
+  const sendPay = text.indexOf("await confirmPayment(id)");
+  const sendMove = text.indexOf("await updateOrderStatus(id, target as string)");
+  assert.ok(check > 0 && check < sendPay && check < sendMove, "o envio vem antes da conferência");
+  assert.match(text, /payCheck\(seen, fresh\)/);
+  assert.match(text, /if \(verdict === "changed"\) \{\s*adopt\(fresh\);[\s\S]*?setActionError\(ORDERS_CHANGED\);\s*return;\s*\}/);
+  assert.match(text, /\} catch \{\s*setActionError\(kind === "receive" \? ORDERS_RECEIVE_ERROR : ORDERS_ADVANCE_ERROR\);\s*void load\(\);/);
+  assert.match(text, /\} finally \{\s*working\.current = false;\s*setBusy\(null\);/);
+});
+
+test("os pedidos do painel: pergunta a cada 5 s, apita só pedido novo (por número, para quem não é entregador), e uma busca que falha não apaga a tela", () => {
+  const text = read("painel/OrdersScreen.tsx");
+  assert.match(text, /window\.setInterval\(\(\) => void load\(\), ORDERS_POLL_MS\)/);
+  assert.match(text, /window\.setInterval\(\(\) => setNow\(Date\.now\(\)\), CLOCK_MS\)/);
+  assert.match(text, /window\.clearInterval\(poll\);\s*window\.clearInterval\(clock\);/);
+  assert.match(text, /document\.removeEventListener\("visibilitychange", onVisible\)/);
+  assert.match(text, /if \(newOrders\(known\.current, current\)\.length > 0 && wantsNewOrderAlert\(role\)\) alertDevice\("order"\)/);
+  assert.match(text, /known\.current = knownOrderIds\(current\)/);
+  assert.ok(!/catch \{[^}]*setOrders\(\[\]\)/.test(text), "falha de rede não esvazia os pedidos");
+  assert.match(text, /\} catch \{[^}]*setLoadFailed\(true\);/);
+  assert.match(text, /fetchAdminOrders/);
+  assert.ok(!/useState<PanelOrder\[\]>\(\(\) => fetch/.test(text));
+});
+
+test("os pedidos do painel: o foco volta para o pedido que acabou de mudar (ou o próximo botão, ou a frase de cima)", () => {
+  const text = read("painel/OrdersScreen.tsx");
+  assert.match(text, /document\.getElementById\(`nv-order-\$\{id\}`\)/);
+  assert.match(text, /\.nv-page-orders \.nv-order \.nv-btn/);
+  assert.match(text, /document\.getElementById\("nv-orders-live"\)/);
+});
+
+test("os pedidos do painel: o texto do cliente (nome, observação, endereço) nunca entra como HTML", () => {
+  for (const name of ["painel/OrdersScreen.tsx", "painel/ordersLogic.ts", "novo/Orders.tsx"]) {
+    assert.ok(!/dangerouslySetInnerHTML|innerHTML|document\.write|eval\(/.test(read(name)), `${name} injeta HTML`);
+  }
 });

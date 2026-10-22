@@ -386,3 +386,51 @@ export type DeskTableView = {
   orderHref: string | null;
   error: string;
 };
+
+// ---------------------------------------------------------------- Pedidos e caixa (painel)
+
+/** Um pedido no painel: o que o caixa e o salão leem e tocam. Tudo já vem em frase pronta. */
+export type OrderCard = {
+  id: string;
+  /** "#A1B2": o código curto que dá para falar em voz alta. */
+  number: string;
+  /** "Mesa 5", "Entrega", "Retirada" ou "Balcão". */
+  where: string;
+  kind: "mesa" | "entrega" | "retirada" | "balcao";
+  /** Nome de quem pediu; vazio quando não há. */
+  who: string;
+  /** "12:35". */
+  time: string;
+  minutes: number;
+  /** A cor da fita pelo tempo de espera; pedido encerrado fica sempre "ok". */
+  wait: "ok" | "warn" | "late";
+  /** A etapa em palavra ("Aguardando", "Em preparo", "A caminho", "Entregue"). */
+  status: string;
+  tone: "wait" | "prep" | "go" | "done";
+  /** Entrega e retirada: para onde vai, quem leva e como ligar. Null nos outros pedidos. */
+  ship: { main: string; sub: string[]; phone: string; phoneHref: string; courier: string } | null;
+  lines: { qty: number; name: string; detail?: string }[];
+  note?: string;
+  total: string;
+  /** "Itens R$ 42,00 + entrega R$ 6,00"; vazio quando não há taxa. */
+  split: string;
+  pay: { chip: string; chipTone: "ok" | "wait" | "info"; extra: string };
+  /** O texto do botão "Pagamento recebido"; vazio quando esta pessoa não confirma pagamento ou já está pago. */
+  receive: string;
+  /** O botão grande que avança o pedido e o atalho pequeno; vazios quando não há mais o que fazer. */
+  action: string;
+  skip: string;
+  /** O que o leitor de tela fala em cada botão, com a mesa e o código para não haver dois botões iguais. */
+  receiveSpoken: string;
+  actionSpoken: string;
+  skipSpoken: string;
+};
+
+export type OrdersView = {
+  sub: string;
+  tabs: Tab[];
+  active: string;
+  cards: OrderCard[];
+  empty: string;
+  error: string;
+};
