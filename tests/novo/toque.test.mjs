@@ -675,3 +675,105 @@ test("entregas e acerto: em 320 px os números do código ficam um pouco menores
   assert.match(block(".nv-delivery-cash"), /display: flex/);
   assert.match(css, /\.nv-delivery-cash p \{[^}]*min-width: 0/);
 });
+
+test("cardápio: a porta sobe do chão quando funciona e fica lisa quando o servidor não lê; o toque é o cartão inteiro", () => {
+  const setup = read("MenuSetup.tsx");
+  // Foto e arquivo são rótulos com o campo de arquivo dentro: o toque em qualquer ponto do cartão abre a câmera ou o seletor.
+  assert.match(setup, /<label className="nv-doorcard is-ready">/);
+  assert.match(setup, /<button type="button" className="nv-doorcard is-ready" onClick=\{onSpeak\}>/);
+  assert.match(setup, /<div className="nv-doorcard is-off" aria-disabled="true">/);
+  assert.match(setup, /capture="environment"/);
+  assert.match(block(".nv-doorcard"), /box-shadow: var\(--nv-card-3d\)/);
+  assert.match(block(".nv-doorcard.is-ready:active"), /translateY\(3px\)/);
+  assert.match(block(".nv-doorcard.is-off"), /box-shadow: var\(--nv-panel-3d\)/, "o que não funciona é liso");
+  assert.match(block(".nv-doorcard"), /min-height: 9\dpx/);
+  assert.match(css, /\.nv-doorcard:has\(input:focus-visible\) \{[^}]*outline: 3px solid/);
+  // O selo "Mais rápido" só informa.
+  assert.ok(!/box-shadow/.test(block(".nv-door-badge")));
+});
+
+test("cardápio: o campo de arquivo é escondido sem sair do lugar e o rótulo-botão não tem position (o toque depende disso)", () => {
+  const setup = read("MenuSetup.tsx");
+  assert.ok((setup.match(/className="nv-sr"\s+type="file"/g) ?? []).length >= 3, "todo campo de arquivo é só para o leitor de tela");
+  assert.match(setup, /multiple=\{!camera\}/);
+  assert.match(setup, /capture=\{camera \? "environment" : undefined\}/);
+  assert.match(setup, /event\.target\.value = "";/, "escolher o mesmo arquivo de novo continua funcionando");
+  assert.ok(!/position:/.test(block(".nv-filebtn")), "o rótulo-botão não pode ter position");
+  assert.match(css, /\.nv-filebtn:has\(input:focus-visible\) \{[^}]*outline: 3px solid/);
+  assert.match(block(".nv-filebtn.is-off"), /cursor: progress/);
+});
+
+test("cardápio: a miniatura só mostra a foto do aparelho, e o X de tirar a página tem 44 px", () => {
+  const setup = read("MenuSetup.tsx");
+  const srcs = setup.match(/<img [^>]*>/g) ?? [];
+  assert.deepEqual(srcs.length, 1);
+  assert.match(srcs[0], /src=\{page\.src\} alt=\{page\.label\}/);
+  assert.match(block(".nv-pages-remove"), /width: 44px/);
+  assert.match(block(".nv-pages-remove"), /height: 44px/);
+  assert.match(setup, /className="nv-pages-remove"\s+aria-label=/);
+  assert.ok(!/box-shadow/.test(block(".nv-pages li")) || /--nv-panel-3d/.test(block(".nv-pages li")), "a miniatura só informa");
+});
+
+test("cardápio: o microfone é a tecla grande, escurece e pulsa ouvindo, e o aviso também vai em palavra", () => {
+  const setup = read("MenuSetup.tsx");
+  assert.match(setup, /className=\{`nv-btn is-fire is-tall is-block nv-mic\$\{view\.listening \? " is-listening" : ""\}`\}/);
+  assert.match(setup, /aria-pressed=\{view\.listening\}/);
+  assert.match(setup, /\{view\.listening \? MENU_MIC_LISTENING : MENU_MIC\}/);
+  assert.match(block(".nv-mic.is-listening"), /background: var\(--nv-shine\), var\(--nv-ink\)/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.nv-mic\.is-listening svg \{\s*animation: none;/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.nv-spin \{\s*animation: none;/);
+  assert.ok(!/<(button|a)[^>]*nv-heard/.test(setup), "o que foi ouvido só informa");
+  assert.ok(!/box-shadow/.test(block(".nv-heard")));
+});
+
+test("cardápio: o que se escreve é campo afundado, com rótulo de verdade, e o aviso de cada etapa fica numa região viva", () => {
+  const setup = read("MenuSetup.tsx");
+  assert.match(setup, /<label className="nv-text" htmlFor="nv-menu-type">/);
+  assert.match(setup, /<input\s+id="nv-menu-type"/);
+  assert.match(setup, /enterKeyHint="send"/);
+  assert.match(setup, /<label className="nv-text" htmlFor=\{`nv-dish-name-\$\{dish\.id\}`\}>/);
+  assert.match(setup, /<label className="nv-text" htmlFor=\{`nv-dish-price-\$\{dish\.id\}`\}>/);
+  assert.match(setup, /inputMode="decimal"/);
+  assert.match(setup, /<p className="nv-sr" id="nv-menu-live" role="status" aria-live="polite" tabIndex=\{-1\}>/);
+  assert.match(setup, /role="alert"/);
+  // Os campos do prato abrem com o texto que já está e só valem no Pronto: nada muda no meio da digitação.
+  assert.match(setup, /defaultValue=\{dish\.name\}/);
+  assert.match(setup, /defaultValue=\{dish\.priceValue\}/);
+});
+
+test("cardápio: cada botão redondo da linha do prato diz de qual prato fala, e a linha só informa", () => {
+  const setup = read("MenuSetup.tsx");
+  const round = setup.match(/<button[^>]*className=\{?[`"]nv-icon-btn[^>]*>/g) ?? [];
+  assert.ok(round.length >= 3, "lápis e lixeira da conferência e lixeira de quem fala");
+  for (const tag of round) assert.match(tag, /aria-label=\{`\$\{MENU_(CHANGE|TAKE_OUT)\} \$\{dish\.name\}`\}/);
+  assert.match(block(".nv-icon-btn"), /width: 48px/);
+  assert.ok(!/box-shadow/.test(block(".nv-dishrow")), "a linha do prato só informa");
+  assert.ok(!/box-shadow/.test(block(".nv-dishrow-doubt")), "o aviso de preço só informa");
+  assert.match(block(".nv-icon-btn.is-needed"), /background: var\(--nv-sun\)/, "o lápis do prato sem preço chama a atenção");
+  assert.match(setup, /className=\{`nv-icon-btn\$\{dish\.missing \? " is-needed" : ""\}`\}/);
+});
+
+test("cardápio: 'Usar R$ x' só aparece quando há palpite, e Cadastrar fica preso embaixo, avisa quantos ficam de fora e espera o servidor", () => {
+  const setup = read("MenuSetup.tsx");
+  assert.match(setup, /\{dish\.doubt\.use \? \(/);
+  assert.match(setup, /\{view\.saveNote \|\| view\.canSave \? \(/);
+  assert.match(setup, /\{view\.canSave \? \(/);
+  assert.match(setup, /disabled=\{busy\} aria-busy=\{busy \|\| undefined\}/);
+  assert.match(setup, /\{busy \? MENU_SAVING : view\.saveLabel\}/);
+  assert.match(block(".nv-savebar"), /position: sticky/);
+  assert.match(block(".nv-savebar"), /bottom: 0/);
+  assert.match(block(".nv-page-menu.is-review"), /padding-bottom: 24px/);
+});
+
+test("cardápio: nas etapas com tecla grande própria (falar, conferir) a bolinha de voz não disputa o lugar", () => {
+  const setup = read("MenuSetup.tsx");
+  assert.match(setup, /const orb = view\.stage === "door" \|\| view\.stage === "pages" \|\| view\.stage === "done";/);
+});
+
+test("cardápio: a roda de espera é redonda e o texto que a explica não está escondido de quem lê tela", () => {
+  const setup = read("MenuSetup.tsx");
+  assert.match(setup, /<span className="nv-spin" aria-hidden="true" \/>/);
+  // A roda e a frase ao lado são só visuais: o leitor de tela ouve a mesma frase pela região viva.
+  assert.match(setup, /<Live text=\{view\.text\} \/>/);
+  assert.match(setup, /<Live text=\{view\.busy \? MENU_PREPARING : view\.message \|\| view\.sub\} \/>/);
+});

@@ -483,7 +483,8 @@ Para ver: `preview-novo.html#/entregas`, `#/entregas-pegar`, `#/entregas-entregu
 | Entrada do menu | Tela nova |
 | --- | --- |
 | Hoje, Pedidos, Abrir mesa, Mesas, Entregas, Acerto de caixa | **Pronta** (desenho + ligação, fora do painel público) |
-| Assistente (cardápio por voz e foto), Produtos, Categorias | Falta (próxima etapa: cadastro do cardápio) |
+| Assistente (montar o cardápio por foto, arquivo ou voz) | **Pronta** na décima terceira rodada (falta o caminho "começar de um modelo") |
+| Produtos, Categorias | Falta |
 | Seu negócio, Custos, Pagamento | Falta |
 | Meu link, Horário, Regiões de entrega, Marca, Equipe, Plano | Falta |
 | Aprovações, Assinaturas, Chamados (dono do sistema) | Falta |
@@ -493,13 +494,65 @@ topo de qualquer tela. As lacunas de servidor S1 a S3 continuam como estavam; na
 
 **Ainda não está ligado ao painel público** (o painel antigo continua mandando).
 
+## Décima terceira rodada: montar o cardápio por foto, arquivo ou voz (22/10/2026)
+
+Quinta tela da sequência (menu, mesas, pedidos, entregas e acerto, e agora o **cadastro do cardápio**). Continua o que o GD delegou ("Ok, prossiga", 22/10, 14:21).
+Segue o princípio dele: ferramenta fácil para quem escreve pouco, **menos escrita, menos dado**. Nada vai ao ar sem o "pode".
+
+**Telas** (`novo/MenuSetup.tsx`, ligada em `painel/MenuSetupScreen.tsx`; as contas estão em `painel/menuSetupLogic.ts`):
+
+1. **Como você quer montar?** Três cartões grandes: **Foto do cardápio** (câmera de trás), **Arquivo do cardápio** (planilha, e PDF quando o servidor lê) e
+   **Falar os pratos**. Antes de o servidor responder **não aparece cartão nenhum** (a ordem só se decide quando se sabe o que cada um faz). Depois, o que
+   funciona vem primeiro e o que o servidor ainda não lê fica **liso, com o porquê escrito**. Falar sempre funciona; sem microfone, escreve-se.
+2. **Páginas** (só na foto): miniaturas das fotos (só as do próprio aparelho, `blob:`), um X de 44 px para tirar uma, "Tirar outra página", "Escolher da galeria"
+   (várias de uma vez) e **Ler o cardápio**. Cabem 4 páginas; se vierem mais, a tela diz que as outras ficaram de fora.
+3. **Lendo:** "Lendo o cardápio…" com **Cancelar**. A leitura tem prazo de 100 s; uma resposta que chega depois de cancelar não muda a tela.
+4. **Falar:** a tecla grande do microfone (ouvindo, ela pulsa e a frase diz que está ouvindo). As palavras aparecem enquanto a pessoa fala, e **tocar para
+   parar não joga fora o que já foi ouvido**. Um campo "Ou escreva os pratos" faz a mesma coisa. Valem frases como "x-tudo 25, coca 6", "bebidas coca lata 6",
+   "tira x-salada" e "pronto". Cada prato entra com o preço, ou "sem preço" (nunca zero). Lixeira tira.
+5. **Conferir:** o **prato sem preço fica separado no alto**, com o lápis amarelo. O resto aparece por categoria, com lápis (muda nome e preço; **Pronto**
+   confirma) e lixeira. **Preço que parece engano de escuta** ("300" no lugar de "3,00") é apontado e **só muda se a pessoa tocar em "Usar 3,00"**. A tecla
+   **Cadastrar N pratos** fica presa embaixo, com a nota de quantos pratos sem preço não entram.
+6. **Cadastrado:** "Cardápio cadastrado" com a contagem **do servidor** (novos e já existentes). Sem resposta do servidor, a tela não escreve número.
+
+**Honestidade e cuidado:** nenhuma regra mudou. Ler foto, planilha e PDF é decisão do servidor (foto e PDF precisam da chave da IA). Entender a fala,
+tirar prato e conferir preço vêm da lógica do assistente antigo, que já era testada (`assistant/assistantFlow`, `spokenMenu`, `priceCheck`, `menuPhotoLogic`,
+`doorLogic`). **Prato sem preço nunca vai ao cardápio** e a tela diz quantos ficam de fora. O cadastro **só acrescenta** (o que já existe não repete) e tem
+trava de um toque por vez. **Uma correção:** a frase de "sem sinal" ao cadastrar não afirma mais "nada foi cadastrado" (a resposta pode ter se perdido depois de o
+servidor cadastrar); agora manda conferir a internet e tocar de novo, porque o que já entrou não repete. Nome de prato e de categoria que vêm do servidor ou da
+fala **nunca entram como HTML**.
+
+**Como foi conferido:** `tests/novo/menuSetupLogic.test.mjs` (42), `fluxo.test.mjs` (+6), `toque.test.mjs` (+9) e a lista de palavras proibidas; 1207 testes
+passam no total (novo: 384). Em 320, 360, 390 e 480 px, nas 17 telas de conferência do cardápio: sem rolagem lateral, nenhum botão com menos de 44 px e nenhum
+toque coberto. No navegador, com a tela de verdade, um servidor de mentira e um reconhecedor de voz de mentira (77 conferências): só aparece cartão depois de o
+servidor responder; sem leitura no servidor, Falar vem primeiro e foto e arquivo ficam desligados com o porquê; duas fotos viram duas miniaturas; nada é mandado
+antes de tocar em Ler; cancelar não deixa a resposta tardia mudar a tela; sem internet a foto fica e dá para tentar de novo; foto sem cardápio é descartada;
+planilha grande demais é recusada antes de ir ao servidor; texto com HTML aparece como texto; **dois toques em Cadastrar mandam um cadastro só**, com só os pratos
+que têm preço, já com o nome e o preço corrigidos; erro do servidor passa como veio; falar e escrever dão o mesmo resultado; o microfone mostra as palavras na hora
+e tocar para parar as guarda. (Achado de passagem: o Chrome novo traz o reconhecedor de voz também sem prefixo, e o aplicativo já olha os dois.)
+Para ver: `preview-novo.html#/cardapio`, `#/cardapio-sem-foto`, `#/cardapio-sem-ia`, `#/cardapio-carregando`, `#/cardapio-erro`, `#/cardapio-foto`,
+`#/cardapio-foto-erro`, `#/cardapio-lendo`, `#/cardapio-falar`, `#/cardapio-ouvindo`, `#/cardapio-sem-microfone`, `#/cardapio-conferir`, `#/cardapio-editando`,
+`#/cardapio-sem-preco`, `#/cardapio-vazio`, `#/cardapio-erro-cadastro` e `#/cardapio-cadastrado`.
+
+**O que ainda falta no cadastro do cardápio** (por isso o menu ainda não troca a entrada "Assistente"):
+
+| Item | Situação |
+| --- | --- |
+| Foto, arquivo e falar os pratos; conferir e cadastrar | **Pronto** (desenho + ligação, fora do painel público) |
+| "Começar de um modelo" (escolher o tipo de negócio e tocar nos pratos) | Falta; esse caminho só existe na tela antiga |
+| Produtos (editar, esconder, foto, opções de um prato) e Categorias | Falta |
+| Logomarca (entrada "Marca" do menu) | Falta |
+| A bolinha de voz que escuta e navega | Falta (o que passa de navegar e ler precisa da chave da IA, que ele mesmo digita em `configurar-ia.sh`) |
+
+**Ainda não está ligado ao painel público** (o painel antigo continua mandando).
+
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
 - Tudo mora em `frontend/src/novo/` e **não é importado pelo aplicativo**: o `index.html` e o `main.tsx` não mudam.
   Um teste (`tests/novo`) garante que o visual novo não depende do antigo e que só a página de conferência usa dados
   de exemplo.
 - Para ver: `cd frontend && npx vite build --config vite.preview-novo.config.ts --outDir /tmp/novo` e abrir
-  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu`, `#/menu-garcom`, `#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro`, `#/mesa-aberta`, `#/pedidos`, `#/pedidos-caixa`, `#/pedidos-garcom`, `#/pedidos-cozinha`, `#/pedidos-calmo`, `#/pedidos-erro`, `#/pedidos-enviando`, `#/entregas`, `#/entregas-pegar`, `#/entregas-entregues`, `#/entregas-codigo`, `#/entregas-bloqueado`, `#/entregas-erro`, `#/entregas-calmo`, `#/entregas-carregando`, `#/entregas-gerente`, `#/acerto`, `#/acerto-confirmar`, `#/acerto-calmo`, `#/acerto-erro` ou `#/acerto-carregando`
+  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu`, `#/menu-garcom`, `#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro`, `#/mesa-aberta`, `#/pedidos`, `#/pedidos-caixa`, `#/pedidos-garcom`, `#/pedidos-cozinha`, `#/pedidos-calmo`, `#/pedidos-erro`, `#/pedidos-enviando`, `#/entregas`, `#/entregas-pegar`, `#/entregas-entregues`, `#/entregas-codigo`, `#/entregas-bloqueado`, `#/entregas-erro`, `#/entregas-calmo`, `#/entregas-carregando`, `#/entregas-gerente`, `#/acerto`, `#/acerto-confirmar`, `#/acerto-calmo`, `#/acerto-erro`, `#/acerto-carregando` ou `#/cardapio` (e as outras 16 telas `#/cardapio-…`, listadas na décima terceira rodada)
   (a pasta pública vai junto, por causa das fontes).
 - Cada tela ganha um PR próprio: ligada aos dados de verdade (por props), com teste, e a tela antiga correspondente
   sai no mesmo PR. **Nada disso vira o que o público vê sem o "pode" do GD.**

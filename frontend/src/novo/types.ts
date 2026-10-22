@@ -501,3 +501,69 @@ export type SettleView = {
   error: string;
   notice: string;
 };
+
+// ---------------------------------------------------------------- Cardápio: montar
+
+/** Um jeito de começar: tocável quando `state` é "ready"; senão só informa, liso, e a frase do `hint` diz o porquê. */
+export type MenuDoorCard = {
+  id: "photo" | "file" | "speak";
+  title: string;
+  hint: string;
+  state: "ready" | "loading" | "off";
+  badge: string;
+  /** Só na porta do arquivo: o que o seletor aceita (planilha, e PDF quando o servidor lê). */
+  accept: string;
+};
+
+/** Uma página fotografada: `src` só vale como endereço `blob:` (a foto que está neste aparelho). */
+export type MenuPageThumb = { id: number; src: string; label: string };
+
+/** Um prato como aparece na lista de quem está falando. */
+export type MenuHeardDish = { id: string; name: string; price: string; missing: boolean };
+export type MenuHeardGroup = { id: string; name: string; dishes: MenuHeardDish[] };
+
+/** Um prato na conferência: `price` é a frase ("R$ 25,00"), `priceValue` é o que vai no campo ("25,00"). */
+export type MenuReviewDish = {
+  id: string;
+  name: string;
+  /** O nome da categoria onde o prato está. */
+  group: string;
+  price: string;
+  priceValue: string;
+  missing: boolean;
+  /** Preço que parece engano de escuta ("300" no lugar de "3,00"): a frase e o valor que o toque aplica ("" quando não há palpite). */
+  doubt: { text: string; use: string } | null;
+};
+export type MenuReviewGroup = { id: string; name: string; dishes: MenuReviewDish[] };
+
+export type MenuSetupView =
+  | { stage: "door"; sub: string; loading: boolean; cards: MenuDoorCard[]; foot: string; error: string }
+  | { stage: "pages"; sub: string; pages: MenuPageThumb[]; busy: boolean; canAdd: boolean; canRead: boolean; readLabel: string; message: string }
+  | { stage: "reading"; sub: string; text: string }
+  | {
+      stage: "speak";
+      sub: string;
+      listening: boolean;
+      canListen: boolean;
+      /** As palavras que o aparelho já ouviu, enquanto a pessoa ainda fala. */
+      heard: string;
+      notice: string;
+      groups: MenuHeardGroup[];
+      unclear: string[];
+      count: number;
+      finish: string;
+    }
+  | {
+      stage: "review";
+      sub: string;
+      intro: string;
+      /** O prato sem preço fica separado no alto: é o que falta decidir. */
+      missing: MenuReviewDish[];
+      groups: MenuReviewGroup[];
+      editing: string | null;
+      saveLabel: string;
+      saveNote: string;
+      canSave: boolean;
+      error: string;
+    }
+  | { stage: "done"; sub: string; headline: string; detail: string };

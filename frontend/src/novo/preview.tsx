@@ -12,6 +12,7 @@ import Desk from "./Desk";
 import Orders from "./Orders";
 import Deliveries from "./Deliveries";
 import Settle from "./Settle";
+import MenuSetup from "./MenuSetup";
 import DeskTable from "./DeskTable";
 import QrScan from "./QrScan";
 import PanelMenu from "../painel/PanelMenu";
@@ -19,10 +20,25 @@ import { deskTableViewOf, deskViewOf, openTyped, parsePanelCalls } from "../pain
 import { ORDERS_CHANGED, nextStatusOf, ordersViewOf, type PanelOrder } from "../painel/ordersLogic";
 import { deliveriesViewOf, pickedText, type CourierOrder } from "../painel/deliveriesLogic";
 import { armKey, markedIds, settleViewOf, toggleLeft } from "../painel/settleLogic";
+import {
+  addUnclear,
+  applyEdit,
+  doneViewOf,
+  doorViewOf,
+  pagesViewOf,
+  readingViewOf,
+  reviewViewOf,
+  speakViewOf,
+  takeOut,
+  takeSpoken,
+  useGuess,
+  type FlowState,
+} from "../painel/menuSetupLogic";
+import { selectedItems, startFromParsed, startSpeak } from "../assistant/assistantFlow";
 import { codeIsComplete, deliveredText, onlyCodeDigits } from "../courier/courierLogic";
 import type { CashView } from "../courier/courierLogic";
 import { emptyText, isKitchenTab, kitchenTabs, ticketsFor, type KitchenTabId } from "../cozinha/kitchenLogic";
-import { ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
+import { MENU_READ_EXAMPLE, MENU_SPOKEN_EXAMPLE, ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
 import { choicesViewOf, confirmChoices, nextQuantity, pressOption } from "../loja/choicesLogic";
 import { bagProblem, bagViewOf } from "../loja/bagLogic";
 import { copiedOutcome, pixOf, ratingOf, trackOf } from "../loja/trackingLogic";
@@ -40,6 +56,7 @@ import type { Selection } from "../customer/options";
  * #/pedidos (dono), #/pedidos-caixa (abre no dinheiro a receber), #/pedidos-garcom (sem a aba Receber), #/pedidos-cozinha (sem endereço nem telefone), #/pedidos-calmo (nenhum pedido) e #/pedidos-erro (frase de erro ao tocar) e #/pedidos-enviando (o botão esperando o servidor),
  * #/entregas (entregador: na rua), #/entregas-pegar, #/entregas-entregues, #/entregas-codigo (campo dos 4 números; o código de exemplo é 4821), #/entregas-bloqueado, #/entregas-erro, #/entregas-calmo, #/entregas-carregando e #/entregas-gerente (vê também as de outros motoqueiros),
  * #/acerto (caixa), #/acerto-confirmar (primeiro toque dado), #/acerto-calmo, #/acerto-erro e #/acerto-carregando,
+ * #/cardapio (a porta), #/cardapio-sem-foto, #/cardapio-sem-ia, #/cardapio-carregando, #/cardapio-erro, #/cardapio-foto, #/cardapio-foto-erro, #/cardapio-lendo, #/cardapio-falar, #/cardapio-ouvindo, #/cardapio-sem-microfone, #/cardapio-conferir, #/cardapio-editando, #/cardapio-sem-preco, #/cardapio-vazio, #/cardapio-erro-cadastro e #/cardapio-cadastrado,
  * #/menu (menu geral do dono), #/menu-garcom (o que o garçom vê), #/mesa (QR da mesa), #/mesa-chamada (conta chamada, água atendida, garçom sem resposta), #/loja-mesa (cardápio de quem está na mesa),
  * #/loja-pedido (cardápio de quem já pediu), #/pedido (preparo, Pix a pagar), #/pedido-rua (entrega a caminho) ou #/pedido-pronto (pronto, pago, avaliação).
  */
@@ -481,6 +498,152 @@ function SettlePreview({ stage = "normal" }: { stage?: SettleStage }) {
   );
 }
 
+type MenuStage =
+  | "porta"
+  | "porta-sem-foto"
+  | "porta-sem-ia"
+  | "porta-carregando"
+  | "porta-erro"
+  | "foto"
+  | "foto-erro"
+  | "lendo"
+  | "falar"
+  | "ouvindo"
+  | "sem-microfone"
+  | "conferir"
+  | "editando"
+  | "sem-preco"
+  | "vazio"
+  | "erro-cadastro"
+  | "cadastrado";
+
+/** Uma "foto de página" de exemplo, só para a miniatura: um endereço blob: de verdade, como o do aparelho. */
+function pageUrl(index: number): string {
+  const lines = Array.from({ length: 11 }, (_, i) => `<rect x="24" y="${84 + i * 27}" width="${130 + ((i * 41 + index * 17) % 100)}" height="9" rx="4.5" fill="#cfd8cf"/>`).join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#fffdf6"/><text x="24" y="56" font-size="26" font-family="sans-serif" font-weight="700" fill="#1b4332">Cardápio ${index + 1}</text>${lines}</svg>`;
+  return URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+}
+
+const readFlow = () => startFromParsed(MENU_READ_EXAMPLE);
+const spokenFlow = () => {
+  let flow = startSpeak();
+  let heading = "";
+  for (const text of MENU_SPOKEN_EXAMPLE) {
+    const out = takeSpoken(flow, text, heading);
+    flow = out.flow;
+    heading = out.heading;
+  }
+  return { flow, heading };
+};
+
+/** Montar o cardápio: cada etapa passa pela conta de verdade (`menuSetupLogic`); a leitura da foto é de exemplo e o cadastro não vai a lugar nenhum. */
+function MenuSetupPreview({ stage }: { stage: MenuStage }) {
+  type Where = "door" | "pages" | "reading" | "speak" | "review" | "done";
+  const first: Where =
+    stage === "foto" || stage === "foto-erro" ? "pages" : stage === "lendo" ? "reading" : stage === "falar" || stage === "ouvindo" || stage === "sem-microfone" ? "speak" : stage === "cadastrado" ? "done" : stage === "conferir" || stage === "editando" || stage === "sem-preco" || stage === "vazio" || stage === "erro-cadastro" ? "review" : "door";
+  const [where, setWhere] = useState<Where>(first);
+  const [pages, setPages] = useState(() => (first === "pages" ? [{ id: 1, url: pageUrl(0) }, { id: 2, url: pageUrl(1) }] : []));
+  const [nextPage, setNextPage] = useState(3);
+  const [flow, setFlow] = useState<FlowState>(() => {
+    if (stage === "falar" || stage === "ouvindo" || stage === "sem-microfone") return spokenFlow().flow;
+    if (stage === "sem-preco") return startFromParsed({ readable: true, notes: "", categories: [{ name: "Lanches", items: [{ name: "X-tudo", price: "" }, { name: "X-salada", price: "" }] }] });
+    if (stage === "vazio") return startFromParsed({ readable: true, notes: "", categories: [] });
+    return stage === "conferir" || stage === "editando" || stage === "erro-cadastro" || stage === "cadastrado" ? readFlow() : startSpeak();
+  });
+  const [heading, setHeading] = useState("");
+  const [notice, setNotice] = useState(stage === "falar" ? "Anotei Água mineral. Falta o preço." : "");
+  const [unclear, setUnclear] = useState<string[]>([]);
+  const [listening, setListening] = useState(stage === "ouvindo");
+  const [editing, setEditing] = useState<string | null>(stage === "editando" ? "0-3" : null);
+  const [error, setError] = useState(stage === "erro-cadastro" ? "Sem sinal. Nada foi cadastrado. Tente de novo." : "");
+  const [saving, setSaving] = useState(false);
+  const options = stage === "porta-sem-foto" ? { photo: false, file: true, pdf: false } : stage === "porta-sem-ia" ? { photo: false, file: false, pdf: false } : stage === "porta-carregando" ? null : { photo: true, file: true, pdf: true };
+
+  const view =
+    where === "door"
+      ? doorViewOf({ options, voiceWorks: stage !== "sem-microfone", error: stage === "porta-erro" ? "Não consegui falar com o servidor. Mostrei só o que funciona sem ele." : "" })
+      : where === "pages"
+        ? pagesViewOf({ pages, busy: false, photoEnabled: true, room: 4 - pages.length, failed: stage === "foto-erro", message: stage === "foto-erro" ? "Não consegui ler esta foto. Tire de novo, de frente e com mais luz." : "" })
+        : where === "reading"
+          ? readingViewOf()
+          : where === "speak"
+            ? speakViewOf({ flow, listening, canListen: stage !== "sem-microfone", heard: listening ? "coca lata seis reais" : "", notice, unclear })
+            : where === "review"
+              ? reviewViewOf({ flow, editing, error })
+              : doneViewOf({ products_created: 8, products_skipped: 1 });
+
+  function say(text: string) {
+    const out = takeSpoken(flow, text, heading);
+    setFlow(out.flow);
+    setHeading(out.heading);
+    setNotice(out.notice);
+    setUnclear(out.unclear);
+    if (out.finished && selectedItems(out.flow).length > 0) setWhere("review");
+  }
+  function read() {
+    setWhere("reading");
+    window.setTimeout(() => {
+      setFlow(readFlow());
+      setWhere("review");
+    }, 1400);
+  }
+
+  return (
+    <MenuSetup
+      view={view}
+      busy={saving}
+      onPhotos={(files) => {
+        setPages(files.map((_, i) => ({ id: i + 1, url: pageUrl(i) })));
+        setNextPage(files.length + 1);
+        setWhere("pages");
+      }}
+      onFile={() => read()}
+      onSpeak={() => {
+        setFlow(startSpeak());
+        setWhere("speak");
+      }}
+      onAddPhotos={(files) => {
+        setPages((current) => [...current, ...files.map((_, i) => ({ id: nextPage + i, url: pageUrl(nextPage + i) }))].slice(0, 4));
+        setNextPage((n) => n + files.length);
+      }}
+      onRemovePage={(id) => setPages((current) => current.filter((page) => page.id !== id))}
+      onRead={read}
+      onBack={() => setWhere(where === "review" && flow.source === "speech" ? "speak" : "door")}
+      onCancel={() => setWhere("pages")}
+      onMic={() => setListening((on) => !on)}
+      onText={say}
+      onRemoveDish={(id) => setFlow((current) => takeOut(current, id))}
+      onUnclear={(text) => {
+        setFlow((current) => addUnclear(current, text, heading));
+        setUnclear((current) => current.filter((value) => value !== text));
+      }}
+      onFinish={() => setWhere("review")}
+      onEdit={(id) => {
+        setEditing(id);
+        setError("");
+      }}
+      onChange={(id, name, price) => {
+        const outcome = applyEdit(flow, id, name, price);
+        if (outcome.problem) return setError(outcome.problem === "price" ? "Não entendi esse preço. Escreva só números, por exemplo 18,50." : "Esse nome ficou vazio ou já existe nesta categoria.");
+        setFlow(outcome.flow);
+        setEditing(null);
+        setError("");
+      }}
+      onUse={(id) => setFlow((current) => useGuess(current, id))}
+      onSave={() => {
+        setSaving(true);
+        window.setTimeout(() => {
+          setSaving(false);
+          setWhere("done");
+        }, 900);
+      }}
+      onMore={() => setWhere("door")}
+      onSeeMenu={() => setWhere("door")}
+      showMenu
+    />
+  );
+}
+
 function Screen() {
   const route = window.location.hash.replace(/^#\/?/, "");
   if (route === "entregas") return <DeliveriesPreview />;
@@ -492,6 +655,26 @@ function Screen() {
   if (route === "entregas-calmo") return <DeliveriesPreview stage="calmo" />;
   if (route === "entregas-carregando") return <DeliveriesPreview stage="carregando" />;
   if (route === "entregas-gerente") return <DeliveriesPreview stage="gerente" />;
+  const menuRoutes: Record<string, MenuStage> = {
+    cardapio: "porta",
+    "cardapio-sem-foto": "porta-sem-foto",
+    "cardapio-sem-ia": "porta-sem-ia",
+    "cardapio-carregando": "porta-carregando",
+    "cardapio-erro": "porta-erro",
+    "cardapio-foto": "foto",
+    "cardapio-foto-erro": "foto-erro",
+    "cardapio-lendo": "lendo",
+    "cardapio-falar": "falar",
+    "cardapio-ouvindo": "ouvindo",
+    "cardapio-sem-microfone": "sem-microfone",
+    "cardapio-conferir": "conferir",
+    "cardapio-editando": "editando",
+    "cardapio-sem-preco": "sem-preco",
+    "cardapio-vazio": "vazio",
+    "cardapio-erro-cadastro": "erro-cadastro",
+    "cardapio-cadastrado": "cadastrado",
+  };
+  if (menuRoutes[route]) return <MenuSetupPreview stage={menuRoutes[route]} />;
   if (route === "acerto") return <SettlePreview />;
   if (route === "acerto-confirmar") return <SettlePreview stage="confirmar" />;
   if (route === "acerto-calmo") return <SettlePreview stage="calmo" />;

@@ -539,3 +539,38 @@ export function cashExample(now: number): CashView {
     ],
   });
 }
+
+/** O cardápio que o servidor leu da foto, de EXEMPLO: um prato sem preço, um preço que parece engano de escuta e um nome comprido. */
+export const MENU_READ_EXAMPLE = {
+  readable: true,
+  notes: "",
+  categories: [
+    {
+      name: "Lanches",
+      items: [
+        { name: "X-tudo", price: "25.00" },
+        { name: "X-salada", price: "22.00" },
+        { name: "Hambúrguer artesanal", price: "28.00" },
+        { name: "X-bacon", price: "" },
+      ],
+    },
+    {
+      name: "Porções",
+      items: [
+        { name: "Batata frita com cheddar e bacon (serve duas pessoas)", price: "38.00" },
+        { name: "Calabresa acebolada", price: "" },
+      ],
+    },
+    {
+      name: "Bebidas",
+      items: [
+        { name: "Coca-Cola lata", price: "300" },
+        { name: "Suco de laranja", price: "9.00" },
+        { name: "Água mineral", price: "4.00" },
+      ],
+    },
+  ],
+};
+
+/** O que a pessoa falou, de EXEMPLO, passando pela conta de verdade (`takeSpoken`). */
+export const MENU_SPOKEN_EXAMPLE = ["x-tudo 25, x-salada 22, hambúrguer 28", "bebidas coca lata 6, suco de laranja 9, água"];

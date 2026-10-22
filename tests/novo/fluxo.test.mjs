@@ -405,3 +405,71 @@ test("as entregas e o acerto do painel: o texto do cliente (nome, endereço, ref
     assert.ok(!/dangerouslySetInnerHTML|innerHTML|document\.write|eval\(/.test(read(name)), `${name} injeta HTML`);
   }
 });
+
+test("o cardápio do painel: só as contas puras do assistente de fora (nada de tela, CSS ou estilos antigos), e a lógica não fala com o servidor", () => {
+  const files = {
+    menuSetupLogic: read("painel/menuSetupLogic.ts"),
+    menuSetupScreen: read("painel/MenuSetupScreen.tsx"),
+    menuSetup: read("novo/MenuSetup.tsx"),
+  };
+  const PURE = /^(assistantFlow|assistantLogic|doorLogic|menuPhotoLogic|priceCheck|spokenMenu)(\.ts)?$/;
+  for (const [name, text] of Object.entries(files)) {
+    assert.ok(!/from ["']\.\.\/(styles|ui|admin)/.test(text), `${name} importa o antigo`);
+    assert.ok(!/from ["']\.\.\/mesa\//.test(text), `${name} importa a mesa antiga`);
+    assert.ok(!/from ["']\.\.\/nav\//.test(text), `${name} importa o menu antigo`);
+    assert.ok(!/import ["']\.\.\//.test(text), `${name} importa CSS de fora`);
+    // Do assistente antigo entram só as contas testadas (e a voz, na tela que escuta); as telas e o CSS dele ficam de fora.
+    for (const [, from] of text.matchAll(/from ["']\.\.\/assistant\/([^"']+)["']/g)) {
+      const voice = name === "menuSetupScreen" && /^voiceIO(\.ts)?$/.test(from);
+      assert.ok(PURE.test(from) || voice, `${name} importa ../assistant/${from}`);
+    }
+  }
+  assert.ok(!/service\/api/.test(files.menuSetupLogic), "a conta não fala com o servidor");
+  assert.ok(!/voiceIO|photoFiles|document\.|window\./.test(files.menuSetupLogic), "a conta não usa o navegador");
+  assert.ok(!/from ["']\.\.\/(service|painel|assistant|photos)\//.test(files.menuSetup), "a tela de desenho não fala com o servidor nem com a conta");
+});
+
+test("o cardápio do painel: cadastrar tem trava (um toque por vez), só vai o que tem preço e a leitura tem prazo", () => {
+  const text = read("painel/MenuSetupScreen.tsx");
+  assert.match(text, /if \(working\.current\) return;/);
+  assert.match(text, /const payload = importPayload\(flowRef\.current\);\s*if \(payload\.categories\.length === 0\) return;/);
+  assert.match(text, /await importMenu\(companyId, payload\);/);
+  assert.match(text, /\} finally \{\s*working\.current = false;\s*if \(alive\.current\) setSaving\(false\);/);
+  assert.match(text, /const READ_TIMEOUT_MS = 100_000;/);
+  assert.match(text, /window\.setTimeout\(\(\) => abort\.abort\(\), READ_TIMEOUT_MS\)/);
+  // Sair da tela (ou cancelar) para a leitura, a escuta e solta as fotos do aparelho.
+  assert.match(text, /controller\.current\?\.abort\(\);\s*hearing\.current\?\.cancel\(\);\s*pagesRef\.current\.forEach\(\(page\) => URL\.revokeObjectURL\(page\.url\)\);/);
+  assert.match(text, /if \(mine !== run\.current \|\| !alive\.current\) return;/);
+});
+
+test("o cardápio do painel: leitura sem prato nenhum conta como 'não li'; a foto que não leu é descartada, o arquivo volta à porta", () => {
+  const text = read("painel/MenuSetupScreen.tsx");
+  assert.match(text, /if \(!read \|\| selectedItems\(read\)\.length === 0\) return fall\(/);
+  assert.match(text, /if \(unreadable\) clearPages\(\);/);
+  assert.match(text, /setDoorError\(message\);\s*setWhere\("door"\);/);
+  assert.match(text, /const problem = menuFileProblem\(file, options\?\.pdf === true\);/);
+  assert.match(text, /if \(!fitsTogether\(current\.map\(\(page\) => page\.blob\.size\)\)\) \{\s*setPagesMessage\(MENU_TOO_HEAVY\);\s*return;\s*\}/);
+});
+
+test("o cardápio do painel: tocar para parar de falar não joga fora o que já foi ouvido, e a escuta é de ditado (espera a pausa)", () => {
+  const text = read("painel/MenuSetupScreen.tsx");
+  assert.match(text, /const words = heardRef\.current\.trim\(\);\s*stopListening\(\);\s*if \(words\) take\(words\);/);
+  assert.match(text, /patienceMs: DICTATION_PATIENCE_MS/);
+  assert.match(text, /if \(mine !== session\.current \|\| !alive\.current\) return;/);
+  assert.match(text, /document\.getElementById\("nv-menu-live"\)\?\.focus\(\);/);
+});
+
+test("o cardápio do painel: o cadastro de verdade é o do servidor; o erro 'sem sinal' não afirma o que não sabe", () => {
+  const text = read("painel/MenuSetupScreen.tsx");
+  assert.match(text, /setReviewError\(wordsOf\(failure, MENU_SAVE_ERROR\)\)/);
+  const copy = read("novo/copy.ts");
+  const line = copy.match(/export const MENU_SAVE_ERROR = "([^"]*)"/)[1];
+  assert.ok(!/nada foi cadastrado/i.test(line), "a resposta pode ter se perdido depois de o servidor cadastrar");
+  assert.match(line, /não repete/);
+});
+
+test("o cardápio do painel: nome de prato, texto falado e frase do servidor nunca entram como HTML", () => {
+  for (const name of ["painel/MenuSetupScreen.tsx", "painel/menuSetupLogic.ts", "novo/MenuSetup.tsx"]) {
+    assert.ok(!/dangerouslySetInnerHTML|innerHTML|document\.write|eval\(/.test(read(name)), `${name} injeta HTML`);
+  }
+});

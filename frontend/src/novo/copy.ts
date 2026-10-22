@@ -134,3 +134,75 @@ export const SETTLE_REFRESH = "Atualizar a lista";
 export const SETTLE_LOAD_ERROR = "Sem sinal. Tente de novo.";
 export const SETTLE_ERROR = "Sem sinal. Nada foi acertado. Tente de novo.";
 export const SETTLE_CHANGED = "Esta lista já mudou (outra pessoa acertou, ou o valor mudou). A tela foi atualizada: confira de novo.";
+
+// ---------------------------------------------------------------- Cardápio: montar (foto, arquivo, falar os pratos, conferir)
+
+export const MENU_TITLE = "Cardápio";
+export const MENU_DOOR_SUB = "Como você quer montar?";
+export const MENU_DOOR_LOADING = "Vendo o que este servidor lê…";
+export const MENU_DOOR_FOOT = "Em qualquer jeito, no fim você confere tudo antes de cadastrar.";
+export const MENU_DOOR_PHOTO = "Foto do cardápio";
+export const MENU_DOOR_FILE = "Arquivo do cardápio";
+export const MENU_DOOR_SPEAK = "Falar os pratos";
+export const MENU_BADGE_FAST = "Mais rápido";
+export const MENU_SPEAK_HINT_VOICE = "Diga o prato e o preço. Eu anoto.";
+export const MENU_SPEAK_HINT_TYPE = "Escreva os pratos com o preço. Eu anoto.";
+
+export const MENU_PAGES_SUB = "Páginas do cardápio";
+export const MENU_PAGES_LABEL = "Páginas do cardápio";
+export const MENU_PAGES_HELP = "Uma foto de cada página, de frente, com boa luz e sem reflexo. A foto é usada só para ler o cardápio e não fica guardada.";
+export const MENU_READ = "Ler o cardápio";
+export const MENU_READ_AGAIN = "Tentar de novo";
+export const MENU_TAKE_PHOTO = "Tirar foto do cardápio";
+export const MENU_ADD_PAGE = "Tirar outra página";
+export const MENU_GALLERY = "Escolher da galeria";
+export const MENU_BACK = "Voltar";
+export const MENU_PREPARING = "Preparando a foto…";
+export const MENU_READING_SUB = "Lendo o cardápio";
+export const MENU_READING = "Lendo o cardápio… pode levar até 1 minuto.";
+export const MENU_CANCEL = "Cancelar";
+
+export const MENU_SPEAK_SUB = "Diga os pratos com o preço";
+export const MENU_SPEAK_EXAMPLE = "Por exemplo: X-tudo, 25 reais. Coca lata, 6. Quando acabar, toque em Pronto.";
+export const MENU_MIC = "Falar";
+export const MENU_MIC_LISTENING = "Ouvindo… toque para parar";
+export const MENU_MIC_OFF = "Este celular não escuta. Escreva os pratos abaixo.";
+export const MENU_TYPE_LABEL = "Ou escreva os pratos";
+export const MENU_TYPE_HINT = "x-tudo 25, coca 6";
+export const MENU_NOTE = "Anotar";
+export const MENU_NOTED = "Anotei";
+export const MENU_TAKE_OUT = "Tirar";
+export const MENU_NO_PRICE = "sem preço";
+export const MENU_UNCLEAR = "Não separei isto. Toque para anotar como um prato:";
+export const MENU_SPEAK_EMPTY = "Ainda não anotei nenhum prato. Fale o nome e o preço, por exemplo: X-tudo, 25 reais.";
+export const MENU_SPEAK_NOT_HEARD = "Não peguei o prato. Fale o nome e o preço, por exemplo: Coca lata, 6.";
+export const MENU_SPEAK_ALREADY = "Esses já estavam anotados.";
+export const MENU_FINISH = "Pronto, conferir";
+
+export const MENU_REVIEW_SUB = "Conferir o cardápio";
+export const MENU_REVIEW_INTRO_READ = "Li o seu cardápio. Corrija o que precisar e cadastre.";
+export const MENU_REVIEW_INTRO_SPOKEN = "Confira o que você falou. Corrija o que precisar e cadastre.";
+export const MENU_MISSING_HEADING = "Falta o preço";
+export const MENU_CHANGE = "Mudar";
+export const MENU_CLOSE_EDIT = "Pronto";
+export const MENU_NAME_LABEL = "Nome do prato";
+export const MENU_PRICE_LABEL = "Preço";
+export const MENU_PRICE_HINT = "Ex.: 18,50";
+export const MENU_SAVING = "Cadastrando…";
+export const MENU_SAVE_ERROR = "Sem sinal. Veja se o celular tem internet e toque em Cadastrar de novo. O que já entrou não repete.";
+export const MENU_EMPTY_REVIEW = "Não sobrou nenhum prato. Volte e fale ou fotografe de novo.";
+
+export const MENU_DONE_SUB = "Cardápio cadastrado";
+export const MENU_DONE_MORE = "Cadastrar mais pratos";
+export const MENU_DONE_SEE = "Ver os pratos";
+export const MENU_PRICE_BAD = "Não entendi esse preço. Escreva só números, por exemplo 18,50.";
+export const MENU_NAME_BAD = "Esse nome ficou vazio ou já existe nesta categoria.";
+export const MENU_USE_GUESS = "Usar";
+
+export const MENU_FULL = "Já tem 4 páginas. Toque em Ler o cardápio.";
+export const MENU_TOO_HEAVY = "As fotos ficaram pesadas demais juntas. Tire uma página de cada vez, ou tire menos páginas.";
+export const MENU_READ_ODD = "O servidor respondeu algo que não entendi. Tente de novo.";
+export const MENU_READ_TIMEOUT = "A leitura demorou demais. Tente de novo, ou fale os pratos.";
+export const MENU_ONLY_FIT = "Só cabem 4 páginas; as outras ficaram de fora.";
+export const MENU_NOT_HEARD_ONCE = "Não ouvi nada. Toque em Falar e diga de novo.";
+export const MENU_NOT_HEARD_HELP = "Não estou ouvindo. Veja se o microfone está liberado no navegador (cadeado ao lado do endereço) ou escreva os pratos.";

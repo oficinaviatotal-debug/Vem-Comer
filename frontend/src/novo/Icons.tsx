@@ -59,7 +59,9 @@ export type NvIconName =
   | "logout"
   | "guide"
   | "qr"
-  | "phone";
+  | "phone"
+  | "camera"
+  | "image";
 
 const PATHS: Record<NvIconName, ReactNode> = {
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
@@ -191,6 +193,19 @@ const PATHS: Record<NvIconName, ReactNode> = {
   guide: <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0 M9.5 9.5a2.6 2.6 0 0 1 5 .8c0 1.7-2.5 2-2.5 3.7 M12 17.2h.01" />,
   phone: <path d="M6.5 3.5h3l1.5 4-2.1 1.5a11 11 0 0 0 6.1 6.1L16.5 13l4 1.5v3a2 2 0 0 1-2.2 2A15.8 15.8 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2Z" />,
   qr: <path d="M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h2.5v2.5H14z M18 14h2v2 M14 18.5h2 M18.5 18.5h1.5V20 M17.5 17.5v0" />,
+  camera: (
+    <>
+      <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.2a1 1 0 0 0 .8-.4l.8-1.2A1 1 0 0 1 10.1 4h3.8a1 1 0 0 1 .8.4l.8 1.2a1 1 0 0 0 .8.4h1.2A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z" />
+      <circle cx="12" cy="12.5" r="3.4" />
+    </>
+  ),
+  image: (
+    <>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+      <circle cx="9" cy="10" r="1.7" />
+      <path d="m4 17 5-4.5 3.5 3 3-2.5L20 16" />
+    </>
+  ),
 };
 
 export default function NvIcon({ name }: { name: NvIconName }) {
