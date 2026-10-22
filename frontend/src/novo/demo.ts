@@ -4,6 +4,7 @@
  * As "fotos" são emojis no lugar da foto do prato; na tela de verdade entra a foto do restaurante.
  */
 
+import type { MyCall } from "../loja/tableLogic.ts";
 import type { KitchenOrder } from "../cozinha/kitchenLogic";
 import { hourOf, todayOf } from "../hoje/todayLogic";
 import { shopViewOf, type ShopView } from "../loja/shopLogic";
@@ -307,4 +308,17 @@ export function pixExample() {
     receiver_name: "Açaí do João",
     amount: "67.00",
   };
+}
+
+/**
+ * O que a mesa de exemplo já chamou. "novo": nada. "chamado": a conta foi chamada há 10 s (afundada, espere), a água
+ * já foi atendida (verde) e o garçom foi chamado há 90 s sem resposta ("Ainda não veio?").
+ */
+export function callsExample(stage: "novo" | "chamado", now: number): MyCall[] {
+  if (stage === "novo") return [];
+  return [
+    { id: "c1", kind: "conta", status: "open", savedAt: now - 10_000 },
+    { id: "c2", kind: "agua", status: "answered", savedAt: now - 300_000 },
+    { id: "c3", kind: "garcom", status: "open", savedAt: now - 90_000 },
+  ];
 }

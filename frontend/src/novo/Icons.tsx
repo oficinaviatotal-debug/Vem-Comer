@@ -28,7 +28,9 @@ export type NvIconName =
   | "edit"
   | "store"
   | "home"
-  | "trash";
+  | "trash"
+  | "drop"
+  | "sparkle";
 
 const PATHS: Record<NvIconName, ReactNode> = {
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
@@ -124,6 +126,13 @@ const PATHS: Record<NvIconName, ReactNode> = {
   store: <path d="M4 9.5 5.5 4h13L20 9.5M4 9.5c0 1.7 1.3 3 2.7 3s2.7-1.3 2.7-3c0 1.7 1.3 3 2.6 3s2.6-1.3 2.6-3c0 1.7 1.3 3 2.7 3S20 11.2 20 9.5M5.5 12.5V20h13v-7.5M10 20v-4.5h4V20" />,
   home: <path d="m4 11 8-6.5 8 6.5M6 9.5V20h12V9.5M10 20v-5h4v5" />,
   trash: <path d="M5 7h14M9 7V4.5h6V7M7 7l1 13h8l1-13M10.5 11v6M13.5 11v6" />,
+  drop: <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" />,
+  sparkle: (
+    <>
+      <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" />
+      <path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z" />
+    </>
+  ),
 };
 
 export default function NvIcon({ name }: { name: NvIconName }) {

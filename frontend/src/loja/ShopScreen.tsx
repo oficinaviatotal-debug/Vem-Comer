@@ -20,13 +20,15 @@ type Props = {
   /** Quantos pedidos este aparelho já enviou, e o toque em "Acompanhar o seu pedido". */
   ordersCount?: number;
   onTrack?: () => void;
+  /** Toque em "Mesa 4": volta à tela da mesa (chamar o garçom). Sem mesa, sem botão. */
+  onTable?: () => void;
 };
 
 /**
  * O cardápio de verdade: mostra o que o servidor disse (aberto, fechado, em pausa, prato esgotado) e mexe na sacola.
  * Quem busca os dados é `useShop`; aqui só se desenha e se toca.
  */
-export default function ShopScreen({ shop, tableId, jobsHref = null, onChoose, onBag, ordersCount = 0, onTrack }: Props) {
+export default function ShopScreen({ shop, tableId, jobsHref = null, onChoose, onBag, ordersCount = 0, onTrack, onTable }: Props) {
   const [query, setQuery] = useState("");
   const { live, products, menus, cart, tableNumber, soldOutNote, setCart } = shop;
 
@@ -87,6 +89,8 @@ export default function ShopScreen({ shop, tableId, jobsHref = null, onChoose, o
       onBag={onBag}
       ordersCount={ordersCount}
       onTrack={onTrack}
+      tableLabel={onTable ? (tableNumber !== null && tableNumber > 0 ? `Mesa ${tableNumber}` : "Sua mesa") : null}
+      onTable={onTable}
       jobsHref={jobsHref}
     />
   );

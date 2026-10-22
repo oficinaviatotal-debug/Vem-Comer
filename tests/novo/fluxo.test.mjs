@@ -15,6 +15,8 @@ const loja = {
   bag: read("loja/BagScreen.tsx"),
   choices: read("loja/ChoicesScreen.tsx"),
   hook: read("loja/useShop.ts"),
+  table: read("loja/TableScreen.tsx"),
+  tableLogic: read("loja/tableLogic.ts"),
 };
 
 test("as telas novas do cliente não dependem das antigas (nem do CSS, nem das telas do fluxo velho)", () => {
@@ -22,7 +24,9 @@ test("as telas novas do cliente não dependem das antigas (nem do CSS, nem das t
     .filter((name) => /\.tsx$/.test(name))
     .map((name) => name.replace(/\.tsx$/, ""));
   for (const [name, text] of Object.entries(loja)) {
-    assert.ok(!/from ["']\.\.\/(styles|ui|admin|nav|mesa)/.test(text), `${name} importa o antigo`);
+    // Da mesa antiga só entra a conta pura (`mesa/callsLogic`, a mesma do painel); tela e CSS dela, nunca.
+    assert.ok(!/from ["']\.\.\/(styles|ui|admin|nav)/.test(text), `${name} importa o antigo`);
+    assert.ok(!/from ["']\.\.\/mesa\/(?!callsLogic)/.test(text), `${name} importa a tela antiga da mesa`);
     assert.ok(!/import ["']\.\.\//.test(text), `${name} importa CSS de fora`);
     for (const screen of oldScreens) {
       assert.ok(!new RegExp(`from ["']\\.\\./customer/${screen}["']`).test(text), `${name} importa a tela antiga ${screen}`);
@@ -125,7 +129,7 @@ test("a avaliação é uma por visita: vale para todos os pedidos de agora, e n�
 });
 
 test("o fluxo abre no acompanhamento quando já há pedido, esquece o pedido fechado e mostra o pedido enviado mesmo sem armazenamento", () => {
-  assert.match(loja.flow, /useState<Screen>\(\(\) => \(orders\.length > 0 \? "tracking" : "menu"\)\)/);
+  assert.match(loja.flow, /orders\.length > 0 \? "tracking" : tableId \? "table" : "menu"/);
   assert.match(loja.flow, /orderMemory\.remove\(company\.slug, orderId\)/);
   assert.match(loja.flow, /if \(next\.length === 0\) goTo\("menu"\)/);
   // A lista vem do que a sacola acabou de guardar, não de uma leitura nova do armazenamento (que pode estar bloqueado).
@@ -140,4 +144,27 @@ test("o cardápio mostra 'Acompanhar o seu pedido' só quando há pedido, com a 
   assert.match(menu, /Acompanhar o seu pedido\{ordersCount > 1 \? ` \(\$\{ordersCount\}\)` : ""\}/);
   assert.match(loja.shop, /ordersCount=\{ordersCount\}/);
   assert.match(loja.flow, /ordersCount=\{orders\.length\}/);
+});
+
+test("quem lê o QR da mesa abre na mesa; mesa que o servidor não conhece cai direto no cardápio; o cardápio leva de volta à mesa", () => {
+  assert.match(loja.flow, /screenState === "table" && \(!tableId \|\| shop\.tableLost\) \? "menu" : screenState/);
+  assert.match(loja.flow, /onTable=\{tableId && !shop\.tableLost \? \(\) => goTo\("table"\) : undefined\}/);
+  assert.match(loja.flow, /<TableScreen[\s\S]*onMenu=\{\(\) => goTo\("menu"\)\}[\s\S]*onTrack=\{\(\) => goTo\("tracking"\)\}/);
+  const menu = readFileSync(new URL("novo/ShopMenu.tsx", SRC), "utf8");
+  assert.match(menu, /tableLabel && onTable \?/);
+  assert.match(menu, /\{tableLabel\}: chamar o garçom/);
+});
+
+test("a mesa manda uma chamada de cada vez, só guarda depois que o servidor aceitou e pergunta se atenderam sem insistir com a aba escondida", () => {
+  const text = loja.table;
+  assert.match(text, /if \(sendingRef\.current \|\| !isKind\(kind\)\) return;/);
+  const sent = text.indexOf("await createTableCall(");
+  const kept = text.indexOf("memory.put(");
+  assert.ok(sent > 0 && sent < kept, "guarda a chamada depois de enviada");
+  assert.match(text, /if \(!saved\) throw new Error\("incomplete"\)/);
+  assert.match(text, /finally \{\s*sendingRef\.current = false;/);
+  assert.match(text, /if \(document\.hidden\) return;/);
+  assert.match(text, /window\.clearInterval\(timer\)/);
+  assert.match(text, /window\.clearTimeout\(noticeTimer\.current\)/);
+  assert.ok(!/fetchTable\(/.test(text), "o número da mesa vem do useShop, não de nova busca");
 });

@@ -256,3 +256,39 @@ export type Rating = {
   busy: boolean;
   error: string | null;
 };
+
+/** O que a mesa pode pedir. Os mesmos quatro do servidor; a tela escolhe o desenho de cada um. */
+export type CallKind = "garcom" | "conta" | "agua" | "limpeza";
+
+/**
+ * Um botão da mesa. `state`: pronto para tocar, mandando, já chamado (espere), atendido (pode chamar de novo) ou
+ * "ainda não veio?" (passou um minuto sem resposta: pode avisar de novo). `locked`: o toque agora não faz nada
+ * (mandando ou recém-chamado). `spoken` é a frase inteira para o leitor de tela, que não vê as cores.
+ */
+export type CallTile = {
+  kind: CallKind;
+  title: string;
+  /** "Chamado", "Atendido"...; vazio quando o botão está pronto. */
+  status: string;
+  note: string;
+  state: "ready" | "busy" | "called" | "answered" | "again";
+  locked: boolean;
+  spoken: string;
+};
+
+/** A tela da mesa: o que abre quando o cliente lê o QR. */
+export type TableView = {
+  /** "Mesa 4", ou "Sua mesa" enquanto o número não chegou. */
+  title: string;
+  sub: string;
+  main: CallTile[];
+  small: CallTile[];
+  /** A frase que confirma o toque ("Avisamos o atendente."); vazio quando não há. Lida em voz alta. */
+  notice: string;
+  /** Quando o aviso não saiu: o que fazer. Vazio quando não há. */
+  error: string;
+  /** Quantos pedidos este aparelho já enviou; com pelo menos um, aparece "Acompanhar o seu pedido". */
+  ordersCount: number;
+  /** Só endereço https de verdade; senão null e o botão some. */
+  jobsHref: string | null;
+};

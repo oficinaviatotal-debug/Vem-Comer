@@ -310,3 +310,70 @@ test("o telefone do endereço de entrega não quebra no meio do número", () => 
   assert.match(read("Tracking.tsx"), /<span className="nv-nowrap">\{track\.handling\.phone\}<\/span>/);
   assert.match(block(".nv-nowrap"), /white-space: nowrap/);
 });
+
+test("a mesa: o botão é tecla de borda grossa, afunda no toque (menos quando já foi chamado) e tem altura de dedo", () => {
+  assert.match(block(".nv-call"), /box-shadow: var\(--nv-hi\), 0 var\(--nv-depth\) 0 var\(--nv-peach-edge\)/);
+  assert.match(block(".nv-call.is-big"), /min-height: 1[4-9]\dpx/);
+  assert.match(block(".nv-call.is-small"), /min-height: [6-9]\dpx/);
+  assert.match(block(".nv-call:active:not(.is-called):not(.is-busy)"), /transform: translateY\(/);
+  assert.match(block(".nv-btn.is-tall"), /min-height: 6\dpx/);
+  // Recém-chamado: afundado e amarelo, sem borda grossa (não há o que tocar agora).
+  assert.match(block(".nv-call.is-called,\n.nv-call.is-busy"), /box-shadow: var\(--nv-hi\), 0 1px 0 var\(--nv-call-sun-edge\)/);
+  assert.match(block(".nv-call.is-called,\n.nv-call.is-busy"), /transform: translateY\(/);
+  // Atendido: verde e sobe de novo, porque pode chamar outra vez.
+  assert.match(block(".nv-call.is-answered"), /0 var\(--nv-depth\) 0 var\(--nv-green-soft-edge\)/);
+});
+
+test("a mesa: o ícone e a etiqueta só informam (lisos), e a confirmação vazia sai do desenho mas fica para o leitor de tela", () => {
+  assert.ok(!/0 [2-9]px 0/.test(block(".nv-call-icon")), "o ícone não tem borda grossa");
+  assert.ok(!/box-shadow/.test(block(".nv-call-status")), "a etiqueta é lisa");
+  assert.ok(!/box-shadow/.test(block(".nv-callnote")), "a confirmação é lisa");
+  assert.match(block(".nv-callnote:empty"), /position: absolute/);
+});
+
+test("a mesa: recém-chamado não usa 'disabled' (continua focável para o leitor de tela), cada botão é lido por inteiro, a confirmação é voz alta e o erro é alerta", () => {
+  const table = read("Table.tsx");
+  assert.match(table, /aria-label=\{tile\.spoken\}/);
+  assert.match(table, /aria-disabled=\{tile\.locked \|\| undefined\}/);
+  assert.match(table, /if \(!tile\.locked\) onCall\(tile\.kind\);/);
+  assert.ok(!/(?<![-\w])disabled=/.test(table), "Table.tsx usa disabled (só aria-disabled)");
+  assert.match(table, /<div className="nv-callnote" role="status" aria-live="polite">\s*\{view\.notice\}\s*<\/div>/);
+  assert.match(table, /<p className="nv-error" role="alert">/);
+  assert.ok(!/nv-hit/.test(table), "o botão já é o cartão inteiro");
+});
+
+test("a mesa: o botão do cardápio vem primeiro, o de acompanhar só com pedido, e o do Vem Trabalhar abre fora sem dar poder à outra página", () => {
+  const table = read("Table.tsx");
+  const menu = table.indexOf("onClick={onMenu}");
+  const track = table.indexOf("view.ordersCount > 0 && onTrack");
+  const calls = table.indexOf('className="nv-calls"');
+  assert.ok(menu > 0 && menu < track && track < calls, "cardápio, depois acompanhar, depois os chamados");
+  assert.match(table, /rel="noopener noreferrer"/);
+  assert.match(table, /target="_blank"/);
+  assert.match(table, /\(abre em outra aba\)/);
+});
+
+test("a mesa: texto pequeno passa de 4,5:1 em cada estado do botão", () => {
+  for (const [front, back, what] of [
+    ["muted", "peach", "dica do botão pronto"],
+    ["muted", "call-sun", "frase do botão recém-chamado"],
+    ["muted", "green-soft", "frase do botão atendido"],
+    ["ink", "peach", "nome do botão"],
+    ["ink", "call-sun", "nome do botão recém-chamado"],
+    ["ink", "call-pill", "etiqueta Chamado"],
+    ["ink", "answered-pill", "etiqueta Atendido"],
+    ["fire-deep", "paper", "etiqueta Ainda não veio?"],
+    ["paper", "green", "ícone de atendido"],
+  ]) {
+    const ratio = contrast(token(front), token(back));
+    assert.ok(ratio >= 4.5, `${what}: ${ratio.toFixed(2)}:1`);
+  }
+  // O ícone laranja de cada botão é desenho que identifica: precisa de 3:1.
+  assert.ok(contrast("#1b1200", token("fire")) >= 3, "ícone escuro sobre o laranja");
+});
+
+test("a mesa: em 320 px os botões largos cabem numa linha, os pequenos lado a lado e o título encolhe um pouco", () => {
+  assert.match(css, /@media \(max-width: 340px\) \{\s*\/\*[^*]*\*\/\s*\.nv-btn \{\s*padding: 0 16px;\s*font-size: 16px;\s*\}\s*\.nv-calls \{\s*gap: 10px;/);
+  assert.match(block(".nv-call-text"), /min-width: 0/);
+  assert.match(block(".nv-calls"), /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+});

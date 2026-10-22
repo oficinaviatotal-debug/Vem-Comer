@@ -20,3 +20,15 @@ export const copiedText = (copied: "" | "ok" | "manual"): string =>
   copied === "ok" ? PIX_COPIED_TEXT : copied === "manual" ? PIX_COPY_MANUAL_TEXT : "";
 
 export const RATING_THANKS = "Obrigado pela sua avaliação!";
+
+/** A tela da mesa (novo/Table.tsx e loja/tableLogic.ts). */
+export const TABLE_SUB = "O que você precisa agora?";
+export const TABLE_MENU_TEXT = "Ver cardápio e pedir";
+export const TABLE_JOBS_TEXT = "Trabalhe aqui";
+export const TABLE_SENT_TEXT = "Avisamos o atendente.";
+export const CALL_STATUS = { busy: "Avisando…", called: "Chamado", answered: "Atendido", again: "Ainda não veio?" } as const;
+export const CALL_NOTES = {
+  called: "Aguarde um instante, já vai chegar.",
+  answered: "Toque se precisar de novo.",
+  again: "Toque para avisar de novo.",
+} as const;

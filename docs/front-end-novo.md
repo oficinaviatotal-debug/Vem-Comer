@@ -140,8 +140,8 @@ estendido não se mexe sozinho: o cartão é que afunda (se o botão se mexesse,
 - O botão de menu **deixou de aparecer** nas telas que não têm para onde levá-lo (antes aparecia e não fazia nada).
 
 **Ainda sem destino, porque a tela não existe** (aparecem no desenho e avisam quem usa a tela por `onMenu`, `onPromo`): o
-menu geral e a bolinha de voz. As escolhas do prato, a sacola e o acompanhamento do pedido passaram a existir nas rodadas
-seguintes (abaixo).
+menu geral e a bolinha de voz. As escolhas do prato, a sacola, o acompanhamento do pedido e a mesa passaram a existir nas
+rodadas seguintes (abaixo).
 
 **Como foi conferido:** `tests/novo/toque.test.mjs` (14 nesta rodada; 21 com a sexta) lê o CSS e as telas e garante a regra (borda grossa só no que toca,
 afundar no toque, toque estendido por cima, nada de botão fantasma). Em 320, 360, 390 e 480 px a conferência mede sem
@@ -233,14 +233,53 @@ dois passos escritos); a bolinha de voz continua sendo só desenho.
 telefone sem quebra) e `fluxo.test.mjs` (14, com consulta, Pix, avaliação uma vez só e o fluxo abrindo no acompanhamento).
 Em 320, 360, 390 e 480 px, nas 12 telas de conferência: sem rolagem lateral, nenhum botão com menos de 44 px. Para ver:
 `preview-novo.html#/loja-pedido`, `#/pedido`, `#/pedido-rua` e `#/pedido-pronto`. **Ainda sem tela:** menu geral, mesa
-(chamar garçom, conta) e a bolinha de voz que fala.
+(chamar garçom, conta; veio na oitava rodada) e a bolinha de voz que fala.
+
+## Oitava rodada: a mesa do cliente (22/10/2026)
+
+O GD respondeu "Sim" (22/10, 10:14) à pergunta "é isso que você quer para o acompanhamento e o Pix? Se sim, sigo com a tela
+da mesa". Não é o "pode" de ir ao ar. A tela da mesa é a que abre quando o cliente lê o QR colado na mesa.
+
+**A tela** (`novo/Table.tsx`): o título é "Mesa 4" (ou "Sua mesa" enquanto o número não chegou) com o nome do restaurante;
+"O que você precisa agora?"; o botão mais largo e mais alto, verde, "Ver cardápio e pedir"; "Acompanhar o seu pedido" só
+para quem já pediu; dois botões grandes, **Chamar garçom** e **Pedir a conta**; dois menores, **Água** e **Limpeza**; e
+"Trabalhe aqui" (só se houver endereço https do Vem Trabalhar). O nome de cada botão nunca muda: o que muda é a etiqueta e a
+cor, e o desenho segue a regra do 3D:
+- pronto: pêssego, borda grossa, afunda no toque;
+- **Chamado** (nos primeiros 60 s): amarelo e afundado, sem borda grossa (não há o que tocar agora), com "Aguarde um instante,
+  já vai chegar.";
+- **Ainda não veio?** (passado 1 minuto): sobe de novo e deixa avisar outra vez;
+- **Atendido**: verde, com o sinal de certo, e deixa chamar de novo na hora.
+
+Quem usa leitor de tela ouve cada botão por inteiro ("Pedir a conta. Chamado. Aguarde um instante, já vai chegar."). O botão
+recém-chamado **não** usa `disabled`, e sim `aria-disabled`: continua focável para o leitor dizer que já foi chamado, e o toque
+nele não faz nada. A confirmação ("Avisamos o atendente.") é lida em voz alta e some em 6 s; o erro é um alerta com a
+ação ("chame o atendente com a mão").
+
+**De onde vem cada coisa (nada inventado, nenhuma regra mudou):** a conta é a da mesa antiga (`mesa/callsLogic`: a chamada vale
+2 horas, o botão deixa chamar de novo depois de 1 minuto, uma chamada por tipo) e vive em `loja/tableLogic.ts` (13 testes,
+um deles confere que o estado de cada botão bate com o `buttonState` antigo em todos os momentos). Quem decide se atenderam é
+o servidor: a tela pergunta a cada 8 s, só enquanto há chamada aberta e a aba está à vista; chamada que o servidor não conhece
+mais (404) volta ao normal; sem internet, espera e tenta de novo.
+
+**Ligação ao servidor** (`loja/TableScreen.tsx`, ainda fora do aplicativo público): um toque manda uma chamada pequena; dois
+toques seguidos mandam uma só; a chamada só é guardada neste aparelho depois que o servidor aceitou (recarregar a página não
+deixa chamar o garçom duas vezes sem querer); o número da mesa vem do `useShop`, sem nova busca. `OrderFlow.tsx` agora abre
+na mesa para quem leu o QR (quem já pediu abre no acompanhamento; mesa que o servidor não conhece cai direto no cardápio), e o
+cardápio ganhou o botão **"Mesa 4: chamar o garçom"** para voltar à mesa.
+
+**Conferido:** `tests/novo/tableLogic.test.mjs` (13), `toque.test.mjs` (41, com 3D por estado, contraste de cada estado, leitor
+de tela e 320 px) e `fluxo.test.mjs` (16). Em 320, 360, 390 e 480 px, nas 15 telas de conferência: sem rolagem lateral, nenhum
+botão com menos de 44 px. No navegador: tocar vira "Chamado", o segundo toque não muda nada, a confirmação some em 6 s,
+movimento reduzido sem animação, teclado com Tab e Enter. Para ver: `preview-novo.html#/mesa`, `#/mesa-chamada` e `#/loja-mesa`.
+**Ainda sem tela:** menu geral e a bolinha de voz que fala; o painel da mesa do dono (o que chega ao garçom) continua o antigo.
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
 - Tudo mora em `frontend/src/novo/` e **não é importado pelo aplicativo**: o `index.html` e o `main.tsx` não mudam.
   Um teste (`tests/novo`) garante que o visual novo não depende do antigo e que só a página de conferência usa dados
   de exemplo.
 - Para ver: `cd frontend && npx vite build --config vite.preview-novo.config.ts --outDir /tmp/novo` e abrir
-  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua` ou `#/pedido-pronto`
+  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada` ou `#/loja-mesa`
   (a pasta pública vai junto, por causa das fontes).
 - Cada tela ganha um PR próprio: ligada aos dados de verdade (por props), com teste, e a tela antiga correspondente
   sai no mesmo PR. **Nada disso vira o que o público vê sem o "pode" do GD.**

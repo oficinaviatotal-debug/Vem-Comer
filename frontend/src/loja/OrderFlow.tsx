@@ -5,6 +5,7 @@ import type { Company, Product } from "../customer/types";
 import BagScreen, { type SentOrder } from "./BagScreen";
 import ChoicesScreen, { initialOf } from "./ChoicesScreen";
 import ShopScreen from "./ShopScreen";
+import TableScreen from "./TableScreen";
 import TrackingScreen from "./TrackingScreen";
 import type { ChoicesPick } from "./choicesLogic";
 import { useShop } from "./useShop";
@@ -18,20 +19,23 @@ type Props = {
   onSent?: (order: SentOrder) => void;
 };
 
-type Screen = "menu" | "bag" | "tracking";
+type Screen = "menu" | "bag" | "tracking" | "table";
 
 /** O prato aberto nas escolhas; com `editKey`, é uma linha da sacola sendo mudada. */
 type Picking = { product: Product; editKey?: string; line?: CartLine };
 
 /**
- * O caminho do cliente no visual novo: cardápio, escolhas do prato, sacola, envio e acompanhamento (com o Pix). Ainda
- * não está ligado ao aplicativo público: o fluxo antigo continua valendo até o GD dizer "pode". Quem já pediu neste
- * aparelho (e ainda tem o pedido guardado) abre direto no acompanhamento, como sempre foi.
+ * O caminho do cliente no visual novo: mesa, cardápio, escolhas do prato, sacola, envio e acompanhamento (com o Pix).
+ * Ainda não está ligado ao aplicativo público: o fluxo antigo continua valendo até o GD dizer "pode". Quem já pediu
+ * neste aparelho (e ainda tem o pedido guardado) abre direto no acompanhamento; quem leu o QR da mesa abre na tela da
+ * mesa (chamar o garçom, pedir a conta); os outros, no cardápio. Como sempre foi.
  */
 export default function OrderFlow({ company, tableId, jobsHref = null, onSent }: Props) {
   const shop = useShop(company, tableId);
   const [orders, setOrders] = useState<RememberedOrder[]>(() => orderMemory.list(company.slug, tableId));
-  const [screen, setScreen] = useState<Screen>(() => (orders.length > 0 ? "tracking" : "menu"));
+  const [screenState, setScreen] = useState<Screen>(() => (orders.length > 0 ? "tracking" : tableId ? "table" : "menu"));
+  // Mesa que não existe: sem tela da mesa, vai direto ao cardápio (o aviso de "mesa não encontrada" já aparece lá).
+  const screen: Screen = screenState === "table" && (!tableId || shop.tableLost) ? "menu" : screenState;
   const [picking, setPicking] = useState<Picking | null>(null);
 
   const goTo = (next: Screen) => {
@@ -63,6 +67,18 @@ export default function OrderFlow({ company, tableId, jobsHref = null, onSent }:
           onChoose={(product) => setPicking({ product })}
           onBag={() => goTo("bag")}
           ordersCount={orders.length}
+          onTrack={() => goTo("tracking")}
+          onTable={tableId && !shop.tableLost ? () => goTo("table") : undefined}
+        />
+      ) : null}
+      {screen === "table" && tableId ? (
+        <TableScreen
+          company={shop.live}
+          tableId={tableId}
+          tableNumber={shop.tableNumber}
+          ordersCount={orders.length}
+          jobsHref={jobsHref}
+          onMenu={() => goTo("menu")}
           onTrack={() => goTo("tracking")}
         />
       ) : null}

@@ -7,11 +7,13 @@ import ShopMenu from "./ShopMenu";
 import ChoicesSheet from "./Choices";
 import BagScreen from "./Bag";
 import { TrackSlip, TrackingPage } from "./Tracking";
+import TablePage from "./Table";
 import { emptyText, isKitchenTab, kitchenTabs, ticketsFor, type KitchenTabId } from "../cozinha/kitchenLogic";
-import { ACAI_PRODUCT, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, kitchenOrders, orderExample, pixExample, shopExample, todayExample } from "./demo";
+import { ACAI_PRODUCT, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, kitchenOrders, orderExample, pixExample, shopExample, todayExample } from "./demo";
 import { choicesViewOf, confirmChoices, nextQuantity, pressOption } from "../loja/choicesLogic";
 import { bagProblem, bagViewOf } from "../loja/bagLogic";
 import { copiedOutcome, pixOf, ratingOf, trackOf } from "../loja/trackingLogic";
+import { NOTICE_MS, tableViewOf, type CallKind, type MyCall } from "../loja/tableLogic";
 import type { Pix } from "./types";
 import { addConfigured, decrementItem, incrementLine, setLineNote, type CartLine } from "../customer/cart";
 import { EMPTY_ADDRESS, hasFullCep, type Address, type Mode, type Quote } from "../customer/delivery";
@@ -21,10 +23,11 @@ import type { Selection } from "../customer/options";
 /**
  * Página de conferência do visual novo (não faz parte do aplicativo): mostra cada tela com dados de exemplo.
  * Abrir: preview-novo.html#/loja, #/hoje, #/cozinha, #/vagas, #/escolhas (#/escolhas-erro), #/sacola, #/entrega,
+ * #/mesa (QR da mesa), #/mesa-chamada (conta chamada, água atendida, garçom sem resposta), #/loja-mesa (cardápio de quem está na mesa),
  * #/loja-pedido (cardápio de quem já pediu), #/pedido (preparo, Pix a pagar), #/pedido-rua (entrega a caminho) ou #/pedido-pronto (pronto, pago, avaliação).
  */
 /** O cardápio da conferência: dados de exemplo passando pela conta de verdade; adicionar e tirar funcionam na tela. */
-function ShopPreview({ withOrder = false }: { withOrder?: boolean }) {
+function ShopPreview({ withOrder = false, withTable = false }: { withOrder?: boolean; withTable?: boolean }) {
   const view = shopExample();
   const [quantities, setQuantities] = useState<Record<string, number>>({ a2: 2 });
   const groups = view.groups.map((group) => ({
@@ -50,6 +53,8 @@ function ShopPreview({ withOrder = false }: { withOrder?: boolean }) {
       onPromos={() => undefined}
       ordersCount={withOrder ? 1 : 0}
       onTrack={() => undefined}
+      tableLabel={withTable ? "Mesa 4" : null}
+      onTable={withTable ? () => undefined : undefined}
       showMenu
       jobsHref="#"
     />
@@ -204,8 +209,42 @@ function TrackingPreview({ kind }: { kind: "preparo" | "rua" | "pronto" }) {
   );
 }
 
+/**
+ * A mesa da conferência: os botões passam pela conta de verdade (`tableViewOf`) e respondem ao toque, sem servidor:
+ * tocar põe o botão em "Chamado" e, depois de um minuto, em "Ainda não veio?". "chamado" já abre com os três estados.
+ */
+function TablePreview({ stage }: { stage: "novo" | "chamado" }) {
+  const [calls, setCalls] = useState<MyCall[]>(() => callsExample(stage, Date.now()));
+  const [now, setNow] = useState(() => Date.now());
+  const [notice, setNotice] = useState("");
+  React.useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const view = tableViewOf({
+    tableNumber: 4,
+    calls,
+    now,
+    sending: null,
+    notice,
+    error: "",
+    ordersCount: stage === "chamado" ? 1 : 0,
+    jobsHref: "https://vemtrabalhar.example/vagas",
+  });
+  const call = (kind: CallKind) => {
+    setCalls((list) => [{ id: `c-${Date.now()}`, kind, status: "open", savedAt: Date.now() }, ...list.filter((item) => item.kind !== kind)]);
+    setNow(Date.now());
+    setNotice("Avisamos o atendente.");
+    window.setTimeout(() => setNotice(""), NOTICE_MS);
+  };
+  return <TablePage shop={{ name: "Açaí do João", mark: "🍇" }} view={view} onCall={call} onMenu={() => undefined} onTrack={() => undefined} />;
+}
+
 function Screen() {
   const route = window.location.hash.replace(/^#\/?/, "");
+  if (route === "mesa") return <TablePreview stage="novo" />;
+  if (route === "mesa-chamada") return <TablePreview stage="chamado" />;
+  if (route === "loja-mesa") return <ShopPreview withTable />;
   if (route === "loja-pedido") return <ShopPreview withOrder />;
   if (route === "pedido") return <TrackingPreview kind="preparo" />;
   if (route === "pedido-rua") return <TrackingPreview kind="rua" />;

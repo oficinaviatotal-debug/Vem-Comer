@@ -28,6 +28,9 @@ type Props = {
   /** Pedidos que este aparelho já enviou: com pelo menos um, aparece "Acompanhar o seu pedido". */
   ordersCount?: number;
   onTrack?: () => void;
+  /** Quem está na mesa: "Mesa 4" e o toque que volta à tela da mesa (chamar o garçom, pedir a conta). */
+  tableLabel?: string | null;
+  onTable?: () => void;
   /** Toque na promoção (no cartão inteiro) e em "Ver todas". Sem promoção de verdade no servidor, a seção nem aparece. */
   onPromo?: () => void;
   onPromos?: () => void;
@@ -71,6 +74,8 @@ export default function ShopMenu({
   onBag,
   ordersCount = 0,
   onTrack,
+  tableLabel = null,
+  onTable,
   onPromo,
   onPromos,
   onMenu,
@@ -101,6 +106,13 @@ export default function ShopMenu({
             {text}
           </p>
         ))}
+
+        {tableLabel && onTable ? (
+          <button type="button" className="nv-btn is-ghost is-small nv-table-btn" onClick={onTable}>
+            <NvIcon name="bell" />
+            {tableLabel}: chamar o garçom
+          </button>
+        ) : null}
 
         {ordersCount > 0 && onTrack ? (
           <button type="button" className="nv-btn is-ghost is-block" onClick={onTrack}>
