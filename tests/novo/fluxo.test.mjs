@@ -308,3 +308,100 @@ test("os pedidos do painel: o texto do cliente (nome, observação, endereço) n
     assert.ok(!/dangerouslySetInnerHTML|innerHTML|document\.write|eval\(/.test(read(name)), `${name} injeta HTML`);
   }
 });
+
+test("as entregas e o acerto do painel: só as contas puras de fora (nada de tela, CSS ou estilos antigos), e a lógica não fala com o servidor nem apita", () => {
+  const files = {
+    deliveriesLogic: read("painel/deliveriesLogic.ts"),
+    deliveriesScreen: read("painel/DeliveriesScreen.tsx"),
+    deliveries: read("novo/Deliveries.tsx"),
+    settleLogic: read("painel/settleLogic.ts"),
+    settleScreen: read("painel/SettleScreen.tsx"),
+    settle: read("novo/Settle.tsx"),
+  };
+  for (const [name, text] of Object.entries(files)) {
+    assert.ok(!/from ["']\.\.\/(styles|ui|admin)/.test(text), `${name} importa o antigo`);
+    assert.ok(!/from ["']\.\.\/mesa\//.test(text), `${name} importa a mesa antiga`);
+    assert.ok(!/from ["']\.\.\/nav\//.test(text), `${name} importa o menu antigo`);
+    assert.ok(!/import ["']\.\.\//.test(text), `${name} importa CSS de fora`);
+    // Do entregador só entram a conta e a chamada ao servidor; a tela antiga dele (e o CSS dela) ficam de fora.
+    for (const [, from] of text.matchAll(/from ["']\.\.\/courier\/([^"']+)["']/g)) assert.match(from, /^(courierLogic|courierApi)(\.ts)?$/, `${name} importa ../courier/${from}`);
+  }
+  for (const name of ["deliveriesLogic", "settleLogic"]) {
+    assert.ok(!/service\/api/.test(files[name]), `${name}: a conta não fala com o servidor`);
+    assert.ok(!/service\/alertDevice/.test(files[name]), `${name}: a conta não apita`);
+  }
+  for (const name of ["deliveries", "settle"]) assert.ok(!/from ["']\.\.\/(service|courier)\//.test(files[name]), `${name}: a tela de desenho não fala com o servidor`);
+});
+
+test("as entregas do painel: um toque por vez, e o servidor decide (código certo, quem pode pegar, quantas tentativas sobram)", () => {
+  const text = read("painel/DeliveriesScreen.tsx");
+  assert.equal((text.match(/if \(working\.current/g) ?? []).length, 2, "pegar e fechar, cada um com a trava");
+  assert.match(text, /const seen = latest\.current\?\.find\(\(order\) => order\.id === id\);/);
+  assert.match(text, /await pickUpOrder\(companyId, id\);/);
+  // O código só vai se o pedido tem código, e só completo; o pedido sem código manda vazio.
+  assert.match(text, /if \(!seen \|\| \(seen\.needs_code && !codeIsComplete\(open\.code\)\)\) return;/);
+  assert.match(text, /await deliverOrder\(companyId, id, seen\.needs_code \? open\.code : ""\);/);
+  assert.equal((text.match(/\} finally \{\s*working\.current = false;\s*setBusy\(null\);/g) ?? []).length, 2, "a trava sempre solta");
+  // Código errado apaga o que foi digitado; bloqueado fecha o campo de código; sem sinal explica que repetir é seguro.
+  assert.match(text, /if \(result\.kind === "wrong"\) setOpen\(\(current\) => \(current \? \{ \.\.\.current, code: "" \} : current\)\);/);
+  assert.match(text, /if \(result\.kind === "locked"\) \{\s*setLocked\(/);
+  assert.match(text, /result\.kind === "offline" \? DELIVERIES_OFFLINE : result\.message/);
+  assert.match(text, /if \(result\.kind === "error"\) await load\(\);/);
+  assert.match(read("novo/copy.ts"), /não tem problema repetir/);
+});
+
+test("as entregas do painel: pergunta a cada 10 s só com a tela à vista, apita só entrega nova para pegar, e uma busca que falha não apaga a lista", () => {
+  const text = read("painel/DeliveriesScreen.tsx");
+  assert.match(text, /window\.setInterval\(\(\) => \{\s*if \(!document\.hidden\) void load\(\);\s*\}, DELIVERIES_POLL_MS\)/);
+  assert.match(text, /document\.addEventListener\("visibilitychange", onVisible\)/);
+  assert.match(text, /document\.removeEventListener\("visibilitychange", onVisible\)/);
+  assert.match(text, /window\.clearInterval\(poll\);/);
+  assert.match(text, /if \(newOrders\(knownReady\.current, waiting\)\.length > 0\) alertDevice\("ready"\);/);
+  assert.match(text, /knownReady\.current = knownOrderIds\(waiting\);/);
+  assert.match(text, /const knownReady = useRef<Set<string> \| null>\(null\);/, "abrir a tela pela primeira vez não faz barulho");
+  assert.ok(!/catch \(error\) \{[^}]*setOrders\(\[\]\)/.test(text), "falha de rede não esvazia as entregas");
+  assert.match(text, /setProblem\(wordsOf\(error, DELIVERIES_LOAD_ERROR\)\);/);
+  // A aba escolhida sozinha vale uma vez só: depois a lista não pula de aba debaixo do dedo.
+  assert.match(text, /setChosen\(\(current\) => current \?\? firstDeliveriesTab\(groupOrders\(rows\)\)\);/);
+});
+
+test("as entregas do painel: o campo do código fecha sozinho se a entrega deixou de estar na rua, e o foco volta para a entrega que mudou", () => {
+  const text = read("painel/DeliveriesScreen.tsx");
+  assert.match(text, /!orders\.some\(\(order\) => order\.id === open\.id && stageOf\(order\) === "going"\)\) setOpen\(null\);/);
+  assert.match(text, /document\.getElementById\(`nv-delivery-\$\{id\}`\)/);
+  assert.match(text, /\.nv-page-deliveries \.nv-order \.nv-btn/);
+  assert.match(text, /document\.getElementById\("nv-deliveries-live"\)/);
+  assert.match(read("novo/Deliveries.tsx"), /ref\.current\?\.focus\(\);/, "ao abrir o campo, o foco vai para ele");
+});
+
+test("o acerto do caixa: dois toques no mesmo valor, e o servidor é olhado de novo antes de mandar o dinheiro", () => {
+  const text = read("painel/SettleScreen.tsx");
+  assert.match(text, /if \(working\.current \|\| !cash\) return;/);
+  assert.match(text, /if \(armed !== key\) \{[\s\S]*?setArmed\(key\);[\s\S]*?timer\.current = window\.setTimeout\(\(\) => setArmed\(null\), ARM_MS\);\s*return;\s*\}/);
+  assert.match(text, /disarm\(\);\s*void settle\(groupId\);/);
+  // Mexer na marcação, atualizar e o segundo toque soltam o primeiro: três lugares.
+  assert.equal((text.match(/disarm\(\);/g) ?? []).length, 3);
+  const fetchAgain = text.indexOf("const fresh = await fetchCourierCash(companyId);");
+  const check = text.indexOf('settleCheck(group, left, fresh) === "changed"');
+  const send = text.indexOf("await settleCourierCash(companyId, groupId, ids)");
+  assert.ok(fetchAgain > 0 && fetchAgain < check && check < send, "o envio vem antes da conferência");
+  assert.match(text, /if \(settleCheck\(group, left, fresh\) === "changed"\) \{\s*setCash\(fresh\);\s*setLeft\(\[\]\);\s*setError\(SETTLE_CHANGED\);\s*return;\s*\}/);
+  assert.match(text, /\} finally \{\s*working\.current = false;/);
+  assert.match(text, /window\.clearTimeout\(timer\.current\);/);
+});
+
+test("o acerto do caixa: a lista NÃO se atualiza sozinha (o total contado não muda debaixo do caixa); só ao abrir, ao tocar em atualizar e depois de acertar", () => {
+  const text = read("painel/SettleScreen.tsx");
+  assert.ok(!/setInterval|visibilitychange/.test(text), "nada de pergunta periódica no acerto");
+  assert.match(text, /useEffect\(\(\) => \{\s*alive\.current = true;\s*void load\(\);/);
+  assert.match(text, /onRefresh=\{\(\) => \{[\s\S]*?void load\(\);/);
+  assert.match(text, /setNotice\(settledText\(result\)\);\s*setLeft\(\[\]\);\s*await load\(\);/);
+  assert.match(text, /document\.getElementById\(`nv-settle-\$\{groupId\}`\)/);
+  assert.match(text, /\.nv-page-settle \.nv-order \.nv-btn/);
+});
+
+test("as entregas e o acerto do painel: o texto do cliente (nome, endereço, referência) nunca entra como HTML", () => {
+  for (const name of ["painel/DeliveriesScreen.tsx", "painel/deliveriesLogic.ts", "novo/Deliveries.tsx", "painel/SettleScreen.tsx", "painel/settleLogic.ts", "novo/Settle.tsx"]) {
+    assert.ok(!/dangerouslySetInnerHTML|innerHTML|document\.write|eval\(/.test(read(name)), `${name} injeta HTML`);
+  }
+});

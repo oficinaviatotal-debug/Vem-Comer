@@ -71,7 +71,7 @@ test("peças de toque têm 44 px ou mais e o movimento respeita quem pediu menos
 
 test("nenhuma tela do visual novo escreve texto de interface que o dono não entende", () => {
   const banned = /\b(dashboard|checkout|onboarding|template|upload|click here)\b/i;
-  for (const name of ["ShopMenu.tsx", "OwnerToday.tsx", "Kitchen.tsx", "JobsHome.tsx", "Choices.tsx", "Bag.tsx", "Tracking.tsx", "Table.tsx", "MainMenu.tsx", "Desk.tsx", "DeskTable.tsx", "QrScan.tsx", "Orders.tsx", "copy.ts"]) {
+  for (const name of ["ShopMenu.tsx", "OwnerToday.tsx", "Kitchen.tsx", "JobsHome.tsx", "Choices.tsx", "Bag.tsx", "Tracking.tsx", "Table.tsx", "MainMenu.tsx", "Desk.tsx", "DeskTable.tsx", "QrScan.tsx", "Orders.tsx", "Deliveries.tsx", "Settle.tsx", "copy.ts"]) {
     assert.ok(!banned.test(read(name)), `${name} tem palavra de jargão`);
   }
 });

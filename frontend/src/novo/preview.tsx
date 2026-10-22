@@ -10,13 +10,19 @@ import { TrackSlip, TrackingPage } from "./Tracking";
 import TablePage from "./Table";
 import Desk from "./Desk";
 import Orders from "./Orders";
+import Deliveries from "./Deliveries";
+import Settle from "./Settle";
 import DeskTable from "./DeskTable";
 import QrScan from "./QrScan";
 import PanelMenu from "../painel/PanelMenu";
 import { deskTableViewOf, deskViewOf, openTyped, parsePanelCalls } from "../painel/deskLogic";
 import { ORDERS_CHANGED, nextStatusOf, ordersViewOf, type PanelOrder } from "../painel/ordersLogic";
+import { deliveriesViewOf, pickedText, type CourierOrder } from "../painel/deliveriesLogic";
+import { armKey, markedIds, settleViewOf, toggleLeft } from "../painel/settleLogic";
+import { codeIsComplete, deliveredText, onlyCodeDigits } from "../courier/courierLogic";
+import type { CashView } from "../courier/courierLogic";
 import { emptyText, isKitchenTab, kitchenTabs, ticketsFor, type KitchenTabId } from "../cozinha/kitchenLogic";
-import { ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
+import { ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
 import { choicesViewOf, confirmChoices, nextQuantity, pressOption } from "../loja/choicesLogic";
 import { bagProblem, bagViewOf } from "../loja/bagLogic";
 import { copiedOutcome, pixOf, ratingOf, trackOf } from "../loja/trackingLogic";
@@ -32,6 +38,8 @@ import type { Selection } from "../customer/options";
  * Abrir: preview-novo.html#/loja, #/hoje, #/cozinha, #/vagas, #/escolhas (#/escolhas-erro), #/sacola, #/entrega,
  * #/mesas (quem está chamando), #/mesas-calmo (ninguém chamando), #/mesas-qr (câmera do QR), #/mesas-carregando e #/mesas-erro (lista de mesas), #/mesa-aberta (a mesa 4 aberta),
  * #/pedidos (dono), #/pedidos-caixa (abre no dinheiro a receber), #/pedidos-garcom (sem a aba Receber), #/pedidos-cozinha (sem endereço nem telefone), #/pedidos-calmo (nenhum pedido) e #/pedidos-erro (frase de erro ao tocar) e #/pedidos-enviando (o botão esperando o servidor),
+ * #/entregas (entregador: na rua), #/entregas-pegar, #/entregas-entregues, #/entregas-codigo (campo dos 4 números; o código de exemplo é 4821), #/entregas-bloqueado, #/entregas-erro, #/entregas-calmo, #/entregas-carregando e #/entregas-gerente (vê também as de outros motoqueiros),
+ * #/acerto (caixa), #/acerto-confirmar (primeiro toque dado), #/acerto-calmo, #/acerto-erro e #/acerto-carregando,
  * #/menu (menu geral do dono), #/menu-garcom (o que o garçom vê), #/mesa (QR da mesa), #/mesa-chamada (conta chamada, água atendida, garçom sem resposta), #/loja-mesa (cardápio de quem está na mesa),
  * #/loja-pedido (cardápio de quem já pediu), #/pedido (preparo, Pix a pagar), #/pedido-rua (entrega a caminho) ou #/pedido-pronto (pronto, pago, avaliação).
  */
@@ -376,8 +384,119 @@ function MenuPreview({ role }: { role: "OWNER" | "WAITER" }) {
   );
 }
 
+type DeliveriesStage = "normal" | "pegar" | "entregues" | "codigo" | "bloqueado" | "erro" | "calmo" | "carregando" | "gerente";
+
+/** As entregas da conferência: passam pela conta de verdade (`deliveriesViewOf`) e respondem ao toque; o código de exemplo é 4821. */
+function DeliveriesPreview({ stage = "normal" }: { stage?: DeliveriesStage }) {
+  const [orders, setOrders] = useState<CourierOrder[] | null>(() => (stage === "carregando" ? null : stage === "calmo" ? [] : courierOrders(Date.now(), stage === "gerente")));
+  const [chosen, setChosen] = useState<string | null>(stage === "pegar" ? "ready" : stage === "entregues" ? "done" : null);
+  const [notice, setNotice] = useState("");
+  const [open, setOpen] = useState<{ id: string; code: string } | null>(stage === "codigo" || stage === "bloqueado" ? { id: "a1b2-going-1", code: stage === "codigo" ? "48" : "" } : null);
+  const [note, setNote] = useState<{ id: string; text: string } | null>(stage === "erro" ? { id: "e5f6-ready-1", text: "Sem sinal. Tente de novo." } : null);
+  const view = deliveriesViewOf({ orders, chosen: chosen ?? (stage === "erro" ? "ready" : null), error: stage === "erro" ? "Sem sinal. Mostrando a última lista que carregou." : "", notice });
+  const form = open ? { id: open.id, code: open.code, ready: codeIsComplete(open.code), locked: stage === "bloqueado" } : null;
+  const update = (id: string, patch: Partial<CourierOrder>) => setOrders((list) => (list ? list.map((order) => (order.id === id ? { ...order, ...patch } : order)) : list));
+  return (
+    <Deliveries
+      view={view}
+      form={form}
+      note={note}
+      onTab={(id) => {
+        setChosen(id);
+        setNote(null);
+        setNotice("");
+      }}
+      onPick={(id) => {
+        const order = orders?.find((entry) => entry.id === id);
+        if (!order) return;
+        update(id, { status: "saiu para entrega", mine: true });
+        setNote(null);
+        setNotice(pickedText(order));
+      }}
+      onOpen={(id) => {
+        setOpen({ id, code: "" });
+        setNotice("");
+      }}
+      onCode={(code) => {
+        setOpen((current) => (current ? { ...current, code: onlyCodeDigits(code) } : current));
+        setNote(null);
+      }}
+      onConfirm={(id) => {
+        const order = orders?.find((entry) => entry.id === id);
+        if (!order || !open) return;
+        if (open.code !== "4821") {
+          setNote({ id, text: "Código errado. Peça de novo ao cliente. Restam 2 tentativas." });
+          setOpen({ id, code: "" });
+          return;
+        }
+        update(id, { status: "concluido", delivered_at: new Date().toISOString(), cash_received: order.cash_to_receive === "0.00" ? "" : order.cash_to_receive });
+        setNotice(deliveredText({ kind: "done", already: false, cashCents: Math.round(Number(order.cash_to_receive) * 100) }));
+        setOpen(null);
+        setNote(null);
+      }}
+      onCloseForm={() => {
+        setOpen(null);
+        setNote(null);
+      }}
+      showMenu
+    />
+  );
+}
+
+type SettleStage = "normal" | "confirmar" | "calmo" | "erro" | "carregando";
+
+/** O acerto da conferência: passa pela conta de verdade (`settleViewOf`); o primeiro toque arma o botão e o segundo acerta. */
+function SettlePreview({ stage = "normal" }: { stage?: SettleStage }) {
+  const [cash, setCash] = useState<CashView | null>(() => (stage === "carregando" ? null : stage === "calmo" ? { couriers: [], total: "0.00", count: 0 } : cashExample(Date.now())));
+  const [left, setLeft] = useState<string[]>(stage === "confirmar" ? ["x3"] : []);
+  const [armed, setArmed] = useState<string | null>(() => {
+    if (stage !== "confirmar") return null;
+    const first = cashExample(Date.now()).couriers[0];
+    return armKey(first, ["x3"]);
+  });
+  const [notice, setNotice] = useState("");
+  const view = settleViewOf({ cash, left, armed, error: stage === "erro" ? "Sem sinal. Tente de novo." : "", notice });
+  return (
+    <Settle
+      view={view}
+      onToggle={(_group, order) => {
+        setLeft((current) => toggleLeft(current, order));
+        setArmed(null);
+        setNotice("");
+      }}
+      onSettle={(groupId) => {
+        const group = cash?.couriers.find((entry) => entry.courier_id === groupId);
+        if (!cash || !group) return;
+        const key = armKey(group, left);
+        if (armed !== key) return setArmed(key);
+        const ids = markedIds(group, left);
+        setNotice(`${ids.length} ${ids.length === 1 ? "entrega acertada" : "entregas acertadas"}.`);
+        setArmed(null);
+        setLeft([]);
+        setCash({ ...cash, couriers: cash.couriers.filter((entry) => entry.courier_id !== groupId) });
+      }}
+      onRefresh={() => setNotice("")}
+      showMenu
+    />
+  );
+}
+
 function Screen() {
   const route = window.location.hash.replace(/^#\/?/, "");
+  if (route === "entregas") return <DeliveriesPreview />;
+  if (route === "entregas-pegar") return <DeliveriesPreview stage="pegar" />;
+  if (route === "entregas-entregues") return <DeliveriesPreview stage="entregues" />;
+  if (route === "entregas-codigo") return <DeliveriesPreview stage="codigo" />;
+  if (route === "entregas-bloqueado") return <DeliveriesPreview stage="bloqueado" />;
+  if (route === "entregas-erro") return <DeliveriesPreview stage="erro" />;
+  if (route === "entregas-calmo") return <DeliveriesPreview stage="calmo" />;
+  if (route === "entregas-carregando") return <DeliveriesPreview stage="carregando" />;
+  if (route === "entregas-gerente") return <DeliveriesPreview stage="gerente" />;
+  if (route === "acerto") return <SettlePreview />;
+  if (route === "acerto-confirmar") return <SettlePreview stage="confirmar" />;
+  if (route === "acerto-calmo") return <SettlePreview stage="calmo" />;
+  if (route === "acerto-erro") return <SettlePreview stage="erro" />;
+  if (route === "acerto-carregando") return <SettlePreview stage="carregando" />;
   if (route === "pedidos") return <OrdersPreview role="OWNER" />;
   if (route === "pedidos-caixa") return <OrdersPreview role="CASHIER" />;
   if (route === "pedidos-garcom") return <OrdersPreview role="WAITER" />;

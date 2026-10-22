@@ -589,3 +589,89 @@ test("pedidos do painel: texto pequeno passa de 4,5:1 em cada peça", () => {
   }
   assert.ok(contrast(token("muted"), "#fbf9f4") >= 4.5, "meta, 'Total' e a taxa sobre o fim do degradê do cartão");
 });
+
+test("entregas: Peguei e Entreguei são teclas grandes e verdes, cada uma lida com o nome e o número; enquanto um toque vai ao servidor, nenhum outro sai", () => {
+  const deliveries = read("Deliveries.tsx");
+  assert.equal((deliveries.match(/className="nv-btn is-green is-block"/g) ?? []).length, 3, "Peguei, Entreguei e Confirmar entrega");
+  assert.match(deliveries, /aria-label=\{mine === "pick" \? undefined : card\.actionSpoken\}/);
+  assert.match(deliveries, /aria-label=\{card\.actionSpoken\}/);
+  assert.equal((deliveries.match(/disabled=\{locked/g) ?? []).length, 4, "Peguei, Entreguei, Confirmar e Voltar esperam o toque que está no ar");
+  assert.equal((deliveries.match(/aria-busy=/g) ?? []).length, 2);
+  assert.ok(!/position:/.test(block(".nv-order .nv-btn")), "o botão não pode ter position (o toque estendido depende disso)");
+  assert.match(block(".nv-order .nv-btn"), /min-height: (5[6-9]|[6-9]\d)px/);
+});
+
+test("entregas: só o telefone e o mapa viram link, pelo que a conta entregou; o mapa abre fora e sem dar acesso à tela", () => {
+  const deliveries = read("Deliveries.tsx");
+  const hrefs = deliveries.match(/href=\{[^}]*\}/g) ?? [];
+  assert.deepEqual(hrefs, ["href={card.phoneHref}", "href={card.mapHref}"]);
+  assert.match(deliveries, /href=\{card\.mapHref\} target="_blank" rel="noopener noreferrer"/);
+  assert.match(deliveries, /\{card\.phoneHref \? \(/);
+  assert.match(deliveries, /\{card\.mapHref \? \(/);
+  assert.match(block(".nv-delivery-links"), /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+});
+
+test("entregas: o cartão só informa (sombra macia, fita pela etapa); o dinheiro, a dívida e as pílulas ficam lisos", () => {
+  for (const selector of [".nv-delivery-cash", ".nv-held", ".nv-ok", ".nv-settle-owes", ".nv-settle-confirm"]) {
+    assert.ok(!/box-shadow/.test(block(selector)), `${selector} parece botão sem ser`);
+  }
+  assert.ok(!/<(button|a)[^>]*nv-order-chip/.test(read("Deliveries.tsx")), "as pílulas não são botões");
+  assert.match(read("Deliveries.tsx"), /const tape = card\.stage === "ready" \? " is-warn" : card\.stage === "going" \? "" : " is-closed";/);
+  assert.match(block(".nv-order.is-closed"), /--nv-tape:/);
+});
+
+test("entregas: as etapas são abas de verdade, o campo do código é de escrever (afundado) e abre o teclado de números", () => {
+  const deliveries = read("Deliveries.tsx");
+  assert.match(deliveries, /role="tablist"/);
+  assert.match(deliveries, /role="tab"/);
+  assert.match(deliveries, /aria-selected=\{tab\.id === view\.active\}/);
+  assert.match(deliveries, /aria-controls="nv-deliveries-panel"/);
+  assert.match(deliveries, /role="tabpanel" id="nv-deliveries-panel" aria-labelledby=\{`nv-deliveries-tab-\$\{view\.active\}`\}/);
+  assert.match(deliveries, /<p className="nv-sr" id="nv-deliveries-live" role="status" aria-live="polite" tabIndex=\{-1\}>/);
+  assert.match(deliveries, /<h2 className="nv-order-where" id=\{`nv-delivery-\$\{card\.id\}`\} tabIndex=\{-1\}>/);
+  assert.match(deliveries, /inputMode="numeric"/);
+  assert.match(deliveries, /autoComplete="off"/);
+  assert.match(deliveries, /maxLength=\{4\}/);
+  assert.match(deliveries, /<label className="nv-code-label" htmlFor="nv-delivery-code">/);
+  assert.match(block(".nv-field"), /inset 0 3px 6px/);
+  assert.match(block(".nv-field.is-code input"), /font: 700 3[2-9]px/);
+  assert.match(block(".nv-field.is-code input"), /min-height: (6[4-9]|[7-9]\d)px/);
+});
+
+test("acerto do caixa: cada entrega é uma linha que se marca (caixa de marcar de verdade), e o botão vira verde com a frase de confirmação quando espera o segundo toque", () => {
+  const settle = read("Settle.tsx");
+  assert.match(settle, /role="checkbox"/);
+  assert.match(settle, /aria-checked=\{row\.checked\}/);
+  assert.match(settle, /className=\{`nv-opt\$\{row\.checked \? " is-on" : ""\}\$\{locked \? " is-blocked" : ""\}`\}/);
+  assert.match(settle, /group\.armed \? "is-green" : "is-fire"/);
+  assert.match(settle, /\{group\.armed \? <p className="nv-settle-confirm">\{group\.button\}<\/p> : null\}/);
+  assert.match(settle, /<p className="nv-sr" id="nv-settle-live" role="status" aria-live="polite" tabIndex=\{-1\}>/);
+  assert.match(settle, /disabled=\{locked\}/);
+  assert.match(block(".nv-opt"), /min-height: (5[6-9]|[6-9]\d)px/);
+  assert.ok(!/setInterval/.test(settle), "a tela de desenho não se atualiza sozinha");
+});
+
+test("entregas e acerto: texto pequeno passa de 4,5:1 em cada peça", () => {
+  for (const [front, back, what] of [
+    ["ink", "call-pill", "dinheiro a receber, troco, dívida do motoqueiro e total do acerto"],
+    ["ink", "answered-pill", "aviso de que deu certo e 'acertado com o caixa'"],
+    ["ink", "peach", "campo dos 4 números"],
+    ["muted", "peach", "os zeros que somem ao digitar"],
+    ["paper", "ink", "aba escolhida"],
+    ["ink", "sun", "'Aguardando' (fita e pílula da entrega que espera)"],
+  ]) {
+    const ratio = contrast(token(front), token(back));
+    assert.ok(ratio >= 4.5, `${what}: ${ratio.toFixed(2)}:1`);
+  }
+  assert.ok(contrast(token("muted"), "#fbf9f4") >= 4.5, "a dica do código e do acerto sobre o fim do degradê do cartão");
+});
+
+test("entregas e acerto: em 320 px os números do código ficam um pouco menores e as abas e botões quebram em vez de apertar", () => {
+  const small = css.match(/@media \(max-width: 340px\) \{\s*\.nv-field\.is-code input \{[\s\S]*?\n\}\n/);
+  assert.ok(small, "não achei o bloco de 320 px do código");
+  assert.match(small[0], /font-size: 32px/);
+  assert.match(block(".nv-settle-confirm"), /overflow-wrap: anywhere/);
+  assert.match(block(".nv-order-text"), /overflow-wrap: anywhere/);
+  assert.match(block(".nv-delivery-cash"), /display: flex/);
+  assert.match(css, /\.nv-delivery-cash p \{[^}]*min-width: 0/);
+});

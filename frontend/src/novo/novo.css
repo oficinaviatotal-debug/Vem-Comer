@@ -3608,3 +3608,151 @@ button.nv-now-cell:active {
   line-height: 1.15;
   text-align: center;
 }
+
+/* ---------- Entregas e acerto do caixa: o cartão do pedido, com o dinheiro da porta e os 4 números do cliente ---------- */
+
+.nv-page-deliveries .nv-error,
+.nv-page-settle .nv-error {
+  margin: 0;
+}
+
+/* O dinheiro que o motoqueiro ainda deve ao caixa fica sempre no topo: é a dívida dele, não pode sumir com a aba. Só informa (liso). */
+.nv-held {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-call-pill);
+  color: var(--nv-ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+/* Aviso de que deu certo ("Entrega concluída…"). Liso, verde; o leitor de tela ouve a mesma frase na região de cima. */
+.nv-ok {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-answered-pill);
+  color: var(--nv-ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+/* Quanto receber na porta e o troco a levar: o número em letra grande, o troco logo abaixo. Só informa. */
+.nv-delivery-cash {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-call-pill);
+}
+
+.nv-delivery-cash svg {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  color: var(--nv-ink);
+}
+
+.nv-delivery-cash p {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+}
+
+.nv-delivery-cash b {
+  font: 700 20px/1.15 var(--nv-display);
+}
+
+.nv-delivery-cash span {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Ligar e Mapa lado a lado; em tela estreita quebram a linha em vez de apertar. */
+.nv-delivery-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.nv-delivery-links .nv-btn {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.nv-delivery-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nv-code-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nv-code-label {
+  font: 700 20px/1.1 var(--nv-display);
+}
+
+.nv-code-hint {
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+/* Os 4 números: campo afundado (é de escrever), dígitos grandes e abertos para o dedo e o olho conferirem um a um. */
+.nv-field.is-code {
+  justify-content: center;
+  min-height: 72px;
+}
+
+.nv-field.is-code input {
+  flex: none;
+  width: 100%;
+  min-height: 64px;
+  color: var(--nv-ink);
+  font: 700 36px/1 var(--nv-display);
+  letter-spacing: 0.4em;
+  text-align: center;
+  text-indent: 0.4em;
+}
+
+/* Acerto: o total que o motoqueiro deve no alto do cartão; a frase de confirmação embaixo do botão armado. */
+.nv-settle-owes {
+  flex: none;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--nv-call-pill);
+  font: 700 20px/1.2 var(--nv-display);
+}
+
+.nv-settle-confirm {
+  margin: 0;
+  color: var(--nv-ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.nv-settle .nv-opts-list {
+  gap: 10px;
+}
+
+@media (max-width: 340px) {
+  .nv-field.is-code input {
+    font-size: 32px;
+    letter-spacing: 0.3em;
+    text-indent: 0.3em;
+  }
+}

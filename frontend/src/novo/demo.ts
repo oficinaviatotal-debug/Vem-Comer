@@ -7,6 +7,7 @@
 import type { MyCall } from "../loja/tableLogic.ts";
 import type { KitchenOrder } from "../cozinha/kitchenLogic";
 import type { PanelOrder } from "../painel/ordersLogic";
+import { normalizeCash, normalizeOrders, type CashView, type CourierOrder } from "../courier/courierLogic";
 import { hourOf, todayOf } from "../hoje/todayLogic";
 import { shopViewOf, type ShopView } from "../loja/shopLogic";
 import type { Job, Promo, Today } from "./types";
@@ -490,4 +491,51 @@ export function panelOrders(now: number): PanelOrder[] {
       items: [{ name: "Pastel de queijo", quantity: 4 }],
     },
   ];
+}
+
+/**
+ * As entregas de EXEMPLO, no formato que o servidor manda (passam pelo `normalizeOrders` da tela de verdade): duas na rua com o
+ * motoqueiro (uma com dinheiro e troco, uma já paga no Pix), duas para pegar, uma com outro motoqueiro (só o gerente vê) e três
+ * entregues (dinheiro ainda com ele, dinheiro já acertado, sem dinheiro). O código do cliente de exemplo é 4821.
+ */
+export function courierOrders(now: number, withOthers = false): CourierOrder[] {
+  const ago = (minutes: number) => new Date(now - minutes * 60000).toISOString();
+  const rows: Record<string, unknown>[] = [
+    { id: "a1b2-going-1", customer_name: "Marcos Oliveira", phone: "(84) 99999-8888", address: "Rua das Flores, 120, apto 3, Centro", reference: "Portão azul", zone: "Centro", status: "saiu para entrega", total: "48.00", payment_method: "dinheiro", cash_to_receive: "48.00", change_for: "100.00", change_back: "52.00", mine: true, taken_by_other: false, needs_code: true, picked_up_at: ago(6), delivered_at: null, cash_received: "", settled: false },
+    { id: "c3d4-going-2", customer_name: "Ana Paula", phone: "(84) 98888-7777", address: "Av. Hermes da Fonseca, 800, Tirol", reference: "", zone: "Tirol", status: "saiu para entrega", total: "62.50", payment_method: "pix", cash_to_receive: "0.00", change_for: "", change_back: "", mine: true, taken_by_other: false, needs_code: true, picked_up_at: ago(9), delivered_at: null, cash_received: "", settled: false },
+    { id: "e5f6-ready-1", customer_name: "Seu João", phone: "(84) 97777-6666", address: "Rua Mossoró, 45, Petrópolis", reference: "Perto da padaria", zone: "Petrópolis", status: "pronto", total: "35.00", payment_method: "dinheiro", cash_to_receive: "35.00", change_for: "35.00", change_back: "", mine: false, taken_by_other: false, needs_code: true, picked_up_at: null, delivered_at: null, cash_received: "", settled: false },
+    { id: "a7b8-ready-2", customer_name: "Dona Rita", phone: "", address: "", reference: "", zone: "", status: "pronto", total: "28.00", payment_method: "pix", cash_to_receive: "0.00", change_for: "", change_back: "", mine: false, taken_by_other: false, needs_code: true, picked_up_at: null, delivered_at: null, cash_received: "", settled: false },
+    { id: "c9d0-done-1", customer_name: "Beatriz Lima", phone: "(84) 96666-5555", address: "Rua Trairi, 10, Tirol", reference: "", zone: "Tirol", status: "concluido", total: "35.00", payment_method: "dinheiro", cash_to_receive: "35.00", change_for: "", change_back: "", mine: true, taken_by_other: false, needs_code: true, picked_up_at: ago(70), delivered_at: ago(48), cash_received: "35.00", settled: false },
+    { id: "e1f2-done-2", customer_name: "Paulo Souza", phone: "", address: "Rua Seridó, 300, Centro", reference: "", zone: "Centro", status: "concluido", total: "60.00", payment_method: "dinheiro", cash_to_receive: "60.00", change_for: "", change_back: "", mine: true, taken_by_other: false, needs_code: true, picked_up_at: ago(130), delivered_at: ago(100), cash_received: "60.00", settled: true },
+    { id: "a3b4-done-3", customer_name: "Lia Campos", phone: "", address: "Rua Ceará-Mirim, 77, Petrópolis", reference: "", zone: "Petrópolis", status: "concluido", total: "41.00", payment_method: "pix", cash_to_receive: "0.00", change_for: "", change_back: "", mine: true, taken_by_other: false, needs_code: true, picked_up_at: ago(150), delivered_at: ago(125), cash_received: "", settled: false },
+  ];
+  if (withOthers) {
+    rows.push({ id: "c5d6-other-1", customer_name: "Carlos Mendes", phone: "(84) 95555-4444", address: "Rua Apodi, 9, Alecrim", reference: "", zone: "Alecrim", status: "saiu para entrega", total: "52.00", payment_method: "dinheiro", cash_to_receive: "52.00", change_for: "", change_back: "", mine: false, taken_by_other: true, needs_code: true, picked_up_at: ago(12), delivered_at: null, cash_received: "", settled: false });
+  }
+  return normalizeOrders(rows);
+}
+
+/** O acerto de EXEMPLO: dois motoqueiros, passando pela conta de verdade (`normalizeCash`). */
+export function cashExample(now: number): CashView {
+  const ago = (minutes: number) => new Date(now - minutes * 60000).toISOString();
+  return normalizeCash({
+    couriers: [
+      {
+        courier_id: "m1",
+        name: "Ana Silva",
+        total: "145.50",
+        orders: [
+          { id: "x1", customer_name: "Beatriz Lima", amount: "35.00", zone: "Tirol", delivered_at: ago(48) },
+          { id: "x2", customer_name: "Marcos Oliveira", amount: "48.00", zone: "Centro", delivered_at: ago(80) },
+          { id: "x3", customer_name: "Seu João", amount: "62.50", zone: "Petrópolis", delivered_at: ago(130) },
+        ],
+      },
+      {
+        courier_id: "m2",
+        name: "Pedro Gomes",
+        total: "52.00",
+        orders: [{ id: "x4", customer_name: "Carlos Mendes", amount: "52.00", zone: "Alecrim", delivered_at: ago(20) }],
+      },
+    ],
+  });
 }

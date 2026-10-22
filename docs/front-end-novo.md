@@ -418,7 +418,7 @@ Consertado agora, no visual novo (com teste):
 - Os "Feitos" mostram só os 20 mais novos (para conferir, não para arquivo); histórico e números ficam em "Seu negócio".
 - Pedido entregue e ainda não pago **continua em Receber** (e só depois de pago vai para Feitos); quem não tem a aba Receber o vê em Feitos.
 - **Não há botão de cancelar:** o servidor não tem estado "cancelado".
-- As telas de **entregas** (entregador, com código do cliente) e de **acerto do caixa** ainda são as antigas; entram na rodada seguinte.
+- As telas de **entregas** (entregador, com código do cliente) e de **acerto do caixa** foram refeitas na rodada seguinte (décima segunda).
 - Esta tela ainda **não guarda a regra de quem pode abrir** (rota por papel): isso é da casca do painel, na hora de ligar tudo.
 
 **Ainda não está ligado ao painel público** (o painel antigo continua mandando).
@@ -431,13 +431,75 @@ erro ao avançar e ao receber deixam o botão pronto de novo; sem servidor, os p
 aba nem o botão de pagamento; cozinha não vê telefone nem rua; o caixa abre em Receber.
 Para ver: `preview-novo.html#/pedidos`, `#/pedidos-caixa`, `#/pedidos-garcom`, `#/pedidos-cozinha`, `#/pedidos-calmo`, `#/pedidos-erro` e `#/pedidos-enviando`.
 
+## Décima segunda rodada: entregas e acerto do caixa (22/10/2026)
+
+Quarta tela da sequência (depois do menu, das mesas e dos pedidos): **quem leva o pedido até a porta e quem confere o dinheiro que
+ele traz de volta**. O GD pediu "mais facilidade, intuitivo, dinâmico" e "menos escrita, menos dado": por isso cada tela mostra só o que
+a pessoa precisa naquele momento. Nada vai ao ar sem o "pode".
+
+**Entregas** (`novo/Deliveries.tsx`, ligada em `painel/DeliveriesScreen.tsx`): título "Entregas" e uma frase ("2 para pegar · 1 a caminho").
+Três etapas, curtas para caber em 320 px: **Pegar**, **Na rua**, **Entregues**. Abre sozinha na etapa que tem trabalho (quem já está com um
+pedido na rua vê a rua) e **não pula de aba depois** debaixo do dedo. Cada entrega é um cartão: o nome e o código curto; o **endereço em letra
+grande**, com a região e a referência; **quanto receber na porta e o troco a levar** ("Receber R$ 48,00 em dinheiro · Leve R$ 52,00 de troco",
+ou "Valor exato, sem troco"); **Ligar** e **Mapa** lado a lado; e embaixo um botão verde só: **Peguei**, depois **Entreguei**. "Entreguei" abre o
+campo dos **4 números do cliente** (o teclado de números sobe e o foco já está no campo); só deixa confirmar com os 4. O pedido que não tem
+código diz isso e deixa confirmar. A entrega que outro motoqueiro levou aparece só para ver (gerente), **sem botão, sem telefone, sem mapa e
+sem dinheiro**. No alto fica sempre a **dívida dele com o caixa** ("Você está com R$ 73,00 em dinheiro de 2 entregas. Entregue ao caixa para
+o acerto."), porque não pode sumir com a mudança de aba.
+
+**Honestidade e correção:** nenhuma regra mudou. Quem pode pegar, se o código está certo, quantas tentativas sobram e quanto dinheiro está em
+aberto é decisão do servidor (`backend/courier.py`); o telefone, o mapa, o dinheiro e o código vêm da mesma conta da tela antiga
+(`courier/courierLogic.ts`, já testada). **Uma correção em relação à tela antiga:** o dinheiro de uma entrega fechada por outro motoqueiro dizia
+"ainda com você" também para o gerente; agora diz "ainda com o motoqueiro" quando não é dele.
+
+**Ligação ao servidor:** pergunta a cada 10 s, **só com a tela à vista** (poupa a bateria do motoqueiro; volta a perguntar assim que a tela
+volta). Apita (e vibra) quando aparece entrega **nova para pegar**, por número do pedido, e abrir a tela pela primeira vez não faz barulho.
+**Um toque por vez.** Código errado: mostra a frase do servidor ("Restam 2 tentativas"), **apaga o que foi digitado** e deixa tentar de novo.
+Bloqueado: o campo some e a tela manda avisar o restaurante. **Sem sinal ao entregar:** "Não sei se a entrega foi registrada… não tem
+problema repetir", e repetir é seguro porque o servidor responde "já estava fechada". Uma busca que falha nunca apaga a lista.
+
+**Acerto do caixa** (`novo/Settle.tsx`, ligada em `painel/SettleScreen.tsx`): um cartão por motoqueiro, com o **total que ele deve** no alto e cada
+entrega como linha que se marca (cliente, região, hora, valor). **Tudo vem marcado**; o caixa tira o que o motoqueiro não trouxe. O botão diz
+o que vai acontecer: **"Recebi R$ 72,50 de Ana Silva (3 entregas)"**. **Dinheiro pede dois toques:** o primeiro troca o botão para verde com
+"Toque de novo para confirmar" e repete a frase embaixo; se a marcação mudar, ou passarem 4 s, o primeiro toque se perde. **Antes de mandar, a
+tela olha o servidor de novo:** se uma entrega marcada já foi acertada por outra pessoa, ou o valor mudou, **não manda nada**, atualiza e diz
+"Esta lista já mudou… confira de novo". **A lista não se atualiza sozinha, de propósito:** o total que o caixa contou não pode mudar debaixo
+dele; ela atualiza ao abrir, no botão "Atualizar a lista" e depois de acertar. Sem sinal: "Nada foi acertado."
+
+**Como foi conferido:** `tests/novo/deliveriesLogic.test.mjs` (19), `settleLogic.test.mjs` (15), `fluxo.test.mjs` (+7), `toque.test.mjs` (+7);
+1150 testes passam no total. Em 320, 360, 390 e 480 px, nas 14 telas novas de conferência: sem rolagem lateral, nenhum botão com menos de 44 px
+e nenhum toque coberto por outra peça. No navegador, com a tela de verdade e um servidor de mentira (53 conferências): dois toques em "Peguei"
+mandam um envio só; o campo do código recebe o foco, só aceita números e no máximo 4; código errado apaga o campo; **três erros bloqueiam** e
+o servidor recebe exatamente 3 tentativas; sem sinal ao entregar avisa que repetir é seguro e a mesma entrega fecha depois; entrega nova vibra
+uma vez; a aba não pula; sem servidor a lista fica e a frase some sozinha; no acerto, o primeiro toque não manda nada, mexer na marcação
+desarma, em 4 s desarma sozinho, a lista não pergunta sozinha, sem sinal diz que nada foi acertado, o servidor recebe **só a entrega marcada**,
+e lista que já mudou **não é mandada**.
+Para ver: `preview-novo.html#/entregas`, `#/entregas-pegar`, `#/entregas-entregues`, `#/entregas-codigo`, `#/entregas-bloqueado`,
+`#/entregas-erro`, `#/entregas-calmo`, `#/entregas-carregando`, `#/entregas-gerente`, `#/acerto`, `#/acerto-confirmar`, `#/acerto-calmo`,
+`#/acerto-erro` e `#/acerto-carregando`.
+
+**O que ainda falta no menu de quem trabalha** (o menu tem 21 entradas; estas têm tela nova, as outras ainda são as antigas):
+
+| Entrada do menu | Tela nova |
+| --- | --- |
+| Hoje, Pedidos, Abrir mesa, Mesas, Entregas, Acerto de caixa | **Pronta** (desenho + ligação, fora do painel público) |
+| Assistente (cardápio por voz e foto), Produtos, Categorias | Falta (próxima etapa: cadastro do cardápio) |
+| Seu negócio, Custos, Pagamento | Falta |
+| Meu link, Horário, Regiões de entrega, Marca, Equipe, Plano | Falta |
+| Aprovações, Assinaturas, Chamados (dono do sistema) | Falta |
+
+**Ainda não resolvido:** a regra de quem pode abrir cada tela (casca do painel, na hora de ligar tudo) e o aviso de "N mesas chamando" no
+topo de qualquer tela. As lacunas de servidor S1 a S3 continuam como estavam; nada foi mexido no servidor.
+
+**Ainda não está ligado ao painel público** (o painel antigo continua mandando).
+
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
 - Tudo mora em `frontend/src/novo/` e **não é importado pelo aplicativo**: o `index.html` e o `main.tsx` não mudam.
   Um teste (`tests/novo`) garante que o visual novo não depende do antigo e que só a página de conferência usa dados
   de exemplo.
 - Para ver: `cd frontend && npx vite build --config vite.preview-novo.config.ts --outDir /tmp/novo` e abrir
-  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu`, `#/menu-garcom`, `#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro`, `#/mesa-aberta`, `#/pedidos`, `#/pedidos-caixa`, `#/pedidos-garcom`, `#/pedidos-cozinha`, `#/pedidos-calmo`, `#/pedidos-erro` ou `#/pedidos-enviando`
+  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu`, `#/menu-garcom`, `#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro`, `#/mesa-aberta`, `#/pedidos`, `#/pedidos-caixa`, `#/pedidos-garcom`, `#/pedidos-cozinha`, `#/pedidos-calmo`, `#/pedidos-erro`, `#/pedidos-enviando`, `#/entregas`, `#/entregas-pegar`, `#/entregas-entregues`, `#/entregas-codigo`, `#/entregas-bloqueado`, `#/entregas-erro`, `#/entregas-calmo`, `#/entregas-carregando`, `#/entregas-gerente`, `#/acerto`, `#/acerto-confirmar`, `#/acerto-calmo`, `#/acerto-erro` ou `#/acerto-carregando`
   (a pasta pública vai junto, por causa das fontes).
 - Cada tela ganha um PR próprio: ligada aos dados de verdade (por props), com teste, e a tela antiga correspondente
   sai no mesmo PR. **Nada disso vira o que o público vê sem o "pode" do GD.**

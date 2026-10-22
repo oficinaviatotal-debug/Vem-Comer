@@ -434,3 +434,70 @@ export type OrdersView = {
   empty: string;
   error: string;
 };
+
+/** Uma entrega na tela do entregador (e do gerente): para onde vai, quanto receber na porta e o botão do momento. */
+export type DeliveryCard = {
+  id: string;
+  /** "#A1B2": o código curto que dá para falar em voz alta. */
+  number: string;
+  who: string;
+  /** O endereço em letra grande; "Endereço não informado" quando não há. */
+  address: string;
+  /** Região e referência, uma linha cada. */
+  sub: string[];
+  stage: "ready" | "going" | "other" | "done";
+  /** Dinheiro a receber na porta: o valor e o troco a levar. Null quando nada se recebe em dinheiro. */
+  cash: { main: string; sub: string } | null;
+  phoneHref: string;
+  mapHref: string;
+  /** O botão grande do momento ("Peguei", "Entreguei"); vazio quando não há o que fazer (com outro, entregue). */
+  action: string;
+  actionSpoken: string;
+  /** O pedido pede os 4 números do cliente para fechar. */
+  needsCode: boolean;
+  /** Entregue: a hora. */
+  time: string;
+  /** Entregue com dinheiro: de quem ele está agora. */
+  money: { text: string; tone: "owe" | "settled" } | null;
+};
+
+export type DeliveriesView = {
+  sub: string;
+  /** "Você está com R$ 62,50 em dinheiro…": o que ele ainda deve ao caixa. Vazio quando não deve nada. */
+  held: string;
+  tabs: Tab[];
+  active: string;
+  cards: DeliveryCard[];
+  empty: string;
+  error: string;
+  notice: string;
+};
+
+/** Uma entrega dentro do acerto: quem, onde, quando e quanto, e se está marcada. */
+export type SettleRow = { id: string; label: string; amount: string; checked: boolean };
+
+export type SettleGroup = {
+  id: string;
+  name: string;
+  /** O total que o motoqueiro deve (todas as entregas dele). */
+  total: string;
+  rows: SettleRow[];
+  /** A soma do que está marcado. */
+  marked: string;
+  count: number;
+  /** "Recebi R$ 62,50 de Ana (2 entregas)"; vazio quando nada está marcado. */
+  button: string;
+  /** Depois do primeiro toque, até o segundo (ou até passar o tempo). */
+  armed: boolean;
+};
+
+export type SettleView = {
+  sub: string;
+  /** O que o leitor de tela fala quando algo muda (a frase de cima, ou o pedido de confirmar). */
+  live: string;
+  total: string;
+  groups: SettleGroup[];
+  empty: string;
+  error: string;
+  notice: string;
+};

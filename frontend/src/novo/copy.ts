@@ -86,3 +86,51 @@ export const ORDERS_EMPTY = {
   done: "Ainda não há pedidos encerrados.",
 } as const;
 export const ORDERS_CHANGED = "Este pedido já mudou. A tela foi atualizada.";
+
+// ---------------------------------------------------------------- Entregas (painel e entregador)
+
+export const DELIVERIES_TITLE = "Entregas";
+export const DELIVERIES_QUIET = "Nenhuma entrega agora";
+export const DELIVERIES_LOADING = "Abrindo as entregas…";
+export const DELIVERIES_TABS_LABEL = "Etapas das entregas";
+export const DELIVERIES_TAB = { ready: "Pegar", route: "Na rua", done: "Entregues" } as const;
+export const DELIVERIES_EMPTY = {
+  ready: "Nenhuma entrega para pegar. Quando a cozinha deixar um pedido pronto, ele aparece aqui e o aparelho avisa.",
+  route: "Ninguém está na rua agora.",
+  done: "Ainda não há entregas fechadas.",
+} as const;
+export const DELIVERIES_PICK = "Peguei";
+export const DELIVERIES_PICKING = "Pegando…";
+export const DELIVERIES_DELIVER = "Entreguei";
+export const DELIVERIES_CONFIRM = "Confirmar entrega";
+export const DELIVERIES_CONFIRMING = "Confirmando…";
+export const DELIVERIES_BACK = "Voltar";
+export const DELIVERIES_CALL = "Ligar";
+export const DELIVERIES_MAP = "Mapa";
+export const DELIVERIES_MAP_OPEN = "Abrir o endereço no mapa";
+export const DELIVERIES_NO_ADDRESS = "Endereço não informado";
+export const DELIVERIES_OTHER = "Está com outro motoqueiro";
+export const DELIVERIES_CODE_LABEL = "Código do cliente";
+export const DELIVERIES_CODE_ARIA = "Código do cliente, 4 números";
+export const DELIVERIES_CODE_HINT = "Peça ao cliente os 4 números do pedido dele. Só entregue depois de ver o código.";
+export const DELIVERIES_NO_CODE = "Este pedido não tem código. Confirme só depois de entregar.";
+export const DELIVERIES_LOCKED = "Código bloqueado. Avise o restaurante: ele fecha a entrega pela tela dele.";
+export const DELIVERIES_LOAD_ERROR = "Sem sinal. Mostrando a última lista que carregou.";
+export const DELIVERIES_PICK_ERROR = "Sem sinal. Tente de novo.";
+export const DELIVERIES_CASH_DONE = "acertado com o caixa";
+export const DELIVERIES_OFFLINE = "Sem sinal. Não sei se a entrega foi registrada. Toque em Confirmar entrega de novo quando o sinal voltar: não tem problema repetir.";
+
+// ---------------------------------------------------------------- Acerto do caixa (dinheiro dos motoqueiros)
+
+export const SETTLE_TITLE = "Acerto do caixa";
+export const SETTLE_QUIET = "Tudo acertado";
+export const SETTLE_LOADING = "Abrindo o acerto…";
+export const SETTLE_HELP = "Conte o dinheiro que o motoqueiro trouxe, confira as entregas e toque em Recebi. Os pedidos passam a pagos.";
+export const SETTLE_EMPTY = "Nenhum dinheiro de motoqueiro em aberto. Tudo acertado.";
+export const SETTLE_PICK_HINT = "Marque as entregas que o motoqueiro entregou ao caixa.";
+export const SETTLE_ARMED = "Toque de novo para confirmar";
+export const SETTLE_BUSY = "Acertando…";
+export const SETTLE_REFRESH = "Atualizar a lista";
+export const SETTLE_LOAD_ERROR = "Sem sinal. Tente de novo.";
+export const SETTLE_ERROR = "Sem sinal. Nada foi acertado. Tente de novo.";
+export const SETTLE_CHANGED = "Esta lista já mudou (outra pessoa acertou, ou o valor mudou). A tela foi atualizada: confira de novo.";
