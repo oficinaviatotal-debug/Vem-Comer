@@ -20,6 +20,10 @@ dentro do ecossistema, onde a pessoa vê tudo o que existe.
 - O mínimo de escrita e o máximo de comando de voz. Quem não sabe ler ou escrever usa o sistema inteiro.
 - A voz precisa ser **audível** e funcionar em qualquer aparelho, inclusive o Android simples e o sinal fraco.
 - Toda resposta tem um **botão grande** que faz a mesma coisa. Teclado é a última opção.
+- **Regra de entrada (GD, 22/10/2026, 19:10: "tudo tem que ter entrada por comando de voz, entrada escrita ou entrada por foto").** Tudo que o
+  sistema recebe da pessoa tem de poder entrar por **voz**, por **escrita** ou por **foto**, e quem escolhe é ela. Tela que só tem toque, ou que oferece um
+  só caminho onde os outros fazem sentido, está incompleta. Foto vale onde há o que fotografar (cardápio, prato, logomarca, QR da mesa); nos outros lugares
+  valem a voz e a escrita.
 
 ## 3. Conversa que entende, nada de robô de menu
 
