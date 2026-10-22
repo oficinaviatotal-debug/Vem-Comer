@@ -5,6 +5,7 @@
  */
 
 import type { KitchenOrder } from "../cozinha/kitchenLogic";
+import { hourOf, todayOf } from "../hoje/todayLogic";
 import type { Cart, Category, Dish, Job, Promo, Shop, Today } from "./types";
 
 export const SHOP: Shop = {
@@ -37,25 +38,50 @@ export const DISHES: Dish[] = [
 
 export const CART: Cart = { items: 2, total: 33 };
 
-export const TODAY: Today = {
-  greeting: "Bom dia, João",
-  dateLine: "Quarta, 21 de outubro. Aberto desde as 10h.",
-  waiting: 3,
-  oldestMinutes: 7,
-  cooking: 4,
-  onTheWay: 2,
-  calling: 1,
-  todo: [
-    { id: "t1", kind: "call" as const, title: "Mesa 4 está chamando", note: "Faz 2 minutos", action: "Atender" },
-    { id: "t2", kind: "pix" as const, title: "2 Pix para conferir", note: "R$ 96,00 no total", action: "Conferir" },
-  ],
-  salesTotal: 1284.5,
-  salesOrders: 38,
-  averageTicket: 33.8,
-  hours: [3, 6, 9, 5, 2, 3, 4, 8, 11, 14, 12, 7, 2],
-  hoursFrom: 10,
-  nowIndex: 10,
-};
+/**
+ * O "Hoje" de EXEMPLO: pedidos, mesa chamando e vendas no formato que o servidor manda, passando pela mesma conta
+ * que a tela de verdade usa (hoje/todayLogic). `now` entra de fora para os minutos e as horas baterem com a conferência.
+ */
+export function todayExample(now: number): Today {
+  const ago = (minutes: number) => new Date(now - minutes * 60000).toISOString();
+  const order = (status: string, minutes: number, extra: Record<string, unknown> = {}) => ({
+    status,
+    created_at: ago(minutes),
+    order_type: "mesa",
+    payment_method: "dinheiro",
+    payment_status: "PENDING",
+    total_price: 30,
+    ...extra,
+  });
+  const pix = { payment_method: "pix", payment_status: "PENDING", total_price: 48 };
+  // As vendas de exemplo terminam na hora de agora (nunca há venda no futuro).
+  const sold = [3, 6, 9, 5, 2, 3, 4, 8, 11, 14, 12, 7, 2];
+  const nowHour = hourOf(now);
+  const orderCountAt = (hour: number) => sold[hour - (nowHour - (sold.length - 1))] ?? 0;
+  return todayOf({
+    name: "João da Silva",
+    role: "OWNER",
+    now,
+    orders: [
+      order("PENDING_PAYMENT", 7, pix),
+      order("PENDING_PAYMENT", 3, pix),
+      order("PENDING_PAYMENT", 5),
+      order("em preparo", 12),
+      order("em preparo", 18),
+      order("em preparo", 9),
+      order("em preparo", 4),
+      order("saiu para entrega", 30, { order_type: "entrega" }),
+      order("saiu para entrega", 22, { order_type: "entrega" }),
+    ],
+    calls: [
+      { id: "c1", table_number: 4, kind: "garcom", label: "Garçom", text: "Mesa 4 chama o garçom", waiting_seconds: 120, repeats: 0, urgency: "normal" },
+    ],
+    business: {
+      summary: { revenue: 1284.5, orders: 38, avg_ticket: 33.8, dishes: 61, delivery_fees: 24 },
+      hours: Array.from({ length: 24 }, (_, hour) => ({ hour, orders: hour <= nowHour ? orderCountAt(hour) : 0, revenue: 0 })),
+    },
+  });
+}
 
 export const JOBS: Job[] = [
   { id: "j1", title: "Atendente de loja", company: "Mercadinho Bom Preço", city: "Natal - RN", mode: "Presencial", contract: "CLT", ago: "Há 2 horas" },

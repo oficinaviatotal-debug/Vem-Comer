@@ -5,7 +5,7 @@ import OwnerToday from "./OwnerToday";
 import JobsHome from "./JobsHome";
 import ShopMenu from "./ShopMenu";
 import { emptyText, isKitchenTab, kitchenTabs, ticketsFor, type KitchenTabId } from "../cozinha/kitchenLogic";
-import { CART, CATEGORIES, DISHES, JOBS, PROMO, SHOP, TODAY, kitchenOrders } from "./demo";
+import { CART, CATEGORIES, DISHES, JOBS, PROMO, SHOP, kitchenOrders, todayExample } from "./demo";
 
 /**
  * Página de conferência do visual novo (não faz parte do aplicativo): mostra cada tela com dados de exemplo.
@@ -29,7 +29,7 @@ function KitchenPreview() {
 
 function Screen() {
   const route = window.location.hash.replace(/^#\/?/, "");
-  if (route === "hoje") return <OwnerToday today={TODAY} />;
+  if (route === "hoje") return <OwnerToday today={todayExample(Date.now())} />;
   if (route === "vagas") return <JobsHome jobs={JOBS} city="Natal - RN" />;
   if (route === "cozinha") return <KitchenPreview />;
   return <ShopMenu shop={SHOP} categories={CATEGORIES} promo={PROMO} dishes={DISHES} cart={CART} />;

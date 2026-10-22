@@ -1,9 +1,30 @@
 import NvIcon, { type NvIconName } from "./Icons";
 import { TopBar, VoiceOrb } from "./parts";
 import { minutesText, money } from "./format";
-import type { Today } from "./types";
+import type { TodoItem, Today } from "./types";
 
-type Props = { today: Today };
+type Props = {
+  today: Today;
+  /** Toque num botão que leva a outra tela (os pedidos, os atalhos, os números). Sem isto a tela só mostra. */
+  onGo?: (view: string) => void;
+  /** Toque no botão de um "para fazer agora": atender a mesa ou conferir o Pix. */
+  onTodo?: (item: TodoItem) => void;
+  /** O item que está sendo enviado ao servidor agora: o botão espera para não mandar duas vezes. */
+  busyId?: string | null;
+  /** Frase pronta quando algo deu errado; diz o que fazer. */
+  error?: string | null;
+};
+
+/** O ícone de cada atalho pela tela para onde ele leva; atalho de tela desconhecida usa o ícone de papel. */
+const SHORTCUT_ICON: Record<string, NvIconName> = {
+  pedidos: "receipt",
+  assistente: "mic",
+  mesas: "table",
+  mesa: "table",
+  meulink: "link",
+  produtos: "bag",
+  acerto: "pix",
+};
 
 const TODO_ICON: Record<"call" | "pix", NvIconName> = { call: "bell", pix: "pix" };
 
@@ -16,7 +37,7 @@ function hourLabel(from: number, index: number): string {
  * Em cima, o que está esperando (o número que mais pesa); no meio, as ações; embaixo, as vendas do dia.
  * Nada é estimado: cada número vem dos pedidos que o painel já tem.
  */
-export default function OwnerToday({ today }: Props) {
+export default function OwnerToday({ today, onGo, onTodo, busyId = null, error = null }: Props) {
   const waitingText =
     today.waiting === 0
       ? "Nenhum pedido esperando"
@@ -51,10 +72,16 @@ export default function OwnerToday({ today }: Props) {
               <span>mesa chamando</span>
             </div>
           </div>
-          <button type="button" className="nv-btn is-fire is-block">
+          <button type="button" className="nv-btn is-fire is-block" onClick={() => onGo?.(today.views.orders)}>
             Ver os pedidos
           </button>
         </section>
+
+        {error ? (
+          <p className="nv-error" role="alert">
+            {error}
+          </p>
+        ) : null}
 
         {today.todo.length > 0 ? (
           <section aria-labelledby="nv-todo-h">
@@ -71,8 +98,13 @@ export default function OwnerToday({ today }: Props) {
                     <strong>{item.title}</strong>
                     <span>{item.note}</span>
                   </span>
-                  <button type="button" className={`nv-btn ${item.kind === "call" ? "is-green" : "is-fire"}`}>
-                    {item.action}
+                  <button
+                    type="button"
+                    className={`nv-btn ${item.kind === "call" ? "is-green" : "is-fire"}`}
+                    disabled={busyId === item.id}
+                    onClick={() => onTodo?.(item)}
+                  >
+                    {busyId === item.id ? "Enviando…" : item.action}
                   </button>
                 </li>
               ))}
@@ -80,47 +112,63 @@ export default function OwnerToday({ today }: Props) {
           </section>
         ) : null}
 
-        <section className="nv-sales" aria-labelledby="nv-sales-h">
-          <h2 className="nv-h2" id="nv-sales-h" style={{ fontSize: 17, marginBottom: 8 }}>
-            Vendas de hoje
-          </h2>
-          <p className="nv-sales-total">{money(today.salesTotal)}</p>
-          <p className="nv-sales-note">
-            {today.salesOrders} pedidos, ticket médio de {money(today.averageTicket)}
-          </p>
-          <div className="nv-bars" role="img" aria-label="Pedidos por hora">
-            {today.hours.map((count, index) => {
-              const max = Math.max(...today.hours, 1);
-              return (
-                <i
-                  key={index}
-                  className={index === today.nowIndex ? "is-now" : undefined}
-                  style={{ height: `${Math.max(6, Math.round((count / max) * 100))}%` }}
-                />
-              );
-            })}
-          </div>
-          <div className="nv-bars-axis" aria-hidden="true">
-            <span>{hourLabel(today.hoursFrom, 0)}</span>
-            <span>{hourLabel(today.hoursFrom, Math.floor(today.hours.length / 2))}</span>
-            <span>{hourLabel(today.hoursFrom, today.hours.length - 1)}</span>
-          </div>
-        </section>
+        {today.sales || today.salesMessage ? (
+          <section className="nv-sales" aria-labelledby="nv-sales-h">
+            <h2 className="nv-h2" id="nv-sales-h" style={{ fontSize: 17, marginBottom: 8 }}>
+              Vendas de hoje
+            </h2>
+            {today.sales ? (
+              <>
+                <p className="nv-sales-total">{money(today.sales.total)}</p>
+                <p className="nv-sales-note">
+                  {today.sales.orders === 0
+                    ? "Ainda sem vendas hoje."
+                    : `${today.sales.orders} ${today.sales.orders === 1 ? "pedido" : "pedidos"}${
+                        today.sales.averageTicket !== null ? `, ticket médio de ${money(today.sales.averageTicket)}` : ""
+                      }`}
+                </p>
+                {today.sales.hours.length > 0 ? (
+                  <>
+                    <div className="nv-bars" role="img" aria-label="Pedidos por hora">
+                      {today.sales.hours.map((count, index) => {
+                        const max = Math.max(...today.sales!.hours, 1);
+                        return (
+                          <i
+                            key={index}
+                            className={index === today.sales!.nowIndex ? "is-now" : undefined}
+                            style={{ height: `${Math.max(6, Math.round((count / max) * 100))}%` }}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="nv-bars-axis" aria-hidden="true">
+                      <span>{hourLabel(today.sales.hoursFrom, 0)}</span>
+                      <span>{hourLabel(today.sales.hoursFrom, Math.floor(today.sales.hours.length / 2))}</span>
+                      <span>{hourLabel(today.sales.hoursFrom, today.sales.hours.length - 1)}</span>
+                    </div>
+                  </>
+                ) : null}
+                <button type="button" className="nv-link" onClick={() => onGo?.(today.views.numbers)}>
+                  Ver todos os números
+                </button>
+              </>
+            ) : (
+              <p className="nv-sales-note" role="status">
+                {today.salesMessage}
+              </p>
+            )}
+          </section>
+        ) : null}
 
-        <section className="nv-quick" aria-label="Atalhos">
-          <button type="button" className="nv-quick-btn">
-            <NvIcon name="receipt" /> Fazer um pedido
-          </button>
-          <button type="button" className="nv-quick-btn">
-            <NvIcon name="table" /> Abrir mesa
-          </button>
-          <button type="button" className="nv-quick-btn">
-            <NvIcon name="bag" /> Cardápio
-          </button>
-          <button type="button" className="nv-quick-btn">
-            <NvIcon name="link" /> Meu link
-          </button>
-        </section>
+        {today.shortcuts.length > 0 ? (
+          <section className="nv-quick" aria-label="Atalhos">
+            {today.shortcuts.map((item) => (
+              <button key={item.view} type="button" className="nv-quick-btn" onClick={() => onGo?.(item.view)}>
+                <NvIcon name={SHORTCUT_ICON[item.view] ?? "doc"} /> {item.label}
+              </button>
+            ))}
+          </section>
+        ) : null}
       </main>
 
       <div className="nv-dock is-float">

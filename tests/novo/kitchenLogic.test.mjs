@@ -182,7 +182,7 @@ test("etapa vazia diz o que fazer, em frase inteira e sem jargão", () => {
 
 // A cozinha nova ainda NÃO está ligada ao aplicativo que o público usa: só a página de conferência a enxerga.
 // Quando o GD disser "pode", o PR que liga a tela troca esta cerca por um teste da ligação.
-test("nada do aplicativo importa o visual novo nem a cozinha nova (ainda não foi ao ar)", () => {
+test("nada do aplicativo importa o visual novo nem as telas novas (cozinha, hoje): ainda não foram ao ar", () => {
   const root = fileURLToPath(new URL("../../frontend/src/", import.meta.url));
   const offenders = [];
   const walk = (dir) => {
@@ -193,8 +193,8 @@ test("nada do aplicativo importa o visual novo nem a cozinha nova (ainda não fo
         continue;
       }
       const relative = path.slice(root.length);
-      if (!/\.(ts|tsx)$/.test(name) || /^(novo|cozinha)\//.test(relative)) continue;
-      if (/from ["'][^"']*\/(novo|cozinha)\//.test(readFileSync(path, "utf8"))) offenders.push(relative);
+      if (!/\.(ts|tsx)$/.test(name) || /^(novo|cozinha|hoje)\//.test(relative)) continue;
+      if (/from ["'][^"']*\/(novo|cozinha|hoje)\//.test(readFileSync(path, "utf8"))) offenders.push(relative);
     }
   };
   walk(root);

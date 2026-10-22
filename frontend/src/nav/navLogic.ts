@@ -244,7 +244,7 @@ export function waitText(minutes: number): string {
   return rest === 0 ? `há ${hours} h` : `há ${hours} h ${rest} min`;
 }
 
-function oldestWait(orders: OrderLite[], nowMs: number): number | null {
+export function oldestWait(orders: OrderLite[], nowMs: number): number | null {
   let oldest: number | null = null;
   for (const order of orders) {
     const minutes = waitingMinutes(order.created_at, nowMs);
@@ -255,7 +255,7 @@ function oldestWait(orders: OrderLite[], nowMs: number): number | null {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function isPixToCheck(order: OrderLite, nowMs: number): boolean {
+export function isPixToCheck(order: OrderLite, nowMs: number): boolean {
   if (String(order.payment_method ?? "").toLowerCase() !== "pix") return false;
   if (String(order.payment_status ?? "").toUpperCase() === "PAID") return false;
   // Only the last day: an old order nobody ever marked is a habit of the house, not news for today.
