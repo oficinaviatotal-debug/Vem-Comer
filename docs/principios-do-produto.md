@@ -32,6 +32,10 @@ botão), não parágrafo. Chatbot mecânico e burro já não é suportável.
 Nada escondido: preço, regra, passo seguinte. Aba para cada área, cor que significa algo, botão com verbo. Rápido,
 fluido, objetivo, sem cansar.
 
+**Quem toca, sobe; quem informa, fica liso.** Botão tem espessura e afunda no toque (impressão de 3D, pedido do GD em
+22/10/2026); informação fica rente ao chão. Em tela de compra, o cartão inteiro é o botão: o caminho do pedido tem de
+ter o menor número de toques possível, e nada que parece botão pode ser mudo.
+
 ## 5. Capta informação sem interrogar
 
 Cada interação alimenta o perfil e os dados (com aceite). A pessoa não preenche formulário: conversa, fala, tira foto,

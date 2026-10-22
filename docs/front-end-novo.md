@@ -35,8 +35,8 @@ Regra: a lógica antiga só é reaproveitada se tiver teste. O que não tem test
 
 ## Telas da primeira rodada (só desenhadas, com dados de exemplo)
 
-1. **Cardápio do cliente** (o link do restaurante): marca do restaurante, aberto até, busca, categorias, pratos em 3 por
-   linha com foto grande, sacola, bolinha de voz e o balãozinho do Vem Trabalhar. (O desenho também tinha tempo de
+1. **Cardápio do cliente** (o link do restaurante): marca do restaurante, aberto até, busca, categorias, pratos em 2 por
+   linha (eram 3; ver a quinta rodada) com foto grande, sacola, bolinha de voz e o balãozinho do Vem Trabalhar. (O desenho também tinha tempo de
    entrega, taxa, cidade e promoção; o servidor não tem esses dados no cardápio e a tela de verdade não os mostra.)
 2. **Hoje do dono:** o que está esperando (número grande), o que fazer agora (mesa chamando, Pix a conferir), vendas
    do dia com as horas, e quatro atalhos.
@@ -104,6 +104,49 @@ regras da tela antiga (`customer/menuGroups.ts`, `options.ts`, `openness.ts`, `c
   quantidade, nome, pagamento em Pix, entrega ou retirada), o acompanhamento do pedido e a tela da mesa. "Escolher" e
   "Ver sacola" já avisam quem usa a tela (`onChoose`, `onBag`); a tela antiga continua sendo a que vai ao ar.
 - A bolinha de voz continua sendo desenho (a busca por voz da tela antiga ainda não foi refeita).
+
+## Quinta rodada: profundidade (3D) e tudo tocável (22/10/2026)
+
+Pedido do GD, 22/10/2026, 07:30: "o visual pode ser alterado para dar impressão de 3D, e tudo precisa ser clicável, ou
+seja, facilidade ao comprar".
+
+**A regra do desenho (uma só, no cabeçalho de `novo.css`):** a luz vem de cima. Toda peça que se toca tem brilho em
+cima, **borda grossa embaixo** (a "espessura", sempre numa cor mais escura da própria peça) e sombra no chão, e **afunda
+quando o dedo aperta**. O que só informa (pílulas de horário, tempo de espera, ícone do aviso, etiquetas) fica **liso, sem
+borda**; painéis que só agrupam têm sombra macia. Assim o dono e o cliente não precisam aprender o que é botão: o desenho
+mostra. Campos de escrever são o contrário: **afundados**. Quem pediu menos movimento recebe a mudança sem animação.
+
+**Toque estendido (`nv-hit`):** o botão principal de um cartão cobre o cartão inteiro (por um pedaço de CSS, sem mudar a
+conta), então tocar em qualquer lugar vale. Os botões de dentro (− e +, fechar o balão) ficam por cima. Quem é toque
+estendido não se mexe sozinho: o cartão é que afunda (se o botão se mexesse, a área de toque encolheria no meio do aperto).
+
+| Peça | O que o toque faz |
+| --- | --- |
+| Cartão do prato (cardápio) | Põe um na sacola; se o prato tem tamanho ou extras, abre as escolhas. Esgotado ou restaurante fechado: não é botão |
+| Promoção | O cartão inteiro pede a promoção; "Ver todas" lista (só aparece com promoção de verdade, que o servidor ainda não tem) |
+| Balãozinho do Vem Trabalhar / do Vem Comer | O balão inteiro é o link; o X fecha |
+| Hoje: caixas "na cozinha", "a caminho", "mesa chamando" | Levam a Pedidos, Entregas (só gerente) e Mesas. Sem a tela para aquela pessoa, a caixa fica lisa e só informa |
+| Hoje: cada "para fazer agora" | O texto leva à tela do assunto (chamada: Mesas; Pix: Pedidos); o botão faz a ação (Atender, Conferir) |
+| Hoje: vendas | O cartão inteiro abre os números |
+| Vem Trabalhar | Campos de busca escrevem de verdade; o cartão da vaga inteiro abre os detalhes; atalhos e abas respondem |
+| Cozinha | **Só o botão grande avança o pedido.** O resto da comanda é para ler: um toque sem querer ali mudaria um pedido |
+
+**Escolhas que fiz e o GD pode trocar:**
+
+- Pratos em **2 por linha** (eram 3): o cartão inteiro tocável precisa de espaço, e foto maior vende mais. Voltar para 3 é
+  trocar `repeat(2, ...)` por `repeat(3, ...)` em `.nv-grid`.
+- O aviso de **Pix** leva aos pedidos pelo texto, mas só o botão "Conferir" confere: conferir pagamento por um toque sem
+  querer não é "facilidade", é erro caro.
+- O botão de menu **deixou de aparecer** nas telas que não têm para onde levá-lo (antes aparecia e não fazia nada).
+
+**Ainda sem destino, porque a tela não existe** (aparecem no desenho e avisam quem usa a tela por `onChoose`, `onBag`,
+`onMenu`, `onPromo`): as escolhas do prato (tamanho, extras, observação), a sacola, o acompanhamento do pedido, o menu
+geral e a bolinha de voz. São as próximas da lista, e a facilidade de comprar só se completa quando elas existirem.
+
+**Como foi conferido:** `tests/novo/toque.test.mjs` (14) lê o CSS e as telas e garante a regra (borda grossa só no que toca,
+afundar no toque, toque estendido por cima, nada de botão fantasma). Em 320, 360, 390 e 480 px a conferência mede sem
+rolagem lateral, nenhum botão com menos de 44 px e, ponto a ponto (`elementFromPoint`), que tocar no centro e nos cantos de
+cada cartão cai no botão dele.
 
 ## Como as telas novas entram, sem ir ao ar antes da hora
 

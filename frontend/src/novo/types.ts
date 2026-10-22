@@ -38,7 +38,15 @@ export type Fact = { text: string; tone: "open" | "closed" };
 
 export type Cart = { items: number; total: number };
 
-export type TodoItem = { id: string; kind: "call" | "pix"; title: string; note: string; action: string };
+export type TodoItem = {
+  id: string;
+  kind: "call" | "pix";
+  title: string;
+  note: string;
+  action: string;
+  /** A tela onde esse assunto aparece inteiro; o toque no texto leva até ela. Sem tela, o texto só informa. */
+  view?: string | null;
+};
 
 /** As vendas do dia. `hours` vai da primeira hora mostrada até a hora de agora; `nowIndex` é a barra de agora (-1: sem barras). */
 export type Sales = {
@@ -68,8 +76,11 @@ export type Today = {
   /** Frase no lugar das vendas quando não há número ("Carregando…", "Não consegui abrir as vendas agora."). */
   salesMessage?: string;
   shortcuts: Shortcut[];
-  /** Para onde levam os dois botões fixos da tela. Quem monta os dados diz os nomes das telas; a tela não os conhece. */
-  views: { orders: string; numbers: string };
+  /**
+   * Para onde levam os toques da tela (botão dos pedidos, números, as três caixas de cima). Quem monta os dados diz os
+   * nomes das telas; a tela não os conhece. `null`: esta pessoa não tem essa tela, então a caixa só informa.
+   */
+  views: { orders: string; numbers: string; deliveries: string | null; tables: string | null };
 };
 
 export type Ticket = {

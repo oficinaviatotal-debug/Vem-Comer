@@ -17,17 +17,32 @@ type Props = {
   error?: string | null;
   /** O que escrever quando a etapa não tem comanda. */
   emptyText?: string;
+  /** O menu do painel. Sem ele (e sem `showMenu`) o botão não aparece. */
+  onMenu?: () => void;
+  showMenu?: boolean;
 };
 
 /**
  * Cozinha: uma comanda por pedido, a mais antiga primeiro. A fita no topo muda de cor pelo tempo de espera
  * (verde, amarela, vermelha) e o botão de baixo é grande o bastante para tocar com a mão suja de farinha.
+ * Só esse botão avança o pedido: o resto da comanda é para ler, porque um toque sem querer na cozinha muda um pedido.
  */
-export default function Kitchen({ tabs, activeTab, tickets, onTab, onAction, busyId = null, error = null, emptyText }: Props) {
+export default function Kitchen({
+  tabs,
+  activeTab,
+  tickets,
+  onTab,
+  onAction,
+  busyId = null,
+  error = null,
+  emptyText,
+  onMenu,
+  showMenu = false,
+}: Props) {
   return (
     <div className="nv-root">
       <main className="nv-screen">
-        <TopBar title="Cozinha" sub="A comanda mais antiga fica em cima" />
+        <TopBar title="Cozinha" sub="A comanda mais antiga fica em cima" onMenu={onMenu} showMenu={showMenu} />
 
         <div className="nv-tabs" role="tablist" aria-label="Etapas">
           {tabs.map((tab) => (

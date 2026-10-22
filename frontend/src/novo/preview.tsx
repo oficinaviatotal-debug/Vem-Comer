@@ -34,6 +34,8 @@ function ShopPreview() {
       cart={{ items, total }}
       onAdd={(id) => change(id, 1)}
       onLess={(id) => change(id, -1)}
+      onPromo={() => change("a1", 1)}
+      onPromos={() => undefined}
       showMenu
       jobsHref="#"
     />
@@ -52,14 +54,15 @@ function KitchenPreview() {
       tickets={ticketsFor(orders, tab, now)}
       onTab={(id) => (isKitchenTab(id) ? setTab(id) : undefined)}
       emptyText={emptyText(tab)}
+      showMenu
     />
   );
 }
 
 function Screen() {
   const route = window.location.hash.replace(/^#\/?/, "");
-  if (route === "hoje") return <OwnerToday today={todayExample(Date.now())} />;
-  if (route === "vagas") return <JobsHome jobs={JOBS} city="Natal - RN" />;
+  if (route === "hoje") return <OwnerToday today={todayExample(Date.now())} showMenu />;
+  if (route === "vagas") return <JobsHome jobs={JOBS} city="Natal - RN" showMenu />;
   if (route === "cozinha") return <KitchenPreview />;
   return <ShopPreview />;
 }

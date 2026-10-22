@@ -5,6 +5,11 @@
  * Linguagem da prancha: fundo branco, cartões bem arredondados, verde-floresta e laranja-brasa, títulos grossos e
  * redondos, azulejos pêssego para categorias, promoção em vermelho-brasa com botão amarelo.
  * Um só elemento de personalidade: a bolinha de voz (nv-orb), presente em toda tela ("voz primeiro").
+ *
+ * Profundidade (pedido do GD em 22/10/2026: "dar impressão de 3D" e "tudo clicável"). A luz vem de cima.
+ * Regra única, que o desenho inteiro obedece: o que tem borda grossa embaixo, brilho em cima e afunda quando o
+ * dedo aperta, TOCA. O que só informa (pílulas, tempo de espera, painéis) fica liso ou com sombra macia, sem borda.
+ * Assim ninguém precisa aprender o que é botão: o desenho mostra.
  */
 
 @font-face {
@@ -60,6 +65,23 @@
   --nv-shadow: 0 1px 2px rgba(27, 67, 50, 0.06), 0 10px 26px rgba(27, 67, 50, 0.09);
   --nv-shadow-lift: 0 2px 4px rgba(27, 67, 50, 0.1), 0 16px 34px var(--nv-glow);
 
+  /* Profundidade: brilho em cima, espessura embaixo (a "borda" de cada cor) e sombra no chão. */
+  --nv-depth: 5px;
+  --nv-hi: inset 0 2px 0 rgba(255, 255, 255, 0.5);
+  --nv-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 52%);
+  --nv-green-edge: #1b4a1f;
+  --nv-fire-edge: #b34700;
+  --nv-sun-edge: #cf9a00;
+  --nv-ink-edge: #0a2218;
+  --nv-peach-hi: #fff6ea;
+  --nv-peach-edge: #efcfa8;
+  --nv-slab-edge: #e0dbcc;
+  --nv-floor: rgba(27, 67, 50, 0.3);
+  /* Cartão que se toca: grosso embaixo. Painel que só informa: sombra macia, sem borda. */
+  --nv-card-3d: inset 0 2px 0 #fff, 0 4px 0 var(--nv-slab-edge), 0 18px 22px -12px var(--nv-floor);
+  --nv-card-3d-pressed: inset 0 2px 0 #fff, 0 1px 0 var(--nv-slab-edge), 0 4px 8px -4px var(--nv-floor);
+  --nv-panel-3d: inset 0 1.5px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(27, 67, 50, 0.08), 0 14px 24px -12px var(--nv-floor);
+
   /* Letra */
   --nv-display: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
   --nv-ui: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -86,6 +108,34 @@
   font: inherit;
   color: inherit;
   cursor: pointer;
+}
+
+/* Todo toque responde: a peça afunda um pouco quando o dedo aperta. Quem pediu menos movimento recebe a mudança sem animação. */
+.nv-root :where(button, a) {
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.09s ease-out,
+    box-shadow 0.09s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-root :where(button, a) {
+    transition: none;
+  }
+}
+
+/* Toque estendido: o botão principal de um cartão cobre o cartão inteiro, então tocar em qualquer lugar dele vale.
+   Os botões de dentro (mais, menos, fechar) ficam por cima com position: relative e z-index: 1. */
+.nv-root .nv-hit {
+  position: static;
+}
+
+.nv-hit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
 }
 
 .nv-root :focus-visible {
@@ -117,7 +167,7 @@
   border-radius: 50%;
   background: radial-gradient(circle at 30% 25%, #7c3aed, #4c1d95);
   font-size: 28px;
-  box-shadow: var(--nv-shadow);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), 0 4px 0 rgba(27, 67, 50, 0.16), 0 12px 16px -8px var(--nv-floor);
 }
 
 .nv-top-text {
@@ -145,8 +195,14 @@
   height: 48px;
   border: 0;
   border-radius: 50%;
-  background: transparent;
+  background: linear-gradient(180deg, #fff, #f1ede4);
   color: var(--nv-ink);
+  box-shadow: var(--nv-hi), 0 4px 0 rgba(27, 67, 50, 0.16), 0 10px 14px -8px var(--nv-floor);
+}
+
+.nv-icon-btn:active {
+  transform: translateY(3px);
+  box-shadow: var(--nv-hi), 0 1px 0 rgba(27, 67, 50, 0.16), 0 2px 4px var(--nv-floor);
 }
 
 .nv-icon-btn svg {
@@ -198,10 +254,10 @@
   gap: 10px;
   min-height: 56px;
   padding: 0 18px;
-  border: 1.5px solid var(--nv-line);
+  border: 0;
   border-radius: 999px;
-  background: var(--nv-paper);
-  box-shadow: var(--nv-shadow);
+  background: #f4f1ea;
+  box-shadow: inset 0 3px 6px rgba(27, 67, 50, 0.16), inset 0 -2px 0 #fff;
   color: var(--nv-muted);
 }
 
@@ -242,14 +298,20 @@
   width: 78px;
   height: 78px;
   border-radius: var(--nv-r-md);
-  background: var(--nv-peach);
+  background: linear-gradient(180deg, var(--nv-peach-hi), var(--nv-peach));
+  box-shadow: var(--nv-hi), 0 var(--nv-depth) 0 var(--nv-peach-edge), 0 16px 18px -10px var(--nv-floor);
   font-size: 38px;
   line-height: 1;
 }
 
+.nv-cat:active .nv-cat-tile {
+  transform: translateY(4px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-peach-edge), 0 2px 4px var(--nv-floor);
+}
+
 .nv-cat.is-on .nv-cat-tile {
-  background: var(--nv-fire);
-  box-shadow: var(--nv-shadow-lift);
+  background: var(--nv-shine), var(--nv-fire);
+  box-shadow: var(--nv-hi), 0 var(--nv-depth) 0 var(--nv-fire-edge), 0 16px 20px -8px var(--nv-glow);
 }
 
 /* ---------- Títulos de seção ---------- */
@@ -295,7 +357,12 @@
     radial-gradient(circle at 82% 55%, rgba(255, 200, 58, 0.55), transparent 46%),
     linear-gradient(120deg, var(--nv-ember-a), var(--nv-ember-b));
   color: #fff;
-  box-shadow: var(--nv-shadow);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 6px 0 #5a1306, 0 22px 28px -12px rgba(124, 29, 12, 0.6);
+}
+
+.nv-promo:has(.nv-hit:active) {
+  transform: translateY(4px);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 2px 0 #5a1306, 0 8px 12px -6px rgba(124, 29, 12, 0.6);
 }
 
 .nv-promo h3 {
@@ -323,11 +390,12 @@
   top: 14px;
   font-size: 104px;
   line-height: 1;
-  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 14px 12px rgba(0, 0, 0, 0.45));
   transform: rotate(-8deg);
 }
 
 .nv-btn {
+  --nv-edge: var(--nv-sun-edge);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -336,10 +404,17 @@
   padding: 0 24px;
   border: 0;
   border-radius: 999px;
-  background: var(--nv-sun);
+  background: var(--nv-shine), var(--nv-sun);
   color: var(--nv-ink);
   font-weight: 700;
   font-size: 17px;
+  box-shadow: var(--nv-hi), 0 var(--nv-depth) 0 var(--nv-edge), 0 calc(var(--nv-depth) + 9px) 16px -6px var(--nv-floor);
+}
+
+/* Quem é o toque estendido (nv-hit) não se mexe sozinho: se se mexesse, a área de toque encolheria no meio do aperto. O cartão afunda por ele. */
+.nv-btn:active:not(:disabled):not(.nv-hit) {
+  transform: translateY(calc(var(--nv-depth) - 1px));
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-edge), 0 2px 5px var(--nv-floor);
 }
 
 .nv-promo .nv-btn {
@@ -347,30 +422,32 @@
 }
 
 .nv-btn.is-green {
-  background: var(--nv-green);
+  --nv-edge: var(--nv-green-edge);
+  background: var(--nv-shine), var(--nv-green);
   color: #fff;
 }
 
 .nv-btn.is-fire {
-  background: var(--nv-fire);
+  --nv-edge: var(--nv-fire-edge);
+  background: var(--nv-shine), var(--nv-fire);
   color: #1b1200;
 }
 
 .nv-btn.is-ghost {
-  background: var(--nv-paper);
-  border: 2px solid var(--nv-line);
+  --nv-edge: rgba(27, 67, 50, 0.2);
+  background: linear-gradient(180deg, #fff, #f3efe6);
 }
 
 .nv-btn.is-block {
   width: 100%;
 }
 
-/* ---------- Pratos: 3 por linha, foto grande ---------- */
+/* ---------- Pratos: 2 por linha, o cartão inteiro é o botão de pedir ---------- */
 
 .nv-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 14px;
 }
 
 .nv-dish {
@@ -379,10 +456,50 @@
   flex-direction: column;
   gap: 6px;
   min-width: 0;
+  padding: 8px 8px 12px;
+  border: 0;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-card-3d);
+  text-align: left;
+}
+
+.nv-dish:has(.nv-dish-hit:active) {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+.nv-dish:has(.nv-dish-hit:focus-visible) {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 3px;
+}
+
+/* Prato que não se pede agora (esgotado, restaurante fechado): sem espessura, porque não se toca. */
+.nv-dish.is-off {
+  box-shadow: inset 0 1.5px 0 #fff, 0 1px 2px rgba(27, 67, 50, 0.1);
+  background: #f7f4ee;
+}
+
+/* O botão de pedir tem o nome do prato por dentro e cobre o cartão inteiro por fora. */
+.nv-dish-hit {
+  position: static;
+  display: block;
   padding: 0;
   border: 0;
   background: none;
   text-align: left;
+}
+
+.nv-dish-hit:focus-visible {
+  outline: none;
+}
+
+.nv-dish-hit::after {
+  border-radius: var(--nv-r-lg);
+}
+
+.nv-dish-box {
+  position: relative;
 }
 
 .nv-photo {
@@ -393,6 +510,7 @@
   overflow: hidden;
   border-radius: var(--nv-r-md);
   background: radial-gradient(circle at 35% 30%, #fff3dc, #f7d9b1);
+  box-shadow: inset 0 -8px 14px -8px rgba(120, 70, 20, 0.35);
   font-size: 46px;
 }
 
@@ -404,17 +522,25 @@
 
 .nv-add {
   position: absolute;
-  right: 6px;
-  bottom: 6px;
+  right: 10px;
+  bottom: 12px;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border: 0;
   border-radius: 50%;
-  background: var(--nv-fire);
+  background: radial-gradient(circle at 34% 26%, var(--nv-orb-hi), var(--nv-fire) 58%, var(--nv-orb-lo));
   color: #fff;
-  box-shadow: 0 4px 10px rgba(199, 71, 0, 0.45);
+  pointer-events: none;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.55),
+    0 4px 0 var(--nv-fire-edge),
+    0 12px 14px -4px rgba(0, 0, 0, 0.35);
+}
+
+.nv-dish:has(.nv-dish-hit:active) .nv-add {
+  transform: translateY(3px);
 }
 
 .nv-add svg {
@@ -423,7 +549,7 @@
 }
 
 .nv-dish-name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   line-height: 1.2;
   overflow-wrap: anywhere;
@@ -450,6 +576,7 @@
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--nv-line);
+  box-shadow: 0 -14px 24px -16px var(--nv-floor);
 }
 
 .nv-bag {
@@ -458,14 +585,21 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  --nv-edge: var(--nv-green-edge);
   min-height: 64px;
   padding: 0 22px;
   border: 0;
   border-radius: 999px;
-  background: var(--nv-green);
+  background: var(--nv-shine), var(--nv-green);
   color: #fff;
   font-weight: 700;
   font-size: 17px;
+  box-shadow: var(--nv-hi), 0 6px 0 var(--nv-edge), 0 16px 18px -8px var(--nv-floor);
+}
+
+.nv-bag:active:not(:disabled) {
+  transform: translateY(5px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-edge), 0 3px 6px var(--nv-floor);
 }
 
 .nv-bag small {
@@ -488,9 +622,22 @@
   height: 68px;
   border: 0;
   border-radius: 50%;
-  background: radial-gradient(circle at 32% 28%, var(--nv-orb-hi), var(--nv-fire) 55%, var(--nv-orb-lo));
+  background: radial-gradient(circle at 32% 26%, var(--nv-orb-hi), var(--nv-fire) 52%, var(--nv-orb-lo));
   color: #fff;
-  box-shadow: var(--nv-shadow-lift);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -6px 10px rgba(110, 30, 0, 0.35),
+    0 6px 0 var(--nv-fire-edge),
+    0 18px 24px -6px var(--nv-glow);
+}
+
+.nv-orb:active {
+  transform: translateY(5px);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -6px 10px rgba(110, 30, 0, 0.35),
+    0 1px 0 var(--nv-fire-edge),
+    0 4px 8px var(--nv-glow);
 }
 
 .nv-orb svg {
@@ -535,6 +682,7 @@
   justify-content: flex-end;
   background: none;
   border: 0;
+  box-shadow: none;
   backdrop-filter: none;
   pointer-events: none;
 }
@@ -559,6 +707,8 @@
 }
 
 .nv-cross-bubble {
+  --nv-edge: #0a2f8a;
+  position: relative;
   pointer-events: auto;
   display: inline-flex;
   align-items: center;
@@ -566,11 +716,16 @@
   min-height: 48px;
   padding: 0 4px 0 14px;
   border-radius: 999px;
-  background: #0f4bd1;
+  background: var(--nv-shine), #0f4bd1;
   color: #fff;
   font-size: 14px;
   font-weight: 700;
-  box-shadow: var(--nv-shadow);
+  box-shadow: var(--nv-hi), 0 4px 0 var(--nv-edge), 0 14px 18px -8px rgba(11, 42, 111, 0.55);
+}
+
+.nv-cross-bubble:has(.nv-hit:active) {
+  transform: translateY(3px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-edge), 0 3px 6px rgba(11, 42, 111, 0.4);
 }
 
 .nv-cross-bubble svg {
@@ -579,11 +734,13 @@
 }
 
 .nv-cross-close {
+  position: relative;
+  z-index: 1;
   flex: none;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: 0;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.2);
@@ -618,7 +775,7 @@
     radial-gradient(circle at 100% 0%, rgba(130, 205, 150, 0.28), transparent 46%),
     linear-gradient(160deg, #1f5039, #153628);
   color: #fff;
-  box-shadow: var(--nv-shadow);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.16), 0 1px 2px rgba(0, 0, 0, 0.2), 0 22px 30px -14px rgba(21, 54, 40, 0.75);
 }
 
 .nv-now-big {
@@ -642,9 +799,25 @@
 }
 
 .nv-now-cell {
+  min-width: 0;
+  min-height: 64px;
   padding: 10px 12px;
+  border: 0;
   border-radius: var(--nv-r-sm);
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  text-align: left;
+}
+
+/* Quando leva a outra tela, vira tecla: sobe, tem espessura e afunda no toque. Quando só informa, fica lisa. */
+button.nv-now-cell {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.1));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.35), 0 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+button.nv-now-cell:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.35), 0 1px 0 rgba(0, 0, 0, 0.3);
 }
 
 .nv-now-cell b {
@@ -675,19 +848,44 @@
   gap: 12px;
   padding: 14px 14px 14px 16px;
   border-radius: var(--nv-r-md);
-  background: var(--nv-paper);
-  border: 1.5px solid var(--nv-line);
-  box-shadow: var(--nv-shadow);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-panel-3d);
 }
 
 .nv-todo li.is-call {
-  border-color: transparent;
-  background: var(--nv-sun);
+  background: var(--nv-shine), var(--nv-sun);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(27, 67, 50, 0.1), 0 14px 24px -12px var(--nv-floor);
+}
+
+/* O ícone do aviso só informa: disco liso, sem espessura (peça que sobe é peça que toca). */
+.nv-todo-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+}
+
+.nv-todo li.is-call .nv-todo-icon {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.nv-todo-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
 .nv-todo-text {
   flex: 1;
   min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
 }
 
 .nv-todo-text strong {
@@ -711,9 +909,16 @@
 }
 
 .nv-sales {
+  position: relative;
   padding: 18px 18px 14px;
   border-radius: var(--nv-r-lg);
-  background: var(--nv-peach);
+  background: linear-gradient(180deg, var(--nv-peach-hi), var(--nv-peach));
+  box-shadow: var(--nv-hi), 0 var(--nv-depth) 0 var(--nv-peach-edge), 0 18px 22px -12px var(--nv-floor);
+}
+
+.nv-sales:has(.nv-hit:active) {
+  transform: translateY(4px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-peach-edge), 0 4px 8px -4px var(--nv-floor);
 }
 
 .nv-sales-total {
@@ -739,11 +944,13 @@
   flex: 1;
   min-height: 4px;
   border-radius: 6px 6px 3px 3px;
-  background: rgba(46, 112, 50, 0.32);
+  background: linear-gradient(180deg, rgba(46, 112, 50, 0.42), rgba(46, 112, 50, 0.26));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.5), 0 2px 0 rgba(46, 112, 50, 0.22);
 }
 
 .nv-bars i.is-now {
-  background: var(--nv-fire);
+  background: var(--nv-shine), var(--nv-fire);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.5), 0 2px 0 var(--nv-fire-edge);
 }
 
 .nv-bars-axis {
@@ -768,12 +975,17 @@
   min-height: 72px;
   padding: 0 12px;
   overflow-wrap: anywhere;
-  border: 1.5px solid var(--nv-line);
+  border: 0;
   border-radius: var(--nv-r-md);
-  background: var(--nv-paper);
-  box-shadow: var(--nv-shadow);
+  background: linear-gradient(180deg, #fff, #f6f2ea);
+  box-shadow: var(--nv-card-3d);
   font: 700 17px/1.1 var(--nv-display);
   text-align: left;
+}
+
+.nv-quick-btn:active {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
 }
 
 .nv-quick-btn svg {
@@ -792,6 +1004,7 @@
   padding: 5px;
   border-radius: 999px;
   background: var(--nv-green-soft);
+  box-shadow: inset 0 3px 6px rgba(27, 67, 50, 0.16), inset 0 -2px 0 #fff;
 }
 
 .nv-tab {
@@ -811,9 +1024,14 @@
   background: rgba(27, 67, 50, 0.12);
 }
 
+.nv-tab:active {
+  transform: translateY(2px);
+}
+
 .nv-tab.is-on {
-  background: var(--nv-ink);
+  background: var(--nv-shine), var(--nv-ink);
   color: #fff;
+  box-shadow: var(--nv-hi), 0 3px 0 var(--nv-ink-edge), 0 8px 10px -4px var(--nv-floor);
 }
 
 .nv-tab.is-on b {
@@ -835,10 +1053,11 @@
   position: relative;
   padding: 16px 16px 24px;
   border-radius: var(--nv-r-md) var(--nv-r-md) 0 0;
-  background: var(--nv-paper);
+  background: linear-gradient(180deg, #fff, #fcfaf6);
   border: 1.5px solid var(--nv-line);
   border-bottom: 0;
-  box-shadow: var(--nv-shadow);
+  /* O filtro segue a ponta serrilhada; uma sombra de caixa ignoraria os dentes. */
+  filter: drop-shadow(0 1px 0 rgba(27, 67, 50, 0.1)) drop-shadow(0 14px 10px rgba(27, 67, 50, 0.16));
   --nv-tape: var(--nv-green);
 }
 
@@ -863,7 +1082,6 @@
   background:
     linear-gradient(135deg, var(--nv-paper) 50%, transparent 50%) 0 0 / 14px 10px repeat-x,
     linear-gradient(225deg, var(--nv-paper) 50%, transparent 50%) 0 0 / 14px 10px repeat-x;
-  filter: drop-shadow(0 2px 1px rgba(27, 67, 50, 0.14));
 }
 
 .nv-ticket.is-late {
@@ -978,6 +1196,13 @@
   --nv-ring: rgba(31, 99, 255, 0.35);
   --nv-glow: rgba(31, 99, 255, 0.3);
   --nv-shadow: 0 1px 2px rgba(11, 42, 111, 0.07), 0 10px 26px rgba(11, 42, 111, 0.1);
+  --nv-green-edge: #0a2f8a;
+  --nv-fire-edge: #1243b8;
+  --nv-ink-edge: #061a47;
+  --nv-peach-hi: #f6f9ff;
+  --nv-peach-edge: #c4d6f7;
+  --nv-slab-edge: #cbd7ef;
+  --nv-floor: rgba(11, 42, 111, 0.32);
 }
 
 .nv-work .nv-btn.is-fire {
@@ -994,20 +1219,44 @@
   gap: 10px;
   padding: 14px;
   border-radius: var(--nv-r-lg);
-  background: var(--nv-paper);
-  border: 1.5px solid var(--nv-line);
-  box-shadow: var(--nv-shadow);
+  background: linear-gradient(180deg, #fff, #fbfcff);
+  box-shadow: var(--nv-panel-3d);
 }
 
+/* Campo de escrever: afundado, o oposto do botão. */
 .nv-field {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 54px;
+  min-height: 56px;
   padding: 0 16px;
   border-radius: var(--nv-r-md);
   background: var(--nv-peach);
+  box-shadow: inset 0 3px 6px rgba(11, 42, 111, 0.14), inset 0 -2px 0 #fff;
   color: var(--nv-muted);
+}
+
+.nv-field input {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  border: 0;
+  background: none;
+  color: var(--nv-ink);
+  font: 500 17px/1 var(--nv-ui);
+}
+
+.nv-field input::placeholder {
+  color: var(--nv-muted);
+}
+
+.nv-field input:focus {
+  outline: none;
+}
+
+.nv-field:focus-within {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 2px;
 }
 
 .nv-field svg {
@@ -1033,14 +1282,32 @@
 }
 
 .nv-job {
+  position: relative;
   display: grid;
   grid-template-columns: 52px 1fr;
   gap: 4px 14px;
   padding: 16px;
-  border-radius: var(--nv-r-md);
-  background: var(--nv-paper);
-  border: 1.5px solid var(--nv-line);
-  box-shadow: var(--nv-shadow);
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbfcff);
+  box-shadow: var(--nv-card-3d);
+}
+
+.nv-job:has(.nv-hit:active) {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+.nv-job:has(.nv-hit:focus-visible) {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 3px;
+}
+
+.nv-job .nv-hit:focus-visible {
+  outline: none;
+}
+
+.nv-job .nv-hit::after {
+  border-radius: var(--nv-r-lg);
 }
 
 .nv-job-badge {
@@ -1050,9 +1317,10 @@
   width: 52px;
   height: 52px;
   border-radius: var(--nv-r-sm);
-  background: var(--nv-green);
+  background: var(--nv-shine), var(--nv-green);
   color: #fff;
   font: 700 24px/1 var(--nv-display);
+  box-shadow: var(--nv-hi), 0 3px 0 var(--nv-green-edge);
 }
 
 .nv-job h3 {
@@ -1110,7 +1378,9 @@
 }
 
 .nv-cross-bubble.is-food {
-  background: var(--nv-brand-comer);
+  --nv-edge: #7d2f00;
+  background: var(--nv-shine), var(--nv-brand-comer);
+  box-shadow: var(--nv-hi), 0 4px 0 var(--nv-edge), 0 14px 18px -8px rgba(125, 47, 0, 0.55);
 }
 
 /* ---------- Cardápio do cliente com dados de verdade ---------- */
@@ -1231,12 +1501,15 @@
 }
 
 .nv-step {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) 44px;
   align-items: center;
-  margin-top: 2px;
+  margin-top: 4px;
   border-radius: 999px;
   background: var(--nv-green-soft);
+  box-shadow: inset 0 3px 5px rgba(27, 67, 50, 0.16), inset 0 -2px 0 #fff;
   text-align: center;
 }
 
@@ -1248,9 +1521,15 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: var(--nv-green);
+  background: var(--nv-shine), var(--nv-green);
   color: #fff;
   font: 700 24px/1 var(--nv-display);
+  box-shadow: var(--nv-hi), 0 3px 0 var(--nv-green-edge);
+}
+
+.nv-step button:active {
+  transform: translateY(2px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-green-edge);
 }
 
 .nv-step b {
@@ -1264,12 +1543,20 @@
 }
 
 .nv-cross-link {
+  padding: 0;
+  border: 0;
+  background: none;
   color: #fff;
+  font: inherit;
+  text-align: left;
   text-decoration: none;
 }
 
+/* Sacola vazia: nada para abrir, então a tecla fica rente ao chão e apagada. */
 .nv-bag:disabled {
-  opacity: 0.65;
+  opacity: 0.6;
+  transform: translateY(5px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-edge);
 }
 
 /* Aviso de erro e etapa vazia: dizem o que fazer, em frase inteira. */
@@ -1296,6 +1583,8 @@
 .nv-btn:disabled {
   opacity: 0.6;
   cursor: progress;
+  transform: translateY(calc(var(--nv-depth) - 1px));
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-edge);
 }
 
 /* Celular bem pequeno (320 px): as etapas da cozinha cabem sem rolar de lado. */

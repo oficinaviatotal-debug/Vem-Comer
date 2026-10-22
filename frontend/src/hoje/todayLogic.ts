@@ -63,7 +63,7 @@ export function greetingOf(name: string | null | undefined, now: number): string
 }
 
 /** Os nomes das telas do painel para onde os dois botões fixos do Hoje levam (os mesmos da navegação atual). */
-export const VIEWS = { orders: "pedidos", numbers: "dashboard" } as const;
+export const VIEWS = { orders: "pedidos", numbers: "dashboard", deliveries: "entregas", tables: "mesas" } as const;
 
 const MIN_BARS = 6;
 
@@ -102,6 +102,7 @@ export function todoOf(input: Pick<TodayInput, "role" | "orders" | "calls" | "no
     title: call.text,
     note: call.repeats > 0 ? `${formatWaiting(call.waiting_seconds)}, chamou de novo` : formatWaiting(call.waiting_seconds),
     action: "Atender",
+    view: VIEWS.tables,
   }));
 
   if (canConfirmPix(input.role)) {
@@ -117,6 +118,7 @@ export function todoOf(input: Pick<TodayInput, "role" | "orders" | "calls" | "no
         title: pix.length === 1 ? "1 Pix para conferir" : `${pix.length} Pix para conferir`,
         note: `${moneyText(cents / 100)} no total`,
         action: "Conferir",
+        view: VIEWS.orders,
       });
     }
   }
@@ -160,6 +162,12 @@ export function todayOf(input: TodayInput): Today {
     sales,
     salesMessage,
     shortcuts: shortcutsOf(input.role),
-    views: { orders: VIEWS.orders, numbers: VIEWS.numbers },
+    // Entregas é tela de gerente (nav/navLogic.ts); Mesas é de toda a equipe.
+    views: {
+      orders: VIEWS.orders,
+      numbers: VIEWS.numbers,
+      deliveries: isManager(input.role) ? VIEWS.deliveries : null,
+      tables: VIEWS.tables,
+    },
   };
 }

@@ -3,7 +3,22 @@ import NvIcon, { type NvIconName } from "./Icons";
 import { TopBar, VoiceOrb } from "./parts";
 import type { Job } from "./types";
 
-type Props = { jobs: Job[]; city: string };
+type Props = {
+  jobs: Job[];
+  city: string;
+  /** "seek": procuro trabalho; "hire": tenho vagas. */
+  onTab?: (id: "seek" | "hire") => void;
+  onSearch?: (what: string, where: string) => void;
+  onShortcut?: (id: string) => void;
+  onAllJobs?: () => void;
+  /** Toque em qualquer lugar do cartão da vaga. */
+  onJob?: (id: string) => void;
+  /** Toque no balãozinho do Vem Comer. */
+  onFood?: () => void;
+  /** O menu do painel. Sem ele (e sem `showMenu`) o botão não aparece. */
+  onMenu?: () => void;
+  showMenu?: boolean;
+};
 
 const SHORTCUTS: { id: string; label: string; icon: NvIconName }[] = [
   { id: "vagas", label: "Vagas", icon: "briefcase" },
@@ -16,42 +31,65 @@ const SHORTCUTS: { id: string; label: string; icon: NvIconName }[] = [
  * A porta do Vem Trabalhar para quem procura trabalho: a mesma casa do Vem Comer, em azul.
  * Quem não sabe escrever fala o currículo na bolinha de voz. O balãozinho de comida é pequeno e fecha com um toque.
  */
-export default function JobsHome({ jobs, city }: Props) {
+export default function JobsHome({ jobs, city, onTab, onSearch, onShortcut, onAllJobs, onJob, onFood, onMenu, showMenu = false }: Props) {
   const [crossOpen, setCrossOpen] = useState(true);
+  const [what, setWhat] = useState("");
+  const [where, setWhere] = useState(city);
 
   return (
     <div className="nv-root nv-work">
       <main className="nv-screen" style={crossOpen ? { paddingBottom: 188 } : undefined}>
-        <TopBar title="Vem Trabalhar" sub="O seu próximo passo começa aqui" />
+        <TopBar title="Vem Trabalhar" sub="O seu próximo passo começa aqui" onMenu={onMenu} showMenu={showMenu} />
 
         <div className="nv-tabs is-two" role="tablist" aria-label="Quem é você">
-          <button type="button" role="tab" aria-selected="true" className="nv-tab is-on">
+          <button type="button" role="tab" aria-selected="true" className="nv-tab is-on" onClick={() => onTab?.("seek")}>
             Procuro trabalho
           </button>
-          <button type="button" role="tab" aria-selected="false" className="nv-tab">
+          <button type="button" role="tab" aria-selected="false" className="nv-tab" onClick={() => onTab?.("hire")}>
             Tenho vagas
           </button>
         </div>
 
         <h2 className="nv-hello">Vagas que combinam com você</h2>
 
-        <section className="nv-find" aria-label="Buscar vagas">
+        <form
+          className="nv-find"
+          aria-label="Buscar vagas"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSearch?.(what.trim(), where.trim());
+          }}
+        >
           <label className="nv-field">
             <NvIcon name="search" />
-            <span>Cargo ou palavra-chave</span>
+            <input
+              type="search"
+              placeholder="Cargo ou palavra-chave"
+              aria-label="Cargo ou palavra-chave"
+              enterKeyHint="search"
+              value={what}
+              onChange={(event) => setWhat(event.target.value)}
+            />
           </label>
           <label className="nv-field">
             <NvIcon name="pin" />
-            <span>{city}</span>
+            <input
+              type="text"
+              placeholder="Cidade"
+              aria-label="Cidade"
+              enterKeyHint="search"
+              value={where}
+              onChange={(event) => setWhere(event.target.value)}
+            />
           </label>
-          <button type="button" className="nv-btn is-fire is-block">
+          <button type="submit" className="nv-btn is-fire is-block">
             Buscar vagas
           </button>
-        </section>
+        </form>
 
         <nav className="nv-cats" aria-label="Atalhos">
           {SHORTCUTS.map((item) => (
-            <button key={item.id} type="button" className="nv-cat">
+            <button key={item.id} type="button" className="nv-cat" onClick={() => onShortcut?.(item.id)}>
               <span className="nv-cat-tile" aria-hidden="true">
                 <NvIcon name={item.icon} />
               </span>
@@ -65,7 +103,7 @@ export default function JobsHome({ jobs, city }: Props) {
             <h2 className="nv-h2" id="nv-jobs-h">
               Vagas perto de você
             </h2>
-            <button type="button" className="nv-link">
+            <button type="button" className="nv-link" onClick={onAllJobs}>
               Ver todas
             </button>
           </div>
@@ -86,7 +124,13 @@ export default function JobsHome({ jobs, city }: Props) {
                 </div>
                 <div className="nv-job-foot">
                   <span>{job.ago}</span>
-                  <button type="button" className="nv-btn is-fire">
+                  {/* nv-hit: o cartão inteiro da vaga abre os detalhes. */}
+                  <button
+                    type="button"
+                    className="nv-btn is-fire nv-hit"
+                    aria-label={`Ver detalhes da vaga ${job.title}, ${job.company}`}
+                    onClick={() => onJob?.(job.id)}
+                  >
                     Ver detalhes
                   </button>
                 </div>
@@ -100,7 +144,9 @@ export default function JobsHome({ jobs, city }: Props) {
         <div className="nv-cross">
           <span className="nv-cross-bubble is-food">
             <NvIcon name="fork" />
-            Está com fome? Toque aqui
+            <button type="button" className="nv-cross-link nv-hit" onClick={onFood}>
+              Está com fome? Toque aqui
+            </button>
             <button type="button" className="nv-cross-close" aria-label="Fechar o aviso" onClick={() => setCrossOpen(false)}>
               <NvIcon name="close" />
             </button>

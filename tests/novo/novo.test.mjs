@@ -60,11 +60,12 @@ test("só a página de conferência importa os dados de exemplo; as telas recebe
 test("peças de toque têm 44 px ou mais e o movimento respeita quem pediu menos movimento", () => {
   const css = read("novo.css");
   assert.match(css, /prefers-reduced-motion: reduce/);
+  // O "+" da foto só desenha o que o toque faz; quem recebe o toque é o cartão inteiro (ver toque.test.mjs).
   const add = css.match(/\.nv-add \{[^}]*\}/)[0];
-  assert.match(add, /width: 44px/);
-  assert.match(add, /height: 44px/);
+  assert.match(add, /width: 4[48]px/);
+  assert.match(add, /pointer-events: none/);
   const close = css.match(/\.nv-cross-close \{[^}]*\}/)[0];
-  assert.match(close, /width: 40px/);
+  assert.match(close, /width: 44px/);
   assert.match(css, /\.nv-icon-btn \{[^}]*width: 48px/);
 });
 

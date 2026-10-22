@@ -249,3 +249,28 @@ test("os botões do Hoje levam a telas que existem no menu do painel", async () 
     assert.ok(known.has(view), `${view} não existe no menu`);
   }
 });
+
+test("as três caixas do topo levam a telas: Entregas só para quem gerencia, Mesas para toda a equipe", async () => {
+  const { VIEWS } = await import("../../frontend/src/hoje/todayLogic.ts");
+  const { menuViews } = await import("../../frontend/src/nav/navLogic.ts");
+  const base = { name: "", now: NOW, orders: [], calls: [], business: null };
+  const known = new Set(menuViews());
+  for (const role of ["OWNER", "MANAGER"]) {
+    const { views } = todayOf({ ...base, role });
+    assert.deepEqual(views, { orders: "pedidos", numbers: "dashboard", deliveries: "entregas", tables: "mesas" }, role);
+  }
+  for (const role of ["CASHIER", "WAITER", "KITCHEN", "COURIER"]) {
+    const { views } = todayOf({ ...base, role });
+    assert.equal(views.deliveries, null, `${role} não tem a tela de entregas, então a caixa só informa`);
+    assert.equal(views.tables, "mesas", role);
+  }
+  for (const view of Object.values(VIEWS)) assert.ok(known.has(view), `${view} não existe no menu`);
+});
+
+test("o texto de cada \"para fazer agora\" leva à tela do assunto: chamada vai às mesas, Pix vai aos pedidos", async () => {
+  const { menuViews } = await import("../../frontend/src/nav/navLogic.ts");
+  const known = new Set(menuViews());
+  const items = todoOf({ role: "OWNER", now: NOW, calls: [call("c1")], orders: [pix(20)] });
+  assert.deepEqual(items.map((item) => [item.kind, item.view]), [["call", "mesas"], ["pix", "pedidos"]]);
+  for (const item of items) assert.ok(known.has(item.view), `${item.view} não existe no menu`);
+});

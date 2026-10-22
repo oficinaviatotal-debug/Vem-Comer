@@ -25,6 +25,9 @@ type Props = {
   onLess?: (id: string) => void;
   onChoose?: (id: string) => void;
   onBag?: () => void;
+  /** Toque na promoção (no cartão inteiro) e em "Ver todas". Sem promoção de verdade no servidor, a seção nem aparece. */
+  onPromo?: () => void;
+  onPromos?: () => void;
   onMenu?: () => void;
   /** Endereço do Vem Trabalhar para o balãozinho. Sem endereço configurado, o balão não aparece. */
   jobsHref?: string | null;
@@ -44,6 +47,8 @@ function scrollToGroup(key: string) {
  * marca dele vêm primeiro; o Vem fica por trás.
  * Pedir é com o dedo ou com a bolinha de voz. O balãozinho do Vem Trabalhar é pequeno, fecha com um toque e fica
  * longe do botão de pedir.
+ * Facilidade de comprar (pedido do GD em 22/10/2026): o cartão do prato inteiro é o botão. Tocar em qualquer lugar
+ * dele põe um na sacola (ou abre as escolhas, se o prato tem tamanho ou extras); o − e o + ficam por cima.
  */
 export default function ShopMenu({
   shop,
@@ -61,6 +66,8 @@ export default function ShopMenu({
   onLess,
   onChoose,
   onBag,
+  onPromo,
+  onPromos,
   onMenu,
   jobsHref = null,
   showMenu = false,
@@ -131,7 +138,7 @@ export default function ShopMenu({
               <h2 className="nv-h2" id="nv-promo-h">
                 Promoções da semana
               </h2>
-              <button type="button" className="nv-link">
+              <button type="button" className="nv-link" onClick={onPromos}>
                 Ver todas
               </button>
             </div>
@@ -144,7 +151,8 @@ export default function ShopMenu({
                 <p className="nv-promo-price">{money(promo.price)}</p>
                 <p className="nv-promo-note">{promo.note}</p>
               </div>
-              <button type="button" className="nv-btn">
+              {/* nv-hit: o cartão inteiro da promoção é o botão de pedir. */}
+              <button type="button" className="nv-btn nv-hit" aria-label={`Pedir agora: ${promo.title}`} onClick={onPromo}>
                 Pedir agora
               </button>
             </article>
@@ -178,7 +186,7 @@ export default function ShopMenu({
         <div className="nv-cross">
           <span className="nv-cross-bubble">
             <NvIcon name="briefcase" />
-            <a className="nv-cross-link" href={jobsHref ?? undefined}>
+            <a className="nv-cross-link nv-hit" href={jobsHref ?? undefined}>
               Precisa de trabalho? Toque aqui
             </a>
             <button type="button" className="nv-cross-close" aria-label="Fechar o aviso" onClick={() => setCrossOpen(false)}>
@@ -202,7 +210,10 @@ export default function ShopMenu({
   );
 }
 
-/** Um prato: foto grande, nome, o que é, preço e o botão do que o toque faz. */
+/**
+ * Um prato: foto, nome, o que é, preço. O cartão inteiro é um botão só (o nome do prato é o texto dele e a área de toque
+ * cobre tudo); o "+" da foto é desenho do que o toque faz. Prato que não se pede agora (esgotado, fechado) não é botão.
+ */
 function DishTile({
   dish,
   onAdd,
@@ -215,23 +226,30 @@ function DishTile({
   onChoose?: (id: string) => void;
 }) {
   const stepper = dish.action === "add" && dish.quantity > 0;
+  const showPlus = (dish.action === "add" && !stepper) || dish.action === "choose";
   return (
     <div className={`nv-dish${dish.action === "none" ? " is-off" : ""}`}>
-      <div style={{ position: "relative" }}>
+      <div className="nv-dish-box">
         <Photo src={dish.photo} art={dish.art} alt={dish.name} />
-        {dish.action === "add" && !stepper ? (
-          <button type="button" className="nv-add" aria-label={`Colocar ${dish.name} na sacola`} onClick={() => onAdd?.(dish.id)}>
+        {showPlus ? (
+          <span className="nv-add" aria-hidden="true">
             <NvIcon name="plus" />
-          </button>
-        ) : null}
-        {dish.action === "choose" ? (
-          <button type="button" className="nv-add" aria-label={`Escolher opções de ${dish.name}`} onClick={() => onChoose?.(dish.id)}>
-            <NvIcon name="plus" />
-          </button>
+          </span>
         ) : null}
         {dish.action === "none" && dish.stateText ? <span className="nv-dish-state">{dish.stateText}</span> : null}
       </div>
-      <span className="nv-dish-name">{dish.name}</span>
+      {dish.action === "none" ? (
+        <span className="nv-dish-name">{dish.name}</span>
+      ) : (
+        <button
+          type="button"
+          className="nv-dish-hit nv-hit"
+          aria-label={dish.action === "choose" ? `Escolher opções de ${dish.name}` : `Colocar ${dish.name} na sacola`}
+          onClick={() => (dish.action === "choose" ? onChoose?.(dish.id) : onAdd?.(dish.id))}
+        >
+          <span className="nv-dish-name">{dish.name}</span>
+        </button>
+      )}
       {dish.description ? <span className="nv-dish-desc">{dish.description}</span> : null}
       <span className="nv-dish-price">
         {dish.priceFrom ? <small>a partir de </small> : null}

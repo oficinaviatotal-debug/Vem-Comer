@@ -30,7 +30,7 @@ export function VoiceOrb({ label = "Falar" }: { label?: string }) {
 
 /**
  * O topo de toda tela. `logo` é a logomarca de verdade do restaurante; `mark` é um emoji (só na conferência).
- * O botão de menu só aparece quando a tela tem para onde levar (`onMenu`) ou na conferência (`showMenu`).
+ * O botão de menu só aparece quando a tela tem para onde levar (`onMenu`) ou na conferência (`showMenu`): botão que não leva a lugar nenhum não entra.
  */
 export function TopBar({
   mark,
@@ -38,7 +38,7 @@ export function TopBar({
   title,
   sub,
   onMenu,
-  showMenu = true,
+  showMenu = false,
 }: {
   mark?: string;
   logo?: string;

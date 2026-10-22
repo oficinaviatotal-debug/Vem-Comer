@@ -13,6 +13,9 @@ type Props = {
   busyId?: string | null;
   /** Frase pronta quando algo deu errado; diz o que fazer. */
   error?: string | null;
+  /** O menu do painel. Sem ele (e sem `showMenu`) o botão não aparece. */
+  onMenu?: () => void;
+  showMenu?: boolean;
 };
 
 /** O ícone de cada atalho pela tela para onde ele leva; atalho de tela desconhecida usa o ícone de papel. */
@@ -37,7 +40,7 @@ function hourLabel(from: number, index: number): string {
  * Em cima, o que está esperando (o número que mais pesa); no meio, as ações; embaixo, as vendas do dia.
  * Nada é estimado: cada número vem dos pedidos que o painel já tem.
  */
-export default function OwnerToday({ today, onGo, onTodo, busyId = null, error = null }: Props) {
+export default function OwnerToday({ today, onGo, onTodo, busyId = null, error = null, onMenu, showMenu = false }: Props) {
   const waitingText =
     today.waiting === 0
       ? "Nenhum pedido esperando"
@@ -48,7 +51,7 @@ export default function OwnerToday({ today, onGo, onTodo, busyId = null, error =
   return (
     <div className="nv-root">
       <main className="nv-screen">
-        <TopBar title={today.greeting} sub={today.dateLine} />
+        <TopBar title={today.greeting} sub={today.dateLine} onMenu={onMenu} showMenu={showMenu} />
 
         <section className="nv-now" aria-label="Agora">
           <p className="nv-now-big">
@@ -59,18 +62,29 @@ export default function OwnerToday({ today, onGo, onTodo, busyId = null, error =
             </span>
           </p>
           <div className="nv-now-row">
-            <div className="nv-now-cell">
-              <b>{today.cooking}</b>
-              <span>na cozinha</span>
-            </div>
-            <div className="nv-now-cell">
-              <b>{today.onTheWay}</b>
-              <span>a caminho</span>
-            </div>
-            <div className="nv-now-cell">
-              <b>{today.calling}</b>
-              <span>mesa chamando</span>
-            </div>
+            {[
+              { count: today.cooking, text: "na cozinha", view: today.views.orders },
+              { count: today.onTheWay, text: "a caminho", view: today.views.deliveries },
+              { count: today.calling, text: "mesa chamando", view: today.views.tables },
+            ].map((cell) => {
+              const inside = (
+                <>
+                  <b>{cell.count}</b>
+                  <span>{cell.text}</span>
+                </>
+              );
+              // Com tela para onde ir, a caixa é tecla; sem ela (esta pessoa não tem a tela), só informa.
+              const view = cell.view;
+              return view ? (
+                <button key={cell.text} type="button" className="nv-now-cell" onClick={() => onGo?.(view)}>
+                  {inside}
+                </button>
+              ) : (
+                <div key={cell.text} className="nv-now-cell">
+                  {inside}
+                </div>
+              );
+            })}
           </div>
           <button type="button" className="nv-btn is-fire is-block" onClick={() => onGo?.(today.views.orders)}>
             Ver os pedidos
@@ -91,13 +105,20 @@ export default function OwnerToday({ today, onGo, onTodo, busyId = null, error =
             <ul className="nv-todo">
               {today.todo.map((item) => (
                 <li key={item.id} className={item.kind === "call" ? "is-call" : undefined}>
-                  <span className="nv-icon-btn" aria-hidden="true" style={{ width: 40, height: 40 }}>
+                  <span className="nv-todo-icon" aria-hidden="true">
                     <NvIcon name={TODO_ICON[item.kind]} />
                   </span>
-                  <span className="nv-todo-text">
-                    <strong>{item.title}</strong>
-                    <span>{item.note}</span>
-                  </span>
+                  {item.view ? (
+                    <button type="button" className="nv-todo-text" onClick={() => onGo?.(item.view as string)}>
+                      <strong>{item.title}</strong>
+                      <span>{item.note}</span>
+                    </button>
+                  ) : (
+                    <span className="nv-todo-text">
+                      <strong>{item.title}</strong>
+                      <span>{item.note}</span>
+                    </span>
+                  )}
                   <button
                     type="button"
                     className={`nv-btn ${item.kind === "call" ? "is-green" : "is-fire"}`}
@@ -148,7 +169,8 @@ export default function OwnerToday({ today, onGo, onTodo, busyId = null, error =
                     </div>
                   </>
                 ) : null}
-                <button type="button" className="nv-link" onClick={() => onGo?.(today.views.numbers)}>
+                {/* O cartão inteiro é o botão (nv-hit): tocar em qualquer lugar das vendas abre os números. */}
+                <button type="button" className="nv-link nv-hit" onClick={() => onGo?.(today.views.numbers)}>
                   Ver todos os números
                 </button>
               </>
