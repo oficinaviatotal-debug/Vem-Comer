@@ -44,6 +44,7 @@ import menu_import
 import menu_templates
 import order_status
 import pix
+import product_fields
 import push
 import signup
 import subscription
@@ -2216,6 +2217,66 @@ def admin_settle_courier_cash(company_id, courier_id):
             conn.close()
 
 
+def _lock_dishes(cur, company_id):
+    """Um cadastro ou mudanca de prato por vez em cada restaurante, ate o fim da transacao.
+
+    Sem isso, dois toques seguidos (ou a segunda tentativa depois de uma resposta perdida)
+    passariam juntos pela conferencia de nome repetido.
+    """
+    cur.execute(
+        "SELECT pg_advisory_xact_lock(hashtext(%s));",
+        (f"produtos:{company_id}",)
+    )
+
+
+def _dish_refusal(cur, company_id, name, menu_id, own_id=None):
+    """(frase, codigo) quando o prato nao pode ficar assim; None quando pode.
+
+    A categoria tem de ser deste restaurante, e o nome nao pode repetir o de outro prato da
+    mesma categoria (sem olhar acento nem maiuscula). `own_id` e o prato que esta sendo
+    mudado: ele nao conta contra si mesmo.
+    """
+    if menu_id:
+        cur.execute(
+            """
+            SELECT id
+            FROM menus
+            WHERE id = %s
+            AND company_id = %s;
+            """,
+            (
+                menu_id,
+                str(company_id)
+            )
+        )
+
+        if not cur.fetchone():
+            return product_fields.MENU_BAD, 400
+
+    cur.execute(
+        """
+        SELECT name
+        FROM products
+        WHERE company_id = %s
+        AND menu_id IS NOT DISTINCT FROM %s::uuid
+        AND (%s::uuid IS NULL OR id <> %s::uuid);
+        """,
+        (
+            str(company_id),
+            menu_id,
+            own_id,
+            own_id
+        )
+    )
+
+    others = [row['name'] for row in cur.fetchall()]
+
+    if product_fields.is_twice(name, others):
+        return product_fields.TWICE, 409
+
+    return None
+
+
 @app.route(
     '/api/companies/<uuid:company_id>/admin/products',
     methods=['POST']
@@ -2231,16 +2292,14 @@ def admin_create_product(company_id):
     cur = None
 
     try:
-        data = request.get_json() or {}
+        fields, problem = product_fields.read_fields(
+            request.get_json(silent=True),
+            creating=True
+        )
 
-        name = data.get('name')
-        description = data.get('description', '')
-        price = data.get('price')
-        menu_id = data.get('menu_id')
-
-        if not name or price is None:
+        if problem:
             return jsonify({
-                "error": "Nome e preco sao obrigatorios"
+                "error": problem
             }), 400
 
         conn = get_db_connection()
@@ -2249,24 +2308,21 @@ def admin_create_product(company_id):
             cursor_factory=RealDictCursor
         )
 
-        if menu_id:
-            cur.execute(
-                """
-                SELECT id
-                FROM menus
-                WHERE id = %s
-                AND company_id = %s;
-                """,
-                (
-                    str(menu_id),
-                    str(company_id)
-                )
-            )
+        _lock_dishes(cur, company_id)
 
-            if not cur.fetchone():
-                return jsonify({
-                    "error": "Categoria invalida"
-                }), 400
+        refusal = _dish_refusal(
+            cur,
+            company_id,
+            fields['name'],
+            fields['menu_id']
+        )
+
+        if refusal:
+            _close_quietly(conn, cur)
+
+            return jsonify({
+                "error": refusal[0]
+            }), refusal[1]
 
         cur.execute(
             """
@@ -2282,10 +2338,10 @@ def admin_create_product(company_id):
             """,
             (
                 str(company_id),
-                str(menu_id) if menu_id else None,
-                name,
-                description,
-                float(price)
+                fields['menu_id'],
+                fields['name'],
+                fields['description'],
+                fields['price']
             )
         )
 
@@ -2302,16 +2358,140 @@ def admin_create_product(company_id):
         }), 201
 
     except Exception as e:
-        if conn is not None and not conn.closed:
-            conn.rollback()
-
-            if cur is not None:
-                cur.close()
-
-            conn.close()
+        _close_quietly(conn, cur)
 
         return error_response(
             "Erro ao criar produto",
+            e
+        )
+
+
+@app.route('/api/admin/products/<uuid:product_id>', methods=['PUT'])
+@require_roles('OWNER', 'MANAGER')
+def admin_update_product(product_id):
+    """Muda nome, texto, preco e/ou categoria de um prato. So muda o que veio.
+
+    Os pedidos antigos guardam o preco da epoca (order_items.unit_price), entao nao mudam.
+    """
+    conn = None
+    cur = None
+
+    try:
+        company_id = request.user.get('company_id')
+
+        fields, problem = product_fields.read_fields(
+            request.get_json(silent=True),
+            creating=False
+        )
+
+        if problem:
+            return jsonify({
+                "error": problem
+            }), 400
+
+        if not fields:
+            return jsonify({
+                "error": product_fields.NOTHING_TO_CHANGE
+            }), 400
+
+        conn = get_db_connection()
+
+        cur = conn.cursor(
+            cursor_factory=RealDictCursor
+        )
+
+        _lock_dishes(cur, company_id)
+
+        cur.execute(
+            """
+            SELECT id, menu_id, name, description, price
+            FROM products
+            WHERE id = %s
+            AND company_id = %s
+            FOR UPDATE;
+            """,
+            (
+                str(product_id),
+                str(company_id)
+            )
+        )
+
+        current = cur.fetchone()
+
+        if current is None:
+            _close_quietly(conn, cur)
+
+            return jsonify({
+                "error": "Produto nao encontrado"
+            }), 404
+
+        merged = {
+            'name': current['name'],
+            'description': current['description'] or '',
+            'price': current['price'],
+            'menu_id': str(current['menu_id']) if current['menu_id'] else None
+        }
+        merged.update(fields)
+
+        # Repetido e categoria so contam quando o nome ou a categoria mudam: mudar so o preco
+        # de um prato nunca e barrado por um nome repetido que ja existia.
+        if 'name' in fields or 'menu_id' in fields:
+            refusal = _dish_refusal(
+                cur,
+                company_id,
+                merged['name'],
+                merged['menu_id'],
+                str(product_id)
+            )
+
+            if refusal:
+                _close_quietly(conn, cur)
+
+                return jsonify({
+                    "error": refusal[0]
+                }), refusal[1]
+
+        cur.execute(
+            """
+            UPDATE products
+            SET name = %s,
+                description = %s,
+                price = %s,
+                menu_id = %s
+            WHERE id = %s
+            AND company_id = %s
+            RETURNING id, name, description, price, menu_id;
+            """,
+            (
+                merged['name'],
+                merged['description'],
+                merged['price'],
+                merged['menu_id'],
+                str(product_id),
+                str(company_id)
+            )
+        )
+
+        row = cur.fetchone()
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "id": str(row['id']),
+            "name": row['name'],
+            "description": row['description'] or '',
+            "price": str(row['price']),
+            "menu_id": str(row['menu_id']) if row['menu_id'] else None
+        }), 200
+
+    except Exception as e:
+        _close_quietly(conn, cur)
+
+        return error_response(
+            "Erro ao mudar o prato",
             e
         )
 
@@ -2432,6 +2612,51 @@ def admin_delete_product(product_id):
 
         conn = get_db_connection()
         cur = conn.cursor()
+
+        # Trava a linha do prato: um pedido novo com ele espera a decisao abaixo.
+        cur.execute(
+            """
+            SELECT image_key
+            FROM products
+            WHERE id = %s
+            AND company_id = %s
+            FOR UPDATE;
+            """,
+            (
+                str(product_id),
+                str(company_id)
+            )
+        )
+
+        if cur.fetchone() is None:
+            conn.rollback()
+            cur.close()
+            conn.close()
+
+            return jsonify({
+                "error": "Produto nao encontrado"
+            }), 404
+
+        # No banco de verdade os itens de pedido apagam junto com o prato (ON DELETE CASCADE):
+        # apagar um prato ja vendido faria ele sumir dos pedidos antigos, das vendas e do custo.
+        cur.execute(
+            """
+            SELECT 1
+            FROM order_items
+            WHERE product_id = %s
+            LIMIT 1;
+            """,
+            (str(product_id),)
+        )
+
+        if cur.fetchone() is not None:
+            conn.rollback()
+            cur.close()
+            conn.close()
+
+            return jsonify({
+                "error": product_fields.ORDERED
+            }), 409
 
         cur.execute(
             """

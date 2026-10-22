@@ -70,6 +70,9 @@ class FakeProducts:
             key, product_id, company_id = params
             self.products[product_id][1] = key
             self._row = None
+        elif sql.startswith("SELECT 1 FROM order_items"):
+            # Apagar prato olha antes se ele ja foi pedido; aqui nenhum foi.
+            self._row = None
         elif sql.startswith("DELETE FROM products"):
             product_id, company_id = params
             row = self.products.get(product_id)
