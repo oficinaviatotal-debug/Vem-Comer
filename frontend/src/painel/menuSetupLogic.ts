@@ -41,6 +41,8 @@ import {
   MENU_DOOR_SPEAK,
   MENU_DOOR_SUB,
   MENU_DOOR_WRITE,
+  MENU_DONE_MORE,
+  MENU_DONE_SEE,
   MENU_DONE_SUB,
   MENU_FINISH,
   MENU_GALLERY_HINT,
@@ -448,13 +450,28 @@ export const priceIsUsable = (text: string): boolean => normalizePrice(text) !==
 
 // ------------------------------------------------------------------------------------------------ cadastrado
 
-export function doneViewOf(result: MenuSaveResult | null): MenuSetupView {
+/**
+ * Depois de cadastrar, a tela diz o que ainda falta e o que fazer (princípio 8): os pratos novos entram sem foto (o cadastro não manda foto),
+ * os que não tinham preço ficaram de fora (`leftOut`, contado antes de enviar) e os que já existiam não foram mudados. Só entra a frase do que é verdade;
+ * sem a contagem do servidor, não se fala dos pratos novos nem dos que já existiam.
+ */
+export function doneViewOf(result: MenuSaveResult | null, leftOut = 0): MenuSetupView {
   const created = result?.products_created ?? 0;
   const skipped = result?.products_skipped ?? 0;
   const parts: string[] = [];
   if (result) parts.push(`${plural(created, "prato novo", "pratos novos")}`);
   if (skipped > 0) parts.push(`${skipped} já existiam`);
-  return { stage: "done", sub: MENU_DONE_SUB, headline: MENU_DONE_SUB, detail: parts.length > 0 ? `${parts.join(", ")}.` : "" };
+  const next: string[] = [];
+  if (result && created > 0) {
+    next.push(`${created === 1 ? "O prato novo entrou" : "Os pratos novos entraram"} sem foto. Toque em ${MENU_DONE_SEE} e ponha a foto de cada um.`);
+  }
+  if (Number.isFinite(leftOut) && leftOut > 0) {
+    next.push(`${leftOut === 1 ? "1 prato ficou de fora" : `${leftOut} pratos ficaram de fora`} por falta de preço. Toque em ${MENU_DONE_MORE} e diga o preço.`);
+  }
+  if (result && skipped > 0) {
+    next.push(`${skipped === 1 ? "1 prato já existia e não foi mudado" : `${skipped} pratos já existiam e não foram mudados`}. Para mudar um deles, toque no lápis em ${MENU_DONE_SEE}.`);
+  }
+  return { stage: "done", sub: MENU_DONE_SUB, headline: MENU_DONE_SUB, detail: parts.length > 0 ? `${parts.join(", ")}.` : "", next };
 }
 
 // ------------------------------------------------------------------------------------------------ frases e peças que a tela usa

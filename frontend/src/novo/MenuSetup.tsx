@@ -10,6 +10,7 @@ import {
   MENU_CHANGE,
   MENU_CLOSE_EDIT,
   MENU_DONE_MORE,
+  MENU_DONE_NEXT,
   MENU_DONE_SEE,
   MENU_EMPTY_REVIEW,
   MENU_GALLERY,
@@ -598,7 +599,7 @@ function Done({ view, onMore, onSeeMenu }: { view: Stage<"done"> } & MenuSetupHa
   return (
     <>
       <TopBar title={MENU_TITLE} sub={view.sub} />
-      <Live text={[view.headline, view.detail].filter(Boolean).join(". ")} />
+      <Live text={[view.headline, view.detail, ...view.next].filter(Boolean).join(". ")} />
       <section className="nv-menu-done" aria-label={view.headline}>
         <span className="nv-menu-done-mark" aria-hidden="true">
           <NvIcon name="check" />
@@ -606,6 +607,18 @@ function Done({ view, onMore, onSeeMenu }: { view: Stage<"done"> } & MenuSetupHa
         <h2 className="nv-lead">{view.headline}</h2>
         {view.detail ? <p className="nv-code-hint">{view.detail}</p> : null}
       </section>
+      {view.next.length > 0 ? (
+        <section className="nv-menu-next" aria-labelledby="nv-menu-next-h">
+          <h2 className="nv-h2" id="nv-menu-next-h">
+            {MENU_DONE_NEXT}
+          </h2>
+          <ul>
+            {view.next.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       <div className="nv-menu-actions">
         {onSeeMenu ? (
           <button type="button" className="nv-btn is-green is-tall is-block" onClick={onSeeMenu}>

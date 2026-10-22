@@ -4265,6 +4265,36 @@ button.nv-now-cell:active {
   margin: 0;
 }
 
+/* O que falta depois de cadastrar: frases soltas que só informam (rente ao chão); o botão que resolve é o de baixo. */
+.nv-menu-next {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nv-menu-next .nv-h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.nv-menu-next ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-menu-next li {
+  padding: 12px 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-call-pill);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 .nv-menu-done-mark {
   display: grid;
   place-items: center;
@@ -4633,6 +4663,37 @@ button.nv-now-cell:active {
 
 .nv-dishform .nv-error {
   margin: 0;
+}
+
+/* A foto do prato dentro do lápis: a foto de agora ao lado dos botões (tirar, escolher, tirar a foto). */
+.nv-dishphoto-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.nv-dishphoto-row .nv-photo {
+  width: 96px;
+  height: 96px;
+}
+
+.nv-dishphoto-acts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nv-dishphoto > p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.nv-dishes-hint {
+  margin: 0;
+  font-weight: 700;
 }
 
 .nv-field.is-select select {

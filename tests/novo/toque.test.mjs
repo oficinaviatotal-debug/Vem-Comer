@@ -101,6 +101,26 @@ test("caixas do Hoje só viram tecla quando levam a uma tela", () => {
   assert.match(today, /className="nv-todo-icon"/);
 });
 
+test("cadastrado: 'O que falta' é uma lista de frases soltas na região viva, e o botão que resolve continua embaixo", () => {
+  const setup = read("MenuSetup.tsx");
+  assert.match(setup, /<Live text=\{\[view\.headline, view\.detail, \.\.\.view\.next\]\.filter\(Boolean\)\.join\("\. "\)\} \/>/);
+  assert.match(setup, /\{view\.next\.length > 0 \? \(\s*<section className="nv-menu-next" aria-labelledby="nv-menu-next-h">/);
+  assert.match(block(".nv-menu-next li"), /background: var\(--nv-call-pill\)/);
+});
+
+test("pratos: a foto do prato tem câmera, galeria e tirar a foto, e só aparece no lápis (prato que já existe)", () => {
+  const dishes = read("Dishes.tsx");
+  assert.match(dishes, /\{editing && photo \? <DishPhotoBox photo=\{photo\} onPhoto=\{onPhoto\} onPhotoRemove=\{onPhotoRemove\} \/> : null\}/);
+  assert.match(dishes, /type="file" accept="image\/\*" capture="environment" disabled=\{wait\} onChange=\{take\}/);
+  assert.match(dishes, /type="file" accept="image\/\*" disabled=\{wait\} onChange=\{take\}/);
+  assert.match(dishes, /event\.target\.value = "";/, "o campo é limpo: a mesma foto pode ser escolhida de novo");
+  assert.match(dishes, /\{photo\.src \? \(\s*<button type="button" className="nv-btn is-ghost is-block" disabled=\{wait\} onClick=\{onPhotoRemove\}>/);
+  assert.match(dishes, /role=\{photo\.phase === "error" \? "alert" : "status"\}/);
+  assert.match(dishes, /\{row\.noPhoto \? <span className="nv-order-chip">\{DISHES_NO_PHOTO_CHIP\}<\/span> : null\}/);
+  assert.match(dishes, /\{view\.hint && !form \? <p className="nv-code-hint nv-dishes-hint">\{view\.hint\}<\/p> : null\}/);
+  assert.match(block(".nv-dishphoto-row"), /grid-template-columns: 96px minmax\(0, 1fr\)/);
+});
+
 test("Hoje: 'O que falta' só aparece quando há passo, e o texto e o botão levam à mesma tela", () => {
   const today = read("OwnerToday.tsx");
   assert.match(today, /today\.guide && today\.guide\.length > 0/);

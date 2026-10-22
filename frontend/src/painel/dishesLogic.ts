@@ -118,6 +118,7 @@ function rowOf(product: Product, input: DishesInput): DishRow {
     photo: photo || undefined,
     soldOut,
     badge: badge || undefined,
+    noPhoto: input.canManage && !photo ? true : undefined,
     toggle: soldOut ? DISHES_BACK : DISHES_SOLD,
     toggleSpoken: `${product.name} ${soldOut ? "voltou" : "esgotou"}`,
     armed: input.canManage && input.armed === product.id,
@@ -182,7 +183,21 @@ export function dishesViewOf(input: DishesInput): DishesView {
     categories: menuList.map((menu) => ({ id: menu.id, name: menu.name })),
     error: input.error,
     notice: input.notice,
+    hint: canManage ? noPhotoHint(all.filter((product) => !input.media(product.thumb_url)).length) : "",
   };
+}
+
+/** Diz quantos pratos estão sem foto e o que fazer; nada quando todos têm. */
+export function noPhotoHint(count: number): string {
+  if (!Number.isFinite(count) || count <= 0) return "";
+  return count === 1
+    ? "1 prato está sem foto. Toque no lápis dele para pôr a foto."
+    : `${count} pratos estão sem foto. Toque no lápis do prato para pôr a foto.`;
+}
+
+/** A foto nova (ou nenhuma) no prato, na lista da tela, sem esperar a próxima busca. */
+export function withPhoto(products: readonly Product[], id: string, thumb: string | null, image: string | null): Product[] {
+  return products.map((product) => (product.id === id ? { ...product, thumb_url: thumb, image_url: image } : product));
 }
 
 // ------------------------------------------------------------------------------------------------ prato novo

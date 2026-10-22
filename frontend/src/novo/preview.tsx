@@ -40,9 +40,10 @@ import {
   formAfterAdd,
   formOfDish,
   withEdit,
+  withPhoto,
   withSoldOut,
 } from "../painel/dishesLogic";
-import type { DishForm } from "./types";
+import type { DishForm, DishPhotoView } from "./types";
 import type { Menu, Product } from "../customer/types";
 import {
   addUnclear,
@@ -555,6 +556,9 @@ type DishesStage =
   | "novo-erro"
   | "mudar"
   | "mudar-erro"
+  | "foto"
+  | "foto-enviando"
+  | "foto-erro"
   | "remover"
   | "busca"
   | "sem-resultado"
@@ -580,10 +584,15 @@ function DishesPreview({ stage = "normal" }: { stage?: DishesStage }) {
     if (stage === "novo") return { ...emptyDishForm("m-bebidas"), name: "Guaraná lata", price: "6" };
     if (stage === "novo-erro") return { ...emptyDishForm("m-bebidas"), name: "Guaraná lata", price: "seis", problem: "price" };
     if (stage === "mudar") return formOfDish(DISH_PRODUCTS_EXAMPLE[1] as Product, DISH_MENUS_EXAMPLE);
+    // O prato sem foto (Água mineral) aberto no lápis, para ver os botões da foto.
+    if (stage === "foto" || stage === "foto-enviando" || stage === "foto-erro") return formOfDish(DISH_PRODUCTS_EXAMPLE[7] as Product, DISH_MENUS_EXAMPLE);
     if (stage === "mudar-erro") return { ...formOfDish(DISH_PRODUCTS_EXAMPLE[1] as Product, DISH_MENUS_EXAMPLE), name: "x-tudo", problem: "twice" };
     return null;
   });
   const [notice, setNotice] = useState("");
+  const [photoPhase, setPhotoPhase] = useState<DishPhotoView["phase"]>(stage === "foto-enviando" ? "working" : stage === "foto-erro" ? "error" : "idle");
+  const [photoMessage, setPhotoMessage] = useState(stage === "foto-enviando" ? "Enviando a foto…" : stage === "foto-erro" ? "Não consegui enviar a foto. Veja se o celular está com internet e tente de novo." : "");
+  const editedDish = form?.editId ? products?.find((entry) => entry.id === form.editId) : undefined;
   const view = dishesViewOf({
     products,
     menus,
@@ -600,6 +609,23 @@ function DishesPreview({ stage = "normal" }: { stage?: DishesStage }) {
       view={view}
       query={query}
       form={form}
+      photo={editedDish ? { src: emojiPhoto(editedDish.thumb_url), phase: photoPhase, message: photoMessage } : null}
+      onPhoto={() => {
+        if (!editedDish) return;
+        setPhotoPhase("working");
+        setPhotoMessage("Preparando a foto…");
+        window.setTimeout(() => {
+          setProducts((list) => (list ? withPhoto(list, editedDish.id, "emoji:💧", null) : list));
+          setPhotoPhase("done");
+          setPhotoMessage("Foto salva.");
+        }, 900);
+      }}
+      onPhotoRemove={() => {
+        if (!editedDish) return;
+        setProducts((list) => (list ? withPhoto(list, editedDish.id, null, null) : list));
+        setPhotoPhase("done");
+        setPhotoMessage("Foto tirada.");
+      }}
       problemText={form ? dishProblemText(form.problem) : ""}
       busy={NOT_BUSY}
       onQuery={setQuery}
@@ -848,7 +874,7 @@ function MenuSetupPreview({ stage }: { stage: MenuStage }) {
             ? speakViewOf({ flow, listening, canListen: stage !== "sem-microfone", heard: listening ? "x-tudo vinte e cinco, vai ter ovo e bacon" : "", notice, unclear })
             : where === "review"
               ? reviewViewOf({ flow, editing, error })
-              : doneViewOf({ products_created: 8, products_skipped: 1 });
+              : doneViewOf({ products_created: 8, products_skipped: 1 }, 2);
 
   function say(text: string) {
     const out = takeSpoken(flow, text, heading);
@@ -1044,6 +1070,9 @@ function Screen() {
     "pratos-novo-erro": "novo-erro",
     "pratos-mudar": "mudar",
     "pratos-mudar-erro": "mudar-erro",
+    "pratos-foto": "foto",
+    "pratos-foto-enviando": "foto-enviando",
+    "pratos-foto-erro": "foto-erro",
     "pratos-remover": "remover",
     "pratos-busca": "busca",
     "pratos-sem-resultado": "sem-resultado",

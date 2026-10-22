@@ -793,6 +793,51 @@ Para ver: `preview-novo.html#/hoje-falta` (Pix, mesas e fotos), `#/hoje-comecand
 
 **Ainda não está ligado ao painel público** (o painel antigo continua mandando).
 
+## Décima oitava rodada: foto do prato e o próximo passo depois de cadastrar (22/10/2026)
+
+O GD disse "Prossiga" (20:41) depois de deixar o princípio 8 (o sistema conversa e diz o que falta). Segui pela tela de cadastro do cardápio, onde estávamos, e pela
+foto do prato, que era o que ficava faltando no "toda entrada por voz, escrita ou foto" (item 90). Nada vai ao ar sem o "pode".
+
+**Foto do prato, no lápis** (`novo/Dishes.tsx`, `painel/DishesScreen.tsx`, `painel/dishesLogic.ts`):
+
+- Ao mudar um prato, abaixo de "O que vem no prato", aparece **"Foto do prato"** com a foto de hoje (ou o garfo e a faca, se não tem), o botão **Tirar foto** (abre a
+  câmera de trás do celular), o botão **Escolher do celular** (galeria) e, quando já tem foto, **Tirar a foto** (apaga). Em prato novo a caixa não aparece, porque a
+  foto precisa de um prato já cadastrado: o dono salva e volta no lápis.
+- A foto é reduzida no próprio celular antes de seguir (a mesma rotina das fotos do cardápio) e vai para o servidor. **"Foto salva." só aparece depois que o servidor
+  respondeu certo**; se não deu, a tela diz "Não consegui enviar a foto. Veja se o celular está com internet e tente de novo." e a foto de antes continua como estava.
+  A frase do servidor, quando vem, passa como veio.
+- Trocar de prato no meio do envio não mistura as respostas: o prato certo recebe a foto e a frase não aparece no prato errado.
+- Quem não pode mexer no cardápio (cozinha, caixa, garçom) não vê foto, nem aviso, nem lápis.
+
+**O sistema avisa o que falta nos Pratos:** o dono e o gerente veem a frase "N pratos estão sem foto. Toque no lápis do prato para pôr a foto." no alto da lista e a
+etiqueta **"Sem foto"** em cada prato sem foto. A conta usa só a foto que o servidor entrega e que a tela aceita (um endereço inválido conta como sem foto).
+
+**O que falta, depois de cadastrar o cardápio** (`painel/menuSetupLogic.ts`, `novo/MenuSetup.tsx`): a tela "Cardápio cadastrado" ganhou a lista **"O que falta"**,
+em frases curtas e com o botão certo por perto:
+
+- "Os pratos novos entraram sem foto. Toque em Ver os pratos e ponha a foto de cada um." (sempre que entrou prato novo, porque a importação ainda não leva foto);
+- "N pratos ficaram de fora por falta de preço. Toque em Cadastrar mais pratos e diga o preço." (conta só os que a pessoa deixou sem preço antes de cadastrar);
+- "N pratos já existiam e não foram mudados. Para mudar um deles, toque no lápis em Ver os pratos." (o servidor só acrescenta, não troca o que já tem).
+
+A frase lida em voz alta (região viva) traz as mesmas linhas, para quem usa leitor de tela. Nada é inventado: se o servidor não disse quantos entraram, não há linha de "sem foto".
+
+**Limites que ficam:**
+
+- A importação do cardápio (foto, arquivo ou fala) **ainda não leva foto de prato**: cada prato novo precisa da foto depois, no lápis.
+- O lápis de prato chama `PUT /api/admin/products/<id>` (PR #76 do servidor): **o PR #76 precisa ir para o ar antes desta tela**.
+- Pratos com emoji no lugar da foto contam como "sem foto" nos Pratos (a tela aceita só foto do servidor), mas o "O que falta" do Hoje conta emoji como foto
+  (pelo que o cardápio público manda). A diferença é pequena e fica anotada para acertar quando o Hoje usar a mesma regra.
+- Foto de logomarca e de QR ainda não têm entrada própria.
+
+**Como foi conferido:** `tests/novo/dishesLogic.test.mjs` (+4: etiqueta e frase só para quem pode mexer, singular e plural, foto nova no prato certo), `menuSetupLogic.test.mjs` (+1: as
+três linhas de "O que falta") e `toque.test.mjs` (+2: a caixa da foto no lápis e a lista no cadastrado). 520 testes passam só na pasta do visual novo. No navegador, com a
+tela de verdade e servidor de mentira: Pratos (19 conferências: tirar foto, escolher, apagar, erro, troca de prato no meio do envio, quem não pode mexer) e o cadastro do
+cardápio (187 conferências, incluindo a lista "O que falta" com todos os pratos com preço e com um prato sem preço que ficou de fora). Em 320 a 480 px: sem rolagem
+lateral e sem botão menor que 44 px.
+Para ver: `preview-novo.html#/pratos` (frase e etiquetas), `#/pratos-foto`, `#/pratos-foto-enviando`, `#/pratos-foto-erro` e `#/cardapio-cadastrado`.
+
+**Ainda não está ligado ao painel público** (o painel antigo continua mandando).
+
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
 - Tudo mora em `frontend/src/novo/` e **não é importado pelo aplicativo**: o `index.html` e o `main.tsx` não mudam.

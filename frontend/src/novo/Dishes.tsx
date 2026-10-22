@@ -1,8 +1,15 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ChangeEvent } from "react";
 import "./novo.css";
 import NvIcon from "./Icons";
-import { Photo, TopBar, VoiceOrb } from "./parts";
+import { Photo, Spinner, TopBar, VoiceOrb } from "./parts";
 import {
+  DISH_PHOTO_HAS,
+  DISH_PHOTO_LABEL,
+  DISH_PHOTO_NONE,
+  DISH_PHOTO_PICK,
+  DISH_PHOTO_REMOVE,
+  DISH_PHOTO_TAKE,
+  DISHES_NO_PHOTO_CHIP,
   DISH_ADD,
   DISH_ADDING,
   DISH_CANCEL,
@@ -29,7 +36,7 @@ import {
   DISHES_SEARCH,
   DISHES_SOLD_CHIP,
 } from "./copy";
-import type { DishForm, DishRow, DishesView } from "./types";
+import type { DishForm, DishPhotoView, DishRow, DishesView } from "./types";
 
 /** O que está indo ao servidor agora. Cada prato tem a sua vez; adicionar e voltar tudo seguram a tela inteira. */
 export type DishesBusy = {
@@ -50,14 +57,62 @@ type FormProps = {
   onForm?: (patch: Partial<Omit<DishForm, "problem">>) => void;
   onAdd?: () => void;
   onClose?: () => void;
+  /** A foto do prato que está sendo mudado; sem isto (prato novo) a parte da foto não aparece. */
+  photo?: DishPhotoView | null;
+  onPhoto?: (file: File) => void;
+  onPhotoRemove?: () => void;
 };
+
+/** Os botões da foto: tirar na hora, escolher do celular e (se há foto) tirar a foto. O campo de arquivo fica dentro do rótulo, escondido. */
+function DishPhotoBox({ photo, onPhoto, onPhotoRemove }: { photo: DishPhotoView; onPhoto?: (file: File) => void; onPhotoRemove?: () => void }) {
+  const wait = photo.phase === "working";
+  const take = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    // Limpa o campo: escolher a mesma foto outra vez também funciona.
+    event.target.value = "";
+    if (file) onPhoto?.(file);
+  };
+  const said = photo.message || (photo.src ? DISH_PHOTO_HAS : DISH_PHOTO_NONE);
+  return (
+    <div className="nv-dishform-field nv-dishphoto" role="group" aria-labelledby="nv-dishphoto-label">
+      <span className="nv-code-label" id="nv-dishphoto-label">
+        {DISH_PHOTO_LABEL}
+      </span>
+      <div className="nv-dishphoto-row">
+        <Photo src={photo.src || undefined} alt="" />
+        <div className="nv-dishphoto-acts">
+          <label className={`nv-btn nv-filebtn is-green is-block${wait ? " is-off" : ""}`} aria-disabled={wait || undefined}>
+            <NvIcon name="camera" />
+            {DISH_PHOTO_TAKE}
+            <input className="nv-sr" type="file" accept="image/*" capture="environment" disabled={wait} onChange={take} />
+          </label>
+          <label className={`nv-btn nv-filebtn is-ghost is-block${wait ? " is-off" : ""}`} aria-disabled={wait || undefined}>
+            <NvIcon name="image" />
+            {DISH_PHOTO_PICK}
+            <input className="nv-sr" type="file" accept="image/*" disabled={wait} onChange={take} />
+          </label>
+          {photo.src ? (
+            <button type="button" className="nv-btn is-ghost is-block" disabled={wait} onClick={onPhotoRemove}>
+              <NvIcon name="trash" />
+              {DISH_PHOTO_REMOVE}
+            </button>
+          ) : null}
+        </div>
+      </div>
+      <p className={photo.phase === "error" ? "nv-error" : "nv-code-hint"} role={photo.phase === "error" ? "alert" : "status"}>
+        {wait ? <Spinner /> : null}
+        {said}
+      </p>
+    </div>
+  );
+}
 
 /**
  * O prato novo ou o prato que está sendo mudado (`form.editId`; vem preenchido): nome, preço e (se houver) categoria; a
  * descrição é opcional. Ao abrir, o foco vem para o nome e o teclado sobe. Os campos são afundados (escrever); os botões,
  * em relevo (tocar). `adding` vale para os dois: enquanto o servidor não responde, os campos esperam.
  */
-export function DishFormBox({ form, categories, problemText, adding, onForm, onAdd, onClose }: FormProps) {
+export function DishFormBox({ form, categories, problemText, adding, onForm, onAdd, onClose, photo, onPhoto, onPhotoRemove }: FormProps) {
   const name = useRef<HTMLInputElement>(null);
   useEffect(() => {
     name.current?.focus();
@@ -153,6 +208,8 @@ export function DishFormBox({ form, categories, problemText, adding, onForm, onA
         </div>
       </div>
 
+      {editing && photo ? <DishPhotoBox photo={photo} onPhoto={onPhoto} onPhotoRemove={onPhotoRemove} /> : null}
+
       {problemText ? (
         <p className="nv-error" id="nv-dish-problem" role="alert">
           {problemText}
@@ -194,10 +251,11 @@ export function DishItem({ row, canManage, busy, onToggle, onRemove, onEdit }: R
       <div className="nv-dishcard-text">
         <strong className="nv-dishcard-name">{row.name}</strong>
         <span className="nv-dishcard-price">{row.price}</span>
-        {row.soldOut || row.badge ? (
+        {row.soldOut || row.badge || row.noPhoto ? (
           <span className="nv-order-chips">
             {row.soldOut ? <span className="nv-order-chip is-wait">{DISHES_SOLD_CHIP}</span> : null}
             {row.badge ? <span className="nv-order-chip">{row.badge}</span> : null}
+            {row.noPhoto ? <span className="nv-order-chip">{DISHES_NO_PHOTO_CHIP}</span> : null}
           </span>
         ) : null}
       </div>
@@ -265,6 +323,10 @@ type Props = {
   /** Adicionar (prato novo) ou Salvar (prato que está sendo mudado): o mesmo botão do formulário. */
   onAdd?: () => void;
   onCloseForm?: () => void;
+  /** A foto do prato aberto no lápis: o que está acontecendo com ela, e as duas ações (mandar uma foto, tirar a foto). */
+  photo?: DishPhotoView | null;
+  onPhoto?: (file: File) => void;
+  onPhotoRemove?: () => void;
   /** Leva ao montar o cardápio por foto, arquivo ou voz. Sem isto o botão não aparece. */
   onMake?: () => void;
   onRefresh?: () => void;
@@ -292,6 +354,9 @@ export default function Dishes({
   onForm,
   onAdd,
   onCloseForm,
+  photo = null,
+  onPhoto,
+  onPhotoRemove,
   onMake,
   onRefresh,
   onMenu,
@@ -329,6 +394,9 @@ export default function Dishes({
               onForm={onForm}
               onAdd={onAdd}
               onClose={onCloseForm}
+              photo={photo}
+              onPhoto={onPhoto}
+              onPhotoRemove={onPhotoRemove}
             />
           ) : (
             <button type="button" id="nv-dishes-new" className="nv-btn is-green is-block" onClick={onOpenForm}>
@@ -337,6 +405,8 @@ export default function Dishes({
             </button>
           )
         ) : null}
+
+        {view.hint && !form ? <p className="nv-code-hint nv-dishes-hint">{view.hint}</p> : null}
 
         {view.alert ? (
           <div className="nv-soldbar">

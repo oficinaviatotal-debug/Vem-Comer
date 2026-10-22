@@ -18,7 +18,7 @@ import { fetchMenuCapabilities, fetchMenuTemplate, fetchMenuTemplates, HttpError
 import { prepareMenuPage } from "../photos/photoFiles";
 import { photoErrorText } from "../photos/photoLogic";
 import { canListen, DICTATION_PATIENCE_MS, hear, type Hearing } from "../assistant/voiceIO";
-import { importPayload, selectedItems, startFromParsed, startSpeak, type FlowState } from "../assistant/assistantFlow";
+import { importPayload, missingPrices, selectedItems, startFromParsed, startSpeak, type FlowState } from "../assistant/assistantFlow";
 import {
   fitsTogether,
   menuFileProblem,
@@ -104,6 +104,8 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
   const [reviewError, setReviewError] = useState("");
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<MenuSaveResult | null>(null);
+  /** Quantos pratos marcados ficaram de fora por falta de preço (contado antes de enviar): a tela do fim diz isso. */
+  const [leftOut, setLeftOut] = useState(0);
   // Começar de um modelo: a lista de tipos (guardada enquanto a tela está aberta), a busca, e os avisos de cada etapa.
   const [models, setModels] = useState<MenuModelTile[] | null>(null);
   const [typesError, setTypesError] = useState("");
@@ -370,6 +372,7 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
     if (working.current) return;
     const payload = importPayload(flowRef.current);
     if (payload.categories.length === 0) return;
+    const missing = missingPrices(flowRef.current).length;
     working.current = true;
     setSaving(true);
     setReviewError("");
@@ -377,6 +380,7 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
       const answer = await importMenu(companyId, payload);
       if (!alive.current) return;
       setResult(saveResultOf(answer));
+      setLeftOut(missing);
       setEditing(null);
       setWhere("done");
     } catch (failure) {
@@ -560,7 +564,7 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
       case "review":
         return reviewViewOf({ flow, editing, error: reviewError });
       default:
-        return doneViewOf(result);
+        return doneViewOf(result, leftOut);
     }
   })();
 

@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Dishes, { type DishesBusy } from "../novo/Dishes";
 import {
+  DISH_PHOTO_GONE,
+  DISH_PHOTO_PREPARING,
+  DISH_PHOTO_REMOVE_ERROR,
+  DISH_PHOTO_REMOVING,
+  DISH_PHOTO_SAVED,
+  DISH_PHOTO_SENDING,
   DISHES_ADD_ERROR,
   DISHES_EDIT_ERROR,
   DISHES_EDIT_GONE,
@@ -12,7 +18,9 @@ import {
 } from "../novo/copy";
 import { isSoldOut } from "../customer/openness";
 import type { Menu, Product } from "../customer/types";
-import { mediaUrl } from "../service/api";
+import { deleteProductPhoto, mediaUrl, uploadProductPhoto } from "../service/api";
+import { toSendablePhoto } from "../photos/photoFiles";
+import { photoErrorText } from "../photos/photoLogic";
 import { resetSoldOut, setSoldOut } from "../service/hoursApi";
 import { addDish, editDish, loadDishes, removeDish } from "./dishesApi";
 import {
@@ -30,10 +38,11 @@ import {
   formAfterAdd,
   formOfDish,
   withEdit,
+  withPhoto,
   withSoldOut,
   wordsOf,
 } from "./dishesLogic";
-import type { DishForm } from "../novo/types";
+import type { DishForm, DishPhotoView } from "../novo/types";
 
 type Props = {
   companyId: string;
@@ -60,6 +69,10 @@ export default function DishesScreen({ companyId, canManage, onMake, onMenu }: P
   const [removing, setRemoving] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
   const [adding, setAdding] = useState(false);
+  /** A foto do prato que o lápis está mostrando: o que está acontecendo com ela agora (ou null). */
+  const [photoState, setPhotoState] = useState<{ id: string; phase: DishPhotoView["phase"]; message: string } | null>(null);
+  /** Cada foto tem o seu número: se o lápis fechar ou mudar de prato, a resposta que chega tarde não escreve na tela. */
+  const photoJob = useRef(0);
   const [notice, setNotice] = useState("");
   /** O que deu errado numa ação (esgotou, remover, adicionar) fica na tela até o próximo toque; a busca da lista não o apaga. */
   const [error, setError] = useState("");
@@ -105,6 +118,12 @@ export default function DishesScreen({ companyId, canManage, onMake, onMenu }: P
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [load]);
+
+  // Fechar o lápis ou abrir o de outro prato: a frase da foto de antes não vale mais.
+  useEffect(() => {
+    photoJob.current += 1;
+    setPhotoState(null);
+  }, [form?.editId]);
 
   const disarm = useCallback(() => {
     window.clearTimeout(timer.current);
@@ -233,6 +252,50 @@ export default function DishesScreen({ companyId, canManage, onMake, onMenu }: P
     }
   };
 
+  /** Tirar a foto na hora ou escolher uma do celular: prepara, manda e só diz "Foto salva." quando o servidor respondeu que salvou. */
+  const sendPhoto = async (file: File) => {
+    const id = form?.editId;
+    if (!id || photoState?.phase === "working") return;
+    const mine = ++photoJob.current;
+    const stillHere = () => alive.current && mine === photoJob.current;
+    setPhotoState({ id, phase: "working", message: DISH_PHOTO_PREPARING });
+    try {
+      const blob = await toSendablePhoto(file);
+      if (stillHere()) setPhotoState({ id, phase: "working", message: DISH_PHOTO_SENDING });
+      const result = await uploadProductPhoto(id, blob);
+      if (alive.current) {
+        changes.current += 1;
+        setProducts((list) => (list ? withPhoto(list, id, result.thumb_url, result.image_url) : list));
+      }
+      if (stillHere()) setPhotoState({ id, phase: "done", message: DISH_PHOTO_SAVED });
+    } catch (failure) {
+      if (stillHere()) setPhotoState({ id, phase: "error", message: photoErrorText(failure) });
+    } finally {
+      if (alive.current) void load();
+    }
+  };
+
+  /** Tirar a foto do prato. Se o servidor não confirmar, a foto continua na tela e a frase diz que não deu. */
+  const dropPhoto = async () => {
+    const id = form?.editId;
+    if (!id || photoState?.phase === "working") return;
+    const mine = ++photoJob.current;
+    const stillHere = () => alive.current && mine === photoJob.current;
+    setPhotoState({ id, phase: "working", message: DISH_PHOTO_REMOVING });
+    try {
+      await deleteProductPhoto(id);
+      if (alive.current) {
+        changes.current += 1;
+        setProducts((list) => (list ? withPhoto(list, id, null, null) : list));
+      }
+      if (stillHere()) setPhotoState({ id, phase: "done", message: DISH_PHOTO_GONE });
+    } catch {
+      if (stillHere()) setPhotoState({ id, phase: "error", message: DISH_PHOTO_REMOVE_ERROR });
+    } finally {
+      if (alive.current) void load();
+    }
+  };
+
   /** O lápis: abre o formulário de cima já preenchido com o que o prato tem agora. Um formulário por vez. */
   const edit = (id: string) => {
     if (working.current || !products || !menus) return;
@@ -288,11 +351,23 @@ export default function DishesScreen({ companyId, canManage, onMake, onMenu }: P
     }
   };
 
+  const editing = form?.editId ? products?.find((entry) => entry.id === form.editId) : undefined;
+  const photoView: DishPhotoView | null = editing
+    ? {
+        src: mediaUrl(editing.thumb_url),
+        phase: photoState?.id === editing.id ? photoState.phase : "idle",
+        message: photoState?.id === editing.id ? photoState.message : "",
+      }
+    : null;
+
   return (
     <Dishes
       view={view}
       query={query}
       form={form}
+      photo={photoView}
+      onPhoto={(file) => void sendPhoto(file)}
+      onPhotoRemove={() => void dropPhoto()}
       problemText={form ? dishProblemText(form.problem) : ""}
       busy={busy}
       onQuery={setQuery}

@@ -542,6 +542,24 @@ test("cadastrado: a frase diz quantos entraram e quantos já existiam, e nada se
   assert.equal(doneViewOf(null).detail, "", "sem contagem do servidor a tela não escreve número");
 });
 
+test("cadastrado: a tela diz o que falta: pratos novos sem foto, os que ficaram de fora sem preço e os que já existiam (só o que é verdade)", () => {
+  const all = doneViewOf({ products_created: 8, products_skipped: 1 }, 2).next;
+  assert.deepEqual(all, [
+    "Os pratos novos entraram sem foto. Toque em Ver os pratos e ponha a foto de cada um.",
+    "2 pratos ficaram de fora por falta de preço. Toque em Cadastrar mais pratos e diga o preço.",
+    "1 prato já existia e não foi mudado. Para mudar um deles, toque no lápis em Ver os pratos.",
+  ]);
+  assert.deepEqual(doneViewOf({ products_created: 1, products_skipped: 0 }).next, ["O prato novo entrou sem foto. Toque em Ver os pratos e ponha a foto de cada um."]);
+  assert.deepEqual(doneViewOf({ products_created: 0, products_skipped: 3 }).next, ["3 pratos já existiam e não foram mudados. Para mudar um deles, toque no lápis em Ver os pratos."]);
+  assert.deepEqual(doneViewOf({ products_created: 4, products_skipped: 0 }, 1).next[1], "1 prato ficou de fora por falta de preço. Toque em Cadastrar mais pratos e diga o preço.");
+  // sem a contagem do servidor não se fala de pratos novos nem dos que já existiam; o que ficou de fora vem da própria tela e continua valendo
+  assert.deepEqual(doneViewOf(null).next, []);
+  assert.equal(doneViewOf(null, 2).next.length, 1);
+  assert.deepEqual(doneViewOf({ products_created: 0, products_skipped: 0 }).next, [], "nada entrou e nada existia: nada a dizer");
+  assert.deepEqual(doneViewOf({ products_created: 2, products_skipped: 0 }, Number.NaN).next.length, 1, "número estragado não vira frase");
+  assert.deepEqual(doneViewOf({ products_created: 2, products_skipped: 0 }, -3).next.length, 1);
+});
+
 test("nenhuma tela escreve 'undefined', 'null' ou 'NaN'", () => {
   const flow = read();
   const views = [

@@ -21,11 +21,13 @@ import {
   emptyDishForm,
   formAfterAdd,
   formOfDish,
+  noPhotoHint,
   notFoundText,
   priceText,
   soldOutAlert,
   soldOutCount,
   withEdit,
+  withPhoto,
   withSoldOut,
   wordsOf,
 } from "../../frontend/src/painel/dishesLogic.ts";
@@ -414,4 +416,53 @@ test("erro de quem fez algo errado (4xx) passa com a frase do servidor; erro do 
   assert.equal(wordsOf(new TypeError("Failed to fetch"), "nossa"), "nossa", "sem sinal");
   assert.equal(wordsOf("estranho", "nossa"), "nossa");
   assert.equal(wordsOf(null, "nossa"), "nossa");
+});
+
+
+// ------------------------------------------------------------------------------------------------ a foto do prato
+
+const withPhotos = () =>
+  products().map((product, i) => (i < 2 ? { ...product, thumb_url: "/media/x/" + String(i) } : product));
+
+test("foto: quem cuida do cardápio vê 'Sem foto' nos pratos que não têm foto de verdade, e só nesses", () => {
+  const photoOf = (path) => (path === "/media/x/0" ? "https://x.test/0.webp" : "");
+  const list = dishesViewOf({ products: withPhotos(), menus, canManage: true, query: "", armed: null, media: photoOf, error: "", notice: "" });
+  const rows = list.lists.flatMap((group) => group.sections.flatMap((section) => section.rows));
+  const noPhoto = Object.fromEntries(rows.map((row) => [row.name, row.noPhoto === true]));
+  // p1 tem foto; p2 tem um endereço que não é foto do restaurante (mediaUrl devolve vazio); p3 e p4 não têm nada
+  assert.deepEqual(noPhoto, { "X-tudo": false, "X-salada": true, "Coca-Cola lata": true, "Suco de laranja": true });
+});
+
+test("foto: a cozinha não vê o aviso nem o 'Sem foto' (não é com ela)", () => {
+  const list = dishesViewOf({ products: products(), menus, canManage: false, query: "", armed: null, media, error: "", notice: "" });
+  assert.equal(list.hint, "");
+  assert.ok(list.lists.flatMap((group) => group.sections.flatMap((section) => section.rows)).every((row) => row.noPhoto === undefined));
+});
+
+test("foto: o aviso diz quantos pratos estão sem foto e o que fazer; sem nenhum, não diz nada", () => {
+  assert.equal(noPhotoHint(0), "");
+  assert.equal(noPhotoHint(-2), "");
+  assert.equal(noPhotoHint(Number.NaN), "");
+  assert.equal(noPhotoHint(1), "1 prato está sem foto. Toque no lápis dele para pôr a foto.");
+  assert.equal(noPhotoHint(7), "7 pratos estão sem foto. Toque no lápis do prato para pôr a foto.");
+  assert.equal(view().hint, "4 pratos estão sem foto. Toque no lápis do prato para pôr a foto.");
+  const all = products().map((product) => ({ ...product, thumb_url: "/media/a.webp" }));
+  assert.equal(dishesViewOf({ products: all, menus, canManage: true, query: "", armed: null, media, error: "", notice: "" }).hint, "");
+});
+
+test("foto: a lista ainda carregando não diz que faltam fotos", () => {
+  const loading = dishesViewOf({ products: null, menus: null, canManage: true, query: "", armed: null, media, error: "", notice: "" });
+  assert.ok(!loading.hint);
+});
+
+test("foto: a foto nova (ou nenhuma) entra no prato certo, sem mexer nos outros", () => {
+  const before = products();
+  const after = withPhoto(before, "p2", "/media/t.webp", "/media/i.webp");
+  assert.equal(after.find((product) => product.id === "p2").thumb_url, "/media/t.webp");
+  assert.equal(after.find((product) => product.id === "p2").image_url, "/media/i.webp");
+  assert.deepEqual(after.filter((product) => product.id !== "p2"), before.filter((product) => product.id !== "p2"));
+  const gone = withPhoto(after, "p2", null, null);
+  assert.equal(gone.find((product) => product.id === "p2").thumb_url, null);
+  assert.deepEqual(withPhoto(before, "nada", "/media/t.webp", null), before, "prato que não existe: nada muda");
+  assert.equal(before.find((product) => product.id === "p2").thumb_url, undefined, "a lista de antes não é mexida");
 });

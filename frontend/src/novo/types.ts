@@ -634,7 +634,7 @@ export type MenuSetupView =
       canSave: boolean;
       error: string;
     }
-  | { stage: "done"; sub: string; headline: string; detail: string };
+  | { stage: "done"; sub: string; headline: string; detail: string; next: string[] };
 
 // ---------------------------------------------------------------- Pratos e categorias
 
@@ -648,6 +648,8 @@ export type DishRow = {
   soldOut: boolean;
   /** "2 grupos de opções" ou nada: só informa. */
   badge?: string;
+  /** Só para quem cuida do cardápio: o prato não tem foto (o cartão diz "Sem foto"). */
+  noPhoto?: boolean;
   /** A palavra do botão ("Esgotou" ou "Voltou") e a frase que o leitor de tela fala ("Pizza esgotou"). */
   toggle: string;
   toggleSpoken: string;
@@ -677,7 +679,12 @@ export type DishesView = {
   categories: { id: string; name: string }[];
   error: string;
   notice: string;
+  /** Só para quem cuida do cardápio: "5 pratos estão sem foto. Toque no lápis do prato para pôr a foto." ou vazio. */
+  hint?: string;
 };
+
+/** A foto do prato aberto no lápis: o endereço da foto de agora ("" quando não há), o que está acontecendo e a frase. */
+export type DishPhotoView = { src: string; phase: "idle" | "working" | "error" | "done"; message: string };
 
 /**
  * O que está escrito no formulário do prato. `editId` é o prato que está sendo mudado (o formulário vem preenchido);
