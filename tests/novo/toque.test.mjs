@@ -183,3 +183,130 @@ test("sacola: o menos de quem está em 1 vira lixeira, o envio espera enquanto e
   // Tirar o último é tirar o prato do pedido: o nome do botão diz isso.
   assert.match(bag, /Tirar \$\{line\.name\} do pedido/);
 });
+
+// Contraste (WCAG): o texto pequeno das peças novas passa de 4,5:1, lido das cores do próprio CSS.
+const token = (name) => {
+  const found = css.match(new RegExp(`--nv-${name}: (#[0-9a-fA-F]{6})`));
+  assert.ok(found, `não achei a cor --nv-${name}`);
+  return found[1];
+};
+const luminance = (hex) => {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const contrast = (a, b) => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+test("o texto pequeno das escolhas e da sacola passa de 4,5:1 de contraste", () => {
+  const pairs = [
+    ["muted", "peach", "dica e texto de exemplo nos campos"],
+    ["fire-deep", "peach", "etiqueta Obrigatório"],
+    ["green", "paper", "preço da opção"],
+    ["green", "green-soft", "preço da opção marcada"],
+    ["ink", "green-soft", "nome da opção marcada"],
+    ["alert", "alert-soft", "aviso em vermelho"],
+    ["muted", "paper", "rótulo dos campos"],
+    ["paper", "green", "texto dos botões verdes"],
+    ["ink", "sun", "texto dos botões amarelos"],
+  ];
+  for (const [front, back, what] of pairs) {
+    const ratio = contrast(token(front), token(back));
+    assert.ok(ratio >= 4.5, `${what}: ${ratio.toFixed(2)}:1 (${front} sobre ${back})`);
+  }
+});
+
+test("o texto de exemplo dos campos não é apagado por transparência (ficaria abaixo de 4,5:1)", () => {
+  const placeholder = block(".nv-text input::placeholder");
+  assert.match(placeholder, /opacity: 1/);
+});
+
+test("o contador da observação fica vermelho quando passa do limite", () => {
+  assert.match(block(".nv-text small.is-over"), /color: var\(--nv-alert\)/);
+  assert.match(read("Choices.tsx"), /choices\.note\.count > choices\.note\.max \? "is-over"/);
+});
+
+test("grupos de escolha única respondem às setas e só o marcado recebe o Tab (como grupo de rádio)", async () => {
+  const keys = await import(new URL("keys.ts", DIR));
+  assert.equal(keys.radioTab(0, false, false), 0, "ninguém marcado: o primeiro recebe o Tab");
+  assert.equal(keys.radioTab(1, false, false), -1);
+  assert.equal(keys.radioTab(1, true, true), 0, "o marcado recebe o Tab");
+  assert.equal(keys.radioTab(0, false, true), -1, "marcado em outro: o primeiro não recebe");
+  assert.match(read("keys.ts"), /ArrowDown[\s\S]*ArrowRight[\s\S]*ArrowUp[\s\S]*ArrowLeft/);
+  assert.match(read("Choices.tsx"), /onKeyDown=\{group\.single \? onRadioKeys : undefined\}/);
+  assert.match(read("Bag.tsx"), /onKeyDown=\{onRadioKeys\}/);
+  assert.match(read("Bag.tsx"), /tabIndex=\{radioTab\(index, option\.on, options\.some/);
+});
+
+test("acompanhar o pedido: o andamento e a comanda são painéis de sombra macia; o que só informa fica liso", () => {
+  assert.match(block(".nv-status"), /box-shadow: var\(--nv-panel-3d\)/);
+  assert.match(css.match(/\.nv-pix,\s*\.nv-rate \{[^}]*\}/)[0], /box-shadow: var\(--nv-panel-3d\)/);
+  for (const selector of [".nv-handling", ".nv-steps li"]) {
+    assert.ok(!/box-shadow/.test(block(selector)), `${selector} parece botão sem ser`);
+  }
+  assert.ok(!/box-shadow/.test(css.match(/\.nv-paid,\s*\.nv-thanks \{[^}]*\}/)[0]), "o aviso de pagamento recebido parece botão");
+});
+
+test("o código de entrega é grande, lido número a número por quem usa leitor de tela, e o desenho dos números é escondido dele", () => {
+  const tracking = read("Tracking.tsx");
+  assert.match(tracking, /className="nv-dcode-digits" aria-label=\{track\.deliveryCode\.spoken\}/);
+  assert.match(tracking, /className="nv-dcode-digit" aria-hidden="true"/);
+  assert.match(block(".nv-dcode-digit"), /font: 700 4\dpx/);
+});
+
+test("o andamento avisa a mudança em voz alta e marca a etapa de agora", () => {
+  const tracking = read("Tracking.tsx");
+  assert.match(tracking, /<h2 aria-live="polite">\{status\.headline\}<\/h2>/);
+  assert.match(tracking, /aria-current=\{step\.state === "current" \? "step" : undefined\}/);
+  assert.match(tracking, /<ol className="nv-steps" aria-label="Andamento do pedido"/);
+});
+
+test("Pix: o botão de copiar só vale com o código pronto, o erro é lido em voz alta e o QR tem texto alternativo", () => {
+  const tracking = read("Tracking.tsx");
+  assert.match(tracking, /disabled=\{!pix\.payload\} onClick=\{onCopy\}/);
+  assert.match(tracking, /<p className="nv-error" role="alert">\s*\{PIX_ERROR_TEXT\}/);
+  assert.match(tracking, /alt="QR code Pix deste pedido"/);
+  assert.match(tracking, /<p className="nv-hint" role="status">\s*\{copiedText\(pix\.copied\)\}/);
+});
+
+test("Pix a pagar vem antes da comanda (é a próxima coisa a fazer); pago e 'acerta na hora' vêm depois", () => {
+  const tracking = read("Tracking.tsx");
+  const slip = tracking.indexOf('<section className="nv-slip"');
+  const pixAt = tracking.indexOf('track.payment.kind === "pix" && pix ?');
+  const paidAt = tracking.indexOf('track.payment.kind === "paid" ?');
+  assert.ok(pixAt > 0 && pixAt < slip, "o Pix deve vir antes da comanda");
+  assert.ok(paidAt > slip, "o pagamento recebido vem depois da comanda");
+});
+
+test("'Fechar este pedido' só aparece com o pedido pronto, e a avaliação tem teclas, comentário e envio", () => {
+  const tracking = read("Tracking.tsx");
+  assert.match(tracking, /status\.done && onDismiss \?/);
+  assert.match(tracking, /<fieldset className="nv-rate-group">/);
+  assert.match(tracking, /disabled=\{!rating\.canSend\}/);
+  assert.match(block(".nv-picks.is-4"), /repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(css, /@media \(max-width: 380px\) \{\s*\.nv-picks\.is-4 \{\s*grid-template-columns: repeat\(2/);
+});
+
+test("texto das peças de acompanhar passa de 4,5:1 (inclui o texto cinza sobre o painel verde de pedido pronto)", () => {
+  for (const [front, back] of [["muted", "green-soft"], ["muted", "paper"], ["ink", "peach"]]) {
+    assert.ok(contrast(token(front), token(back)) >= 4.5, `${front} sobre ${back}`);
+  }
+  assert.ok(contrast(token("ink"), "#fff3cf") >= 4.5, "o código de entrega sobre o painel amarelo");
+  assert.ok(contrast(token("muted"), "#fffdf7") >= 4.5, "o detalhe do prato sobre a comanda");
+});
+
+test("ícone dentro de botão tem tamanho de ícone (sem isso o desenho ocupa o botão inteiro)", () => {
+  assert.match(block(".nv-btn svg"), /width: 24px/);
+  assert.match(block(".nv-btn svg"), /height: 24px/);
+});
+
+test("em celular de 320 px a barra da sacola cabe com a bolinha de voz (uma linha para cada texto)", () => {
+  assert.match(css, /@media \(max-width: 340px\) \{[^@]*\.nv-bag \{\s*gap: 6px;\s*padding: 0 16px;\s*font-size: 15px;/);
+  assert.match(css, /\.nv-bag strong \{\s*font-size: 18px;\s*white-space: nowrap;/);
+});
+
+test("o telefone do endereço de entrega não quebra no meio do número", () => {
+  assert.match(read("Tracking.tsx"), /<span className="nv-nowrap">\{track\.handling\.phone\}<\/span>/);
+  assert.match(block(".nv-nowrap"), /white-space: nowrap/);
+});

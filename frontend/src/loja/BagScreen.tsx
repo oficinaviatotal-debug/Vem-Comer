@@ -5,7 +5,7 @@ import { EMPTY_ADDRESS, effectiveMode, offeredModes, type Address, type Mode } f
 import { deliveryMemory } from "../customer/deliveryMemory";
 import { orderErrorMessage } from "../customer/labels";
 import { closedState, isSoldOut } from "../customer/openness";
-import { orderMemory } from "../customer/orderMemory";
+import { orderMemory, type RememberedOrder } from "../customer/orderMemory";
 import { effectiveMethod, type PayMethod } from "../customer/payment";
 import type { Company } from "../customer/types";
 import { useQuote } from "../customer/useQuote";
@@ -13,8 +13,11 @@ import { createOrder } from "../service/api";
 import { bagProblem, bagViewOf, orderPayloadOf, rememberedNameOf, type BagInput } from "./bagLogic";
 import type { ShopState } from "./useShop";
 
-/** O pedido que o servidor aceitou: o código dele e a chave para acompanhar. */
-export type SentOrder = { orderId: string; token: string; payment: PayMethod };
+/**
+ * O pedido que o servidor aceitou: o código dele, a chave para acompanhar e a lista de pedidos deste aparelho já com ele
+ * (vem da memória do aparelho; mesmo com o armazenamento bloqueado, a lista traz o pedido que acabou de ser enviado).
+ */
+export type SentOrder = { orderId: string; token: string; payment: PayMethod; orders: RememberedOrder[] };
 
 type Props = {
   company: Company;
@@ -100,10 +103,10 @@ export default function BagScreen({ company, tableId, shop, onBack, onEditLine, 
       }
       const orderId = String(result.order_id);
       const token = String(result.tracking_token);
-      orderMemory.add({ orderId, token, slug: company.slug, tableId });
+      const orders = orderMemory.add({ orderId, token, slug: company.slug, tableId });
       setCart([]);
       setPaid("");
-      onSent({ orderId, token, payment: order.payment });
+      onSent({ orderId, token, payment: order.payment, orders });
     } catch (err) {
       setError(orderErrorMessage(err instanceof Error ? err.message : "", mode));
     } finally {

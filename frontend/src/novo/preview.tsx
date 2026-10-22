@@ -6,10 +6,13 @@ import JobsHome from "./JobsHome";
 import ShopMenu from "./ShopMenu";
 import ChoicesSheet from "./Choices";
 import BagScreen from "./Bag";
+import { TrackSlip, TrackingPage } from "./Tracking";
 import { emptyText, isKitchenTab, kitchenTabs, ticketsFor, type KitchenTabId } from "../cozinha/kitchenLogic";
-import { ACAI_PRODUCT, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, kitchenOrders, shopExample, todayExample } from "./demo";
+import { ACAI_PRODUCT, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, kitchenOrders, orderExample, pixExample, shopExample, todayExample } from "./demo";
 import { choicesViewOf, confirmChoices, nextQuantity, pressOption } from "../loja/choicesLogic";
 import { bagProblem, bagViewOf } from "../loja/bagLogic";
+import { copiedOutcome, pixOf, ratingOf, trackOf } from "../loja/trackingLogic";
+import type { Pix } from "./types";
 import { addConfigured, decrementItem, incrementLine, setLineNote, type CartLine } from "../customer/cart";
 import { EMPTY_ADDRESS, hasFullCep, type Address, type Mode, type Quote } from "../customer/delivery";
 import { effectiveMethod, type PayMethod } from "../customer/payment";
@@ -17,10 +20,11 @@ import type { Selection } from "../customer/options";
 
 /**
  * Página de conferência do visual novo (não faz parte do aplicativo): mostra cada tela com dados de exemplo.
- * Abrir: preview-novo.html#/loja, #/hoje, #/cozinha, #/vagas, #/escolhas (#/escolhas-erro), #/sacola ou #/entrega.
+ * Abrir: preview-novo.html#/loja, #/hoje, #/cozinha, #/vagas, #/escolhas (#/escolhas-erro), #/sacola, #/entrega,
+ * #/loja-pedido (cardápio de quem já pediu), #/pedido (preparo, Pix a pagar), #/pedido-rua (entrega a caminho) ou #/pedido-pronto (pronto, pago, avaliação).
  */
 /** O cardápio da conferência: dados de exemplo passando pela conta de verdade; adicionar e tirar funcionam na tela. */
-function ShopPreview() {
+function ShopPreview({ withOrder = false }: { withOrder?: boolean }) {
   const view = shopExample();
   const [quantities, setQuantities] = useState<Record<string, number>>({ a2: 2 });
   const groups = view.groups.map((group) => ({
@@ -44,6 +48,8 @@ function ShopPreview() {
       onLess={(id) => change(id, -1)}
       onPromo={() => change("a1", 1)}
       onPromos={() => undefined}
+      ordersCount={withOrder ? 1 : 0}
+      onTrack={() => undefined}
       showMenu
       jobsHref="#"
     />
@@ -167,8 +173,43 @@ function BagPreview({ delivery }: { delivery: boolean }) {
   );
 }
 
+/** O acompanhamento da conferência: pedidos de exemplo passando pela conta de verdade; copiar e avaliar respondem ao toque. */
+function TrackingPreview({ kind }: { kind: "preparo" | "rua" | "pronto" }) {
+  const [copied, setCopied] = useState<Pix["copied"]>("");
+  const [food, setFood] = useState("");
+  const [service, setService] = useState("");
+  const [comment, setComment] = useState("");
+  const [sent, setSent] = useState(false);
+  const [closed, setClosed] = useState(false);
+  const track = trackOf(orderExample(kind), null, false);
+  const rating = kind === "pronto" ? ratingOf({ sent, food, service, comment, busy: false, error: null }) : null;
+  return (
+    <TrackingPage sub="Açaí do João" onBack={() => undefined}>
+      {closed ? (
+        <p className="nv-empty">Pedido fechado (exemplo).</p>
+      ) : (
+        <TrackSlip
+          track={track}
+          pix={pixOf("ready", pixExample(), copied)}
+          onCopy={() => setCopied(copiedOutcome(true))}
+          rating={rating}
+          onFood={setFood}
+          onService={setService}
+          onComment={setComment}
+          onSendRating={() => setSent(true)}
+          onDismiss={() => setClosed(true)}
+        />
+      )}
+    </TrackingPage>
+  );
+}
+
 function Screen() {
   const route = window.location.hash.replace(/^#\/?/, "");
+  if (route === "loja-pedido") return <ShopPreview withOrder />;
+  if (route === "pedido") return <TrackingPreview kind="preparo" />;
+  if (route === "pedido-rua") return <TrackingPreview kind="rua" />;
+  if (route === "pedido-pronto") return <TrackingPreview kind="pronto" />;
   if (route === "escolhas") return <ChoicesPreview erro={false} />;
   if (route === "escolhas-erro") return <ChoicesPreview erro />;
   if (route === "sacola") return <BagPreview delivery={false} />;

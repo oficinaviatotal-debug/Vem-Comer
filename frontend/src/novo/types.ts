@@ -196,3 +196,63 @@ export type Bag = {
   cash: { value: string; exact: string } | null;
   paymentNote: string;
 };
+
+/** Uma etapa do andamento do pedido ("Enviado", "Em preparo", "Pronto"). */
+export type TrackStep = { label: string; state: "done" | "current" | "todo" };
+
+export type TrackStatus = {
+  headline: string;
+  hint: string;
+  steps: TrackStep[];
+  /** Nada mais a esperar: pronto, ou entregue. */
+  done: boolean;
+};
+
+export type TrackLine = { key: string; quantity: number; name: string; detail?: string; note?: string; total: number };
+
+/** O que a comanda diz do pagamento: já pago, a pagar com Pix (o código vem de outra busca), ou a acertar na hora. */
+export type TrackPayment = { kind: "paid"; title: string; text: string } | { kind: "pix" } | { kind: "later"; text: string };
+
+/** O pedido que o cliente enviou, como o servidor o conhece agora. */
+export type Track = {
+  /** "#A1B2": as quatro primeiras letras do pedido. */
+  code: string;
+  /** "Mesa 4", "Entrega", "Retirada" ou "Pedido". */
+  where: string;
+  customerName?: string;
+  /** Para onde vai (entrega) ou o que fazer (retirada); null nos outros pedidos. `phone`: o telefone, já com máscara. */
+  handling: { title: string; text: string; phone?: string } | null;
+  status: TrackStatus;
+  /** Os 4 números que o cliente passa ao entregador na porta. Só numa entrega aberta. */
+  deliveryCode: { title: string; digits: string[]; spoken: string; hint: string } | null;
+  lines: TrackLine[];
+  /** A taxa que o servidor somou (0 = grátis); null quando o pedido não é entrega. */
+  fee: number | null;
+  total: number;
+  payment: TrackPayment;
+  /** A última busca falhou: o que aparece é o último andamento que chegou. */
+  offline: boolean;
+};
+
+/** O Pix a pagar: o estado da busca do código e o que mostrar. */
+export type Pix = {
+  state: "loading" | "ready" | "missing" | "error";
+  amount?: number;
+  receiver?: string;
+  /** O Pix Copia e Cola. */
+  payload?: string;
+  /** A imagem do QR, já pronta (data:). */
+  qr?: string;
+  copied: "" | "ok" | "manual";
+};
+
+/** A avaliação de "Como foi?": comida e atendimento, mais um comentário. */
+export type Rating = {
+  sent: boolean;
+  food: Option[];
+  service: Option[];
+  comment: string;
+  canSend: boolean;
+  busy: boolean;
+  error: string | null;
+};

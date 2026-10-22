@@ -1,4 +1,5 @@
 import NvIcon from "./Icons";
+import { onRadioKeys, radioTab } from "./keys";
 import { Photo } from "./parts";
 import { money } from "./format";
 import type { Choices } from "./types";
@@ -55,13 +56,15 @@ export default function ChoicesSheet({ choices, onPress, onNote, onMore, onLess,
                 </div>
                 {group.emptyText ? <p className="nv-notice">{group.emptyText}</p> : null}
                 <div role={group.single ? "radiogroup" : "group"} aria-labelledby={`nv-opt-h-${group.id}`} className="nv-opts-list">
-                  {group.items.map((item) => (
+                  {group.items.map((item, index) => (
                     <button
                       key={item.id}
                       type="button"
                       role={group.single ? "radio" : "checkbox"}
                       aria-checked={item.on}
                       aria-disabled={item.blocked || undefined}
+                      tabIndex={group.single ? radioTab(index, item.on, group.items.some((entry) => entry.on)) : undefined}
+                      onKeyDown={group.single ? onRadioKeys : undefined}
                       className={`nv-opt${item.on ? " is-on" : ""}${item.blocked ? " is-blocked" : ""}`}
                       onClick={() => {
                         if (!item.blocked) onPress?.(group.id, item.id);
@@ -92,7 +95,7 @@ export default function ChoicesSheet({ choices, onPress, onNote, onMore, onLess,
                 placeholder="Ex.: sem cebola, bem passado"
                 enterKeyHint="done"
               />
-              <small>
+              <small className={choices.note.count > choices.note.max ? "is-over" : undefined}>
                 {choices.note.count}/{choices.note.max}
               </small>
             </label>

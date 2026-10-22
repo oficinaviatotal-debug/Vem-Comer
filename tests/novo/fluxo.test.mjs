@@ -97,3 +97,47 @@ test("o cardápio não deixa pedir com o restaurante fechado", () => {
   assert.match(loja.shop, /if \(product && !view\.closed\) setCart/);
   assert.match(loja.shop, /if \(product && !view\.closed\) onChoose\(product\)/);
 });
+
+const tracking = readFileSync(new URL("loja/TrackingScreen.tsx", SRC), "utf8");
+
+test("o acompanhamento pergunta ao servidor até não haver o que esperar, e não pergunta com a aba escondida", () => {
+  assert.match(tracking, /const step = afterPoll\(\{ order: next \}\);/);
+  assert.match(tracking, /if \(step === "stop"\) return;/);
+  assert.match(tracking, /if \(document\.hidden\) \{\s*timer = window\.setTimeout\(poll, POLL_MS\);\s*return;/);
+  assert.match(tracking, /if \(afterPoll\(\{ failedWith \}\) === "gone"\) \{\s*goneRef\.current\(\);\s*return;/);
+  // Ao sair da tela, nenhuma pergunta fica pendente.
+  assert.match(tracking, /alive = false;\s*if \(timer !== undefined\) window\.clearTimeout\(timer\);/);
+});
+
+test("o Pix é buscado só quando está a pagar, e o 'copiar' cai no copiar à mão quando o celular recusa", () => {
+  assert.match(tracking, /usePix\(orderId, token, track\?\.payment\.kind === "pix"\)/);
+  assert.match(tracking, /if \(!due\) return;/);
+  assert.match(tracking, /copyText\(code\.payload, field\.current\)/);
+  assert.match(tracking, /pixStateOfError\(error instanceof HttpError \? error\.status : null\)/);
+});
+
+test("a avaliação é uma por visita: vale para todos os pedidos de agora, e não envia duas vezes", () => {
+  assert.match(tracking, /createFeedback\(companyId, food, service, "não se aplica", comment\.trim\(\)\)/);
+  assert.match(tracking, /for \(const id of new Set\(\[orderId, \.\.\.allIds\]\)\) orderMemory\.markFeedbackSent\(id\)/);
+  assert.match(tracking, /if \(!food \|\| !service \|\| busyRef\.current\) return;/);
+  assert.match(tracking, /const showRating = track\.status\.done && \(rateHere \|\| rating\.sentBefore\);/);
+  assert.match(tracking, /ratingTarget\(/);
+});
+
+test("o fluxo abre no acompanhamento quando já há pedido, esquece o pedido fechado e mostra o pedido enviado mesmo sem armazenamento", () => {
+  assert.match(loja.flow, /useState<Screen>\(\(\) => \(orders\.length > 0 \? "tracking" : "menu"\)\)/);
+  assert.match(loja.flow, /orderMemory\.remove\(company\.slug, orderId\)/);
+  assert.match(loja.flow, /if \(next\.length === 0\) goTo\("menu"\)/);
+  // A lista vem do que a sacola acabou de guardar, não de uma leitura nova do armazenamento (que pode estar bloqueado).
+  assert.match(loja.flow, /setOrders\(order\.orders\)/);
+  assert.match(loja.bag, /const orders = orderMemory\.add\(/);
+  assert.match(loja.bag, /onSent\(\{ orderId, token, payment: order\.payment, orders \}\)/);
+});
+
+test("o cardápio mostra 'Acompanhar o seu pedido' só quando há pedido, com a contagem quando são vários", () => {
+  const menu = readFileSync(new URL("novo/ShopMenu.tsx", SRC), "utf8");
+  assert.match(menu, /ordersCount > 0 && onTrack \?/);
+  assert.match(menu, /Acompanhar o seu pedido\{ordersCount > 1 \? ` \(\$\{ordersCount\}\)` : ""\}/);
+  assert.match(loja.shop, /ordersCount=\{ordersCount\}/);
+  assert.match(loja.flow, /ordersCount=\{orders\.length\}/);
+});

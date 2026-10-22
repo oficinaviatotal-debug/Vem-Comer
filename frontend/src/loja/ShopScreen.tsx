@@ -17,13 +17,16 @@ type Props = {
   onChoose: (product: Product) => void;
   /** Toque em "Ver sacola". */
   onBag: () => void;
+  /** Quantos pedidos este aparelho já enviou, e o toque em "Acompanhar o seu pedido". */
+  ordersCount?: number;
+  onTrack?: () => void;
 };
 
 /**
  * O cardápio de verdade: mostra o que o servidor disse (aberto, fechado, em pausa, prato esgotado) e mexe na sacola.
  * Quem busca os dados é `useShop`; aqui só se desenha e se toca.
  */
-export default function ShopScreen({ shop, tableId, jobsHref = null, onChoose, onBag }: Props) {
+export default function ShopScreen({ shop, tableId, jobsHref = null, onChoose, onBag, ordersCount = 0, onTrack }: Props) {
   const [query, setQuery] = useState("");
   const { live, products, menus, cart, tableNumber, soldOutNote, setCart } = shop;
 
@@ -82,6 +85,8 @@ export default function ShopScreen({ shop, tableId, jobsHref = null, onChoose, o
         if (product && !view.closed) onChoose(product);
       }}
       onBag={onBag}
+      ordersCount={ordersCount}
+      onTrack={onTrack}
       jobsHref={jobsHref}
     />
   );

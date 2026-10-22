@@ -43,6 +43,8 @@
   --nv-green-soft: #e6f1e3;
   --nv-fire: #ff6f00;
   --nv-fire-text: #c74700;
+  /* O laranja do texto pequeno sobre o fundo pêssego: o mais claro que ainda passa de 4,5:1. */
+  --nv-fire-deep: #a83c00;
   --nv-sun: #ffc83a;
   --nv-paper: #ffffff;
   --nv-peach: #fdeedf;
@@ -440,6 +442,12 @@
 
 .nv-btn.is-block {
   width: 100%;
+}
+
+.nv-btn svg {
+  flex: none;
+  width: 24px;
+  height: 24px;
 }
 
 /* ---------- Pratos: 2 por linha, o cartão inteiro é o botão de pedir ---------- */
@@ -1784,7 +1792,7 @@ button.nv-now-cell:active {
 
 .nv-rule.is-required {
   background: var(--nv-peach);
-  color: var(--nv-fire-text);
+  color: var(--nv-fire-deep);
 }
 
 .nv-opts-list {
@@ -1897,13 +1905,19 @@ button.nv-now-cell:active {
 
 .nv-text input::placeholder {
   color: var(--nv-muted);
-  opacity: 0.8;
+  opacity: 1;
 }
 
 .nv-text small {
   color: var(--nv-muted);
   font-size: 13px;
   text-align: right;
+}
+
+/* Passou do limite de letras: o contador fica vermelho antes de a pessoa tentar enviar. */
+.nv-text small.is-over {
+  color: var(--nv-alert);
+  font-weight: 700;
 }
 
 /* ---------- Botão pequeno, mas ainda com altura de dedo ---------- */
@@ -2185,4 +2199,335 @@ button.nv-now-cell:active {
   .nv-pick {
     font-size: 14px;
   }
+
+  /* A barra da sacola cabe com a bolinha de voz ao lado: "Ver sacola" e o total ficam numa linha cada. */
+  .nv-bag {
+    gap: 6px;
+    padding: 0 16px;
+    font-size: 15px;
+  }
+
+  .nv-bag strong {
+    font-size: 18px;
+    white-space: nowrap;
+  }
+}
+
+/* ---------- Acompanhar o pedido e pagar com Pix ---------- */
+
+.nv-track {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.nv-track + .nv-track {
+  padding-top: 24px;
+  border-top: 2px dashed var(--nv-line);
+}
+
+.nv-track-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nv-where {
+  margin: 0;
+  font: 700 26px/1.05 var(--nv-display);
+  letter-spacing: -0.01em;
+}
+
+.nv-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: 0;
+}
+
+/* Para onde vai o pedido (ou o que fazer na retirada): informa, então fica liso. */
+.nv-nowrap {
+  white-space: nowrap;
+}
+
+.nv-handling {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-peach);
+  font-size: 15px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* O andamento: um painel que informa (sombra macia, sem borda grossa). */
+.nv-status {
+  padding: 18px 16px 16px;
+  border-radius: var(--nv-r-lg);
+  background: #fff;
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-status.is-done {
+  background: var(--nv-green-soft);
+}
+
+.nv-status h2 {
+  margin: 0;
+  font: 700 28px/1.05 var(--nv-display);
+  letter-spacing: -0.01em;
+}
+
+.nv-status p {
+  margin: 6px 0 0;
+  color: var(--nv-muted);
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.nv-status p.nv-hint {
+  font-size: 14px;
+}
+
+.nv-steps {
+  display: grid;
+  grid-template-columns: repeat(var(--nv-steps), minmax(0, 1fr));
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-steps li {
+  position: relative;
+  padding-top: 34px;
+  color: var(--nv-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.nv-steps li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: inset 0 0 0 3px var(--nv-line);
+}
+
+.nv-steps li::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 100%;
+  height: 4px;
+  background: var(--nv-line);
+}
+
+.nv-steps li:last-child::after {
+  display: none;
+}
+
+.nv-steps li.is-done {
+  color: var(--nv-ink);
+}
+
+.nv-steps li.is-done::before {
+  background: var(--nv-green);
+  box-shadow: none;
+}
+
+.nv-steps li.is-done::after {
+  background: var(--nv-green);
+}
+
+.nv-steps li.is-current {
+  color: var(--nv-ink);
+}
+
+.nv-steps li.is-current::before {
+  background: var(--nv-fire);
+  box-shadow: 0 0 0 5px var(--nv-ring);
+}
+
+/* O código de entrega: o que a pessoa precisa ver de longe e ler em voz alta na porta. */
+.nv-dcode {
+  padding: 16px;
+  border-radius: var(--nv-r-lg);
+  background: #fff3cf;
+  text-align: center;
+}
+
+.nv-dcode h2 {
+  margin: 0;
+  font: 700 19px/1.15 var(--nv-display);
+}
+
+.nv-dcode-digits {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.nv-dcode-digit {
+  width: 56px;
+  height: 72px;
+  border-radius: var(--nv-r-md);
+  background: #fff;
+  box-shadow: var(--nv-panel-3d);
+  font: 700 42px/72px var(--nv-display);
+}
+
+.nv-dcode-hint {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+/* Pagamento recebido e agradecimento: informam, lisos. */
+.nv-paid,
+.nv-thanks {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-green-soft);
+  line-height: 1.35;
+}
+
+.nv-paid svg,
+.nv-thanks svg {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  color: var(--nv-green);
+}
+
+.nv-paid b {
+  display: block;
+  font-size: 17px;
+}
+
+.nv-thanks {
+  align-items: center;
+  font-weight: 700;
+}
+
+.nv-pix,
+.nv-rate {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--nv-r-lg);
+  background: #fff;
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-pix .nv-hint:empty {
+  display: none;
+}
+
+.nv-pix-steps {
+  margin: 0;
+  padding-left: 22px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.nv-pix-steps li + li {
+  margin-top: 4px;
+}
+
+.nv-text textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-peach);
+  box-shadow: inset 0 3px 6px rgba(11, 42, 111, 0.14), inset 0 -2px 0 #fff;
+  color: var(--nv-ink);
+  font: 500 17px/1.35 var(--nv-ui);
+  resize: vertical;
+}
+
+.nv-pix .nv-text textarea {
+  font: 500 13px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+  resize: none;
+}
+
+.nv-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  text-align: center;
+}
+
+.nv-qr img {
+  width: 200px;
+  height: 200px;
+  max-width: 100%;
+  padding: 8px;
+  border-radius: var(--nv-r-md);
+  background: #fff;
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-rate-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.nv-rate-group + .nv-rate-group {
+  margin-top: 10px;
+}
+
+.nv-rate-group legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font: 700 16px/1.2 var(--nv-ui);
+}
+
+.nv-picks.is-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.nv-picks.is-4 .nv-pick {
+  min-height: 56px;
+  padding: 6px 4px;
+  font-size: 14px;
+}
+
+@media (max-width: 380px) {
+  .nv-picks.is-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nv-dcode-digit {
+    width: 52px;
+  }
+}
+
+.nv-page-track .nv-error {
+  margin: 0;
 }

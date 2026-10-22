@@ -8,7 +8,7 @@ import type { KitchenOrder } from "../cozinha/kitchenLogic";
 import { hourOf, todayOf } from "../hoje/todayLogic";
 import { shopViewOf, type ShopView } from "../loja/shopLogic";
 import type { Job, Promo, Today } from "./types";
-import type { Product } from "../customer/types";
+import type { OrderView, Product } from "../customer/types";
 
 /**
  * O cardápio de EXEMPLO: restaurante, categorias e pratos no formato que o servidor manda, passando pela mesma conta
@@ -249,3 +249,62 @@ export const ACAI_PRODUCT: Product = {
 /** O que o servidor anuncia para um CEP de exemplo: entrega no centro, taxa e prazo. */
 export const QUOTE_EXAMPLE = { available: true, zone: "Centro", fee: 6, min_order: 15, eta_minutes: 35 } as const;
 export const QUOTE_NONE_EXAMPLE = { available: false, message: "Ainda não entregamos neste CEP." } as const;
+
+/**
+ * Um pedido de EXEMPLO, no formato que o servidor manda, em três momentos: `preparo` (retirada, Pix a pagar),
+ * `rua` (entrega a caminho, com o código de 4 números) e `pronto` (pronto e pago, pedindo a avaliação).
+ */
+export function orderExample(kind: "preparo" | "rua" | "pronto"): OrderView {
+  const items = [
+    { name: "Açaí no copo", quantity: 1, total: 24, options: [{ id: "o2", group: "Tamanho", name: "500 ml", delta_price: 5 }, { id: "e2", group: "Adicionais", name: "Granola extra", delta_price: 2 }], note: "Sem granola em cima" },
+    { name: "X-Burguer", quantity: 2, total: 36 },
+    { name: "Suco de caju", quantity: 1, total: 7 },
+  ];
+  if (kind === "rua") {
+    return {
+      id: "b7c9d2e1-0000",
+      customer_name: "Maria",
+      total_price: 73,
+      status: "saiu para entrega",
+      items,
+      payment_method: "dinheiro",
+      payment_status: "PENDING",
+      order_type: "entrega",
+      delivery_fee: 6,
+      delivery_zone: "Centro",
+      delivery_address: { street: "Rua das Flores", number: "120", neighborhood: "Centro", city: "Natal" },
+      customer_phone: "84999998888",
+      delivery_code: "4821",
+    } as unknown as OrderView;
+  }
+  return {
+    id: kind === "pronto" ? "c3d4e5f6-0000" : "a1b2c3d4-0000",
+    customer_name: "Maria",
+    total_price: 67,
+    status: kind === "pronto" ? "concluido" : "em preparo",
+    items,
+    payment_method: "pix",
+    payment_status: kind === "pronto" ? "PAID" : "PENDING",
+    order_type: "retirada",
+    delivery_fee: null,
+  } as unknown as OrderView;
+}
+
+/**
+ * O Pix de EXEMPLO. O código e o QR são de mentira (o QR é só um desenho); o de verdade vem do servidor, que usa a
+ * chave Pix cadastrada pelo restaurante.
+ */
+export function pixExample() {
+  const cells = Array.from({ length: 29 * 29 }, (_, i) => ((i * 7919 + (i >> 3) * 104729) % 5 < 2 ? 1 : 0));
+  const rects = cells
+    .map((on, i) => (on ? `<rect x="${(i % 29) * 6 + 6}" y="${Math.floor(i / 29) * 6 + 6}" width="6" height="6"/>` : ""))
+    .join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" fill="#fff"/><g fill="#111">${rects}</g></svg>`;
+  return {
+    payload:
+      "00020126580014BR.GOV.BCB.PIX0136exemplo-nao-e-uma-chave-de-verdade5204000053039865406067.005802BR5911ACAI DO JOAO6005NATAL62070503***6304ABCD",
+    qr_data_url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
+    receiver_name: "Açaí do João",
+    amount: "67.00",
+  };
+}

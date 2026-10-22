@@ -140,8 +140,8 @@ estendido não se mexe sozinho: o cartão é que afunda (se o botão se mexesse,
 - O botão de menu **deixou de aparecer** nas telas que não têm para onde levá-lo (antes aparecia e não fazia nada).
 
 **Ainda sem destino, porque a tela não existe** (aparecem no desenho e avisam quem usa a tela por `onMenu`, `onPromo`): o
-acompanhamento do pedido, o menu geral e a bolinha de voz. As escolhas do prato e a sacola passaram a existir na rodada
-seguinte (abaixo).
+menu geral e a bolinha de voz. As escolhas do prato, a sacola e o acompanhamento do pedido passaram a existir nas rodadas
+seguintes (abaixo).
 
 **Como foi conferido:** `tests/novo/toque.test.mjs` (14 nesta rodada; 21 com a sexta) lê o CSS e as telas e garante a regra (borda grossa só no que toca,
 afundar no toque, toque estendido por cima, nada de botão fantasma). Em 320, 360, 390 e 480 px a conferência mede sem
@@ -182,21 +182,65 @@ Pix; mantém a sacola; repete o que o servidor diz a cada minuto e ao voltar par
 tela avisa uma vez), `ShopScreen.tsx` (cardápio, agora só desenha), `ChoicesScreen.tsx` (a folha como diálogo),
 `BagScreen.tsx` (nome, endereço, telefone, pagamento; taxa do CEP; **envia uma vez só**: dois toques seguidos mandam um
 pedido; confere antes; só guarda nome, endereço e pedido neste aparelho depois que o servidor aceitou) e `OrderFlow.tsx`
-(cardápio → escolhas → sacola → enviado). **Ainda sem destino:** o acompanhamento do pedido e o código Pix depois de enviar;
-por enquanto o fluxo termina em "Pedido enviado ao restaurante." e avisa quem o monta por `onSent`. Esse é o próximo passo.
+(cardápio → escolhas → sacola → acompanhamento, ver a sétima rodada).
 
 **Como foi conferido:** 41 testes de conta (18 + 23), `tests/novo/toque.test.mjs` (regras do desenho, 21 testes) e
 `tests/novo/fluxo.test.mjs` (9 testes: ordem do envio, nada de preço, nada importado do antigo, folha como diálogo). Em 320,
 360, 390 e 480 px: sem rolagem lateral, nenhum botão com menos de 44 px e o toque cai onde deve. Para ver:
 `preview-novo.html#/escolhas`, `#/escolhas-erro`, `#/sacola` e `#/entrega` (tudo funciona na página, com dados de exemplo).
 
+## Sétima rodada: acompanhar o pedido e pagar com Pix (22/10/2026)
+
+Pedido do GD, 22/10, 09:56: "Faça como especialista e ajuste o que for necessário". Primeiro, a revisão do que já estava
+feito; depois, a peça que faltava para fechar o caminho do cliente.
+
+**Revisão, o que foi ajustado:**
+- Contraste: o texto de exemplo dos campos (placeholder) estava em 3,45 : 1 e a etiqueta "obrigatório" em 4,27 : 1; ambos
+  agora passam de 4,5 : 1 (um teste calcula a razão de contraste de verdade).
+- O contador de extras ("2 de 3") fica vermelho ao passar do limite.
+- Escolha única agora funciona com as setas do teclado (`novo/keys.ts`), como em qualquer grupo de opções.
+- No 320 px: o ícone do botão não estoura, "Ver sacola" não quebra de linha e o telefone não se parte no meio.
+
+**A tela de acompanhamento** (`novo/Tracking.tsx`, uma "comanda" que só informa, lisa, com o que toca em relevo):
+- Cabeça: "Entrega" ou "Retirada" (ou "Mesa 4"), código curto do pedido e o nome de quem pediu.
+- Para onde vai: "Entrega em: …" (endereço e telefone) ou "Retirada no local.". O telefone aparece no formato (84) 99999-8888.
+- Situação em frase grande ("Em preparo", "Saiu para entrega", "Pronto!") e uma linha de passos com o atual em laranja.
+  Quem usa leitor de tela ouve a mudança sozinha (`aria-live`).
+- **Código de entrega** (quando o servidor manda): quatro números grandes, e a frase dizendo para passar ao entregador
+  só quando ele chegar. O leitor de tela lê o número inteiro, não um dígito solto.
+- **Pix:** quando o pagamento é Pix, o bloco do Pix vem **antes** da comanda, porque é o que o cliente precisa fazer
+  agora: valor, para quem vai, "Copiar código Pix" (só liga quando o código chegou do servidor), QR para ler com outro
+  aparelho e dois passos escritos. Se copiar não for permitido pelo aparelho, o código aparece selecionado para copiar à
+  mão. Se o restaurante não tem Pix cadastrado ou o servidor falha, a tela diz isso em frase inteira.
+- **Avaliação** quando o pedido termina: comida e atendimento (quatro opções cada: ótima/ótimo, boa/bom, regular, ruim) e comentário de até 500 letras, enviada
+  **uma vez por visita**, sem nota inventada. O pedido entregue sai da lista com "Fechar este pedido".
+- Sem internet: a tela avisa que mostra o último estado conhecido e tenta de novo sozinha.
+
+**De onde vem cada coisa (nada inventado):** situação, código de entrega, taxa, total, forma de pagamento, chave e código
+Pix vêm do servidor. A tela só traduz (`loja/trackingLogic.ts`, 21 testes, usando as mesmas funções de texto e de pagamento
+da tela antiga). Consulta a cada 5 segundos, pausa com a aba escondida; 401 ou 404 significa "este pedido não existe mais"
+e a tela para de perguntar e tira o pedido da lista.
+
+**Ligação ao servidor** (`loja/TrackingScreen.tsx`, ainda fora do aplicativo público): um bloco por pedido guardado neste
+aparelho (`orderMemory`), com consulta, Pix e avaliação. `OrderFlow.tsx` agora termina **no acompanhamento**, não mais em
+"Pedido enviado"; ao reabrir o cardápio, quem já tem pedido em andamento cai direto nele. O cardápio ganhou o botão
+"Acompanhar o seu pedido" (com o número, quando há mais de um) e ele só aparece quando leva a algum lugar.
+
+**Escolhas que o GD pode mudar:** o roteiro guiado "Me ajude" do Pix da tela antiga **não foi recriado** (no lugar entram os
+dois passos escritos); a bolinha de voz continua sendo só desenho.
+
+**Como foi conferido:** `tests/novo/trackingLogic.test.mjs` (21), `toque.test.mjs` (35, com a regra do 3D, contraste e
+telefone sem quebra) e `fluxo.test.mjs` (14, com consulta, Pix, avaliação uma vez só e o fluxo abrindo no acompanhamento).
+Em 320, 360, 390 e 480 px, nas 12 telas de conferência: sem rolagem lateral, nenhum botão com menos de 44 px. Para ver:
+`preview-novo.html#/loja-pedido`, `#/pedido`, `#/pedido-rua` e `#/pedido-pronto`. **Ainda sem tela:** menu geral, mesa
+(chamar garçom, conta) e a bolinha de voz que fala.
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
 - Tudo mora em `frontend/src/novo/` e **não é importado pelo aplicativo**: o `index.html` e o `main.tsx` não mudam.
   Um teste (`tests/novo`) garante que o visual novo não depende do antigo e que só a página de conferência usa dados
   de exemplo.
 - Para ver: `cd frontend && npx vite build --config vite.preview-novo.config.ts --outDir /tmp/novo` e abrir
-  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola` ou `#/entrega`
+  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua` ou `#/pedido-pronto`
   (a pasta pública vai junto, por causa das fontes).
 - Cada tela ganha um PR próprio: ligada aos dados de verdade (por props), com teste, e a tela antiga correspondente
   sai no mesmo PR. **Nada disso vira o que o público vê sem o "pode" do GD.**

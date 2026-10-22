@@ -25,6 +25,9 @@ type Props = {
   onLess?: (id: string) => void;
   onChoose?: (id: string) => void;
   onBag?: () => void;
+  /** Pedidos que este aparelho já enviou: com pelo menos um, aparece "Acompanhar o seu pedido". */
+  ordersCount?: number;
+  onTrack?: () => void;
   /** Toque na promoção (no cartão inteiro) e em "Ver todas". Sem promoção de verdade no servidor, a seção nem aparece. */
   onPromo?: () => void;
   onPromos?: () => void;
@@ -66,6 +69,8 @@ export default function ShopMenu({
   onLess,
   onChoose,
   onBag,
+  ordersCount = 0,
+  onTrack,
   onPromo,
   onPromos,
   onMenu,
@@ -96,6 +101,13 @@ export default function ShopMenu({
             {text}
           </p>
         ))}
+
+        {ordersCount > 0 && onTrack ? (
+          <button type="button" className="nv-btn is-ghost is-block" onClick={onTrack}>
+            <NvIcon name="receipt" />
+            Acompanhar o seu pedido{ordersCount > 1 ? ` (${ordersCount})` : ""}
+          </button>
+        ) : null}
 
         {showSearch ? (
           <label className="nv-search">

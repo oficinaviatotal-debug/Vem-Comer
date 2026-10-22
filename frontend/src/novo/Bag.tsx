@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type InputHTMLAttributes } from "react";
 import "./novo.css";
 import NvIcon, { type NvIconName } from "./Icons";
+import { onRadioKeys, radioTab } from "./keys";
 import { money } from "./format";
 import type { Bag, BagDelivery } from "./types";
 
@@ -46,12 +47,14 @@ function Picks({ label, options, onPick }: { label: string; options: Bag["modes"
     <section className="nv-block" aria-label={label}>
       <h2 className="nv-h2">{label}</h2>
       <div className={`nv-picks${options.length >= 3 ? " is-3" : ""}`} role="radiogroup" aria-label={label}>
-        {options.map((option) => (
+        {options.map((option, index) => (
           <button
             key={option.id}
             type="button"
             role="radio"
             aria-checked={option.on}
+            tabIndex={radioTab(index, option.on, options.some((entry) => entry.on))}
+            onKeyDown={onRadioKeys}
             className={`nv-pick${option.on ? " is-on" : ""}`}
             onClick={() => onPick?.(option.id)}
           >

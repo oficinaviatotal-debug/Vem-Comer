@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { TopBar } from "../novo/parts";
 import { addConfigured, lineKey, replaceLine, type CartLine } from "../customer/cart";
+import { orderMemory, type RememberedOrder } from "../customer/orderMemory";
 import type { Company, Product } from "../customer/types";
 import BagScreen, { type SentOrder } from "./BagScreen";
 import ChoicesScreen, { initialOf } from "./ChoicesScreen";
 import ShopScreen from "./ShopScreen";
+import TrackingScreen from "./TrackingScreen";
 import type { ChoicesPick } from "./choicesLogic";
 import { useShop } from "./useShop";
 
@@ -13,22 +14,24 @@ type Props = {
   /** Quem entrou pelo QR da mesa traz o código da mesa; senão null. */
   tableId: string | null;
   jobsHref?: string | null;
-  /** O servidor aceitou o pedido. Quem monta o app leva a pessoa ao acompanhamento (e ao Pix, se for o caso). */
+  /** O servidor aceitou o pedido (a tela já levou a pessoa ao acompanhamento). */
   onSent?: (order: SentOrder) => void;
 };
 
-type Screen = "menu" | "bag" | "sent";
+type Screen = "menu" | "bag" | "tracking";
 
 /** O prato aberto nas escolhas; com `editKey`, é uma linha da sacola sendo mudada. */
 type Picking = { product: Product; editKey?: string; line?: CartLine };
 
 /**
- * O caminho do cliente no visual novo: cardápio, escolhas do prato, sacola e envio. Ainda não está ligado ao aplicativo
- * público: o acompanhamento do pedido e o Pix são as próximas telas, e o fluxo antigo continua valendo até lá.
+ * O caminho do cliente no visual novo: cardápio, escolhas do prato, sacola, envio e acompanhamento (com o Pix). Ainda
+ * não está ligado ao aplicativo público: o fluxo antigo continua valendo até o GD dizer "pode". Quem já pediu neste
+ * aparelho (e ainda tem o pedido guardado) abre direto no acompanhamento, como sempre foi.
  */
 export default function OrderFlow({ company, tableId, jobsHref = null, onSent }: Props) {
   const shop = useShop(company, tableId);
-  const [screen, setScreen] = useState<Screen>("menu");
+  const [orders, setOrders] = useState<RememberedOrder[]>(() => orderMemory.list(company.slug, tableId));
+  const [screen, setScreen] = useState<Screen>(() => (orders.length > 0 ? "tracking" : "menu"));
   const [picking, setPicking] = useState<Picking | null>(null);
 
   const goTo = (next: Screen) => {
@@ -43,10 +46,25 @@ export default function OrderFlow({ company, tableId, jobsHref = null, onSent }:
     setPicking(null);
   };
 
+  // O pedido que o servidor não conhece mais, ou que a pessoa fechou: o aparelho o esquece; sem pedidos, volta ao cardápio.
+  const forget = (orderId: string) => {
+    const next = orderMemory.remove(company.slug, orderId);
+    setOrders(next);
+    if (next.length === 0) goTo("menu");
+  };
+
   return (
     <>
       {screen === "menu" ? (
-        <ShopScreen shop={shop} tableId={tableId} jobsHref={jobsHref} onChoose={(product) => setPicking({ product })} onBag={() => goTo("bag")} />
+        <ShopScreen
+          shop={shop}
+          tableId={tableId}
+          jobsHref={jobsHref}
+          onChoose={(product) => setPicking({ product })}
+          onBag={() => goTo("bag")}
+          ordersCount={orders.length}
+          onTrack={() => goTo("tracking")}
+        />
       ) : null}
       {screen === "bag" ? (
         <BagScreen
@@ -59,23 +77,14 @@ export default function OrderFlow({ company, tableId, jobsHref = null, onSent }:
             if (product) setPicking({ product, editKey: lineKey(line), line });
           }}
           onSent={(order) => {
-            goTo("sent");
+            setOrders(order.orders);
+            goTo("tracking");
             onSent?.(order);
           }}
         />
       ) : null}
-      {screen === "sent" ? (
-        <div className="nv-root">
-          <main className="nv-screen">
-            <TopBar title={shop.live.name} />
-            <p className="nv-notice" role="status">
-              Pedido enviado ao restaurante.
-            </p>
-            <button type="button" className="nv-btn is-green is-block" onClick={() => goTo("menu")}>
-              Voltar ao cardápio
-            </button>
-          </main>
-        </div>
+      {screen === "tracking" ? (
+        <TrackingScreen company={shop.live} tableNumber={shop.tableNumber} orders={orders} onBack={() => goTo("menu")} onForget={forget} />
       ) : null}
       {picking ? (
         <ChoicesScreen
