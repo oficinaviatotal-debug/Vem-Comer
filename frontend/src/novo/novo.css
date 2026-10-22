@@ -1,0 +1,1124 @@
+/*
+ * Visual novo do Vem (feito do zero, em 21/10/2026, a partir da prancha "Templates principais" do GD).
+ * Tudo aqui usa o prefixo nv- e não depende de styles.css, ui.css nem admin.css: o antigo sai de cena tela por tela.
+ *
+ * Linguagem da prancha: fundo branco, cartões bem arredondados, verde-floresta e laranja-brasa, títulos grossos e
+ * redondos, azulejos pêssego para categorias, promoção em vermelho-brasa com botão amarelo.
+ * Um só elemento de personalidade: a bolinha de voz (nv-orb), presente em toda tela ("voz primeiro").
+ */
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/fonts/BricolageGrotesque-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("/fonts/InstrumentSans-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("/fonts/InstrumentSans-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+.nv-root {
+  /* Cor (texto sobre fundo claro passa de 4,5:1) */
+  --nv-ink: #1b4332;
+  --nv-green: #2e7032;
+  --nv-green-soft: #e6f1e3;
+  --nv-fire: #ff6f00;
+  --nv-fire-text: #c74700;
+  --nv-sun: #ffc83a;
+  --nv-paper: #ffffff;
+  --nv-peach: #fdeedf;
+  --nv-muted: #566a5f;
+  --nv-line: rgba(27, 67, 50, 0.12);
+  --nv-ember-a: #7c1d0c;
+  --nv-ember-b: #d2470f;
+  --nv-alert: #b42318;
+  --nv-alert-soft: #fde8e4;
+  --nv-brand-comer: #c74700;
+  --nv-orb-hi: #ff9a3d;
+  --nv-orb-lo: #e05a00;
+  --nv-ring: rgba(255, 111, 0, 0.35);
+  --nv-glow: rgba(255, 111, 0, 0.28);
+
+  /* Forma */
+  --nv-r-sm: 12px;
+  --nv-r-md: 18px;
+  --nv-r-lg: 26px;
+  --nv-shadow: 0 1px 2px rgba(27, 67, 50, 0.06), 0 10px 26px rgba(27, 67, 50, 0.09);
+  --nv-shadow-lift: 0 2px 4px rgba(27, 67, 50, 0.1), 0 16px 34px var(--nv-glow);
+
+  /* Letra */
+  --nv-display: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+  --nv-ui: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  margin: 0 auto;
+  max-width: 480px;
+  min-height: 100vh;
+  background: var(--nv-paper);
+  color: var(--nv-ink);
+  font-family: var(--nv-ui);
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nv-root *,
+.nv-root *::before,
+.nv-root *::after {
+  box-sizing: border-box;
+}
+
+/* :where() zera o peso da regra: cada peça (nv-btn, nv-bag, nv-orb...) decide a própria cor e o próprio peso. */
+.nv-root :where(button) {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.nv-root :focus-visible {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 2px;
+}
+
+.nv-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 14px 16px 132px;
+}
+
+/* ---------- Topo ---------- */
+
+.nv-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nv-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, #7c3aed, #4c1d95);
+  font-size: 28px;
+  box-shadow: var(--nv-shadow);
+}
+
+.nv-top-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-name {
+  margin: 0;
+  font: 700 24px/1.05 var(--nv-display);
+  letter-spacing: -0.01em;
+}
+
+.nv-sub {
+  margin: 2px 0 0;
+  color: var(--nv-muted);
+  font-size: 14px;
+}
+
+.nv-icon-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--nv-ink);
+}
+
+.nv-icon-btn svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* ---------- Informações em pílulas ---------- */
+
+.nv-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nv-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.nv-fact svg {
+  width: 17px;
+  height: 17px;
+  color: var(--nv-green);
+}
+
+.nv-fact.is-open {
+  background: var(--nv-green);
+  color: #fff;
+}
+
+.nv-fact.is-open svg {
+  color: #fff;
+}
+
+/* ---------- Busca ---------- */
+
+.nv-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 18px;
+  border: 1.5px solid var(--nv-line);
+  border-radius: 999px;
+  background: var(--nv-paper);
+  box-shadow: var(--nv-shadow);
+  color: var(--nv-muted);
+}
+
+.nv-search svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+/* ---------- Categorias: azulejos pêssego ---------- */
+
+.nv-cats {
+  display: flex;
+  gap: 12px;
+  margin: 0 -16px;
+  padding: 2px 16px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nv-cat {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 78px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nv-cat-tile {
+  display: grid;
+  place-items: center;
+  width: 78px;
+  height: 78px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-peach);
+  font-size: 38px;
+  line-height: 1;
+}
+
+.nv-cat.is-on .nv-cat-tile {
+  background: var(--nv-fire);
+  box-shadow: var(--nv-shadow-lift);
+}
+
+/* ---------- Títulos de seção ---------- */
+
+.nv-h2-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: -6px;
+}
+
+.nv-h2 {
+  margin: 0;
+  font: 700 22px/1.1 var(--nv-display);
+  letter-spacing: -0.01em;
+}
+
+.nv-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--nv-fire-text);
+  font-weight: 700;
+}
+
+/* ---------- Promoção ---------- */
+
+.nv-promo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 188px;
+  padding: 22px 20px;
+  overflow: hidden;
+  border-radius: var(--nv-r-lg);
+  background:
+    radial-gradient(circle at 82% 55%, rgba(255, 200, 58, 0.55), transparent 46%),
+    linear-gradient(120deg, var(--nv-ember-a), var(--nv-ember-b));
+  color: #fff;
+  box-shadow: var(--nv-shadow);
+}
+
+.nv-promo h3 {
+  margin: 0;
+  max-width: 62%;
+  font: 700 28px/1.02 var(--nv-display);
+}
+
+.nv-promo-price {
+  margin: 6px 0 0;
+  color: var(--nv-sun);
+  font: 700 30px/1 var(--nv-display);
+}
+
+.nv-promo-note {
+  margin: 4px 0 0;
+  max-width: 60%;
+  font-size: 14px;
+  opacity: 0.92;
+}
+
+.nv-promo-art {
+  position: absolute;
+  right: -6px;
+  top: 14px;
+  font-size: 104px;
+  line-height: 1;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.35));
+  transform: rotate(-8deg);
+}
+
+.nv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--nv-sun);
+  color: var(--nv-ink);
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.nv-promo .nv-btn {
+  align-self: flex-start;
+}
+
+.nv-btn.is-green {
+  background: var(--nv-green);
+  color: #fff;
+}
+
+.nv-btn.is-fire {
+  background: var(--nv-fire);
+  color: #1b1200;
+}
+
+.nv-btn.is-ghost {
+  background: var(--nv-paper);
+  border: 2px solid var(--nv-line);
+}
+
+.nv-btn.is-block {
+  width: 100%;
+}
+
+/* ---------- Pratos: 3 por linha, foto grande ---------- */
+
+.nv-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 10px;
+}
+
+.nv-dish {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+.nv-photo {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--nv-r-md);
+  background: radial-gradient(circle at 35% 30%, #fff3dc, #f7d9b1);
+  font-size: 46px;
+}
+
+.nv-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nv-add {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--nv-fire);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(199, 71, 0, 0.45);
+}
+
+.nv-add svg {
+  width: 20px;
+  height: 20px;
+}
+
+.nv-dish-name {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.nv-dish-price {
+  color: var(--nv-green);
+  font: 700 16px/1 var(--nv-display);
+}
+
+/* ---------- Barra de baixo e bolinha de voz ---------- */
+
+.nv-dock {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 480px);
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--nv-line);
+}
+
+.nv-bag {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 64px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--nv-green);
+  color: #fff;
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.nv-bag small {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+.nv-bag strong {
+  font: 700 22px/1 var(--nv-display);
+}
+
+.nv-orb {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, var(--nv-orb-hi), var(--nv-fire) 55%, var(--nv-orb-lo));
+  color: #fff;
+  box-shadow: var(--nv-shadow-lift);
+}
+
+.nv-orb svg {
+  width: 30px;
+  height: 30px;
+}
+
+.nv-orb::before,
+.nv-orb::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border: 2px solid var(--nv-ring);
+  border-radius: 50%;
+  animation: nv-pulse 2.8s ease-out infinite;
+}
+
+.nv-orb::after {
+  animation-delay: 1.4s;
+}
+
+@keyframes nv-pulse {
+  from {
+    transform: scale(0.88);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.32);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-orb::before,
+  .nv-orb::after {
+    animation: none;
+  }
+}
+
+/* Só a bolinha de voz, sem faixa: nas telas de trabalho (Hoje, Cozinha) a faixa só roubaria espaço. */
+.nv-dock.is-float {
+  justify-content: flex-end;
+  background: none;
+  border: 0;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+.nv-dock.is-float > * {
+  pointer-events: auto;
+}
+
+/* ---------- Balãozinho cruzado (Vem Trabalhar) ---------- */
+
+.nv-cross {
+  position: fixed;
+  left: 50%;
+  bottom: 96px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(calc(100% - 32px), 448px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.nv-cross-bubble {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 4px 0 14px;
+  border-radius: 999px;
+  background: #0f4bd1;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: var(--nv-shadow);
+}
+
+.nv-cross-bubble svg {
+  width: 18px;
+  height: 18px;
+}
+
+.nv-cross-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.nv-cross-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---------- Hoje (dono) ---------- */
+
+.nv-hello {
+  margin: 0;
+  font: 700 30px/1.05 var(--nv-display);
+  letter-spacing: -0.015em;
+}
+
+.nv-date {
+  margin: 4px 0 0;
+  color: var(--nv-muted);
+}
+
+.nv-now {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 20px 20px;
+  border-radius: var(--nv-r-lg);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(130, 205, 150, 0.28), transparent 46%),
+    linear-gradient(160deg, #1f5039, #153628);
+  color: #fff;
+  box-shadow: var(--nv-shadow);
+}
+
+.nv-now-big {
+  margin: 0;
+  font: 700 46px/0.95 var(--nv-display);
+  letter-spacing: -0.02em;
+}
+
+.nv-now-big span {
+  display: block;
+  margin-top: 6px;
+  font: 400 17px/1.25 var(--nv-ui);
+  letter-spacing: 0;
+  opacity: 0.92;
+}
+
+.nv-now-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.nv-now-cell {
+  padding: 10px 12px;
+  border-radius: var(--nv-r-sm);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.nv-now-cell b {
+  display: block;
+  font: 700 26px/1 var(--nv-display);
+}
+
+.nv-now-cell span {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.2;
+  opacity: 0.92;
+}
+
+.nv-todo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-todo li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px 14px 16px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-paper);
+  border: 1.5px solid var(--nv-line);
+  box-shadow: var(--nv-shadow);
+}
+
+.nv-todo li.is-call {
+  border-color: transparent;
+  background: var(--nv-sun);
+}
+
+.nv-todo-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-todo-text strong {
+  display: block;
+  font: 700 17px/1.2 var(--nv-display);
+}
+
+.nv-todo-text span {
+  font-size: 14px;
+  color: var(--nv-muted);
+}
+
+.nv-todo li.is-call .nv-todo-text span {
+  color: var(--nv-ink);
+}
+
+.nv-todo .nv-btn {
+  min-height: 48px;
+  padding: 0 18px;
+  font-size: 16px;
+}
+
+.nv-sales {
+  padding: 18px 18px 14px;
+  border-radius: var(--nv-r-lg);
+  background: var(--nv-peach);
+}
+
+.nv-sales-total {
+  margin: 0;
+  font: 700 36px/1 var(--nv-display);
+  letter-spacing: -0.02em;
+}
+
+.nv-sales-note {
+  margin: 6px 0 14px;
+  color: var(--nv-muted);
+  font-size: 15px;
+}
+
+.nv-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 64px;
+}
+
+.nv-bars i {
+  flex: 1;
+  min-height: 4px;
+  border-radius: 6px 6px 3px 3px;
+  background: rgba(46, 112, 50, 0.32);
+}
+
+.nv-bars i.is-now {
+  background: var(--nv-fire);
+}
+
+.nv-bars-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  color: var(--nv-muted);
+  font-size: 12px;
+}
+
+.nv-quick {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.nv-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 0 16px;
+  border: 1.5px solid var(--nv-line);
+  border-radius: var(--nv-r-md);
+  background: var(--nv-paper);
+  box-shadow: var(--nv-shadow);
+  font: 700 17px/1.1 var(--nv-display);
+  text-align: left;
+}
+
+.nv-quick-btn svg {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  color: var(--nv-fire-text);
+}
+
+/* ---------- Cozinha ---------- */
+
+.nv-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+}
+
+.nv-tab {
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-weight: 700;
+}
+
+.nv-tab b {
+  margin-left: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(27, 67, 50, 0.12);
+}
+
+.nv-tab.is-on {
+  background: var(--nv-ink);
+  color: #fff;
+}
+
+.nv-tab.is-on b {
+  background: var(--nv-fire);
+  color: #1b1200;
+}
+
+.nv-tickets {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A comanda: ficha branca com a ponta serrilhada embaixo, como o papel que já existe na cozinha. */
+.nv-ticket {
+  position: relative;
+  padding: 16px 16px 24px;
+  border-radius: var(--nv-r-md) var(--nv-r-md) 0 0;
+  background: var(--nv-paper);
+  border: 1.5px solid var(--nv-line);
+  border-bottom: 0;
+  box-shadow: var(--nv-shadow);
+  --nv-tape: var(--nv-green);
+}
+
+.nv-ticket::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 6px;
+  border-radius: var(--nv-r-md) var(--nv-r-md) 0 0;
+  background: var(--nv-tape);
+}
+
+.nv-ticket::after {
+  content: "";
+  position: absolute;
+  left: -1.5px;
+  right: -1.5px;
+  bottom: -10px;
+  height: 10px;
+  background:
+    linear-gradient(135deg, var(--nv-paper) 50%, transparent 50%) 0 0 / 14px 10px repeat-x,
+    linear-gradient(225deg, var(--nv-paper) 50%, transparent 50%) 0 0 / 14px 10px repeat-x;
+  filter: drop-shadow(0 2px 1px rgba(27, 67, 50, 0.14));
+}
+
+.nv-ticket.is-late {
+  --nv-tape: var(--nv-alert);
+}
+
+.nv-ticket.is-warn {
+  --nv-tape: var(--nv-sun);
+}
+
+.nv-ticket-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nv-ticket-num {
+  margin: 0;
+  font: 700 30px/1 var(--nv-display);
+}
+
+.nv-ticket-where {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nv-wait {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  font-weight: 700;
+}
+
+.nv-wait svg {
+  width: 16px;
+  height: 16px;
+}
+
+.nv-ticket.is-warn .nv-wait {
+  background: var(--nv-sun);
+}
+
+.nv-ticket.is-late .nv-wait {
+  background: var(--nv-alert);
+  color: #fff;
+}
+
+.nv-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 18px;
+}
+
+.nv-lines b {
+  display: inline-block;
+  min-width: 34px;
+  color: var(--nv-fire-text);
+  font: 700 20px/1 var(--nv-display);
+}
+
+.nv-lines small {
+  display: block;
+  margin-left: 34px;
+  color: var(--nv-muted);
+  font-size: 14px;
+}
+
+.nv-note {
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-alert-soft);
+  color: var(--nv-alert);
+  font-weight: 700;
+}
+
+.nv-ticket .nv-btn {
+  margin-top: 14px;
+  min-height: 60px;
+  font-size: 19px;
+}
+
+/* ---------- Tema do Vem Trabalhar: a mesma casa, em azul ---------- */
+
+.nv-work {
+  --nv-ink: #0b2a6f;
+  --nv-green: #0f4bd1;
+  --nv-green-soft: #e6eeff;
+  --nv-fire: #1f63ff;
+  --nv-fire-text: #0f4bd1;
+  --nv-peach: #eaf1ff;
+  --nv-muted: #4b5f86;
+  --nv-line: rgba(11, 42, 111, 0.13);
+  --nv-orb-hi: #7aa9ff;
+  --nv-orb-lo: #0b3fb8;
+  --nv-ring: rgba(31, 99, 255, 0.35);
+  --nv-glow: rgba(31, 99, 255, 0.3);
+  --nv-shadow: 0 1px 2px rgba(11, 42, 111, 0.07), 0 10px 26px rgba(11, 42, 111, 0.1);
+}
+
+.nv-work .nv-btn.is-fire {
+  color: #fff;
+}
+
+.nv-tabs.is-two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.nv-find {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--nv-r-lg);
+  background: var(--nv-paper);
+  border: 1.5px solid var(--nv-line);
+  box-shadow: var(--nv-shadow);
+}
+
+.nv-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 0 16px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-peach);
+  color: var(--nv-muted);
+}
+
+.nv-field svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  color: var(--nv-green);
+}
+
+.nv-cat-tile svg {
+  width: 36px;
+  height: 36px;
+  color: var(--nv-green);
+}
+
+.nv-jobs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-job {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 4px 14px;
+  padding: 16px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-paper);
+  border: 1.5px solid var(--nv-line);
+  box-shadow: var(--nv-shadow);
+}
+
+.nv-job-badge {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-green);
+  color: #fff;
+  font: 700 24px/1 var(--nv-display);
+}
+
+.nv-job h3 {
+  margin: 0;
+  font: 700 19px/1.15 var(--nv-display);
+}
+
+.nv-job-company {
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 15px;
+}
+
+.nv-job-chips {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.nv-job-chips span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.nv-job-chips svg {
+  width: 15px;
+  height: 15px;
+  color: var(--nv-green);
+}
+
+.nv-job-foot {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+  color: var(--nv-muted);
+  font-size: 14px;
+}
+
+.nv-job-foot .nv-btn {
+  min-height: 48px;
+  padding: 0 20px;
+  font-size: 16px;
+}
+
+.nv-cross-bubble.is-food {
+  background: var(--nv-brand-comer);
+}
+
+/* Celular bem pequeno (320 px): as etapas da cozinha cabem sem rolar de lado. */
+@media (max-width: 340px) {
+  .nv-tab {
+    font-size: 14px;
+  }
+
+  .nv-tab b {
+    margin-left: 2px;
+    padding: 1px 6px;
+  }
+}
