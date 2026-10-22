@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import ChoicesSheet from "../novo/Choices";
 import type { CartLine } from "../customer/cart";
 import { groupsOf, selectionFromChosen, type Selection } from "../customer/options";
 import type { Product } from "../customer/types";
 import { mediaUrl } from "../service/api";
+import { useSheetBehavior } from "./useSheetBehavior";
 import { choicesViewOf, confirmChoices, nextQuantity, pressOption, type ChoicesPick } from "./choicesLogic";
 
 type Props = {
@@ -13,51 +14,6 @@ type Props = {
   onConfirm: (pick: ChoicesPick) => void;
   onClose: () => void;
 };
-
-const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-/**
- * O que uma folha aberta precisa para ser de verdade um diálogo: a tela de trás não rola, o Esc fecha, o foco entra
- * na folha e volta para onde estava, e o Tab não sai dela.
- */
-function useSheetBehavior(onClose: () => void) {
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-  useEffect(() => {
-    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.getElementById("nv-sheet-title")?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeRef.current();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const sheet = document.querySelector<HTMLElement>(".nv-sheet");
-      if (!sheet) return;
-      const items = [...sheet.querySelectorAll<HTMLElement>(FOCUSABLE)];
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      const active = document.activeElement;
-      if (event.shiftKey && (active === first || !sheet.contains(active))) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && (active === last || !sheet.contains(active))) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = overflow;
-      before?.focus?.();
-    };
-  }, []);
-}
 
 /** Rola até o que falta (ou foca a observação) para a pessoa ver o aviso em vermelho. */
 function showProblem(groupId: string | null) {

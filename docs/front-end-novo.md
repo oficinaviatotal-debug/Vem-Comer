@@ -140,8 +140,8 @@ estendido não se mexe sozinho: o cartão é que afunda (se o botão se mexesse,
 - O botão de menu **deixou de aparecer** nas telas que não têm para onde levá-lo (antes aparecia e não fazia nada).
 
 **Ainda sem destino, porque a tela não existe** (aparecem no desenho e avisam quem usa a tela por `onMenu`, `onPromo`): o
-menu geral e a bolinha de voz. As escolhas do prato, a sacola, o acompanhamento do pedido e a mesa passaram a existir nas
-rodadas seguintes (abaixo).
+menu geral e a bolinha de voz. As escolhas do prato, a sacola, o acompanhamento do pedido, a mesa e o menu geral passaram a
+existir nas rodadas seguintes (abaixo).
 
 **Como foi conferido:** `tests/novo/toque.test.mjs` (14 nesta rodada; 21 com a sexta) lê o CSS e as telas e garante a regra (borda grossa só no que toca,
 afundar no toque, toque estendido por cima, nada de botão fantasma). Em 320, 360, 390 e 480 px a conferência mede sem
@@ -272,14 +272,48 @@ cardápio ganhou o botão **"Mesa 4: chamar o garçom"** para voltar à mesa.
 de tela e 320 px) e `fluxo.test.mjs` (16). Em 320, 360, 390 e 480 px, nas 15 telas de conferência: sem rolagem lateral, nenhum
 botão com menos de 44 px. No navegador: tocar vira "Chamado", o segundo toque não muda nada, a confirmação some em 6 s,
 movimento reduzido sem animação, teclado com Tab e Enter. Para ver: `preview-novo.html#/mesa`, `#/mesa-chamada` e `#/loja-mesa`.
-**Ainda sem tela:** menu geral e a bolinha de voz que fala; o painel da mesa do dono (o que chega ao garçom) continua o antigo.
+**Ainda sem tela:** menu geral (veio na nona rodada) e a bolinha de voz que fala; o painel da mesa do dono (o que chega ao garçom)
+continua o antigo.
+## Nona rodada: o menu geral de quem trabalha no restaurante (22/10/2026)
+
+O GD deixou a escolha da sequência comigo ("faça conforme melhor evolução", 22/10, 11:01). Escolhi o menu geral primeiro,
+porque sem ele nenhuma tela nova pode trocar a antiga e o "Hoje" tem atalhos sem destino. A ordem que segue: mesas no painel do
+dono (atender quem chamou o garçom), caixa e entrega, cadastro do cardápio por voz e foto com a logomarca, a bolinha de voz que
+fala (depende da chave de IA, que só o GD coloca pelo script no servidor) e o Vem Trabalhar. Nada vai ao ar sem o "pode".
+
+**A tela** (`novo/MainMenu.tsx`): abre do lado do botão de menu, por cima da tela (dentro da coluna de 480 px, mesmo numa janela
+larga). Em cima, o restaurante e "João, Dono". Depois, os grupos de sempre: Hoje, Vender, Cardápio, Números, Minha loja e Dono do
+sistema. **Cada função é um cartão que se toca** (borda grossa embaixo, afunda no toque) com ícone, nome e uma frase do que faz.
+A tela de agora fica afundada e verde (como a opção marcada) e é anunciada como "página atual". O número de pedidos em aberto
+(e de chamados e aprovações) vem numa pílula lisa e também é falado ("3 em aberto"). No fim, o que não é tela: **Ver o
+cardápio do cliente**, **Preciso de ajuda** (só quem pode) e **Sair**, discreto, em vermelho.
+
+**Nenhuma regra mudou:** quem vê o quê continua sendo decidido por `nav/navLogic.menuFor`, as regras de sempre das abas (o dono vê
+tudo; o gerente também, com "Seu negócio"; o garçom vê Hoje, Pedidos, Abrir mesa, Mesas, Produtos, Categorias e Resumo; caixa e
+cozinha menos; o que é do dono do sistema e o plano só aparecem para quem tem direito; restaurante bloqueado por falta de
+pagamento mantém só o permitido). A conta nova está em `painel/menuLogic.ts` (11 testes, um deles compara cada papel, com e sem
+plano e dono do sistema, com o menu antigo linha por linha).
+
+**Cuidados de menu aberto** (`painel/PanelMenu.tsx`, que usa `loja/useSheetBehavior.ts`, o mesmo da folha das escolhas, agora num
+arquivo só): a tela de trás não rola, o Esc fecha, o foco entra no menu e volta ao botão que o abriu, o Tab não sai dele, tocar
+fora fecha, escolher uma tela fecha sozinho. Movimento reduzido: sem animação. **Escolha minha que o GD pode mudar:** o "Guia
+passo a passo" da tela antiga não foi recriado (era uma visita guiada pelas telas antigas); fica o "Preciso de ajuda".
+
+**Ainda não está ligado ao painel público.** O que falta para o menu novo valer de verdade é cada função ter a sua tela nova (hoje
+só Hoje e Cozinha têm); até lá o painel antigo continua mandando. Os ícones do menu (28 novos) estão em `novo/Icons.tsx`.
+
+**Como foi conferido:** `tests/novo/menuLogic.test.mjs` (11), `toque.test.mjs` (45, com o 3D, a tela de agora, o diálogo e o
+contraste de cada estado) e `fluxo.test.mjs` (19). Em 320, 360, 390 e 480 px, nas 17 telas de conferência: sem rolagem lateral e
+nenhum botão com menos de 44 px. No navegador: foco entra no título do menu, Esc fecha, o Tab não sai, tocar fora fecha, o
+garçom vê só as sete telas dele. Para ver: `preview-novo.html#/menu` e `#/menu-garcom`.
+
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
 - Tudo mora em `frontend/src/novo/` e **não é importado pelo aplicativo**: o `index.html` e o `main.tsx` não mudam.
   Um teste (`tests/novo`) garante que o visual novo não depende do antigo e que só a página de conferência usa dados
   de exemplo.
 - Para ver: `cd frontend && npx vite build --config vite.preview-novo.config.ts --outDir /tmp/novo` e abrir
-  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada` ou `#/loja-mesa`
+  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu` ou `#/menu-garcom`
   (a pasta pública vai junto, por causa das fontes).
 - Cada tela ganha um PR próprio: ligada aos dados de verdade (por props), com teste, e a tela antiga correspondente
   sai no mesmo PR. **Nada disso vira o que o público vê sem o "pode" do GD.**

@@ -193,8 +193,8 @@ test("nada do aplicativo importa o visual novo nem as telas novas (cozinha, hoje
         continue;
       }
       const relative = path.slice(root.length);
-      if (!/\.(ts|tsx)$/.test(name) || /^(novo|cozinha|hoje|loja)\//.test(relative)) continue;
-      if (/from ["'][^"']*\/(novo|cozinha|hoje|loja)\//.test(readFileSync(path, "utf8"))) offenders.push(relative);
+      if (!/\.(ts|tsx)$/.test(name) || /^(novo|cozinha|hoje|loja|painel)\//.test(relative)) continue;
+      if (/from ["'][^"']*\/(novo|cozinha|hoje|loja|painel)\//.test(readFileSync(path, "utf8"))) offenders.push(relative);
     }
   };
   walk(root);

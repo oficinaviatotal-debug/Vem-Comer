@@ -8,6 +8,7 @@ import ChoicesSheet from "./Choices";
 import BagScreen from "./Bag";
 import { TrackSlip, TrackingPage } from "./Tracking";
 import TablePage from "./Table";
+import PanelMenu from "../painel/PanelMenu";
 import { emptyText, isKitchenTab, kitchenTabs, ticketsFor, type KitchenTabId } from "../cozinha/kitchenLogic";
 import { ACAI_PRODUCT, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, kitchenOrders, orderExample, pixExample, shopExample, todayExample } from "./demo";
 import { choicesViewOf, confirmChoices, nextQuantity, pressOption } from "../loja/choicesLogic";
@@ -23,7 +24,7 @@ import type { Selection } from "../customer/options";
 /**
  * Página de conferência do visual novo (não faz parte do aplicativo): mostra cada tela com dados de exemplo.
  * Abrir: preview-novo.html#/loja, #/hoje, #/cozinha, #/vagas, #/escolhas (#/escolhas-erro), #/sacola, #/entrega,
- * #/mesa (QR da mesa), #/mesa-chamada (conta chamada, água atendida, garçom sem resposta), #/loja-mesa (cardápio de quem está na mesa),
+ * #/menu (menu geral do dono), #/menu-garcom (o que o garçom vê), #/mesa (QR da mesa), #/mesa-chamada (conta chamada, água atendida, garçom sem resposta), #/loja-mesa (cardápio de quem está na mesa),
  * #/loja-pedido (cardápio de quem já pediu), #/pedido (preparo, Pix a pagar), #/pedido-rua (entrega a caminho) ou #/pedido-pronto (pronto, pago, avaliação).
  */
 /** O cardápio da conferência: dados de exemplo passando pela conta de verdade; adicionar e tirar funcionam na tela. */
@@ -240,8 +241,54 @@ function TablePreview({ stage }: { stage: "novo" | "chamado" }) {
   return <TablePage shop={{ name: "Açaí do João", mark: "🍇" }} view={view} onCall={call} onMenu={() => undefined} onTrack={() => undefined} />;
 }
 
+/**
+ * O menu geral da conferência: abre por cima do "Hoje" pelo botão de menu, passa pela conta de verdade (`menuViewOf`, que usa
+ * as regras de sempre do menu antigo) e tem os mesmos cuidados do menu de verdade (Esc, foco, Tab preso, fundo sem rolar).
+ * `dono`: vê tudo (e o que é do dono do sistema); `garcom`: só o que o garçom vê.
+ */
+function MenuPreview({ role }: { role: "OWNER" | "WAITER" }) {
+  const [open, setOpen] = useState(true);
+  const [current, setCurrent] = useState("inicio");
+  const [done, setDone] = useState("");
+  return (
+    <>
+      <OwnerToday today={todayExample(Date.now())} showMenu onMenu={() => setOpen(true)} />
+      {done ? (
+        <p className="nv-root nv-notice" role="status" style={{ position: "fixed", left: 16, right: 16, bottom: 16, zIndex: 30, pointerEvents: "none" }}>
+          {done}
+        </p>
+      ) : null}
+      {open ? (
+        <PanelMenu
+          role={role}
+          allowed={() => true}
+          hasPlanTab={role === "OWNER"}
+          platformAdmin={role === "OWNER"}
+          openOrders={3}
+          helpCount={role === "OWNER" ? 2 : null}
+          approvalsCount={role === "OWNER" ? 1 : null}
+          current={current}
+          place="Açaí do João"
+          personName={role === "OWNER" ? "João" : "Marta"}
+          canHelp
+          onSelect={(view) => {
+            setCurrent(view);
+            setDone(`Abriria: ${view} (na conferência, nada abre).`);
+          }}
+          onClose={() => setOpen(false)}
+          onCustomer={() => setDone("Abriria o cardápio do cliente.")}
+          onHelp={() => setDone("Abriria o pedido de ajuda.")}
+          onLogout={() => setDone("Sairia do painel.")}
+        />
+      ) : null}
+    </>
+  );
+}
+
 function Screen() {
   const route = window.location.hash.replace(/^#\/?/, "");
+  if (route === "menu") return <MenuPreview role="OWNER" />;
+  if (route === "menu-garcom") return <MenuPreview role="WAITER" />;
   if (route === "mesa") return <TablePreview stage="novo" />;
   if (route === "mesa-chamada") return <TablePreview stage="chamado" />;
   if (route === "loja-mesa") return <ShopPreview withTable />;

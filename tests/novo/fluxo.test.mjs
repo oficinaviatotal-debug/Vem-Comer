@@ -73,13 +73,14 @@ test("mexer em qualquer campo tira o aviso de erro de antes", () => {
 });
 
 test("a folha das escolhas é um diálogo de verdade: trava o fundo, fecha no Esc, prende o Tab e devolve o foco", () => {
-  const text = loja.choices;
+  const text = read("loja/useSheetBehavior.ts");
+  assert.match(loja.choices, /useSheetBehavior\(onClose\)/);
   assert.match(text, /document\.body\.style\.overflow = "hidden"/);
   assert.match(text, /document\.body\.style\.overflow = overflow/);
   assert.match(text, /event\.key === "Escape"/);
   assert.match(text, /event\.key !== "Tab"/);
   assert.match(text, /before\?\.focus\?\.\(\)/);
-  assert.match(text, /getElementById\("nv-sheet-title"\)\?\.focus\(\)/);
+  assert.match(text, /getElementById\(focusId\)\?\.focus\(\)/);
 });
 
 test("adicionar só acontece com tudo marcado; faltando, a folha rola até o que falta", () => {
@@ -167,4 +168,37 @@ test("a mesa manda uma chamada de cada vez, só guarda depois que o servidor ace
   assert.match(text, /window\.clearInterval\(timer\)/);
   assert.match(text, /window\.clearTimeout\(noticeTimer\.current\)/);
   assert.ok(!/fetchTable\(/.test(text), "o número da mesa vem do useShop, não de nova busca");
+});
+
+test("o menu geral de verdade: só as regras de sempre (navLogic e o nome do papel), nada de rede, nada da tela antiga", () => {
+  const logic = read("painel/menuLogic.ts");
+  const menu = read("painel/PanelMenu.tsx");
+  for (const [name, text] of [["menuLogic", logic], ["PanelMenu", menu]]) {
+    assert.ok(!/from ["']\.\.\/(styles|ui|admin|mesa)/.test(text), `${name} importa o antigo`);
+    assert.ok(!/import ["']\.\.\//.test(text), `${name} importa CSS de fora`);
+    assert.ok(!/service\/api/.test(text), `${name} fala com o servidor`);
+    assert.ok(!/from ["']\.\.\/nav\/(?!navLogic)/.test(text), `${name} importa tela do menu antigo`);
+  }
+  assert.match(logic, /from "\.\.\/nav\/navLogic\.ts"/);
+  assert.match(logic, /from "\.\.\/service\/format\.ts"/);
+  assert.match(logic, /menuFor\(input\)/);
+  assert.match(menu, /useSheetBehavior\(onClose, \{ root: "\.nv-drawer", focusId: "nv-menu-title" \}\)/);
+});
+
+test("o menu geral fecha sozinho depois de escolher, e cada ação sai pelo caminho dela; sem ajuda ligada, não oferece ajuda", () => {
+  const menu = read("painel/PanelMenu.tsx");
+  assert.match(menu, /onSelect\(view\);\s*onClose\(\);/);
+  assert.match(menu, /onClose\(\);\s*if \(id === ACTION\.customer\) onCustomer\(\);\s*else if \(id === ACTION\.help\) onHelp\?\.\(\);\s*else if \(id === ACTION\.logout\) onLogout\(\);/);
+  assert.match(menu, /canHelp: Boolean\(input\.canHelp && onHelp\)/);
+});
+
+test("a folha das escolhas e o menu geral dividem o mesmo cuidado de diálogo (fundo sem rolar, Esc, foco, Tab preso)", () => {
+  const hook = read("loja/useSheetBehavior.ts");
+  assert.match(hook, /document\.body\.style\.overflow = "hidden"/);
+  assert.match(hook, /event\.key === "Escape"/);
+  assert.match(hook, /event\.key !== "Tab"/);
+  assert.match(hook, /before\?\.focus\?\.\(\)/);
+  assert.match(hook, /root = "\.nv-sheet", focusId = "nv-sheet-title"/);
+  assert.match(loja.choices, /useSheetBehavior\(onClose\)/);
+  assert.match(loja.choices, /from "\.\/useSheetBehavior"/);
 });

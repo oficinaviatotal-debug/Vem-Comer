@@ -1,3 +1,4 @@
+import type { NvIconName } from "./Icons";
 /** Formas dos dados que as telas novas recebem por props. Quem liga ao servidor monta estes objetos. */
 
 /** O que o botão do prato faz: `add` põe um na sacola com um toque; `choose` abre as escolhas (tamanho, extras); `none` não faz nada. */
@@ -291,4 +292,31 @@ export type TableView = {
   ordersCount: number;
   /** Só endereço https de verdade; senão null e o botão some. */
   jobsHref: string | null;
+};
+
+/** Uma linha do menu geral: para onde leva, como se chama, uma frase do que faz e o número pequeno (pedidos em aberto). */
+export type MenuItem = {
+  view: string;
+  label: string;
+  hint: string;
+  icon: NvIconName;
+  /** O número ao lado do nome; null quando não há. */
+  badge: number | null;
+  /** A tela em que a pessoa está agora: marcada e anunciada ("página atual"). */
+  current: boolean;
+  /** Frase do número para o leitor de tela ("3 em aberto"). */
+  badgeSpoken: string;
+};
+
+export type MenuGroup = { key: string; title: string | null; items: MenuItem[] };
+
+/** O que não é tela: ver o cardápio do cliente, pedir ajuda, sair. `quiet`: a linha discreta do fim (Sair). */
+export type MenuAction = { id: string; label: string; icon: NvIconName; quiet?: boolean };
+
+export type MenuView = {
+  /** O restaurante e, embaixo, quem está dentro ("Maria, Gerente"). */
+  place: string;
+  person: string;
+  groups: MenuGroup[];
+  actions: MenuAction[];
 };

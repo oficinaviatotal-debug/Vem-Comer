@@ -377,3 +377,53 @@ test("a mesa: em 320 px os botões largos cabem numa linha, os pequenos lado a l
   assert.match(block(".nv-call-text"), /min-width: 0/);
   assert.match(block(".nv-calls"), /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
 });
+
+test("o menu geral: cada função é um cartão que se toca (borda grossa, afunda no toque, altura de dedo) e a tela de agora fica afundada e verde", () => {
+  assert.match(block(".nv-menu-item"), /box-shadow: var\(--nv-card-3d\)/);
+  assert.match(block(".nv-menu-item"), /min-height: [6-9]\dpx/);
+  assert.match(block(".nv-menu-item:active:not(.is-current)"), /transform: translateY\(/);
+  assert.match(block(".nv-menu-item.is-current"), /background: var\(--nv-green-soft\)/);
+  assert.match(block(".nv-menu-item.is-current"), /transform: translateY\(/);
+  assert.ok(!/0 [2-9]px 0/.test(block(".nv-menu-item.is-current")), "a tela de agora não tem borda grossa");
+  assert.ok(!/position/.test(block(".nv-btn")), "nv-btn não tem position (o toque estendido depende disso)");
+});
+
+test("o menu geral: o número e o ícone só informam (lisos), e o menu fica dentro da coluna do aplicativo", () => {
+  assert.ok(!/box-shadow: [^;]*0 [2-9]px 0/.test(block(".nv-menu-badge")), "o número é liso");
+  assert.ok(!/0 [2-9]px 0/.test(block(".nv-menu-icon")), "o ícone não tem borda grossa");
+  assert.match(block(".nv-drawer-frame"), /width: min\(100%, 480px\)/);
+  assert.match(block(".nv-drawer"), /width: min\(90%, 380px\)/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.nv-drawer \{\s*animation: none;/);
+  assert.match(block(".nv-drawer-scroll"), /overflow-y: auto/);
+  assert.match(block(".nv-drawer-scroll"), /overscroll-behavior: contain/);
+});
+
+test("o menu geral é um diálogo: título lido, 'página atual', número falado, fechar pelo X e pelo fundo, sem toque estendido", () => {
+  const menu = read("MainMenu.tsx");
+  assert.match(menu, /role="dialog" aria-modal="true" aria-labelledby="nv-menu-title"/);
+  assert.match(menu, /<h2 id="nv-menu-title" tabIndex=\{-1\}>/);
+  assert.match(menu, /<nav className="nv-drawer-scroll" aria-label="Menu do painel">/);
+  assert.match(menu, /aria-current=\{item\.current \? "page" : undefined\}/);
+  assert.match(menu, /<span className="nv-sr">\{item\.badgeSpoken\}<\/span>/);
+  assert.match(menu, /<span className="nv-menu-badge" aria-hidden="true">/);
+  assert.match(menu, /aria-label="Fechar o menu"/);
+  assert.match(menu, /closest\("\.nv-drawer"\)\) onClose/);
+  assert.ok(!/nv-hit/.test(menu), "a linha já é o cartão inteiro");
+  assert.match(block(".nv-sr"), /clip: rect\(0 0 0 0\)/);
+});
+
+test("o menu geral: texto pequeno passa de 4,5:1 em cada estado da linha", () => {
+  for (const [front, back, what] of [
+    ["ink", "paper", "nome da função"],
+    ["muted", "paper", "frase da função"],
+    ["muted", "green-soft", "frase da tela de agora"],
+    ["ink", "green-soft", "nome da tela de agora"],
+    ["paper", "green", "ícone da tela de agora"],
+    ["paper", "fire-deep", "número de pedidos"],
+    ["alert", "paper", "Sair"],
+  ]) {
+    const ratio = contrast(token(front), token(back));
+    assert.ok(ratio >= 4.5, `${what}: ${ratio.toFixed(2)}:1`);
+  }
+  assert.ok(contrast(token("muted"), "#fbf9f4") >= 4.5, "frase da função sobre o fim do degradê do cartão");
+});

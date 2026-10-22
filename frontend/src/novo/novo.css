@@ -2774,3 +2774,208 @@ button.nv-now-cell:active {
 .nv-table-btn {
   align-self: flex-start;
 }
+
+/* ---------- O menu geral: abre do lado do botão de menu, por cima da tela ---------- */
+
+.nv-backdrop.is-side {
+  align-items: stretch;
+}
+
+/* A moldura segura o menu dentro da coluna do aplicativo (480 px), mesmo numa janela larga. */
+.nv-drawer-frame {
+  display: flex;
+  justify-content: flex-end;
+  width: min(100%, 480px);
+  height: 100%;
+}
+
+.nv-drawer {
+  display: flex;
+  flex-direction: column;
+  width: min(90%, 380px);
+  height: 100%;
+  border-radius: var(--nv-r-lg) 0 0 var(--nv-r-lg);
+  background: var(--nv-paper);
+  box-shadow: -18px 0 34px -12px rgba(10, 34, 24, 0.45);
+  animation: nv-slide 0.22s ease-out;
+}
+
+@keyframes nv-slide {
+  from {
+    transform: translateX(36px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-drawer {
+    animation: none;
+  }
+}
+
+.nv-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 16px 10px;
+}
+
+.nv-drawer-who {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-drawer-who h2 {
+  margin: 0;
+  font: 700 22px/1.1 var(--nv-display);
+  overflow-wrap: anywhere;
+}
+
+.nv-drawer-who h2:focus {
+  outline: none;
+}
+
+.nv-drawer-who p {
+  margin: 4px 0 0;
+  color: var(--nv-muted);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.nv-drawer-scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+  padding: 6px 16px 28px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nv-menu-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nv-menu-group h3 {
+  margin: 0;
+  font: 700 18px/1.1 var(--nv-display);
+}
+
+.nv-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cada função é um cartão que se toca: borda grossa embaixo, afunda no toque. */
+.nv-menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 68px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-card-3d);
+  color: var(--nv-ink);
+  text-align: left;
+}
+
+.nv-menu-item:active:not(.is-current) {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+/* A tela de agora: afundada e verde, como a opção marcada. */
+.nv-menu-item.is-current {
+  background: var(--nv-green-soft);
+  box-shadow: inset 0 3px 6px rgba(27, 67, 50, 0.2), inset 0 -2px 0 #fff;
+  transform: translateY(2px);
+}
+
+.nv-menu-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--nv-peach);
+  color: var(--nv-ink);
+  box-shadow: var(--nv-hi);
+}
+
+.nv-menu-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.nv-menu-item.is-current .nv-menu-icon {
+  background: var(--nv-green);
+  color: #fff;
+}
+
+.nv-menu-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-menu-label {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.nv-menu-hint {
+  color: var(--nv-muted);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+/* O número de pedidos em aberto só informa: pílula lisa. */
+.nv-menu-badge {
+  flex: none;
+  min-width: 28px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--nv-fire-deep);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.nv-btn.is-quiet {
+  color: var(--nv-alert);
+}
+
+/* Texto só para o leitor de tela. */
+.nv-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
