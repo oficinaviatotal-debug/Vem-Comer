@@ -21,15 +21,16 @@ merges).
 | Os três | 5 |
 | Claude e a conta do GD | 3 |
 
-## 1. A base do repositório não é do ChatGPT nem minha: é de `luccanathaz`
+## 1. A base do repositório não é do ChatGPT nem minha: é de `luccanathaz` (o GD confirmou quem é)
 
 - O repositório tem **102 alterações de `luccanathaz`, de 30/08 a 23/09/2026**, antes de qualquer coisa minha ou do ChatGPT.
 - Sobrevive: a estrutura de pastas, o banco (`database/schema.production.sql`, 528 linhas, **usado de verdade** pelo
   instalador e pelos testes), a primeira versão do servidor (`backend/app.py`, hoje **5.431 linhas em um arquivo só**),
   do painel (`AdminPanel.tsx`, **1.958 linhas**), de `api.ts` e do `styles.css`. Eu ampliei esses arquivos; não os reescrevi.
 - Um arquivo de registro (`frontend/logfile`) e quatro scripts vazios (`Scripts/*.sh`) ficaram no repositório.
-- **Pergunta ao GD:** quem é `luccanathaz`? O `LICENSE` diz que tudo é do GD. Se for gente de fora, é preciso um papel
-  de cessão. **Não sei** quem é e não presumi.
+- **Quem é:** o GD confirmou em 21/10/2026 que é gente da família dele, e não alguém de fora. Por isso não há um terceiro
+  reivindicando o código. Quando houver advogado, vale um papel simples dizendo que o que foi escrito ali pertence à Vem
+  Tecnologia (o `LICENSE` já diz isso), porque quem compra ou investe pergunta.
 - Consequência técnica: o front-end que o GD chamou de "arcaico" nasceu aí (painel único de 1.958 linhas). O que mudei
   (menu, tela Hoje) foi por cima.
 
@@ -88,5 +89,5 @@ merges).
    com prova acima).
 2. **Sai ou se refaz:** a camada visual (o painel único herdado), a conversa por voz de verdade, e tudo que é só
    princípio sem código (o "sistema vivo").
-3. **Decisões do GD:** quem é `luccanathaz`; retirar `mvp_payment.py` e `tenant_policy.py`; o que fazer com o Supabase
+3. **Decisões do GD:** retirar `mvp_payment.py` e `tenant_policy.py`; o que fazer com o Supabase
    antes de 02/11; deixar-me ver o `/opt/vem-tecnologia`.
