@@ -709,6 +709,54 @@ precisa da chave da IA, que ele mesmo digita em `configurar-ia.sh`); e a regra d
 
 **Ainda não está ligado ao painel público** (o painel antigo continua mandando).
 
+## Décima sexta rodada: o que vai dentro de cada prato, e entradas claras (22/10/2026)
+
+Pedido do GD (22/10, 19:10 e 19:13): **toda função aceita voz, escrita ou foto, e a pessoa escolhe**; quem não escreve bem (o dono do cachorro-quente que mandou
+fazer a folha do cardápio numa lan house) tira **uma foto** e o sistema lê **cada prato, o que vai dentro e o preço**, ou **fala** ("cadastre um X-Tudo, no X-Tudo
+custa R$ 25, vai ter ovo, bacon, hambúrguer, salame e etc.") ou **anexa** o arquivo, ou escreve do jeito dele, e **no fim edita**. Sem mudar o desenho: só os
+botões que a pessoa toca. Não é o "pode" para ir ao ar nem para juntar.
+
+**O que mudou** (arquivos: `assistant/spokenMenu.ts` e `assistantFlow.ts`, que o painel antigo também usa; `painel/menuSetupLogic.ts` e `MenuSetupScreen.tsx`;
+`novo/MenuSetup.tsx`, `copy.ts`, `types.ts`, `parts.tsx`, `novo.css`):
+
+1. **A porta tem seis botões, cada um diz o que faz:** Tirar foto do cardápio (câmera), Escolher foto do celular (uma ou mais), Falar os pratos, Escrever os pratos,
+   **Anexar arquivo** (planilha, PDF ou o cardápio que alguém fez) e Começar de um modelo. Quando o servidor não lê foto ou arquivo, esses ficam apagados com o
+   motivo, e os que funcionam sem ele (falar, escrever, modelo) vêm primeiro.
+2. **Falar começa a ouvir na hora** (sem um segundo toque). **Escrever** abre a mesma tela com o campo já pronto: **um prato por linha**; depois do preço, o
+   que vier na linha é o que vai dentro ("x-tudo 25, ovo, bacon, salame"). A bolinha da porta leva a falar; **na tela de falar ela não aparece** (já existe o botão
+   grande "Falar", e a bolinha cobria a lixeira dos pratos).
+3. **A fala entende a ordem inteira**: tira "eu quero que você cadastre um", acha o prato, o preço e a lista que vem depois de "vai ter / tem / leva / com"
+   (ou antes do preço); "e etc" some; quantidades ("2 ovos", "200 g de carne") ficam na lista e **não viram preço**; "pão de forma", "queijo coalho" e "2 fatias de
+   queijo" ficam inteiros mesmo sem vírgula (o celular quase nunca põe). Várias falas se completam: primeiro o prato, depois "custa 25, vai ter ovo e bacon".
+   A frase da tela diz o que anotou: "Anotei X-Tudo, R$ 25,00. Dentro: Ovo, bacon, hambúrguer, salame." (lista com mais de 8 vira "Dentro: 11 ingredientes.").
+4. **A foto já trazia o que vai dentro** (o servidor lê a descrição de cada prato); agora ela **aparece** na conferência, embaixo do prato, e **segue para o
+   cadastro**. O prato que a foto leu sem lista fica sem nada (**nunca se inventa**).
+5. **O lápis tem o campo "O que vai dentro (se quiser)"**; "Pronto" grava, apagar o campo tira a lista, e preço recusado não muda nada (nem a lista).
+6. **Fala ou escrita sem prato antes** ("vai ter ovo e bacon", "custa 25") agora diz "Não achei de qual prato é isso. Diga o nome do prato primeiro". Antes
+   a tela dizia "já estavam anotados", o que não era verdade.
+
+**Limites, ditos com franqueza:**
+
+- Fala corrida **sem pausa** entre dois pratos ("x-tudo 25 leva ovo e bacon x-salada 22") não tem como saber onde a lista acaba: **nada é cortado, nenhum preço
+  some**, e o pedaço duvidoso vai para a lista "não entendi" para a pessoa encaixar. Falando com uma pausa (ou escrevendo uma linha por prato) fica certo.
+- Escrito em linha, **tudo que vem depois do único preço da linha é lista**; linha com mais de um preço é lida como sempre.
+- O cadastro **só acrescenta**: prato que já existe no cardápio não é mudado por aqui.
+- Sem a chave da IA a fala é entendida por regras de palavras (as de cima); fala livre, de qualquer jeito, precisa da chave, que só o GD digita em `configurar-ia.sh`.
+- O servidor guarda até 500 letras por prato; a tela corta a lista em 300 e em 8 itens na frase.
+
+**Como foi conferido:** `tests/assistant/spokenInside.test.mjs` (16) e `tests/novo/ingredientes.test.mjs` (14) são novos; mudaram `fluxo`, `menuSetupLogic` e
+`toque` (porta de seis botões, campo de texto no lugar do campo de uma linha, bolinha só na porta e no fim). 1.342 testes passam nas pastas do CI, com tipos,
+build, segurança e conformidade. Em 320, 360, 390 e 480 px: sem rolagem lateral, nenhum botão com menos de 44 px, nenhum toque coberto. No navegador, com a tela de
+verdade, um servidor de mentira e um microfone de mentira: **184 conferências, todas certas**, incluindo a frase do GD inteira, a lista que chega no cadastro (conferida
+no que foi enviado ao servidor), a foto com e sem lista, escrever em linhas, o lápis com o campo novo e a porta com tudo ligado e com cada parte desligada.
+Para ver: `preview-novo.html#/cardapio` (a porta de seis botões), `#/cardapio-falar`, `#/cardapio-ouvindo`, `#/cardapio-escrever`, `#/cardapio-conferir`,
+`#/cardapio-editando` (com lista) e `#/cardapio-editando-sem-lista`.
+
+**O que ainda falta:** foto do prato e opções do prato; a Logomarca; a bolinha de voz que escuta e navega em **todas** as telas e o microfone ao lado de cada campo
+de escrever (a conta é a do item 90 dos requisitos).
+
+**Ainda não está ligado ao painel público** (o painel antigo continua mandando).
+
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
 - Tudo mora em `frontend/src/novo/` e **não é importado pelo aplicativo**: o `index.html` e o `main.tsx` não mudam.

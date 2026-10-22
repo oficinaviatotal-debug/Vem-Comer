@@ -13,7 +13,9 @@
 import { formatPrice, normalizePrice, parseAssistantCommand } from "../assistant/assistantLogic.ts";
 import {
   addSpokenMenu,
+  cleanDescription,
   cleanItemName,
+  describeItem,
   editPrice,
   importPayload,
   removeItem,
@@ -32,16 +34,20 @@ import {
   MENU_BADGE_FAST,
   MENU_DOOR_FILE,
   MENU_DOOR_FOOT,
+  MENU_DOOR_GALLERY,
   MENU_DOOR_LOADING,
   MENU_DOOR_MODEL,
   MENU_DOOR_PHOTO,
   MENU_DOOR_SPEAK,
   MENU_DOOR_SUB,
+  MENU_DOOR_WRITE,
   MENU_DONE_SUB,
   MENU_FINISH,
+  MENU_GALLERY_HINT,
   MENU_MODEL_HINT,
   MENU_NOT_HEARD_HELP,
   MENU_NOT_HEARD_ONCE,
+  MENU_PHOTO_HINT,
   MENU_READ_TIMEOUT,
   MENU_PAGES_SUB,
   MENU_READ,
@@ -53,10 +59,11 @@ import {
   MENU_REVIEW_INTRO_SPOKEN,
   MENU_REVIEW_SUB,
   MENU_SPEAK_ALREADY,
-  MENU_SPEAK_HINT_TYPE,
   MENU_SPEAK_HINT_VOICE,
+  MENU_SPEAK_NO_DISH,
   MENU_SPEAK_NOT_HEARD,
   MENU_SPEAK_SUB,
+  MENU_WRITE_HINT,
 } from "../novo/copy.ts";
 import type {
   MenuDoorCard,
@@ -86,14 +93,19 @@ export function doorViewOf(input: { options: ReadyMenuOptions | null; voiceWorks
   if (!input.options) {
     return { stage: "door", sub: MENU_DOOR_LOADING, loading: true, cards: [], foot: "", error: input.error };
   }
+  const photoReady = statuses.photo === "ready";
   const photo: MenuDoorCard = {
     id: "photo",
     title: MENU_DOOR_PHOTO,
-    hint: photoHint(statuses),
+    hint: photoReady ? MENU_PHOTO_HINT : photoHint(statuses),
     state: statuses.photo,
-    badge: statuses.photo === "ready" ? MENU_BADGE_FAST : "",
+    badge: photoReady ? MENU_BADGE_FAST : "",
     accept: "image/*",
   };
+  // A foto que já está no celular: só aparece quando a leitura funciona (o cartão apagado já explica o porquê no da câmera).
+  const gallery: MenuDoorCard | null = photoReady
+    ? { id: "gallery", title: MENU_DOOR_GALLERY, hint: MENU_GALLERY_HINT, state: "ready", badge: "", accept: "image/*" }
+    : null;
   const file: MenuDoorCard = {
     id: "file",
     title: MENU_DOOR_FILE,
@@ -102,17 +114,14 @@ export function doorViewOf(input: { options: ReadyMenuOptions | null; voiceWorks
     badge: "",
     accept: statuses.pdf ? MENU_FILE_ACCEPT : MENU_SHEET_ACCEPT,
   };
-  const speak: MenuDoorCard = {
-    id: "speak",
-    title: MENU_DOOR_SPEAK,
-    hint: input.voiceWorks ? MENU_SPEAK_HINT_VOICE : MENU_SPEAK_HINT_TYPE,
-    state: "ready",
-    badge: "",
-    accept: "",
-  };
+  // Falar só aparece se o celular escuta; escrever aparece sempre.
+  const speak: MenuDoorCard | null = input.voiceWorks
+    ? { id: "speak", title: MENU_DOOR_SPEAK, hint: MENU_SPEAK_HINT_VOICE, state: "ready", badge: "", accept: "" }
+    : null;
+  const write: MenuDoorCard = { id: "write", title: MENU_DOOR_WRITE, hint: MENU_WRITE_HINT, state: "ready", badge: "", accept: "" };
   // Começar de um modelo só precisa da lista de tipos, que o servidor sempre tem: está sempre pronto, depois dos que lêem.
   const model: MenuDoorCard = { id: "model", title: MENU_DOOR_MODEL, hint: MENU_MODEL_HINT, state: "ready", badge: "", accept: "" };
-  const all = [photo, file, speak, model];
+  const all = [photo, gallery, speak, write, file, model].filter((card): card is MenuDoorCard => card !== null);
   const cards = [...all.filter((card) => card.state === "ready"), ...all.filter((card) => card.state !== "ready")];
   return { stage: "door", sub: MENU_DOOR_SUB, loading: false, cards, foot: MENU_DOOR_FOOT, error: input.error };
 }
@@ -169,20 +178,42 @@ export type SpeakOutcome = {
   finished: boolean;
 };
 
-/** "Anotei X-tudo, R$ 25,00." / "Anotei 3 pratos. 1 ficou sem preço.": a frase curta depois de cada fala. */
-export function noticeOf(result: { added: Array<{ name: string; price: string }>; priced: Array<{ name: string; price: string }> }): string {
+/** O que vai dentro, em uma frase curta: a lista inteira se couber, senão só quantos são. */
+function insideNote(description: string): string {
+  if (description.length <= 70) return `Dentro: ${description}.`;
+  return `Dentro: ${plural(description.split(",").length, "ingrediente", "ingredientes")}.`;
+}
+
+/** "Anotei X-tudo, R$ 25,00. Dentro: ovo, bacon." / "Anotei 3 pratos. 1 ficou sem preço.": a frase curta depois de cada fala. */
+export function noticeOf(result: {
+  added: Array<{ name: string; price: string }>;
+  priced: Array<{ name: string; price: string }>;
+  described?: Array<{ name: string; description: string }>;
+}): string {
   const parts: string[] = [];
   const { added, priced } = result;
+  const described = result.described ?? [];
+  const announced = new Set<string>();
   if (added.length === 1) {
     const dish = added[0];
     parts.push(dish.price ? `Anotei ${dish.name}, ${formatPrice(dish.price)}.` : `Anotei ${dish.name}. Falta o preço.`);
+    const inside = described.find((entry) => entry.name === dish.name);
+    if (inside) {
+      parts.push(insideNote(inside.description));
+      announced.add(dish.name);
+    }
   } else if (added.length > 1) {
     const missing = added.filter((dish) => !dish.price).length;
     parts.push(`Anotei ${added.length} pratos.`);
     if (missing > 0) parts.push(missing === 1 ? "1 ficou sem preço." : `${missing} ficaram sem preço.`);
+    const withInside = described.filter((entry) => added.some((dish) => dish.name === entry.name));
+    if (withInside.length > 0) parts.push(`${plural(withInside.length, "prato com o que vai dentro", "pratos com o que vai dentro")}.`);
+    for (const entry of withInside) announced.add(entry.name);
   }
   for (const dish of priced.slice(0, 2)) parts.push(`${dish.name}, ${formatPrice(dish.price)}.`);
   if (priced.length > 2) parts.push(`E mais ${priced.length - 2} preços.`);
+  // um prato que já estava na lista e ganhou o que vai dentro
+  for (const dish of described.filter((entry) => !announced.has(entry.name)).slice(0, 2)) parts.push(`${dish.name}: anotei o que vai dentro.`);
   return parts.join(" ");
 }
 
@@ -202,9 +233,11 @@ export function takeSpoken(flow: FlowState, text: string, heading: string): Spea
   }
 
   const menu = parseSpokenMenu(text, heading);
-  if (menu.dishes.length > 0 || menu.lonePrice) {
+  if (menu.dishes.length > 0 || menu.lonePrice || menu.loneDescription) {
     const applied = addSpokenMenu(flow, menu);
-    const note = noticeOf(applied) || MENU_SPEAK_ALREADY;
+    // Um preço ou uma lista dita sozinha, sem prato antes: não foi para lugar nenhum, e a frase diz isso (não "já estavam anotados").
+    const nowhere = menu.dishes.length === 0 && applied.priced.length === 0 && applied.described.length === 0;
+    const note = noticeOf(applied) || (nowhere ? MENU_SPEAK_NO_DISH : MENU_SPEAK_ALREADY);
     return {
       flow: applied.state,
       heading: menu.heading,
@@ -249,6 +282,7 @@ export function speakViewOf(input: SpeakInput): MenuSetupView {
       name: dish.name,
       price: dish.price ? formatPrice(dish.price) : "",
       missing: !dish.price,
+      inside: input.flow.categories[dish.categoryIndex]?.items[dish.itemIndex]?.description ?? "",
     });
   }
   const count = picked.length;
@@ -268,7 +302,7 @@ export function speakViewOf(input: SpeakInput): MenuSetupView {
 
 // ------------------------------------------------------------------------------------------------ conferir e cadastrar
 
-function reviewDish(categoryName: string, categoryIndex: number, itemIndex: number, name: string, price: string): MenuReviewDish {
+function reviewDish(categoryName: string, categoryIndex: number, itemIndex: number, name: string, price: string, inside: string): MenuReviewDish {
   const doubt = price ? priceDoubt(name, price) : null;
   return {
     id: dishId(categoryIndex, itemIndex),
@@ -277,6 +311,7 @@ function reviewDish(categoryName: string, categoryIndex: number, itemIndex: numb
     price: price ? formatPrice(price) : "",
     priceValue: price ? price.replace(".", ",") : "",
     missing: !price,
+    inside,
     doubt: doubt
       ? {
           text: doubt.maybe
@@ -303,7 +338,7 @@ export function reviewViewOf(input: ReviewInput): MenuSetupView {
     const dishes: MenuReviewDish[] = [];
     category.items.forEach((item, itemIndex) => {
       if (!item.selected) return;
-      const dish = reviewDish(category.name, categoryIndex, itemIndex, item.name, item.price);
+      const dish = reviewDish(category.name, categoryIndex, itemIndex, item.name, item.price, item.description ?? "");
       if (dish.missing) missing.push(dish);
       else dishes.push(dish);
     });
@@ -349,6 +384,17 @@ export function changePrice(flow: FlowState, id: string, text: string): FlowStat
   return at ? editPrice(flow, at.categoryIndex, at.itemIndex, text) : flow;
 }
 
+/** Troca o que vai dentro do prato. Texto vazio tira o que havia. */
+export function changeInside(flow: FlowState, id: string, text: string): FlowState {
+  const at = parseDishId(id);
+  return at ? describeItem(flow, at.categoryIndex, at.itemIndex, text) : flow;
+}
+
+export function insideOf(flow: FlowState, id: string): string {
+  const at = parseDishId(id);
+  return at ? (flow.categories[at.categoryIndex]?.items[at.itemIndex]?.description ?? "") : "";
+}
+
 export function takeOut(flow: FlowState, id: string): FlowState {
   const at = parseDishId(id);
   return at ? removeItem(flow, at.categoryIndex, at.itemIndex) : flow;
@@ -376,10 +422,11 @@ export function useGuess(flow: FlowState, id: string): FlowState {
 export type EditOutcome = { flow: FlowState; problem: "" | "name" | "price" };
 
 /**
- * "Pronto" na conferência: o nome e o preço que estão nos campos. Preço que não é número, ou nome que ficou vazio ou já existe
- * na categoria, não muda nada e diz qual dos dois deu problema. Campo de preço vazio deixa o preço como está.
+ * "Pronto" na conferência: o nome, o preço e o que vai dentro que estão nos campos. Preço que não é número, ou nome que ficou vazio
+ * ou já existe na categoria, não muda nada e diz qual dos dois deu problema. Campo de preço vazio deixa o preço como está.
+ * `inside` ausente deixa como está; vazio tira o que havia (a pessoa apagou de propósito).
  */
-export function applyEdit(flow: FlowState, id: string, name: string, price: string): EditOutcome {
+export function applyEdit(flow: FlowState, id: string, name: string, price: string, inside?: string): EditOutcome {
   if (!parseDishId(id)) return { flow, problem: "" };
   const typedPrice = price.trim();
   if (typedPrice && !priceIsUsable(typedPrice)) return { flow, problem: "price" };
@@ -392,6 +439,7 @@ export function applyEdit(flow: FlowState, id: string, name: string, price: stri
     next = renamed;
   }
   if (typedPrice) next = changePrice(next, id, typedPrice);
+  if (inside !== undefined && cleanDescription(inside) !== insideOf(next, id)) next = changeInside(next, id, inside);
   return { flow: next, problem: "" };
 }
 
@@ -426,10 +474,11 @@ export function addUnclear(flow: FlowState, text: string, heading: string): Flow
   const name = text.trim();
   if (!name) return flow;
   const menu: SpokenMenu = {
-    dishes: [{ name, price: "", category: guessCategory(name), categorySaid: false }],
+    dishes: [{ name, price: "", category: guessCategory(name), categorySaid: false, description: "" }],
     unclear: [],
     finished: false,
     lonePrice: "",
+    loneDescription: "",
     heading,
   };
   return addSpokenMenu(flow, menu).state;

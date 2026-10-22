@@ -548,10 +548,10 @@ export const MENU_READ_EXAMPLE = {
     {
       name: "Lanches",
       items: [
-        { name: "X-tudo", price: "25.00" },
-        { name: "X-salada", price: "22.00" },
+        { name: "X-tudo", price: "25.00", description: "Hambúrguer, ovo, bacon, salame" },
+        { name: "X-salada", price: "22.00", description: "Alface, tomate, queijo" },
         { name: "Hambúrguer artesanal", price: "28.00" },
-        { name: "X-bacon", price: "" },
+        { name: "X-bacon", price: "", description: "Pão, bacon, queijo" },
       ],
     },
     {
@@ -618,7 +618,7 @@ export const MODEL_EXAMPLE = {
 };
 
 /** O que a pessoa falou, de EXEMPLO, passando pela conta de verdade (`takeSpoken`). */
-export const MENU_SPOKEN_EXAMPLE = ["x-tudo 25, x-salada 22, hambúrguer 28", "bebidas coca lata 6, suco de laranja 9, água"];
+export const MENU_SPOKEN_EXAMPLE = ["cadastre um x-tudo, no x-tudo custa 25 reais, vai ter ovo, bacon, hambúrguer, salame", "x-salada 22 leva alface e tomate. hambúrguer 28", "bebidas coca lata 6, suco de laranja 9, água"];
 
 /** As categorias e os pratos de EXEMPLO de quem cuida do cardápio: dois esgotados, um com opções, um sem categoria. A "foto" é um emoji (`emoji:🍔`). */
 export const DISH_MENUS_EXAMPLE = [

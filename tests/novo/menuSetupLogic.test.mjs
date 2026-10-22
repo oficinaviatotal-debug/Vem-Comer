@@ -72,24 +72,35 @@ test("antes de o servidor responder não há cartão nenhum: a ordem só se deci
   assert.equal(view.foot, "", "nada de rodapé antes de haver o que escolher");
 });
 
-test("com tudo ligado: foto (mais rápido), arquivo, falar e começar de um modelo, nessa ordem, todos tocáveis", () => {
+test("com tudo ligado: tirar foto (mais rápido), foto do celular, falar, escrever, arquivo e modelo, nessa ordem, todos tocáveis", () => {
   const view = doorViewOf({ options: ALL, voiceWorks: true, error: "" });
   assert.equal(view.loading, false);
   assert.deepEqual(
     view.cards.map((card) => [card.id, card.state]),
     [
       ["photo", "ready"],
-      ["file", "ready"],
+      ["gallery", "ready"],
       ["speak", "ready"],
+      ["write", "ready"],
+      ["file", "ready"],
       ["model", "ready"],
     ],
   );
-  assert.equal(view.cards[3].title, "Começar de um modelo");
-  assert.equal(view.cards[3].hint, "Escolha o tipo do seu negócio e toque nos pratos que você vende.");
-  assert.equal(view.cards[0].badge, "Mais rápido");
-  assert.equal(view.cards[0].accept, "image/*");
-  assert.ok(view.cards[1].accept.includes(".pdf"), "com PDF ligado o seletor aceita PDF");
-  assert.equal(view.cards[2].hint, "Diga o prato e o preço. Eu anoto.");
+  const card = (id) => view.cards.find((entry) => entry.id === id);
+  assert.equal(card("photo").title, "Tirar foto do cardápio");
+  assert.equal(card("gallery").title, "Escolher foto do celular");
+  assert.equal(card("speak").title, "Falar os pratos");
+  assert.equal(card("write").title, "Escrever os pratos");
+  assert.equal(card("model").title, "Começar de um modelo");
+  assert.equal(card("model").hint, "Escolha o tipo do seu negócio e toque nos pratos que você vende.");
+  assert.equal(card("photo").badge, "Mais rápido");
+  assert.equal(card("gallery").badge, "", "só a câmera leva o selo");
+  assert.equal(card("photo").accept, "image/*");
+  assert.equal(card("gallery").accept, "image/*");
+  assert.ok(card("file").accept.includes(".pdf"), "com PDF ligado o seletor aceita PDF");
+  assert.equal(card("photo").hint, "Abre a câmera. Eu leio os pratos, o que vai dentro e os preços.");
+  assert.equal(card("speak").hint, "Diga o prato, o preço e o que vai dentro. Eu anoto.");
+  assert.equal(card("write").hint, "Escreva do seu jeito, por exemplo: X-tudo 25, tem ovo e bacon.");
   assert.equal(view.sub, "Como você quer montar?");
   assert.ok(view.foot.includes("confere tudo antes de cadastrar"));
 });
@@ -99,20 +110,37 @@ test("sem PDF no servidor o seletor de arquivo não oferece PDF", () => {
   assert.ok(!view.cards.find((card) => card.id === "file").accept.includes(".pdf"));
 });
 
-test("o que o servidor não lê vem depois, liso, com a frase do porquê; falar os pratos e o modelo sempre funcionam", () => {
+test("o que o servidor não lê vem depois, liso, com a frase do porquê; escrever os pratos e o modelo sempre funcionam", () => {
   const view = doorViewOf({ options: NONE, voiceWorks: false, error: "" });
   assert.deepEqual(
     view.cards.map((card) => [card.id, card.state]),
     [
-      ["speak", "ready"],
+      ["write", "ready"],
       ["model", "ready"],
       ["photo", "off"],
       ["file", "off"],
     ],
   );
-  assert.equal(view.cards[0].hint, "Escreva os pratos com o preço. Eu anoto.", "sem microfone o cartão diz que se escreve");
+  assert.ok(!view.cards.some((card) => card.id === "speak"), "sem microfone não há cartão de falar: escrever está sempre lá");
+  assert.ok(!view.cards.some((card) => card.id === "gallery"), "a foto do celular só aparece se o servidor lê foto");
   assert.equal(view.cards[2].badge, "", "só o que funciona leva o 'mais rápido'");
   assert.ok(view.cards[2].hint.length > 0 && view.cards[3].hint.length > 0);
+});
+
+test("com microfone mas sem leitura de foto: falar e escrever, os dois, e a câmera apagada explica o porquê", () => {
+  const view = doorViewOf({ options: { photo: false, file: true, pdf: false }, voiceWorks: true, error: "" });
+  assert.deepEqual(
+    view.cards.map((card) => [card.id, card.state]),
+    [
+      ["speak", "ready"],
+      ["write", "ready"],
+      ["file", "ready"],
+      ["model", "ready"],
+      ["photo", "off"],
+    ],
+  );
+  const photo = view.cards.find((card) => card.id === "photo");
+  assert.match(photo.hint, /Ainda não está ligado/);
 });
 
 test("o erro da porta passa como veio", () => {

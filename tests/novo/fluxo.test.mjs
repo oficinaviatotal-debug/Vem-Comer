@@ -517,7 +517,7 @@ test("começar de um modelo: nada vai ao servidor até Cadastrar (marcar, anotar
 test("começar de um modelo: o foco vai para a frase de aviso a cada etapa e a cada categoria, e nos preços fica no campo do preço", () => {
   const text = read("painel/MenuSetupScreen.tsx");
   assert.match(text, /const stepKey = where === "pick" \? `pick-\$\{flow\.categoryIndex\}` : where;/);
-  assert.match(text, /if \(stepKey === "prices"\) return;\s*document\.getElementById\("nv-menu-live"\)\?\.focus\(\);/);
+  assert.match(text, /if \(stepKey === "prices"\) return;\s*if \(stepKey === "speak" && writeFirst\.current\) \{\s*writeFirst\.current = false;\s*document\.getElementById\("nv-menu-type"\)\?\.focus\(\);\s*return;\s*\}\s*document\.getElementById\("nv-menu-live"\)\?\.focus\(\);/);
   const screen = read("novo/MenuModel.tsx");
   assert.match(screen, /useEffect\(\(\) => \{\s*field\.current\?\.focus\(\);\s*\}, \[view\.dishId\]\);/);
   assert.match(screen, /<form\s+key=\{view\.dishId\}/, "cada prato recomeça o campo com o preço que já tem");

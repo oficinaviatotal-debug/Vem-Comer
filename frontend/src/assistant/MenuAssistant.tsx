@@ -613,7 +613,7 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
     const headingBefore = headingRef.current;
     const menu = parseSpokenMenu(text, headingBefore);
     headingRef.current = menu.heading;
-    if (menu.dishes.length > 0 || menu.lonePrice) {
+    if (menu.dishes.length > 0 || menu.lonePrice || menu.loneDescription) {
       takeSpokenMenu(menu, flowRef.current, listenAfter);
       return;
     }
@@ -647,10 +647,11 @@ export default function MenuAssistant({ companyId, onSaved, onSeeMenu, onOpenGui
   /** A piece that was not separated, added as one dish without price (the price is asked later). */
   function addUnclearAsDish(text: string) {
     const menu: SpokenMenu = {
-      dishes: [{ name: text, price: "", category: guessCategory(text), categorySaid: false }],
+      dishes: [{ name: text, price: "", category: guessCategory(text), categorySaid: false, description: "" }],
       unclear: [],
       finished: false,
       lonePrice: "",
+      loneDescription: "",
       heading: headingRef.current,
     };
     commit(addSpokenMenu(flowRef.current, menu).state);

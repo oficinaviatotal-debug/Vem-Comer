@@ -34,9 +34,19 @@ export function MenuLive({ text }: { text: string }) {
 }
 
 /** A bolinha de voz: o elemento de personalidade do Vem. Toda tela tem uma. */
-export function VoiceOrb({ label = "Falar" }: { label?: string }) {
+/**
+ * A bolinha de voz. Sem `onPress` ela só enfeita a tela (as telas que ainda não escutam); com `onPress` ela faz o que o rótulo diz.
+ * `listening` mostra que o celular está ouvindo: a bolinha escurece, o ícone pulsa e o leitor de tela ouve "pressionado".
+ */
+export function VoiceOrb({ label = "Falar", onPress, listening }: { label?: string; onPress?: () => void; listening?: boolean }) {
   return (
-    <button type="button" className="nv-orb" aria-label={label}>
+    <button
+      type="button"
+      className={`nv-orb${listening ? " is-listening" : ""}`}
+      aria-label={label}
+      aria-pressed={listening === undefined ? undefined : listening}
+      onClick={onPress}
+    >
       <NvIcon name="mic" />
     </button>
   );

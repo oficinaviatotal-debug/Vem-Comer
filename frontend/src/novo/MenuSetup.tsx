@@ -13,6 +13,8 @@ import {
   MENU_DONE_SEE,
   MENU_EMPTY_REVIEW,
   MENU_GALLERY,
+  MENU_INSIDE_HINT,
+  MENU_INSIDE_LABEL,
   MENU_MIC,
   MENU_MIC_LISTENING,
   MENU_MIC_OFF,
@@ -31,6 +33,7 @@ import {
   MENU_TAKE_OUT,
   MENU_TAKE_PHOTO,
   MENU_TITLE,
+  MENU_TYPE_HELP,
   MENU_TYPE_HINT,
   MENU_TYPE_LABEL,
   MENU_UNCLEAR,
@@ -45,7 +48,11 @@ export type MenuSetupHandlers = MenuModelHandlers & {
   onPhotos?: (files: File[]) => void;
   onFile?: (file: File) => void;
   onSpeak?: () => void;
+  /** "Escrever os pratos": a mesma tela de falar, com o campo de escrever já pronto. */
+  onWrite?: () => void;
   onModel?: () => void;
+  /** A bolinha de voz: começa a ouvir os pratos (na porta) ou liga e desliga o microfone (na tela de falar). */
+  onOrb?: () => void;
   /** As páginas da foto. */
   onAddPhotos?: (files: File[]) => void;
   onRemovePage?: (id: number) => void;
@@ -61,7 +68,7 @@ export type MenuSetupHandlers = MenuModelHandlers & {
   onFinish?: () => void;
   /** Conferir. */
   onEdit?: (id: string | null) => void;
-  onChange?: (id: string, name: string, price: string) => void;
+  onChange?: (id: string, name: string, price: string, inside: string) => void;
   onUse?: (id: string) => void;
   onSave?: () => void;
   /** Cadastrado. */
@@ -87,7 +94,7 @@ function takeFiles(event: ChangeEvent<HTMLInputElement>): File[] {
 
 // ------------------------------------------------------------------------------------------------ a porta
 
-const DOOR_ICON = { photo: "camera", file: "doc", speak: "mic", model: "categories" } as const;
+const DOOR_ICON = { photo: "camera", gallery: "image", file: "doc", speak: "mic", write: "edit", model: "categories" } as const;
 
 function DoorBody({ card }: { card: MenuDoorCard }) {
   return (
@@ -109,7 +116,9 @@ function DoorBody({ card }: { card: MenuDoorCard }) {
   );
 }
 
-function Door({ view, onPhotos, onFile, onSpeak, onModel, onMenu, showMenu }: { view: Stage<"door"> } & MenuSetupHandlers) {
+function Door({ view, onPhotos, onFile, onSpeak, onWrite, onModel, onMenu, showMenu }: { view: Stage<"door"> } & MenuSetupHandlers) {
+  /** Os cartões que abrem outra tela ao toque; os outros abrem a câmera, a galeria ou os arquivos do celular. */
+  const tap = { speak: onSpeak, write: onWrite, model: onModel } as const;
   return (
     <>
       <TopBar title={MENU_TITLE} sub={view.sub} onMenu={onMenu} showMenu={showMenu} />
@@ -132,19 +141,20 @@ function Door({ view, onPhotos, onFile, onSpeak, onModel, onMenu, showMenu }: { 
                 <div className="nv-doorcard is-off" aria-disabled="true">
                   <DoorBody card={card} />
                 </div>
-              ) : card.id === "speak" || card.id === "model" ? (
-                <button type="button" className="nv-doorcard is-ready" onClick={card.id === "speak" ? onSpeak : onModel}>
+              ) : card.id === "speak" || card.id === "write" || card.id === "model" ? (
+                <button type="button" className="nv-doorcard is-ready" onClick={tap[card.id]}>
                   <DoorBody card={card} />
                 </button>
               ) : (
                 <label className="nv-doorcard is-ready">
                   <DoorBody card={card} />
-                  {card.id === "photo" ? (
+                  {card.id === "photo" || card.id === "gallery" ? (
                     <input
                       className="nv-sr"
                       type="file"
                       accept={card.accept}
-                      capture="environment"
+                      capture={card.id === "photo" ? "environment" : undefined}
+                      multiple={card.id === "gallery"}
                       aria-label={card.title}
                       onChange={(event) => {
                         const files = takeFiles(event);
@@ -295,6 +305,7 @@ function Reading({ view, onCancel }: { view: Stage<"reading"> } & MenuSetupHandl
 
 // ------------------------------------------------------------------------------------------------ falar
 
+/** Escrever os pratos: um por linha (Enter muda de linha). Quem escreve pouco escreve só "x-tudo 25, tem ovo e bacon". */
 function TypeBox({ onText }: { onText?: (text: string) => void }) {
   const [text, setText] = useState("");
   const ready = text.trim().length > 0;
@@ -309,14 +320,18 @@ function TypeBox({ onText }: { onText?: (text: string) => void }) {
       <label className="nv-text" htmlFor="nv-menu-type">
         <span>{MENU_TYPE_LABEL}</span>
       </label>
+      <p className="nv-code-hint" id="nv-menu-type-help">
+        {MENU_TYPE_HELP}
+      </p>
       <div className="nv-typerow">
-        <div className="nv-field">
-          <input
+        <div className="nv-field is-area">
+          <textarea
             id="nv-menu-type"
             value={text}
-            maxLength={600}
+            rows={3}
+            maxLength={1200}
             autoComplete="off"
-            enterKeyHint="send"
+            aria-describedby="nv-menu-type-help"
             placeholder={MENU_TYPE_HINT}
             onChange={(event) => setText(event.target.value)}
           />
@@ -389,6 +404,7 @@ function Speak({ view, onMic, onText, onRemoveDish, onUnclear, onFinish, onBack,
                       <div className="nv-dishrow-main">
                         <p className="nv-dishrow-name">{dish.name}</p>
                         <p className="nv-dishrow-price">{dish.missing ? MENU_NO_PRICE : dish.price}</p>
+                        {dish.inside ? <p className="nv-dishrow-inside">{dish.inside}</p> : null}
                       </div>
                       <div className="nv-dishrow-acts">
                         <button type="button" className="nv-icon-btn is-danger" aria-label={`${MENU_TAKE_OUT} ${dish.name}`} onClick={() => onRemoveDish?.(dish.id)}>
@@ -427,7 +443,7 @@ type ReviewDishProps = {
   editing: boolean;
   locked: boolean;
   onEdit?: (id: string | null) => void;
-  onChange?: (id: string, name: string, price: string) => void;
+  onChange?: (id: string, name: string, price: string, inside: string) => void;
   onRemoveDish?: (id: string) => void;
   onUse?: (id: string) => void;
 };
@@ -436,6 +452,7 @@ type ReviewDishProps = {
 function ReviewDishRow({ dish, editing, locked, onEdit, onChange, onRemoveDish, onUse }: ReviewDishProps) {
   const nameRef = useRef<HTMLInputElement>(null);
   const priceRef = useRef<HTMLInputElement>(null);
+  const insideRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if (editing) (dish.missing ? priceRef.current : nameRef.current)?.focus();
     // Só ao abrir: abrir de novo depois de um erro não deve tirar o foco de onde a pessoa está escrevendo.
@@ -449,7 +466,7 @@ function ReviewDishRow({ dish, editing, locked, onEdit, onChange, onRemoveDish, 
           className="nv-dishedit"
           onSubmit={(event) => {
             event.preventDefault();
-            onChange?.(dish.id, nameRef.current?.value ?? dish.name, priceRef.current?.value ?? dish.priceValue);
+            onChange?.(dish.id, nameRef.current?.value ?? dish.name, priceRef.current?.value ?? dish.priceValue, insideRef.current?.value ?? dish.inside);
           }}
         >
           <label className="nv-text" htmlFor={`nv-dish-name-${dish.id}`}>
@@ -463,6 +480,12 @@ function ReviewDishRow({ dish, editing, locked, onEdit, onChange, onRemoveDish, 
           </label>
           <div className="nv-field">
             <input id={`nv-dish-price-${dish.id}`} ref={priceRef} defaultValue={dish.priceValue} inputMode="decimal" autoComplete="off" placeholder={MENU_PRICE_HINT} />
+          </div>
+          <label className="nv-text" htmlFor={`nv-dish-inside-${dish.id}`}>
+            <span>{MENU_INSIDE_LABEL}</span>
+          </label>
+          <div className="nv-field is-area">
+            <textarea id={`nv-dish-inside-${dish.id}`} ref={insideRef} defaultValue={dish.inside} rows={2} maxLength={300} autoComplete="off" placeholder={MENU_INSIDE_HINT} />
           </div>
           <div className="nv-dishedit-acts">
             <button type="submit" className="nv-btn is-green is-small" disabled={locked}>
@@ -484,6 +507,7 @@ function ReviewDishRow({ dish, editing, locked, onEdit, onChange, onRemoveDish, 
         <div className="nv-dishrow-main">
           <p className="nv-dishrow-name">{dish.name}</p>
           <p className="nv-dishrow-price">{dish.missing ? MENU_NO_PRICE : dish.price}</p>
+          {dish.inside ? <p className="nv-dishrow-inside">{dish.inside}</p> : null}
         </div>
         <div className="nv-dishrow-acts">
           <button type="button" className={`nv-icon-btn${dish.missing ? " is-needed" : ""}`} aria-label={`${MENU_CHANGE} ${dish.name}`} disabled={locked} onClick={() => onEdit?.(dish.id)}>
@@ -604,7 +628,9 @@ function Done({ view, onMore, onSeeMenu }: { view: Stage<"done"> } & MenuSetupHa
  * Quem cadastra confere cada prato: o que está sem preço fica separado no alto e não entra no cadastro.
  */
 export default function MenuSetup({ view, busy = false, ...handlers }: Props) {
-  const orb = view.stage === "door" || view.stage === "pages" || view.stage === "done";
+  // A bolinha leva a pessoa a falar os pratos: na porta e no fim. Na tela de falar já existe o botão grande "Falar", e a bolinha cobriria a lixeira dos pratos;
+  // onde há fotos ou conferência ela também fica de fora para não atrapalhar.
+  const orb = view.stage === "door" || view.stage === "done";
   return (
     <div className="nv-root">
       <main className={`nv-screen nv-page-menu is-${view.stage}`}>
@@ -621,7 +647,7 @@ export default function MenuSetup({ view, busy = false, ...handlers }: Props) {
 
       {orb ? (
         <div className="nv-dock is-float">
-          <VoiceOrb label="Falar com o Vem" />
+          <VoiceOrb label="Falar os pratos" onPress={handlers.onOrb} />
         </div>
       ) : null}
     </div>

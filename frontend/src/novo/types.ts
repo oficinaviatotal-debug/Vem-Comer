@@ -506,7 +506,7 @@ export type SettleView = {
 
 /** Um jeito de começar: tocável quando `state` é "ready"; senão só informa, liso, e a frase do `hint` diz o porquê. */
 export type MenuDoorCard = {
-  id: "photo" | "file" | "speak" | "model";
+  id: "photo" | "gallery" | "file" | "speak" | "write" | "model";
   title: string;
   hint: string;
   state: "ready" | "loading" | "off";
@@ -519,7 +519,8 @@ export type MenuDoorCard = {
 export type MenuPageThumb = { id: number; src: string; label: string };
 
 /** Um prato como aparece na lista de quem está falando. */
-export type MenuHeardDish = { id: string; name: string; price: string; missing: boolean };
+/** `inside` é o que vai dentro do prato, como foi dito ou lido ("" quando não há). */
+export type MenuHeardDish = { id: string; name: string; price: string; missing: boolean; inside: string };
 export type MenuHeardGroup = { id: string; name: string; dishes: MenuHeardDish[] };
 
 /** Um prato na conferência: `price` é a frase ("R$ 25,00"), `priceValue` é o que vai no campo ("25,00"). */
@@ -531,6 +532,8 @@ export type MenuReviewDish = {
   price: string;
   priceValue: string;
   missing: boolean;
+  /** O que vai dentro do prato ("Ovo, bacon, salame"), exatamente o que foi dito, escrito ou lido da foto. "" quando não há. */
+  inside: string;
   /** Preço que parece engano de escuta ("300" no lugar de "3,00"): a frase e o valor que o toque aplica ("" quando não há palpite). */
   doubt: { text: string; use: string } | null;
 };

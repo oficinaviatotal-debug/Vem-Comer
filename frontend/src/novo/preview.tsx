@@ -701,9 +701,11 @@ type MenuStage =
   | "lendo"
   | "falar"
   | "ouvindo"
+  | "escrever"
   | "sem-microfone"
   | "conferir"
   | "editando"
+  | "editando-sem-lista"
   | "sem-preco"
   | "vazio"
   | "erro-cadastro"
@@ -790,22 +792,23 @@ function MenuSetupPreview({ stage }: { stage: MenuStage }) {
           ? "prices"
           : stage === "modelo-conferir"
             ? "review"
-            : stage === "foto" || stage === "foto-erro" ? "pages" : stage === "lendo" ? "reading" : stage === "falar" || stage === "ouvindo" || stage === "sem-microfone" ? "speak" : stage === "cadastrado" ? "done" : stage === "conferir" || stage === "editando" || stage === "sem-preco" || stage === "vazio" || stage === "erro-cadastro" ? "review" : "door";
+            : stage === "foto" || stage === "foto-erro" ? "pages" : stage === "lendo" ? "reading" : stage === "falar" || stage === "ouvindo" || stage === "escrever" || stage === "sem-microfone" ? "speak" : stage === "cadastrado" ? "done" : stage === "conferir" || stage === "editando" || stage === "editando-sem-lista" || stage === "sem-preco" || stage === "vazio" || stage === "erro-cadastro" ? "review" : "door";
   const [where, setWhere] = useState<Where>(first);
   const [pages, setPages] = useState(() => (first === "pages" ? [{ id: 1, url: pageUrl(0) }, { id: 2, url: pageUrl(1) }] : []));
   const [nextPage, setNextPage] = useState(3);
   const [flow, setFlow] = useState<FlowState>(() => {
     if (stage.startsWith("modelo")) return modelFlowFor(stage);
+    if (stage === "escrever") return startSpeak();
     if (stage === "falar" || stage === "ouvindo" || stage === "sem-microfone") return spokenFlow().flow;
     if (stage === "sem-preco") return startFromParsed({ readable: true, notes: "", categories: [{ name: "Lanches", items: [{ name: "X-tudo", price: "" }, { name: "X-salada", price: "" }] }] });
     if (stage === "vazio") return startFromParsed({ readable: true, notes: "", categories: [] });
-    return stage === "conferir" || stage === "editando" || stage === "erro-cadastro" || stage === "cadastrado" ? readFlow() : startSpeak();
+    return stage === "conferir" || stage === "editando" || stage === "editando-sem-lista" || stage === "erro-cadastro" || stage === "cadastrado" ? readFlow() : startSpeak();
   });
   const [heading, setHeading] = useState("");
   const [notice, setNotice] = useState(stage === "falar" ? "Anotei Água mineral. Falta o preço." : "");
   const [unclear, setUnclear] = useState<string[]>([]);
   const [listening, setListening] = useState(stage === "ouvindo");
-  const [editing, setEditing] = useState<string | null>(stage === "editando" ? "0-3" : null);
+  const [editing, setEditing] = useState<string | null>(stage === "editando" ? "0-3" : stage === "editando-sem-lista" ? "0-2" : null);
   const [error, setError] = useState(stage === "erro-cadastro" ? "Sem sinal. Nada foi cadastrado. Tente de novo." : "");
   const [models, setModels] = useState<typeof MODEL_TYPES | null>(stage === "modelo-carregando" || stage === "modelo-erro" ? null : MODEL_TYPES);
   const [query, setQuery] = useState(stage === "modelo-busca" ? "pizza" : stage === "modelo-sem-resultado" ? "sushi bar" : "");
@@ -842,7 +845,7 @@ function MenuSetupPreview({ stage }: { stage: MenuStage }) {
         : where === "reading"
           ? readingViewOf()
           : where === "speak"
-            ? speakViewOf({ flow, listening, canListen: stage !== "sem-microfone", heard: listening ? "coca lata seis reais" : "", notice, unclear })
+            ? speakViewOf({ flow, listening, canListen: stage !== "sem-microfone", heard: listening ? "x-tudo vinte e cinco, vai ter ovo e bacon" : "", notice, unclear })
             : where === "review"
               ? reviewViewOf({ flow, editing, error })
               : doneViewOf({ products_created: 8, products_skipped: 1 });
@@ -875,6 +878,17 @@ function MenuSetupPreview({ stage }: { stage: MenuStage }) {
       onFile={() => read()}
       onSpeak={() => {
         setFlow(startSpeak());
+        setListening(true);
+        setWhere("speak");
+      }}
+      onWrite={() => {
+        setFlow(startSpeak());
+        setListening(false);
+        setWhere("speak");
+      }}
+      onOrb={() => {
+        setFlow(startSpeak());
+        setListening(true);
         setWhere("speak");
       }}
       onModel={() => {
@@ -955,8 +969,8 @@ function MenuSetupPreview({ stage }: { stage: MenuStage }) {
         setEditing(id);
         setError("");
       }}
-      onChange={(id, name, price) => {
-        const outcome = applyEdit(flow, id, name, price);
+      onChange={(id, name, price, inside) => {
+        const outcome = applyEdit(flow, id, name, price, inside);
         if (outcome.problem) return setError(outcome.problem === "price" ? "Não entendi esse preço. Escreva só números, por exemplo 18,50." : "Esse nome ficou vazio ou já existe nesta categoria.");
         setFlow(outcome.flow);
         setEditing(null);
@@ -999,9 +1013,11 @@ function Screen() {
     "cardapio-lendo": "lendo",
     "cardapio-falar": "falar",
     "cardapio-ouvindo": "ouvindo",
+    "cardapio-escrever": "escrever",
     "cardapio-sem-microfone": "sem-microfone",
     "cardapio-conferir": "conferir",
     "cardapio-editando": "editando",
+    "cardapio-editando-sem-lista": "editando-sem-lista",
     "cardapio-sem-preco": "sem-preco",
     "cardapio-vazio": "vazio",
     "cardapio-erro-cadastro": "erro-cadastro",

@@ -681,10 +681,13 @@ test("cardápio: a porta sobe do chão quando funciona e fica lisa quando o serv
   // Foto e arquivo são rótulos com o campo de arquivo dentro: o toque em qualquer ponto do cartão abre a câmera ou o seletor.
   assert.match(setup, /<label className="nv-doorcard is-ready">/);
   // Falar e começar de um modelo são botões (não há arquivo para abrir): o mesmo cartão, o mesmo toque.
-  assert.match(setup, /<button type="button" className="nv-doorcard is-ready" onClick=\{card\.id === "speak" \? onSpeak : onModel\}>/);
-  assert.match(setup, /card\.id === "speak" \|\| card\.id === "model"/);
+  assert.match(setup, /<button type="button" className="nv-doorcard is-ready" onClick=\{tap\[card\.id\]\}>/);
+  assert.match(setup, /const tap = \{ speak: onSpeak, write: onWrite, model: onModel \} as const;/);
+  assert.match(setup, /card\.id === "speak" \|\| card\.id === "write" \|\| card\.id === "model"/);
   assert.match(setup, /<div className="nv-doorcard is-off" aria-disabled="true">/);
-  assert.match(setup, /capture="environment"/);
+  // A câmera abre a câmera; a foto do celular abre a galeria (sem "capture"), e aceita mais de uma.
+  assert.match(setup, /capture=\{card\.id === "photo" \? "environment" : undefined\}/);
+  assert.match(setup, /multiple=\{card\.id === "gallery"\}/);
   assert.match(block(".nv-doorcard"), /box-shadow: var\(--nv-card-3d\)/);
   assert.match(block(".nv-doorcard.is-ready:active"), /translateY\(3px\)/);
   assert.match(block(".nv-doorcard.is-off"), /box-shadow: var\(--nv-panel-3d\)/, "o que não funciona é liso");
@@ -731,8 +734,12 @@ test("cardápio: o microfone é a tecla grande, escurece e pulsa ouvindo, e o av
 test("cardápio: o que se escreve é campo afundado, com rótulo de verdade, e o aviso de cada etapa fica numa região viva", () => {
   const setup = read("MenuSetup.tsx");
   assert.match(setup, /<label className="nv-text" htmlFor="nv-menu-type">/);
-  assert.match(setup, /<input\s+id="nv-menu-type"/);
-  assert.match(setup, /enterKeyHint="send"/);
+  // Escrever os pratos é um campo de várias linhas (um prato por linha), com a ajuda ligada ao campo.
+  assert.match(setup, /<textarea\s+id="nv-menu-type"/);
+  assert.match(setup, /rows=\{3\}/);
+  assert.match(setup, /aria-describedby="nv-menu-type-help"/);
+  assert.match(setup, /<label className="nv-text" htmlFor=\{`nv-dish-inside-\$\{dish\.id\}`\}>/);
+  assert.match(setup, /defaultValue=\{dish\.inside\}/);
   assert.match(setup, /<label className="nv-text" htmlFor=\{`nv-dish-name-\$\{dish\.id\}`\}>/);
   assert.match(setup, /<label className="nv-text" htmlFor=\{`nv-dish-price-\$\{dish\.id\}`\}>/);
   assert.match(setup, /inputMode="decimal"/);
@@ -770,9 +777,17 @@ test("cardápio: 'Usar R$ x' só aparece quando há palpite, e Cadastrar fica pr
   assert.match(block(".nv-page-menu.is-review"), /padding-bottom: 24px/);
 });
 
-test("cardápio: nas etapas com tecla grande própria (falar, conferir) a bolinha de voz não disputa o lugar", () => {
+test("cardápio: a bolinha de voz leva a falar os pratos na porta e no fim; na tela de falar (que já tem o botão grande), nas fotos e na conferência ela fica de fora", () => {
   const setup = read("MenuSetup.tsx");
-  assert.match(setup, /const orb = view\.stage === "door" \|\| view\.stage === "pages" \|\| view\.stage === "done";/);
+  assert.match(setup, /const orb = view\.stage === "door" \|\| view\.stage === "done";/);
+  assert.doesNotMatch(setup, /const listening = view\.stage/, "na tela de falar não há bolinha para mostrar que está ouvindo: quem mostra é o botão grande");
+  // A bolinha faz o que o rótulo diz: sem a função ela só enfeita (a pré-visualização), com ela vai falar.
+  assert.match(setup, /<VoiceOrb label="Falar os pratos" onPress=\{handlers\.onOrb\} \/>/);
+  const orb = read("parts.tsx");
+  assert.match(orb, /aria-pressed=\{listening === undefined \? undefined : listening\}/);
+  assert.match(orb, /onClick=\{onPress\}/);
+  assert.match(block(".nv-orb.is-listening"), /background: radial-gradient/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.nv-orb\.is-listening svg \{\s*animation: none;/);
 });
 
 test("cardápio: a roda de espera é redonda e o texto que a explica não está escondido de quem lê tela", () => {
@@ -843,7 +858,7 @@ test("modelo: o preço é um prato por vez, em campo grande de número, com o er
 
 test("modelo: nas telas do modelo a bolinha de voz não disputa o lugar e a roda de espera só enfeita", () => {
   const setup = read("MenuSetup.tsx");
-  assert.match(setup, /const orb = view\.stage === "door" \|\| view\.stage === "pages" \|\| view\.stage === "done";/);
+  assert.match(setup, /const orb = view\.stage === "door" \|\| view\.stage === "done";/);
   assert.match(setup, /\{view\.stage === "types" \? <ModelTypes view=\{view\} \{\.\.\.handlers\} \/> : null\}/);
   assert.match(setup, /\{view\.stage === "pick" \? <ModelPick view=\{view\} \{\.\.\.handlers\} \/> : null\}/);
   assert.match(setup, /\{view\.stage === "prices" \? <ModelPrices view=\{view\} \{\.\.\.handlers\} \/> : null\}/);

@@ -133,6 +133,8 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
   const silent = useRef(0);
   const working = useRef(false);
   const voiceWorks = useMemo(() => canListen(), []);
+  /** Escolheu "Escrever os pratos": ao abrir a tela de falar, o foco vai para o campo de escrever (e não para o aviso). */
+  const writeFirst = useRef(false);
 
   useEffect(() => {
     alive.current = true;
@@ -161,6 +163,11 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
       return;
     }
     if (stepKey === "prices") return;
+    if (stepKey === "speak" && writeFirst.current) {
+      writeFirst.current = false;
+      document.getElementById("nv-menu-type")?.focus();
+      return;
+    }
     document.getElementById("nv-menu-live")?.focus();
   }, [stepKey]);
 
@@ -473,6 +480,7 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
     setUnclear([]);
     setEditing(null);
     setReviewError("");
+    writeFirst.current = false;
     setWhere("door");
   }, [clearPages, stopListening]);
 
@@ -513,6 +521,23 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
     setWhere("speak");
   }, []);
 
+  /**
+   * Abre a tela de falar os pratos. Por voz, o celular já começa a ouvir (o toque que abriu a tela é o que o navegador exige para ligar o microfone);
+   * por escrito, ou se o celular não escuta, o foco vai para o campo de escrever.
+   */
+  const beginSpeaking = useCallback(
+    (byVoice: boolean) => {
+      startSpeaking();
+      if (byVoice && canListen()) {
+        writeFirst.current = false;
+        void mic();
+      } else {
+        writeFirst.current = true;
+      }
+    },
+    [mic, startSpeaking],
+  );
+
   // ------------------------------------------------------------------------------------------ a tela
 
   const view = (() => {
@@ -548,7 +573,9 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
         void addFiles(files);
       }}
       onFile={readFile}
-      onSpeak={startSpeaking}
+      onSpeak={() => beginSpeaking(true)}
+      onWrite={() => beginSpeaking(false)}
+      onOrb={() => beginSpeaking(true)}
       onModel={openTypes}
       onQuery={(text) => {
         setQuery(text);
@@ -603,8 +630,8 @@ export default function MenuSetupScreen({ companyId, onMenu, onSeeMenu }: Props)
         setEditing(id);
         setReviewError("");
       }}
-      onChange={(id, name, price) => {
-        const outcome = applyEdit(flow, id, name, price);
+      onChange={(id, name, price, inside) => {
+        const outcome = applyEdit(flow, id, name, price, inside);
         if (outcome.problem) return setReviewError(outcome.problem === "price" ? MENU_PRICE_BAD : MENU_NAME_BAD);
         setFlow(outcome.flow);
         setEditing(null);
