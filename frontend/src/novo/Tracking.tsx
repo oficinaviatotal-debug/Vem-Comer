@@ -4,6 +4,7 @@ import NvIcon from "./Icons";
 import { money } from "./format";
 import { OFFLINE_NOTE, PIX_AFTER_TEXT, PIX_ERROR_TEXT, PIX_MISSING_TEXT, PIX_STEPS, RATING_THANKS, copiedText } from "./copy";
 import { onRadioKeys, radioTab } from "./keys";
+import { VoiceOrb } from "./parts";
 import type { Option, Pix, Rating, Track } from "./types";
 
 /** A página do acompanhamento: o topo com "voltar" e, embaixo dele, um comprovante por pedido. */
@@ -34,6 +35,10 @@ export function TrackingPage({
         </header>
         {children}
       </main>
+
+      <div className="nv-dock is-float">
+        <VoiceOrb label="Falar com o Vem" />
+      </div>
     </div>
   );
 }

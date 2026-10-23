@@ -16,6 +16,8 @@ import type { Company } from "./customer/types";
 
 // O painel novo só é baixado por quem liga a chave (?novo=1): para todos os outros nada muda.
 const PanelShell = lazy(() => import("./painel/PanelShell"));
+// O mesmo vale para o pedido do cliente no visual novo: quem não liga a chave continua no aplicativo de sempre.
+const OrderFlow = lazy(() => import("./loja/OrderFlow"));
 
 /**
  * A chave do painel novo: desligada por padrão. `?novo=1` liga (e este aparelho lembra), `?novo=0` desliga.
@@ -120,6 +122,14 @@ export default function App() {
       );
     }
     return <AdminPanel companyId={company.id} companySlug={company.slug} companyName={company.name} onBack={() => setAdmin(false)} />;
+  }
+
+  if (freshPanel) {
+    return (
+      <Suspense fallback={<main className="loading-state">Carregando…</main>}>
+        <OrderFlow company={company} tableId={tableId} />
+      </Suspense>
+    );
   }
 
   return (

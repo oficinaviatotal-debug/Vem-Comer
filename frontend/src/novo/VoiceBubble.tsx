@@ -16,17 +16,19 @@ type Props = {
   onClose?: () => void;
   /** Os botões de uma pergunta ("Marcar como esgotado?" Sim / Não). Com eles a faixa não tem o Fechar: o "Não" já fecha. */
   actions?: readonly VoiceAction[];
+  /** A faixa vai para o alto da tela. Serve quando uma folha (as escolhas do prato) cobre a parte de baixo. */
+  top?: boolean;
 };
 
 /**
  * A resposta da bolinha de voz: uma faixa curta acima dela com o que o celular ouviu e o que o painel vai fazer. Quem
  * não lê bem ouve a mesma frase em voz alta; quem não pode ouvir lê aqui. Some sozinha (o painel decide quando).
  */
-export default function VoiceBubble({ tone, text, heard = "", onClose, actions = [] }: Props) {
+export default function VoiceBubble({ tone, text, heard = "", onClose, actions = [], top = false }: Props) {
   const said = heard.trim();
   const asking = actions.length > 0;
   return (
-    <div className="nv-root nv-voice" role="status" aria-live="polite" aria-label={VOICE_BUBBLE_LABEL}>
+    <div className={`nv-root nv-voice${top ? " is-top" : ""}`} role="status" aria-live="polite" aria-label={VOICE_BUBBLE_LABEL}>
       <div className={`nv-voice-bubble is-${tone}`}>
         <div className="nv-voice-text">
           {said ? <p className="nv-voice-heard">{VOICE_HEARD(said)}</p> : null}

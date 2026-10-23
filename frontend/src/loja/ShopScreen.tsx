@@ -23,14 +23,22 @@ type Props = {
   onTrack?: () => void;
   /** Toque em "Mesa 4": volta à tela da mesa (chamar o garçom). Sem mesa, sem botão. */
   onTable?: () => void;
+  /**
+   * O texto da busca. Com `query` e `onQuery` quem usa a tela manda nele (a voz escreve na busca: "buscar suco");
+   * sem eles a tela guarda o próprio texto.
+   */
+  query?: string;
+  onQuery?: (value: string) => void;
 };
 
 /**
  * O cardápio de verdade: mostra o que o servidor disse (aberto, fechado, em pausa, prato esgotado) e mexe na sacola.
  * Quem busca os dados é `useShop`; aqui só se desenha e se toca.
  */
-export default function ShopScreen({ shop, tableId, jobsHref = null, onChoose, onBag, ordersCount = 0, onTrack, onTable }: Props) {
-  const [query, setQuery] = useState("");
+export default function ShopScreen({ shop, tableId, jobsHref = null, onChoose, onBag, ordersCount = 0, onTrack, onTable, query: givenQuery, onQuery }: Props) {
+  const [ownQuery, setOwnQuery] = useState("");
+  const query = givenQuery ?? ownQuery;
+  const setQuery = onQuery ?? setOwnQuery;
   const { live, products, menus, cart, tableNumber, soldOutNote, setCart } = shop;
 
   const view = useMemo(

@@ -13,6 +13,7 @@
  */
 import { isManager } from "../nav/navLogic.ts";
 import { plainPhraser, type Phraser } from "../novo/phrasing.ts";
+import { captionMs, normalizeSpeech } from "../novo/speech.ts";
 import { canMarkDishes, parseDishCommand, type DishAction } from "./voiceDishLogic.ts";
 import { SAY_BLOCKED, SAY_HELP, SAY_HERE, SAY_NO_EXAMPLES, SAY_OPENING, SAY_UNKNOWN } from "../novo/voiceCopy.ts";
 
@@ -28,19 +29,8 @@ export type VoiceAnswer =
   /** Não entendeu: a frase diz o que falar. */
   | { kind: "unknown"; say: string };
 
-/**
- * O que a pessoa disse, em letras minúsculas, sem acento e sem pontuação, com um espaço antes e outro depois: assim
- * " pedidos " só casa com a palavra inteira (e "pedidos de ajuda" casa por inteiro, mas "mesa" não casa dentro de "mesada").
- */
-export function normalizeSpeech(text: string | null | undefined): string {
-  const plain = String(text ?? "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-  return ` ${plain} `;
-}
+/** A fala é lida em `novo/speech.ts` (a mesma do lado do cliente); aqui continua com o nome de sempre. */
+export { captionMs, normalizeSpeech };
 
 type Target = {
   /** O nome da tela no painel (o mesmo do menu). */
@@ -362,10 +352,4 @@ export function voiceViews(): string[] {
 /** Todas as frases que a voz entende (para o teste conferir que estão em letras minúsculas, sem acento). */
 export function voicePhrases(): string[] {
   return [...TARGETS.flatMap((target) => target.says), ...HELP_SAYS, ...BRIEF_SAYS];
-}
-
-/** Quanto tempo a resposta fica na tela: o tempo de ler, com um mínimo (8 s) e um máximo (20 s). */
-export function captionMs(text: string): number {
-  const read = String(text ?? "").length * 70;
-  return Math.max(8000, Math.min(20000, read));
 }

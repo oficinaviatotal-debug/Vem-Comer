@@ -1,6 +1,9 @@
 import { useState } from "react";
+import VoiceBubble from "../novo/VoiceBubble";
+import { VoiceContext } from "../novo/voice";
 import { addConfigured, lineKey, replaceLine, type CartLine } from "../customer/cart";
 import { orderMemory, type RememberedOrder } from "../customer/orderMemory";
+import { closedState } from "../customer/openness";
 import type { Company, Product } from "../customer/types";
 import BagScreen, { type SentOrder } from "./BagScreen";
 import ChoicesScreen, { initialOf } from "./ChoicesScreen";
@@ -8,7 +11,9 @@ import ShopScreen from "./ShopScreen";
 import TableScreen from "./TableScreen";
 import TrackingScreen from "./TrackingScreen";
 import type { ChoicesPick } from "./choicesLogic";
+import { SEARCH_FROM } from "./shopLogic";
 import { useShop } from "./useShop";
+import { useShopVoice } from "./useShopVoice";
 
 type Props = {
   company: Company;
@@ -22,7 +27,7 @@ type Props = {
 type Screen = "menu" | "bag" | "tracking" | "table";
 
 /** O prato aberto nas escolhas; com `editKey`, é uma linha da sacola sendo mudada. */
-type Picking = { product: Product; editKey?: string; line?: CartLine };
+type Picking = { product: Product; editKey?: string; line?: CartLine; quantity?: number };
 
 /**
  * O caminho do cliente no visual novo: mesa, cardápio, escolhas do prato, sacola, envio e acompanhamento (com o Pix).
@@ -37,6 +42,8 @@ export default function OrderFlow({ company, tableId, jobsHref = null, onSent }:
   // Mesa que não existe: sem tela da mesa, vai direto ao cardápio (o aviso de "mesa não encontrada" já aparece lá).
   const screen: Screen = screenState === "table" && (!tableId || shop.tableLost) ? "menu" : screenState;
   const [picking, setPicking] = useState<Picking | null>(null);
+  // O texto da busca fica aqui para a voz poder escrever nele ("buscar suco") e a pessoa ver e corrigir.
+  const [query, setQuery] = useState("");
 
   const goTo = (next: Screen) => {
     setScreen(next);
@@ -57,11 +64,30 @@ export default function OrderFlow({ company, tableId, jobsHref = null, onSent }:
     if (next.length === 0) goTo("menu");
   };
 
+  // A voz do cliente: só mexe na sacola, abre telas e escreve na busca. Nunca envia, paga nem chama o garçom.
+  const voice = useShopVoice({
+    screen,
+    load: shop.load,
+    products: shop.products,
+    menus: shop.menus,
+    cart: shop.cart,
+    setCart: shop.setCart,
+    closed: closedState(shop.live, Boolean(tableId)) !== null,
+    hasTable: Boolean(tableId) && !shop.tableLost,
+    ordersCount: orders.length,
+    searchable: shop.products.length >= SEARCH_FROM,
+    onGo: goTo,
+    onChoose: (product, quantity) => setPicking({ product, quantity }),
+    onSearch: setQuery,
+  });
+
   return (
-    <>
+    <VoiceContext.Provider value={{ onPress: voice.press, listening: voice.listening }}>
       {screen === "menu" ? (
         <ShopScreen
           shop={shop}
+          query={query}
+          onQuery={setQuery}
           tableId={tableId}
           jobsHref={jobsHref}
           onChoose={(product) => setPicking({ product })}
@@ -107,10 +133,27 @@ export default function OrderFlow({ company, tableId, jobsHref = null, onSent }:
           key={picking.editKey ?? picking.product.id}
           product={picking.product}
           initial={picking.line ? initialOf(picking.product, picking.line) : undefined}
-          onConfirm={confirm}
-          onClose={() => setPicking(null)}
+          quantity={picking.quantity}
+          onConfirm={(pick) => {
+            confirm(pick);
+            voice.close();
+          }}
+          onClose={() => {
+            setPicking(null);
+            voice.close();
+          }}
         />
       ) : null}
-    </>
+      {voice.caption ? (
+        <VoiceBubble
+          tone={voice.caption.tone}
+          text={voice.caption.text}
+          heard={voice.caption.heard}
+          actions={voice.caption.actions}
+          onClose={voice.close}
+          top={picking !== null}
+        />
+      ) : null}
+    </VoiceContext.Provider>
   );
 }

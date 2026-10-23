@@ -516,3 +516,5 @@ export const DICTATE_MODEL_ADD = "Falar o prato para acrescentar";
 // ---------------------------------------------------------------- confirmar por voz ("acabou o pastel"): nome dos dois botões da faixa
 export const VOICE_YES = "Sim";
 export const VOICE_NO = "Não";
+/** O botão que desfaz o que a voz acabou de pôr na sacola. O nome não varia. */
+export const VOICE_UNDO = "Desfazer";

@@ -5,12 +5,14 @@ import { groupsOf, selectionFromChosen, type Selection } from "../customer/optio
 import type { Product } from "../customer/types";
 import { mediaUrl } from "../service/api";
 import { useSheetBehavior } from "./useSheetBehavior";
-import { choicesViewOf, confirmChoices, nextQuantity, pressOption, type ChoicesPick } from "./choicesLogic";
+import { choicesViewOf, clampQuantity, confirmChoices, nextQuantity, pressOption, type ChoicesPick } from "./choicesLogic";
 
 type Props = {
   product: Product;
   /** Mudando uma linha que já está na sacola: o que ela tinha. Sem isso, a folha abre em branco. */
   initial?: { selection: Selection; note: string; quantity: number };
+  /** Quantas a pessoa já pediu (a voz: "duas pizzas"). A folha abre com esse número; o botão continua dizendo Adicionar. Ignorado em `initial`. */
+  quantity?: number;
   onConfirm: (pick: ChoicesPick) => void;
   onClose: () => void;
 };
@@ -26,10 +28,10 @@ function showProblem(groupId: string | null) {
 }
 
 /** A folha das escolhas de um prato: guarda o que a pessoa marcou e só deixa adicionar quando está completo. */
-export default function ChoicesScreen({ product, initial, onConfirm, onClose }: Props) {
+export default function ChoicesScreen({ product, initial, quantity: asked, onConfirm, onClose }: Props) {
   const [selection, setSelection] = useState<Selection>(initial?.selection ?? {});
   const [note, setNote] = useState(initial?.note ?? "");
-  const [quantity, setQuantity] = useState(initial?.quantity ?? 1);
+  const [quantity, setQuantity] = useState(initial?.quantity ?? clampQuantity(asked ?? 1));
   const [tried, setTried] = useState(false);
   useSheetBehavior(onClose);
 

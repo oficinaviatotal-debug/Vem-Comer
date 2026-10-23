@@ -3,6 +3,7 @@ import "./novo.css";
 import NvIcon, { type NvIconName } from "./Icons";
 import { onRadioKeys, radioTab } from "./keys";
 import { money } from "./format";
+import { VoiceOrb } from "./parts";
 import type { Bag, BagDelivery } from "./types";
 
 /** Quanto a observação de uma linha pode ter (o servidor recusa mais que isso; ver customer/options.ts). */
@@ -399,6 +400,7 @@ export default function BagScreen({
           <button type="button" className="nv-btn is-green is-block nv-send" disabled={sending} onClick={onSend}>
             {sending ? "Enviando…" : `Enviar pedido · ${money(bag.total)}`}
           </button>
+          <VoiceOrb label="Falar com o Vem" />
         </div>
       )}
     </div>

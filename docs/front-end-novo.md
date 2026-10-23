@@ -1039,8 +1039,7 @@ Frases da faixa e do resumo em `novo/voiceCopy.ts` (motor em `novo/phrasing.ts`;
 - A lista de palavras é **palpite meu** sobre como o dono fala. Vale ouvir donos de verdade e ajustar: é só acrescentar frases em `voiceNavLogic.ts` (o teste confere que nenhuma frase fica em duas telas).
 - O reconhecimento é o do próprio navegador do celular (precisa de internet e de permissão do microfone). Onde o navegador não oferece, a bolinha avisa e manda ao menu. **Não foi testado em um Android
   de verdade**, só com um microfone de teste no navegador.
-- **Ainda não faz**: cadastrar ou mudar coisas por voz no painel (**marcar prato esgotado ou de volta, feito na vigésima quinta rodada**; o resto, não), responder perguntas além do resumo do dia ("qual prato vende mais?"), microfone ao lado de cada campo de escrever (**feito na vigésima quarta rodada** para os campos de texto livre do painel novo), e a voz do lado do cliente (a bolinha do cardápio do cliente
-  continua só enfeite).
+- **Ainda não faz**: cadastrar ou mudar coisas por voz no painel (**marcar prato esgotado ou de volta, feito na vigésima quinta rodada**; o resto, não), responder perguntas além do resumo do dia ("qual prato vende mais?"), microfone ao lado de cada campo de escrever (**feito na vigésima quarta rodada** para os campos de texto livre do painel novo), e a voz do lado do cliente (**feita na vigésima sexta rodada**: põe prato na sacola com Desfazer, abre as escolhas, busca e abre telas; nunca envia, paga nem chama o garçom).
 - Nada disso vai ao ar sem o "pode": a chave `?novo=1` continua desligada por padrão.
 
 **Como foi conferido:** `tests/novo/voiceNavLogic.test.mjs` (25: a fala sem acento e sem pontuação, cada tela do menu tem frase, nenhuma frase em duas telas, a frase mais comprida, o que cada função não abre, bloqueio por plano,
@@ -1153,6 +1152,45 @@ o botão e a bolinha ficam marcados ouvindo, tocar de novo cancela, mudar de tel
 (**163 conferências, 24 novas**): pergunta com o nome certo e Sim/Não, nada no servidor antes do "sim", o servidor recebeu o pedido certo uma vez, o "não" não manda nada, o "sim" falado na bolinha vale, dois açaís pedem o nome inteiro, prato já esgotado não pergunta, prato que não existe abre Pratos,
 outra frase/silêncio/cancelar derrubam a pergunta, servidor com defeito e recusa 4xx, lista que não carrega, garçom e caixa sem pergunta, cozinha marca, e a tela de Pratos mostra o prato esgotado logo depois.
 **700 testes passam só na pasta do visual novo (1539 no total das pastas de teste)**; tipos, build, segurança e conformidade em ordem.
+
+## Vigésima sexta rodada: a voz do lado do cliente, só na sacola e sempre com Desfazer (23/10/2026)
+
+"Continue" (GD, 23/10, 20:13). Até aqui a bolinha do cardápio do cliente era só enfeite. Agora o caminho do cliente no visual novo (`loja/OrderFlow.tsx`: cardápio, escolhas do prato, sacola, acompanhamento, mesa) **está ligado ao aplicativo atrás da mesma chave `?novo=1`** (sem a chave, o cliente continua no aplicativo de sempre) e a bolinha **ouve**.
+
+**O que a pessoa pode dizer** (conta em `loja/shopVoiceLogic.ts`, microfone e sacola em `loja/useShopVoice.ts`, achar o prato em `loja/dishFinder.ts`):
+
+- **"Quero dois pastéis de carne"**, "um açaí 500", ou só o nome do prato: o prato simples **entra na sacola** com a quantidade dita, a faixa diz como a sacola ficou ("A sacola está com 2 itens, R$ 18,00.") e traz o botão **Desfazer**, que tira da sacola só o que a voz pôs.
+- **Prato com tamanho ou extras** ("uma pizza", "duas pizzas"): a voz **abre a folha das escolhas** já com a quantidade dita e manda tocar em **Adicionar**. Quem escolhe o tamanho é a pessoa; a voz não adivinha.
+- **"Tirar um pastel de carne"**: tira da sacola e diz como ficou.
+- **"Buscar suco"**, "tem suco?": escreve na caixa de busca que a pessoa vê e lê o que achou.
+- **"Abrir a sacola"**, "cardápio", "acompanhar o pedido", "chamar o garçom", "voltar": abre a tela; se falta algo (sacola vazia, sem pedido, sem mesa) diz o que falta.
+- "Ajuda" ensina frases com pratos de verdade do cardápio.
+
+**Regras de honestidade e de segurança** (todas com teste):
+
+- **A voz nunca envia o pedido, nunca paga e nunca chama o garçom.** O gancho nem conhece essas ações (um teste confere que ele só usa a sacola, abrir tela, escrever na busca e abrir a folha). "Enviar o pedido" abre a sacola e **manda tocar em Enviar pedido**; já dentro da sacola, só repete onde tocar. "Chamar o garçom" abre a tela da mesa e **manda tocar em Chamar garçom ou Pedir a conta**.
+- **Não adivinha:** dois pratos parecidos ("pastel"): lista os nomes e pede o nome inteiro; prato que não existe: diz e ensina a dizer como está na tela.
+- **Diz a verdade do cardápio:** restaurante fechado, prato esgotado ou indisponível: a voz diz isso e **não põe nada na sacola**. Cardápio ainda abrindo ou que não abriu: diz isso, nunca "não achei".
+- Quantidade acima do máximo da sacola é recusada com a frase certa; "quero ver a sacola" não vira prato.
+- Os nomes dos botões que a voz cita (Adicionar, Enviar pedido, Chamar garçom, Pedir a conta, Tentar de novo, Desfazer) **são os da tela**, e um teste lê o código das telas para conferir.
+- As frases variam e encurtam pelo mesmo motor da rodada 23, sempre com os mesmos fatos.
+
+**Defeitos reais que a conferência no navegador achou e eu corrigi:**
+
+1. A faixa da voz ficava **escondida atrás da folha das escolhas** (a folha cobre a tela inteira): agora a faixa sobe para o alto, por cima de tudo, enquanto a folha está aberta.
+2. Dentro da sacola, "enviar o pedido" respondia só "você está na sacola": agora diz onde tocar.
+3. Dentro da tela da mesa, "chamar o garçom" respondia só "você já está na mesa": agora diz quais botões tocar.
+
+**Limites honestos:**
+
+- **Não foi testado em Android de verdade**, só com microfone de teste. As listas de palavras ("quero", "tirar", "buscar", "abrir"…) e como o celular escreve os pratos são **palpite meu** para afinar com clientes de verdade.
+- O caminho novo do cliente **ainda não tem o link "Sou da equipe ou dono"** que o aplicativo de sempre tem no rodapé. Isso precisa entrar antes de ligar para o público.
+- A voz do cliente, como a do painel, usa o reconhecimento do navegador (no Chrome o áudio vai para o Google). O texto de privacidade sobre isso **continua dependendo de advogado**.
+- Nada disso vai ao ar sem o "pode": a chave `?novo=1` continua desligada por padrão.
+
+**Como foi conferido:** `tests/novo/shopVoiceLogic.test.mjs` (25 testes: quantidade, plural, máximo, número no nome, prato com escolhas, fechado/esgotado/indisponível, mais de um, nenhum, tirar, telas, nunca envia, busca, cardápio não pronto, ajuda, conta da sacola, frases com os mesmos fatos, nomes de botão, ligação no `App.tsx` e no `OrderFlow`). No navegador, com o aplicativo de verdade e o microfone de teste
+(**199 conferências, 36 novas**): prato simples na sacola com a quantidade dita, Desfazer, folha de escolhas com a faixa por cima e quantidade 2, Adicionar pelo toque, esgotado e indisponível sem pôr nada, busca escrita na caixa, sacola aberta por voz, "enviar" que não envia, **nenhuma chamada ao servidor em toda a conversa**, restaurante fechado, mesa (garçom e cardápio), celular sem voz (o toque nos pratos segue valendo), sem a chave o aplicativo de sempre, e 320 px sem rolagem lateral com o botão Enviar e a bolinha lado a lado.
+**725 testes passam só na pasta do visual novo (1564 no total das pastas de teste)**; tipos, build, segurança e conformidade em ordem.
 
 ## Como as telas novas entram, sem ir ao ar antes da hora
 

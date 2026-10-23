@@ -1,6 +1,6 @@
 import "./novo.css";
 import NvIcon, { type NvIconName } from "./Icons";
-import { TopBar } from "./parts";
+import { TopBar, VoiceOrb } from "./parts";
 import { TABLE_JOBS_TEXT, TABLE_MENU_TEXT } from "./copy";
 import type { CallKind, CallTile, Shop, TableView } from "./types";
 
@@ -103,6 +103,10 @@ export default function TablePage({ shop, view, onCall, onMenu, onTrack }: Props
           </a>
         ) : null}
       </main>
+
+      <div className="nv-dock is-float">
+        <VoiceOrb label="Falar com o Vem" />
+      </div>
     </div>
   );
 }

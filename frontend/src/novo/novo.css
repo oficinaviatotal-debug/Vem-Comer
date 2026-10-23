@@ -5213,6 +5213,13 @@ button.nv-now-cell:active {
   pointer-events: none;
 }
 
+/* Com a folha das escolhas aberta (ela cobre a tela de baixo para cima), a faixa vai para o alto, por cima de tudo. */
+.nv-root.nv-voice.is-top {
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  bottom: auto;
+  z-index: 30;
+}
+
 .nv-voice-bubble {
   display: flex;
   align-items: center;

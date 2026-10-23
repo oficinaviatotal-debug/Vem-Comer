@@ -211,6 +211,182 @@ export const SAY_DISH_CANCELED = bank("prato.cancelado", {
   full: ["Certo, não mudei nada.", "Tudo bem, deixei como estava.", "Ok, não marquei nada."],
 });
 
+// ---------------------------------------------------------------- a voz do cliente: pedir falando ("quero dois pastéis")
+// Nomes de botão que a voz cita ("Adicionar", "Desfazer", "Tentar de novo") são os da tela e nunca variam.
+
+export const SAY_SHOP_LISTENING = bank("cliente.ouvindo", {
+  full: ["Estou ouvindo. Diga o prato que você quer.", "Pode falar. Qual prato você quer?", "Estou aqui. Diga o nome do prato.", "Pode falar: o que você quer pedir?"],
+  short: ["Estou ouvindo.", "Pode falar.", "Fale agora.", "Diga."],
+});
+
+export const SAY_SHOP_NO_VOICE = bank("cliente.sem-voz", {
+  full: ["Este celular não escuta por aqui. Toque nos pratos para pedir.", "A voz não funciona neste celular. Toque nos pratos para pedir.", "Aqui o celular não deixa eu ouvir. Toque nos pratos para pedir."],
+  short: ["Sem voz neste celular. Toque nos pratos.", "O celular não escuta aqui. Toque nos pratos.", "Aqui não dá para falar. Toque nos pratos."],
+  after: 2,
+});
+
+/** `example` é um prato de verdade do cardápio (vazio quando não há prato que se peça agora). */
+export const SAY_SHOP_BAG_EMPTY = bank<[string]>("cliente.sacola-vazia", {
+  full: [
+    (example) => (example ? `A sacola está vazia. Diga, por exemplo: quero ${example}.` : "A sacola está vazia. Diga o nome de um prato."),
+    (example) => (example ? `Ainda não tem nada na sacola. Diga, por exemplo: quero ${example}.` : "Ainda não tem nada na sacola. Diga o nome de um prato."),
+    (example) => (example ? `Sacola vazia. Diga o prato que você quer, por exemplo: ${example}.` : "Sacola vazia. Diga o prato que você quer."),
+  ],
+});
+
+export const SAY_SHOP_NO_ORDERS = bank("cliente.sem-pedidos", {
+  full: [
+    "Você ainda não fez pedido neste celular. Quando fizer, é só dizer: acompanhar o pedido.",
+    "Nenhum pedido seu por aqui ainda. Depois de pedir, diga: acompanhar o pedido.",
+    "Ainda não há pedido seu neste celular. Depois de pedir, diga: acompanhar o pedido.",
+  ],
+});
+
+export const SAY_SHOP_NO_TABLE = bank("cliente.sem-mesa", {
+  full: [
+    "Para chamar o garçom, leia o QR code da sua mesa.",
+    "O garçom é chamado pela mesa: leia o QR code que está nela.",
+    "Para chamar o garçom, abra este cardápio pelo QR code da mesa.",
+  ],
+});
+
+export const SAY_SHOP_CLOSED = bank("cliente.fechado", {
+  full: [
+    "O restaurante não está recebendo pedidos agora. O aviso no alto da tela diz o motivo.",
+    "Agora o restaurante não recebe pedidos. Veja o aviso no alto da tela.",
+    "Sem pedidos no momento. Veja o aviso no alto da tela.",
+  ],
+});
+
+export const SAY_SHOP_SOLD = bank<[string]>("cliente.esgotado", {
+  full: [(name) => `${name} esgotou. Escolha outro prato.`, (name) => `${name} está esgotado agora. Escolha outro prato.`, (name) => `Esgotou: ${name}. Escolha outro prato.`],
+});
+
+export const SAY_SHOP_UNAVAILABLE = bank<[string]>("cliente.indisponivel", {
+  full: [
+    (name) => `${name} está indisponível agora. Escolha outro prato.`,
+    (name) => `Agora ${name} não está disponível. Escolha outro prato.`,
+    (name) => `${name} não dá para pedir agora. Escolha outro prato.`,
+  ],
+});
+
+/** O prato tem escolhas (tamanho, extras): a voz abre a folha e a pessoa toca em Adicionar. `quantity` maior que 1 vai dita. */
+export const SAY_SHOP_CHOOSE = bank<[string, number]>("cliente.escolhas", {
+  full: [
+    (name, quantity) => (quantity > 1 ? `Abri ${name}, para ${quantity}. Escolha o que quiser e toque em Adicionar.` : `Abri ${name}. Escolha o que quiser e toque em Adicionar.`),
+    (name, quantity) => (quantity > 1 ? `Aqui está ${name}, para ${quantity}. Faça as escolhas e toque em Adicionar.` : `Aqui está ${name}. Faça as escolhas e toque em Adicionar.`),
+    (name, quantity) => (quantity > 1 ? `${name}, para ${quantity}: escolha o que quiser e toque em Adicionar.` : `${name}: escolha o que quiser e toque em Adicionar.`),
+  ],
+  short: [
+    (name, quantity) => (quantity > 1 ? `Abri ${name}, para ${quantity}. Toque em Adicionar.` : `Abri ${name}. Toque em Adicionar.`),
+    (name, quantity) => (quantity > 1 ? `${name}, para ${quantity}. Toque em Adicionar.` : `${name}. Toque em Adicionar.`),
+    (name, quantity) => (quantity > 1 ? `Escolha ${name}, para ${quantity}, e toque em Adicionar.` : `Escolha ${name} e toque em Adicionar.`),
+  ],
+});
+
+/** O prato simples entrou na sacola. `what` diz o que entrou ("Pastel de carne" ou "2 unidades de Pastel de carne") e `bag` como a sacola ficou. */
+export const SAY_SHOP_ADDED = bank<[string, string]>("cliente.coloquei", {
+  full: [
+    (what, bag) => `Coloquei ${what} na sacola. ${bag} Para desfazer, toque em Desfazer.`,
+    (what, bag) => `Pronto: ${what} na sacola. ${bag} Para desfazer, toque em Desfazer.`,
+    (what, bag) => `${what} entrou na sacola. ${bag} Para desfazer, toque em Desfazer.`,
+  ],
+  short: [(what, bag) => `Coloquei ${what} na sacola. ${bag}`, (what, bag) => `Pronto: ${what} na sacola. ${bag}`, (what, bag) => `${what} entrou na sacola. ${bag}`],
+});
+
+/** Quem pediu "enviar o pedido" falando: a voz abre a sacola e **diz que o envio é no botão**. Enviar nunca é por voz. */
+export const SAY_SHOP_TO_SEND = bank("cliente.para-enviar", {
+  full: [
+    "Abrindo a sacola. Para enviar o pedido, toque em Enviar pedido.",
+    "Abri a sacola. Confira e, para enviar, toque em Enviar pedido.",
+    "Vamos para a sacola. Para enviar o pedido, toque em Enviar pedido.",
+  ],
+});
+
+/** Quem já está na sacola e diz "enviar o pedido": a voz não abre nada, só diz onde tocar. Enviar nunca é por voz. */
+export const SAY_SHOP_SEND_HERE = bank("cliente.enviar-aqui", {
+  full: [
+    "Você já está na sacola. Para enviar o pedido, toque em Enviar pedido.",
+    "Confira os itens e, para enviar, toque em Enviar pedido.",
+    "O envio é no botão: toque em Enviar pedido quando estiver tudo certo.",
+  ],
+});
+
+/** Quem pediu o garçom ou a conta: a voz abre a tela da mesa, e o chamado é um toque da pessoa. */
+export const SAY_SHOP_TO_TABLE = bank("cliente.para-mesa", {
+  full: [
+    "Abrindo a tela da mesa. Toque em Chamar garçom ou em Pedir a conta.",
+    "Abri a tela da mesa. Para chamar o garçom, toque em Chamar garçom; para a conta, toque em Pedir a conta.",
+    "Vamos para a tela da mesa. Toque em Chamar garçom ou em Pedir a conta.",
+  ],
+});
+
+/** Quem já está na tela da mesa e pede o garçom ou a conta: não há o que abrir, a voz diz onde tocar. O chamado é um toque. */
+export const SAY_SHOP_TABLE_HERE = bank("cliente.mesa-aqui", {
+  full: [
+    "Você está na tela da mesa. Toque em Chamar garçom ou em Pedir a conta.",
+    "Já estamos na mesa. Para o garçom, toque em Chamar garçom; para a conta, toque em Pedir a conta.",
+    "Aqui é a tela da mesa: toque em Chamar garçom ou em Pedir a conta.",
+  ],
+});
+
+export const SAY_SHOP_MAX = bank<[string]>("cliente.maximo", {
+  full: [(name) => `Já tem o máximo de ${name} na sacola.`, (name) => `${name}: a sacola já está no máximo desse prato.`, (name) => `Não dá para pôr mais ${name}: a sacola já está no máximo.`],
+});
+
+export const SAY_SHOP_REMOVED = bank<[string, string]>("cliente.tirei", {
+  full: [(what, bag) => `Tirei ${what} da sacola. ${bag}`, (what, bag) => `Pronto, ${what} saiu da sacola. ${bag}`, (what, bag) => `${what} saiu da sacola. ${bag}`],
+});
+
+export const SAY_SHOP_NOT_IN_BAG = bank<[string]>("cliente.nao-esta", {
+  full: [(name) => `${name} não está na sacola.`, (name) => `Não tem ${name} na sacola.`, (name) => `Na sacola não tem ${name}.`],
+});
+
+export const SAY_SHOP_MANY = bank<[string]>("cliente.mais-de-um", {
+  full: [
+    (names) => `Achei mais de um prato: ${names}. Diga o nome inteiro.`,
+    (names) => `Tem mais de um parecido: ${names}. Fale o nome inteiro.`,
+    (names) => `Não sei qual deles: ${names}. Diga o nome inteiro.`,
+  ],
+});
+
+export const SAY_SHOP_NONE = bank("cliente.nenhum", {
+  full: [
+    "Não achei esse prato no cardápio. Diga o nome como está na tela.",
+    "Esse prato não está no cardápio. Diga o nome como está na tela.",
+    "Não encontrei esse prato. Diga o nome como está na tela, ou diga: buscar e uma palavra.",
+  ],
+});
+
+export const SAY_SHOP_SEARCH_FOUND = bank<[string, string]>("cliente.busca", {
+  full: [(text, names) => `Achei para “${text}”: ${names}.`, (text, names) => `Para “${text}” tem: ${names}.`, (text, names) => `Busquei “${text}” e achei: ${names}.`],
+});
+
+export const SAY_SHOP_SEARCH_NONE = bank<[string]>("cliente.busca-nada", {
+  full: [(text) => `Não achei nada para “${text}”. Tente outra palavra.`, (text) => `Nada para “${text}”. Tente outra palavra.`, (text) => `Para “${text}” não achei nada. Tente outra palavra.`],
+});
+
+export const SAY_SHOP_LOADING = bank("cliente.abrindo", {
+  full: ["O cardápio ainda está abrindo. Tente de novo em instantes.", "Um instante: o cardápio ainda está abrindo. Fale de novo daqui a pouco.", "O cardápio está abrindo. Fale de novo em instantes."],
+});
+
+export const SAY_SHOP_LOAD_FAIL = bank("cliente.nao-abriu", {
+  full: ["O cardápio não abriu. Toque em Tentar de novo.", "Não consegui abrir o cardápio. Toque em Tentar de novo.", "O cardápio não carregou. Toque em Tentar de novo."],
+});
+
+export const SAY_SHOP_HELP = bank<[string]>("cliente.ajuda", {
+  full: [(examples) => `Você pode dizer: ${examples}.`, (examples) => `Experimente dizer: ${examples}.`, (examples) => `Eu entendo frases como: ${examples}.`],
+});
+
+export const SAY_SHOP_UNKNOWN = bank<[string]>("cliente.nao-entendi", {
+  full: [
+    (examples) => `Não entendi. Diga, por exemplo: ${examples}.`,
+    (examples) => `Não peguei essa. Tente dizer: ${examples}.`,
+    (examples) => `Hum, não entendi. Experimente: ${examples}.`,
+  ],
+  short: [(examples) => `Não entendi. Tente: ${examples}.`, (examples) => `Não peguei. Diga: ${examples}.`, (examples) => `Não entendi. Por exemplo: ${examples}.`],
+});
+
 // ---------------------------------------------------------------- "como está o dia?": o que a bolinha lê em voz alta
 
 export const SAY_BRIEF_WAIT = bank("dia.espera", {
@@ -359,6 +535,31 @@ export const ALL_BANKS: readonly Registered[] = [
   entry(SAY_DISH_DO_FAIL),
   entry(SAY_DISH_DOING),
   entry(SAY_DISH_CANCELED),
+  entry(SAY_SHOP_LISTENING),
+  entry(SAY_SHOP_NO_VOICE),
+  entry(SAY_SHOP_BAG_EMPTY, ["Pastel de carne"], [""]),
+  entry(SAY_SHOP_NO_ORDERS),
+  entry(SAY_SHOP_NO_TABLE),
+  entry(SAY_SHOP_CLOSED),
+  entry(SAY_SHOP_SOLD, ["Pastel de carne"]),
+  entry(SAY_SHOP_UNAVAILABLE, ["Açaí 300ml"]),
+  entry(SAY_SHOP_CHOOSE, ["Açaí 300ml", 1], ["Açaí 300ml", 3]),
+  entry(SAY_SHOP_ADDED, ["Pastel de carne", "A sacola está com 1 item, R$ 9,00."], ["2 unidades de Pastel de carne", "A sacola está com 3 itens, R$ 27,00."]),
+  entry(SAY_SHOP_TO_SEND),
+  entry(SAY_SHOP_SEND_HERE),
+  entry(SAY_SHOP_TABLE_HERE),
+  entry(SAY_SHOP_TO_TABLE),
+  entry(SAY_SHOP_MAX, ["Pastel de carne"]),
+  entry(SAY_SHOP_REMOVED, ["Pastel de carne", "A sacola ficou vazia."], ["2 unidades de Pastel de carne", "A sacola está com 1 item, R$ 9,00."]),
+  entry(SAY_SHOP_NOT_IN_BAG, ["Pastel de carne"]),
+  entry(SAY_SHOP_MANY, ["Açaí 300ml ou Açaí 500ml"], ["Pastel de carne, Pastel de queijo e mais 2"]),
+  entry(SAY_SHOP_NONE),
+  entry(SAY_SHOP_SEARCH_FOUND, ["suco", "Suco de laranja ou Suco de uva"], ["pastel", "Pastel de carne, Pastel de queijo e mais 1"]),
+  entry(SAY_SHOP_SEARCH_NONE, ["lasanha"]),
+  entry(SAY_SHOP_LOADING),
+  entry(SAY_SHOP_LOAD_FAIL),
+  entry(SAY_SHOP_HELP, ["quero Pastel de carne, abrir a sacola ou acompanhar o pedido"], ["abrir a sacola"]),
+  entry(SAY_SHOP_UNKNOWN, ["quero Pastel de carne, abrir a sacola ou acompanhar o pedido"], ["abrir a sacola"]),
   entry(SAY_BRIEF_WAIT),
   entry(SAY_BRIEF_FAIL),
   entry(SAY_BRIEF_NO_ORDERS),
