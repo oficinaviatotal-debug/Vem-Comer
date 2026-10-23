@@ -2,8 +2,9 @@
  * A bolinha de voz do painel: entende o que a pessoa disse e diz para onde ir. Só conta, sem React nem rede nem
  * microfone: tests/novo/voiceNavLogic.test.mjs roda isto no Node. O microfone e a fala ficam em `useVoiceNav.ts`.
  *
- * Esta primeira voz só abre telas ("pedidos", "mesas", "números"). Ela não cria, não muda e não apaga nada: dizer uma
- * palavra errada, no máximo, abre a tela errada, e basta falar de novo. Por isso não pede confirmação.
+ * Esta voz abre telas ("pedidos", "mesas", "números") e lê como está o dia ("como está o dia?"). Ela não cria, não muda
+ * e não apaga nada: dizer uma palavra errada, no máximo, abre a tela errada, e basta falar de novo. Por isso não pede
+ * confirmação. Quem busca os números do dia é `readBriefing.ts`; aqui só se decide que a pessoa fez essa pergunta.
  *
  * Duas regras de honestidade:
  * - só leva às telas que o menu mostra para esta pessoa (`allowed` vem de `shellLogic.allowedViews`); o resto ouve
@@ -25,6 +26,8 @@ export type VoiceAnswer =
   | { kind: "go"; view: string; say: string }
   /** Ficar onde está e dizer a frase (já está na tela; não pode abrir; pediu ajuda). */
   | { kind: "stay"; say: string }
+  /** A pessoa perguntou como está o dia: quem chama busca os números e lê a fala (não há frase pronta). */
+  | { kind: "brief" }
   /** Não entendeu: a frase diz o que falar. */
   | { kind: "unknown"; say: string };
 
@@ -144,7 +147,7 @@ const TARGETS: readonly Target[] = [
   { view: "categorias", says: ["categoria", "categorias", "secao", "secoes", "grupos do cardapio"] },
   {
     view: "dashboard",
-    says: ["numero", "numeros", "venda", "vendas", "faturamento", "lucro", "negocio", "meu negocio", "seu negocio", "resumo", "relatorio", "quanto vendi"],
+    says: ["numero", "numeros", "venda", "vendas", "faturamento", "lucro", "negocio", "meu negocio", "seu negocio", "resumo", "relatorio"],
   },
   { view: "custos", says: ["custo", "custos", "cmv", "ficha tecnica", "custo do prato", "custo dos pratos"] },
   { view: "pagamento", says: ["pagamento", "pix", "chave pix", "receber pix", "receber por pix"] },
@@ -163,6 +166,38 @@ const TARGETS: readonly Target[] = [
   { view: "aprovacoes", says: ["aprovacao", "aprovacoes", "aprovar", "o que espera meu aval"] },
   { view: "assinaturas", says: ["assinaturas"] },
   { view: "ajuda", says: ["chamados de ajuda", "pedidos de ajuda", "chamados dos donos"] },
+];
+
+/**
+ * Perguntas sobre o dia, que se respondem lendo os números e não abrindo tela. Frase mais comprida que a de uma tela
+ * ganha dela ("resumo do dia" lê; "resumo" abre os números); "vendas de hoje" continua abrindo os números.
+ */
+const BRIEF_SAYS: readonly string[] = [
+  "como esta o dia",
+  "como esta hoje",
+  "como esta indo",
+  "como estamos",
+  "como estou",
+  "como foi o dia",
+  "como estao as vendas",
+  "resumo do dia",
+  "me da um resumo",
+  "me de um resumo",
+  "me atualiza",
+  "me atualize",
+  "novidades",
+  "o que esta acontecendo",
+  "tem pedido",
+  "tem pedidos",
+  "quantos pedidos",
+  "tem mesa chamando",
+  "quanto vendi",
+  "quanto vendi hoje",
+  "quanto ja vendi",
+  "quanto eu vendi",
+  "quanto eu ja vendi",
+  "quanto vendemos",
+  "quanto faturei",
 ];
 
 /** Quem pede ajuda ouve o que pode dizer. */
@@ -290,12 +325,14 @@ export function interpretVoiceNav(input: VoiceInput): VoiceAnswer {
   });
 
   const help = bestMatch(text, HELP_SAYS);
+  const brief = bestMatch(text, BRIEF_SAYS);
   // Entre as telas que a pessoa abre vale a de frase mais comprida; só sem nenhuma delas se fala de uma que ela não abre.
   const open = hits.filter((hit) => input.allowed.includes(hit.view));
   const pool = open.length > 0 ? open : hits;
   pool.sort((a, b) => b.size - a.size || a.order - b.order);
   const top = pool[0];
 
+  if (brief > 0 && (!top || brief > top.size) && brief >= help) return { kind: "brief" };
   if (help > 0 && (!top || help > top.size)) {
     return { kind: "stay", say: examples ? VOICE_HELP(examples) : VOICE_NO_EXAMPLES };
   }
@@ -313,5 +350,11 @@ export function voiceViews(): string[] {
 
 /** Todas as frases que a voz entende (para o teste conferir que estão em letras minúsculas, sem acento). */
 export function voicePhrases(): string[] {
-  return [...TARGETS.flatMap((target) => target.says), ...HELP_SAYS];
+  return [...TARGETS.flatMap((target) => target.says), ...HELP_SAYS, ...BRIEF_SAYS];
+}
+
+/** Quanto tempo a resposta fica na tela: o tempo de ler, com um mínimo (8 s) e um máximo (20 s). */
+export function captionMs(text: string): number {
+  const read = String(text ?? "").length * 70;
+  return Math.max(8000, Math.min(20000, read));
 }

@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { menuViews } from "../../frontend/src/nav/navLogic.ts";
 import { allowedViews, knownViews } from "../../frontend/src/painel/shellLogic.ts";
 import {
+  captionMs,
   examplesFor,
   interpretVoiceNav,
   normalizeSpeech,
@@ -219,12 +220,59 @@ test("os exemplos são só de telas que a pessoa abre, nunca a tela em que já e
   assert.match(none.say, /menu/);
 });
 
-test("a voz só abre telas: nenhuma resposta cria, muda ou apaga alguma coisa", () => {
+test("a voz só abre telas e lê o dia: nenhuma resposta cria, muda ou apaga alguma coisa", () => {
+  const shapes = { go: ["kind", "say", "view"], stay: ["kind", "say"], unknown: ["kind", "say"], brief: ["kind"] };
   for (const phrase of voicePhrases()) {
     const answer = ask(phrase, { platformAdmin: true });
-    assert.ok(["go", "stay", "unknown"].includes(answer.kind), phrase);
-    assert.deepEqual(Object.keys(answer).sort(), answer.kind === "go" ? ["kind", "say", "view"] : ["kind", "say"], phrase);
+    assert.ok(Object.keys(shapes).includes(answer.kind), phrase);
+    assert.deepEqual(Object.keys(answer).sort(), shapes[answer.kind], phrase);
   }
+});
+
+// ---------------------------------------------------------------- "como está o dia?"
+
+test("perguntar como está o dia pede a leitura dos números, sem abrir tela", () => {
+  for (const said of [
+    "como está o dia",
+    "Como está o dia?",
+    "como estamos hoje",
+    "me dá um resumo",
+    "resumo do dia",
+    "me atualiza",
+    "novidades",
+    "quantos pedidos tem",
+    "tem pedido?",
+    "quanto vendi hoje",
+    "quanto eu já vendi",
+    "como estão as vendas",
+  ]) {
+    assert.deepEqual(ask(said), { kind: "brief" }, said);
+  }
+});
+
+test("ler o dia vale para toda função do painel, mesmo para quem não abre os números", () => {
+  for (const role of ["OWNER", "MANAGER", "CASHIER", "WAITER", "KITCHEN"]) {
+    assert.deepEqual(ask("como está o dia", { role }), { kind: "brief" }, role);
+  }
+});
+
+test("a frase mais comprida decide entre ler e abrir: 'resumo do dia' lê; 'resumo' e 'vendas de hoje' abrem os números; 'pedidos' abre os pedidos", () => {
+  assert.equal(ask("resumo do dia").kind, "brief");
+  assert.equal(ask("resumo").view, "dashboard");
+  assert.equal(ask("vendas de hoje").view, "dashboard");
+  assert.equal(ask("pedidos").view, "pedidos");
+  assert.equal(ask("quantos pedidos").kind, "brief");
+  assert.equal(ask("o que falta", {}, "pedidos").view, "inicio");
+  // Ajuda junto da pergunta: vale a pergunta, que é a frase mais comprida.
+  assert.equal(ask("me ajuda, como está o dia").kind, "brief");
+  assert.equal(ask("ajuda").kind, "stay");
+});
+
+test("a resposta fica na tela o tempo de ler: no mínimo 8 s e no máximo 20 s", () => {
+  assert.equal(captionMs(""), 8000);
+  assert.equal(captionMs("Abrindo os pedidos."), 8000);
+  assert.equal(captionMs("x".repeat(150)), 10500);
+  assert.equal(captionMs("x".repeat(1000)), 20000);
 });
 
 // ---------------------------------------------------------------- a ligação (o que o microfone de teste da conferência de imagem também prova)
@@ -233,7 +281,7 @@ const read = (path) => readFileSync(new URL(`../../frontend/src/${path}`, import
 
 test("a casca liga a voz uma vez para todas as telas, e a moldura das telas antigas também tem a bolinha", () => {
   const shell = read("painel/PanelShell.tsx");
-  assert.match(shell, /useVoiceNav\(\{ role, allowed: allowedViews\(context\), current: shown, onGo: go \}\)/);
+  assert.match(shell, /useVoiceNav\(\{\n\s+role,\n\s+allowed: allowedViews\(context\),\n\s+current: shown,\n\s+onGo: go,/);
   assert.match(shell, /<VoiceContext\.Provider value=\{voiceControl\}>/);
   // Com o menu aberto a faixa não fica por cima dele.
   assert.match(shell, /voice\.caption && !menuOpen/);

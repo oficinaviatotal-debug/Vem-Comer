@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { canListen, hear, speakAsync, stopSpeaking, type Hearing } from "../assistant/voiceIO";
-import { VOICE_LISTENING, VOICE_NOT_HEARD, VOICE_OFF } from "../novo/copy";
+import { BRIEF_FAIL, VOICE_BRIEF_WAIT, VOICE_LISTENING, VOICE_NOT_HEARD, VOICE_OFF } from "../novo/copy";
 import type { VoiceBubbleTone } from "../novo/VoiceBubble";
-import { interpretVoiceNav } from "./voiceNavLogic";
+import { captionMs, interpretVoiceNav } from "./voiceNavLogic";
 
 export type VoiceCaption = { tone: VoiceBubbleTone; heard: string; text: string };
 
-/** A resposta fica na tela este tempo e some; quem quiser fecha antes. */
-export const CAPTION_MS = 8000;
 
 type Input = {
   role: string | null | undefined;
@@ -17,6 +15,8 @@ type Input = {
   current: string;
   /** Abrir a tela que a voz entendeu. */
   onGo: (view: string) => void;
+  /** Busca os números do dia e devolve a fala pronta ("como está o dia?"). Se falhar, a bolinha diz que não conseguiu. */
+  onBrief: () => Promise<string>;
 };
 
 /**
@@ -42,11 +42,11 @@ export function useVoiceNav(input: Input) {
   }, []);
 
   const show = useCallback(
-    (next: VoiceCaption) => {
+    (next: VoiceCaption, stays = false) => {
       clearTimer();
       setCaption(next);
-      // Quem está ouvindo vê "Estou ouvindo" até terminar; só as respostas somem sozinhas.
-      if (next.tone !== "listening") timer.current = setTimeout(() => setCaption(null), CAPTION_MS);
+      // Quem está ouvindo (ou esperando os números) vê a frase até terminar; só as respostas somem sozinhas, no tempo de ler.
+      if (next.tone !== "listening" && !stays) timer.current = setTimeout(() => setCaption(null), captionMs(next.text));
     },
     [clearTimer],
   );
@@ -90,8 +90,20 @@ export function useVoiceNav(input: Input) {
         show({ tone: "warn", heard: "", text: VOICE_NOT_HEARD });
         return;
       }
-      const { role, allowed, current, onGo } = latest.current;
+      const { role, allowed, current, onGo, onBrief } = latest.current;
       const answer = interpretVoiceNav({ transcript: heard, role, allowed, current });
+      if (answer.kind === "brief") {
+        // A resposta vem do servidor, na hora. Se a pessoa tocar na bolinha de novo antes, a resposta velha é descartada.
+        show({ tone: "answer", heard, text: VOICE_BRIEF_WAIT }, true);
+        onBrief()
+          .catch(() => BRIEF_FAIL)
+          .then((text) => {
+            if (mine !== turn.current) return;
+            show({ tone: "answer", heard, text });
+            void speakAsync(text).catch(() => undefined);
+          });
+        return;
+      }
       if (answer.kind === "go") onGo(answer.view);
       show({ tone: answer.kind === "unknown" ? "warn" : "answer", heard, text: answer.say });
       void speakAsync(answer.say).catch(() => undefined);

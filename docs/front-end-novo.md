@@ -1013,9 +1013,15 @@ antigas dentro da moldura, um toque na bolinha abre o microfone; a pessoa fala o
 **abre a tela, responde numa faixa acima da bolinha ("Você disse: … / Abrindo os pedidos.") e diz a mesma frase em voz alta**. Tocar de novo enquanto ouve cancela. A faixa tem botão Fechar
 (44 px) e some sozinha em 8 segundos; com o menu aberto ela não aparece. O celular **só ouve depois do toque**, nunca por conta própria.
 
+**"Como está o dia?"** (`hoje/briefLogic.ts`, busca em `painel/readBriefing.ts`): a pessoa pergunta ("como está o dia", "resumo do dia", "me atualiza", "quantos pedidos", "quanto vendi hoje") e a bolinha
+**lê o dia em voz alta**, sem abrir tela, com as mesmas contas do Hoje: "Bom dia, João. 1 pedido esperando, o mais antigo há 3 minutos. 2 na cozinha. 1 a caminho. 2 Pix para conferir, R$ 78,50 no total.
+2 mesas chamando. Vendas de hoje: R$ 420,00 em 12 pedidos." Os números vêm do servidor **na hora da pergunta** (nada fica guardado); enquanto vêm, a faixa diz "Olhando como está o dia…". Cada pedaço
+vale sozinho e tem limite de 10 segundos: **busca que falhou nunca vira zero**, a fala diz "Não consegui ler os pedidos agora" (ou as vendas, ou as mesas) em vez de "nenhum pedido". Vendas só para dono e
+gerente; mesas só para quem vai a uma mesa; Pix só para quem confere Pix. A faixa fica o tempo de ler (de 8 a 20 segundos). Se a pessoa toca de novo antes da resposta chegar, a resposta velha é descartada.
+
 **Regras de honestidade** (todas com teste):
 
-- **Só abre telas.** Não cria, não muda e não apaga nada; palavra errada, no máximo, abre a tela errada, e basta falar de novo. Por isso não pede confirmação.
+- **Só abre telas e lê o dia.** Não cria, não muda e não apaga nada; palavra errada, no máximo, abre a tela errada, e basta falar de novo. Por isso não pede confirmação.
 - **Só leva ao que o menu mostra àquela pessoa** (a lista vem de `allowedViews`, a mesma do menu). O garçom que fala "custos" ouve "Não posso abrir os custos para você agora…"; com plano bloqueado,
   só abre o que o menu deixa. Testado para todas as funções, com e sem plano bloqueado e com e sem dono do sistema: **nunca leva a tela fora da lista**.
 - **Não entendeu: diz o que falar.** "Não entendi. Diga, por exemplo: pedidos, abrir mesa ou mesas." com exemplos **das telas dela** (nunca a tela em que já está). Sem ninguém falar, ou com o
@@ -1025,22 +1031,25 @@ antigas dentro da moldura, um toque na bolinha abre o microfone; a pessoa fala o
 - A tela que já tem escuta própria (o **Assistente do cardápio**, "Falar os pratos") **continua com a dela**; a bolinha só usa a voz do painel quando a tela não passa a função (`novo/parts.tsx`).
 
 **Como as peças se dividem:** `novo/voice.ts` (só o canal que entrega a voz às telas), `novo/VoiceBubble.tsx` (a faixa, só visual, com `role="status"`), `painel/voiceNavLogic.ts` (conta pura, sem
-microfone nem rede), `painel/useVoiceNav.ts` (microfone e fala, usa o `hear` e o `speakAsync` que o Assistente já usa). Frases da faixa em `novo/copy.ts`.
+microfone nem rede), `painel/useVoiceNav.ts` (microfone e fala, usa o `hear` e o `speakAsync` que o Assistente já usa), `hoje/briefLogic.ts` (a fala do dia, conta pura) e `painel/readBriefing.ts` (as buscas).
+Frases da faixa e do resumo em `novo/copy.ts`.
 
 **Limites honestos:**
 
 - A lista de palavras é **palpite meu** sobre como o dono fala. Vale ouvir donos de verdade e ajustar: é só acrescentar frases em `voiceNavLogic.ts` (o teste confere que nenhuma frase fica em duas telas).
 - O reconhecimento é o do próprio navegador do celular (precisa de internet e de permissão do microfone). Onde o navegador não oferece, a bolinha avisa e manda ao menu. **Não foi testado em um Android
   de verdade**, só com um microfone de teste no navegador.
-- **Ainda não faz**: ler os números do Hoje em voz alta, cadastrar ou mudar coisas por voz no painel, microfone ao lado de cada campo de escrever, e a voz do lado do cliente (a bolinha do cardápio do cliente
+- **Ainda não faz**: cadastrar ou mudar coisas por voz no painel, responder perguntas além do resumo do dia ("qual prato vende mais?"), microfone ao lado de cada campo de escrever, e a voz do lado do cliente (a bolinha do cardápio do cliente
   continua só enfeite).
 - Nada disso vai ao ar sem o "pode": a chave `?novo=1` continua desligada por padrão.
 
-**Como foi conferido:** `tests/novo/voiceNavLogic.test.mjs` (21: a fala sem acento e sem pontuação, cada tela do menu tem frase, nenhuma frase em duas telas, a frase mais comprida, o que cada função não abre, bloqueio por plano,
-"já está aqui" com a preposição certa, ajuda, não entendi, exemplos, e a ligação na casca e na moldura) e `toque.test.mjs` (a bolinha da tela manda em tudo). No navegador, com o aplicativo de verdade, um servidor de
-mentira e um **microfone de teste** (**22 conferências novas, 117 no total**): ouvindo, cancelar, "pedidos", "já está aqui", "mesas" na moldura antiga e de lá a uma tela nova, não entendi, ninguém falou, microfone negado,
-Fechar, menu aberto, a bolinha própria do Assistente, garçom ("custos" recusa, "mesa" abre a nova), celular que não escuta, e 320 px sem rolagem lateral.
-**634 testes passam só na pasta do visual novo (1473 no total das pastas de teste)**; tipos, build, segurança e conformidade em ordem.
+**Como foi conferido:** `tests/novo/voiceNavLogic.test.mjs` (25: a fala sem acento e sem pontuação, cada tela do menu tem frase, nenhuma frase em duas telas, a frase mais comprida, o que cada função não abre, bloqueio por plano,
+"já está aqui" com a preposição certa, ajuda, não entendi, exemplos, as perguntas sobre o dia, o tempo da faixa, e a ligação na casca e na moldura), `tests/novo/briefLogic.test.mjs` (11: a fala do dia para cada função,
+singular e plural, Pix, vendas só para quem vê, **cada busca que falha vira "não consegui ler" e nunca zero**, os minutos falados, a hora de Brasília e a busca com limite de tempo) e `toque.test.mjs` (a bolinha da tela
+manda em tudo). No navegador, com o aplicativo de verdade, um servidor de mentira e um **microfone de teste** (**29 conferências novas, 124 no total**): ouvindo, cancelar, "pedidos", "já está aqui", "mesas" na moldura antiga
+e de lá a uma tela nova, não entendi, ninguém falar, microfone negado, Fechar, menu aberto, a bolinha própria do Assistente, garçom ("custos" recusa, "mesa" abre a nova), celular que não escuta, 320 px sem rolagem lateral,
+"como está o dia" (dono, servidor com defeito, garçom, e resposta velha descartada).
+**649 testes passam só na pasta do visual novo (1488 no total das pastas de teste)**; tipos, build, segurança e conformidade em ordem.
 
 ## Como as telas novas entram, sem ir ao ar antes da hora
 

@@ -27,6 +27,7 @@ import { bannerOf, hasPlanTab, viewAllowed } from "../service/subscriptionView";
 import { useOwnerPlan } from "../service/useOwnerPlan";
 import { allowedViews, noticesOf, ownerStartView, screenOf, shownView, watchCalls, watchOrders, type ShellContext } from "./shellLogic";
 import { useSession, type SessionUser } from "./useSession";
+import { readBriefing } from "./readBriefing";
 import { useVoiceNav } from "./useVoiceNav";
 import { useCallsWatch, useOrdersWatch, usePlatformCounts } from "./useWatchers";
 
@@ -149,7 +150,13 @@ function Panel({ companyId, companySlug, companyName, onBack, user, onLogout }: 
   const openMenu = useCallback(() => setMenuOpen(true), []);
 
   // A bolinha de voz de todas as telas: falar o nome de uma tela abre a tela (e responde na tela e em voz alta).
-  const voice = useVoiceNav({ role, allowed: allowedViews(context), current: shown, onGo: go });
+  const voice = useVoiceNav({
+    role,
+    allowed: allowedViews(context),
+    current: shown,
+    onGo: go,
+    onBrief: () => readBriefing({ companyId, role, name: user.name }),
+  });
   const voiceControl = useMemo(() => ({ onPress: voice.press, listening: voice.listening }), [voice.press, voice.listening]);
 
   // No instante em que o restaurante fica bloqueado, a pessoa cai em como pagar; os Pedidos continuam a um toque.

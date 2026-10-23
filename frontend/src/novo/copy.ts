@@ -507,3 +507,18 @@ export const VOICE_HELP = (examples: string): string => `Você pode dizer: ${exa
 export const VOICE_NO_EXAMPLES = "Toque no menu, no alto da tela, para escolher uma tela.";
 export const VOICE_CLOSE = "Fechar";
 export const VOICE_BUBBLE_LABEL = "A bolinha de voz";
+
+// ---------------------------------------------------------------- "como está o dia?": o que a bolinha lê em voz alta
+
+export const VOICE_BRIEF_WAIT = "Olhando como está o dia…";
+export const BRIEF_FAIL = "Não consegui ver como está o dia agora. Confira a internet e pergunte de novo.";
+export const BRIEF_NO_ORDERS = "Não consegui ler os pedidos agora.";
+export const BRIEF_NO_CALLS = "Não consegui ver as mesas chamando agora.";
+export const BRIEF_NO_SALES = "Não consegui ler as vendas agora.";
+export const BRIEF_NONE_WAITING = "Nenhum pedido esperando.";
+export const BRIEF_WAITING = (count: number, oldest: string): string =>
+  `${count} ${count === 1 ? "pedido esperando" : "pedidos esperando"}${oldest ? `, o mais antigo há ${oldest}` : ""}.`;
+export const BRIEF_COOKING = (count: number): string => `${count} na cozinha.`;
+export const BRIEF_ON_THE_WAY = (count: number): string => `${count} a caminho.`;
+export const BRIEF_SALES = (money: string, count: number): string => `Vendas de hoje: ${money} em ${count} ${count === 1 ? "pedido" : "pedidos"}.`;
+export const BRIEF_NO_SALES_YET = "Ainda sem vendas hoje.";
