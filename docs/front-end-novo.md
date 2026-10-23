@@ -943,13 +943,72 @@ Para ver: `preview-novo.html#/logomarca` (com logomarca), `#/logomarca-sem`, `#/
 
 **Ainda não está ligado ao painel público** (o painel antigo continua mandando).
 
+## Vigésima primeira rodada: a casca do painel, para tudo funcionar junto (23/10/2026)
+
+O GD disse "Faça o que for necessário para poder em alto nível corrigir e fazer tudo funcional" (23/10, 15:25). Li como continuar construindo, não como "pode" para ir ao ar nem para
+juntar. Até aqui cada tela nova existia sozinha (Hoje, Pedidos, Cozinha, Mesas, Entregas, Acerto, Assistente, Produtos, Categorias, Marca), mas **ninguém as ligava entre si**: faltavam
+a entrada, o menu e a regra de quem abre o quê. Esta rodada faz a **casca**: com ela o painel novo funciona do começo ao fim, com todas as telas, sem mudar nenhuma regra do servidor.
+
+**Como ligar (e desligar).** O painel novo é uma chave, **desligada por padrão**: quem abre o painel como sempre continua no painel antigo. `?novo=1` no endereço do painel
+(por exemplo `…/?empresa=seu-restaurante&painel=1&novo=1`) liga e **o aparelho lembra**; `?novo=0` desliga e esquece. Também liga na construção com `VITE_PAINEL_NOVO=1`.
+Armazenamento bloqueado (aba privada) faz a chave valer só para aquela abertura. O código do painel novo só é baixado por quem liga a chave.
+
+**O que a casca faz** (`painel/PanelShell.tsx`, contas em `painel/shellLogic.ts`, `painel/loginLogic.ts`, `painel/useSession.ts` e `painel/useWatchers.ts`):
+
+- **Entrar no visual novo** (`novo/Login.tsx`): nome do restaurante, e-mail e senha, "Mostrar a senha", e uma frase por vez que diz o que fazer. E-mail vazio ou sem @ e senha vazia
+  **não vão ao servidor** e o foco vai ao campo certo; senha errada passa a frase do servidor; **sem sinal diz "sem conexão" (nunca chama de senha errada um pedido que nem chegou)** e
+  erro do servidor vira frase nossa, sem inglês. O e-mail perde os espaços das pontas.
+- **Quem pode abrir o quê vem do menu** (o mesmo `menuFor` que já mandava): dono, gerente, garçom, caixa, cozinha e entregador cada um vê as suas telas. O garçom abre **Mesas** como a tela
+  de atender (não o cadastro de QR); a cozinha em Pedidos vê a fila da cozinha; **o entregador cai direto nas entregas dele**, como sempre. Restaurante com plano bloqueado só abre Pedidos,
+  Entregas, Acerto de caixa e Plano, e **cai em como pagar**. O dono do sistema ganha Aprovações, Assinaturas e Chamados, com os números do servidor.
+- **O menu** (`painel/PanelMenu.tsx`): em grupos (Vender, Cardápio, Números, Minha loja e, para o dono do sistema, Dono do sistema), com a frase de cada tela, o número de pedidos em aberto, "Ver o cardápio do cliente", "Preciso de ajuda"
+  (só dono e gerente) e Sair. Esc fecha.
+- **Avisos que chegam sozinhos** (`novo/Notices.tsx`): "Chegou um novo pedido" (com **Ver pedidos**), "N mesa chamando" (com **Atender**), plano vencendo (leve) e plano bloqueado (urgente, com
+  **Ver plano**), em **qualquer tela** em que a pessoa esteja. O celular vibra uma vez por pedido novo e uma vez por chamada (a mesma chamada não vibra de novo). O que já estava aberto ao
+  chegar no painel não faz alarde. Nas telas que já olham os pedidos (Pedidos, Cozinha, Hoje) o painel **não pergunta em dobro**.
+- **Login que acaba.** O login dura 8 horas no servidor e se renova sozinho enquanto o painel está aberto e ao voltar de um celular que dormiu. Se acabar, qualquer tela percebe e a **entrada
+  volta com o e-mail preenchido, o foco na senha e o aviso "Seu acesso terminou… não foi erro seu"**; o login velho é apagado do aparelho.
+- **Primeira vez do dono neste aparelho:** com o cardápio vazio, vai direto ao Assistente (voz e foto). Resposta do servidor que não é uma lista **nunca vira "cardápio vazio"**.
+- **"O que falta" do Hoje leva à tela certa** (mesas chamando → atender; sem mesa → cadastro de mesas; sem Pix → Pagamento).
+- **As telas que ainda não foram refeitas abrem como sempre, dentro de uma moldura nova** (`novo/LegacyFrame.tsx`): título, menu e uma frase dizendo que aquela tela ainda está no
+  desenho antigo e funciona igual. São baixadas só quando alguém abre; se não baixarem (sem sinal), a pessoa recebe uma frase e um botão, nunca tela em branco.
+
+**Um defeito de verdade, achado pela prova no navegador e corrigido** (`service/api.ts`, vale também para o painel antigo): se a pessoa tocava em **Sair** enquanto a renovação do login
+estava a caminho, a resposta atrasada **gravava o login de volta** no aparelho (num celular compartilhado, o próximo a abrir entraria como o anterior). Agora a resposta velha não mexe em
+nada se o login mudou ou saiu, e uma resposta velha de "login acabou" também não derruba um login novo. Travado pela prova no navegador (falha sem o conserto, passa com ele).
+
+**O que ainda não está no visual novo** (abre como sempre, dentro da moldura): cadastro de mesas e QR, Equipe, Resumo, Custos, Seu negócio, Pagamento (Pix), Meu link, Horário, Regiões de
+entrega, Plano, Aprovações, Assinaturas, Chamados, a tela inicial do entregador, a faixa de pausar pedidos, o botão de avisos no celular (push), a folha de ajuda. O código dessas peças
+foi **copiado** para `painel/legacyPanels.tsx` (o painel antigo não foi tocado) e some quando o painel antigo for apagado.
+
+**Limites honestos:**
+
+- O **"Guia passo a passo"** do painel antigo não foi recriado (o "O que falta" do Hoje cumpre o papel). A marca do topo do menu ainda não troca sozinha quando a logomarca muda
+  (`onChanged` não está ligado). Os avisos ficam **fixos no alto da página** (não acompanham a rolagem: o painel esconde a rolagem lateral, o que desliga o "grudar").
+  O botão de avisos no celular só aparece no Hoje.
+- A marca de "guia visto" é uma por navegador e por usuário.
+- **Falta a bolinha de voz de verdade em todas as telas** (item 90) e o microfone ao lado de cada campo.
+- Nada disso vai ao ar sem o "pode". **Para as telas de Produtos funcionarem de verdade no servidor, o PR #76 precisa entrar antes** (a rota para editar prato).
+
+**Como foi conferido:** `tests/novo/shellLogic.test.mjs` (24: a chave, o que cada função abre, plano bloqueado, qual tela é nova e qual é antiga, primeira vez do dono, quando olhar pedidos e
+chamadas, os avisos e a ordem deles) e `loginLogic.test.mjs` (9: conferência dos campos, frase de cada problema, tela de entrada). **613 testes passam só na pasta do visual novo (1452 no total
+das pastas de teste).** No navegador, com o aplicativo de verdade (a casca inteira, não a prévia) e um servidor de mentira (**95 conferências**): chave desligada, ligada e lembrada; entrar
+(vazio, sem @, sem senha, senha errada, sem sinal, servidor com defeito, senha visível, espaços); o menu de cada função (dono, garçom, cozinha, entregador, plano bloqueado, dono do sistema)
+e cada item dele; as telas novas e as antigas dentro da moldura; faixas de pedido novo e de chamada, com vibração uma vez só; "não pergunta em dobro" em Pedidos; login que acaba (401 em
+qualquer pedido e na renovação) e entrar de novo; Sair com renovação a caminho; ajuda, cardápio do cliente; 320 px sem rolagem lateral.
+Para ver sem servidor: `preview-novo.html#/entrar` (e `#/entrar-preenchido`, `#/entrar-sem-email`, `#/entrar-email-ruim`, `#/entrar-sem-senha`, `#/entrar-senha-errada`,
+`#/entrar-sem-sinal`, `#/entrar-servidor`, `#/entrar-acabou`, `#/entrar-entrando`, `#/entrar-senha-visivel`), `#/avisos`, `#/avisos-plano`, `#/avisos-pedido`, `#/avisos-mesas`,
+`#/avisos-bloqueado` e `#/tela-antiga`.
+
+**Ainda não está ligado para o público:** a chave `?novo=1` vem desligada.
+
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
-- Tudo mora em `frontend/src/novo/` e **não é importado pelo aplicativo**: o `index.html` e o `main.tsx` não mudam.
-  Um teste (`tests/novo`) garante que o visual novo não depende do antigo e que só a página de conferência usa dados
+- Tudo mora em `frontend/src/novo/` (e nas pastas irmãs `cozinha/`, `hoje/`, `loja/`, `painel/`). **Só o `App.tsx` importa o painel novo, atrás da chave `?novo=1`, que vem desligada**
+  (rodada 21): sem a chave, o aplicativo é o de sempre. Um teste (`tests/novo`) garante que o visual novo não depende do antigo e que só a página de conferência usa dados
   de exemplo.
 - Para ver: `cd frontend && npx vite build --config vite.preview-novo.config.ts --outDir /tmp/novo` e abrir
-  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu`, `#/menu-garcom`, `#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro`, `#/mesa-aberta`, `#/pedidos`, `#/pedidos-caixa`, `#/pedidos-garcom`, `#/pedidos-cozinha`, `#/pedidos-calmo`, `#/pedidos-erro`, `#/pedidos-enviando`, `#/entregas`, `#/entregas-pegar`, `#/entregas-entregues`, `#/entregas-codigo`, `#/entregas-bloqueado`, `#/entregas-erro`, `#/entregas-calmo`, `#/entregas-carregando`, `#/entregas-gerente`, `#/acerto`, `#/acerto-confirmar`, `#/acerto-calmo`, `#/acerto-erro`, `#/acerto-carregando`, `#/cardapio` (e as outras 16 telas `#/cardapio-…`, listadas na décima terceira rodada), `#/pratos` ou `#/categorias` (e as outras 18 telas `#/pratos-…` e `#/categorias-…`, listadas na décima quarta rodada), `#/logomarca` (e as outras 22 telas `#/logomarca-…`, listadas na vigésima rodada)
+  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu`, `#/menu-garcom`, `#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro`, `#/mesa-aberta`, `#/pedidos`, `#/pedidos-caixa`, `#/pedidos-garcom`, `#/pedidos-cozinha`, `#/pedidos-calmo`, `#/pedidos-erro`, `#/pedidos-enviando`, `#/entregas`, `#/entregas-pegar`, `#/entregas-entregues`, `#/entregas-codigo`, `#/entregas-bloqueado`, `#/entregas-erro`, `#/entregas-calmo`, `#/entregas-carregando`, `#/entregas-gerente`, `#/acerto`, `#/acerto-confirmar`, `#/acerto-calmo`, `#/acerto-erro`, `#/acerto-carregando`, `#/cardapio` (e as outras 16 telas `#/cardapio-…`, listadas na décima terceira rodada), `#/pratos` ou `#/categorias` (e as outras 18 telas `#/pratos-…` e `#/categorias-…`, listadas na décima quarta rodada), `#/logomarca` (e as outras 22 telas `#/logomarca-…`, listadas na vigésima rodada), `#/entrar`, `#/avisos` e `#/tela-antiga` (e as outras, listadas na vigésima primeira rodada)
   (a pasta pública vai junto, por causa das fontes).
 - Cada tela ganha um PR próprio: ligada aos dados de verdade (por props), com teste, e a tela antiga correspondente
   sai no mesmo PR. **Nada disso vira o que o público vê sem o "pode" do GD.**

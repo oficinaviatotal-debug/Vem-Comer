@@ -45,6 +45,8 @@ export type LogoHandlers = {
   /** Remover: o primeiro toque só arma, o segundo remove (quem decide é o container). */
   onRemove?: () => void;
   onBack?: () => void;
+  /** O menu do painel. Sem ele o botão de menu não aparece. */
+  onMenu?: () => void;
   onRetry?: () => void;
   /** "Sim, usar esta": salva a que está à mostra. */
   onUse?: () => void;
@@ -345,7 +347,7 @@ export default function Logo({ view, pictures, ...on }: Props) {
   return (
     <div className="nv-root">
       <main className="nv-screen nv-page-logo">
-        <TopBar title={view.title} sub={view.sub} />
+        <TopBar title={view.title} sub={view.sub} onMenu={on.onMenu} />
         {/* Sempre na página: o leitor de tela só avisa o que muda dentro de uma região que já existia. */}
         <p className="nv-sr" id="nv-logo-live" role="status" aria-live="polite" tabIndex={-1}>
           {view.live}

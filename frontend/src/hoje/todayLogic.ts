@@ -10,6 +10,7 @@ import { formatWaiting, type PanelCall } from "../mesa/callsLogic.ts";
 import {
   STATUS,
   canConfirmPix,
+  canOpenTable,
   firstName,
   greeting,
   isManager,
@@ -144,7 +145,7 @@ export function greetingOf(name: string | null | undefined, now: number): string
 }
 
 /** Os nomes das telas do painel para onde os dois botões fixos do Hoje levam (os mesmos da navegação atual). */
-export const VIEWS = { orders: "pedidos", numbers: "dashboard", deliveries: "entregas", tables: "mesas" } as const;
+export const VIEWS = { orders: "pedidos", numbers: "dashboard", deliveries: "entregas", tables: "mesas", desk: "mesa" } as const;
 
 const MIN_BARS = 6;
 
@@ -183,7 +184,7 @@ export function todoOf(input: Pick<TodayInput, "role" | "orders" | "calls" | "no
     title: call.text,
     note: call.repeats > 0 ? `${formatWaiting(call.waiting_seconds)}, chamou de novo` : formatWaiting(call.waiting_seconds),
     action: "Atender",
-    view: VIEWS.tables,
+    view: VIEWS.desk,
   }));
 
   if (canConfirmPix(input.role)) {
@@ -244,12 +245,12 @@ export function todayOf(input: TodayInput): Today {
     sales,
     salesMessage,
     shortcuts: shortcutsOf(input.role),
-    // Entregas é tela de gerente (nav/navLogic.ts); Mesas é de toda a equipe.
+    // Entregas é tela de gerente e a mesa é de quem vai a uma mesa (nav/navLogic.ts); para os outros a caixa só informa.
     views: {
       orders: VIEWS.orders,
       numbers: VIEWS.numbers,
       deliveries: isManager(input.role) ? VIEWS.deliveries : null,
-      tables: VIEWS.tables,
+      tables: canOpenTable(input.role) ? VIEWS.desk : null,
     },
   };
 }

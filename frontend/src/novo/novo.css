@@ -5119,3 +5119,82 @@ button.nv-now-cell:active {
   border-radius: var(--nv-r-lg);
   background: #fff;
 }
+
+/* ---------- A casca do painel: entrada, avisos e a moldura das telas antigas ---------- */
+
+.nv-page-login .nv-link {
+  align-self: flex-start;
+}
+
+/* Os avisos ficam no alto, acima do topo de cada tela. A faixa só informa: lisa, sem relevo; o botão é o que se toca. */
+.nv-root.nv-notices {
+  min-height: 0;
+  padding: 10px 16px 0;
+  background: none;
+}
+
+.nv-notices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-peach);
+  color: var(--nv-ink);
+}
+
+.nv-notice.is-warn {
+  background: var(--nv-call-pill);
+}
+
+.nv-notice.is-urgent {
+  background: var(--nv-alert-soft);
+  color: var(--nv-alert);
+}
+
+.nv-notice-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.nv-notice .nv-btn {
+  flex: none;
+}
+
+/* A tela antiga dentro da moldura: ocupa a coluna inteira e não estoura para os lados. */
+.nv-legacy-note {
+  margin: -6px 0 0;
+}
+
+/* O admin.css (antigo) carrega depois e também põe margem e respiro no .adm: aqui a coluna nova manda. */
+.nv-legacy .nv-legacy-body {
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nv-legacy .nv-legacy-body > :first-child {
+  margin-top: 0;
+}
+
+/* As faixas antigas que a casca ainda usa (pausar pedidos, aviso no celular) ficam na coluna nova, acima da tela. */
+.nv-root .adm.nv-legacy-strip,
+.adm.nv-legacy-strip {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 10px 16px 0;
+}

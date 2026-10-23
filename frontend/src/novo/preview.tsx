@@ -17,6 +17,9 @@ import Dishes, { NOT_BUSY } from "./Dishes";
 import DishOptions from "./DishOptions";
 import Logo from "./Logo";
 import Categories from "./Categories";
+import Login from "./Login";
+import Notices from "./Notices";
+import LegacyFrame from "./LegacyFrame";
 import DeskTable from "./DeskTable";
 import QrScan from "./QrScan";
 import PanelMenu from "../painel/PanelMenu";
@@ -38,6 +41,8 @@ import {
   type MakerState,
 } from "../painel/logoViewLogic";
 import { LOGO_NOTHING_SAVED, LOGO_REMOVED, LOGO_SAVED } from "./copy";
+import { loginCheck, loginFailText, loginViewOf } from "../painel/loginLogic";
+import { noticesOf } from "../painel/shellLogic";
 import { deskTableViewOf, deskViewOf, openTyped, parsePanelCalls } from "../painel/deskLogic";
 import {
   addItem as optAddItem,
@@ -1336,8 +1341,106 @@ function MenuSetupPreview({ stage }: { stage: MenuStage }) {
   );
 }
 
+type LoginStage = "normal" | "preenchido" | "sem-email" | "email-ruim" | "sem-senha" | "senha-errada" | "sem-sinal" | "servidor" | "acabou" | "entrando" | "senha-visivel";
+
+/** A entrada do painel, em cada situação. As senhas e e-mails são de exemplo. */
+function LoginPreview({ stage = "normal" }: { stage?: LoginStage }) {
+  const filled = stage !== "normal" && stage !== "sem-email" && stage !== "email-ruim";
+  const [email, setEmail] = useState(stage === "email-ruim" ? "joao" : filled ? "joao@acaidojoao.com" : "");
+  const [password, setPassword] = useState(stage === "sem-senha" || stage === "acabou" || stage === "normal" ? "" : "senha-de-exemplo");
+  const [show, setShow] = useState(stage === "senha-visivel");
+  const [problem, setProblem] = useState(() => {
+    if (stage === "sem-email") return loginCheck({ email: "", password: "x" });
+    if (stage === "email-ruim") return loginCheck({ email: "joao", password: "x" });
+    if (stage === "sem-senha") return loginCheck({ email: "joao@acaidojoao.com", password: "" });
+    if (stage === "senha-errada") return { ok: false as const, field: "password" as const, text: loginFailText(Object.assign(new Error("Email ou senha inválidos"), { status: 401 })) };
+    if (stage === "sem-sinal") return { ok: false as const, field: null, text: loginFailText(new TypeError("Failed to fetch")) };
+    if (stage === "servidor") return { ok: false as const, field: null, text: loginFailText(Object.assign(new Error("boom"), { status: 500 })) };
+    return null;
+  });
+  const failed = problem && !problem.ok ? problem : null;
+  return (
+    <Login
+      view={loginViewOf({
+        place: "Açaí do João",
+        email,
+        password,
+        showPassword: show,
+        busy: stage === "entrando",
+        problem: failed?.text ?? "",
+        problemField: failed?.field ?? null,
+        ended: stage === "acabou",
+      })}
+      onEmail={(value) => {
+        setEmail(value);
+        setProblem(null);
+      }}
+      onPassword={(value) => {
+        setPassword(value);
+        setProblem(null);
+      }}
+      onToggleShow={() => setShow((old) => !old)}
+      onSubmit={() => {
+        const check = loginCheck({ email, password });
+        setProblem(check.ok ? { ok: false, field: "password", text: loginFailText(Object.assign(new Error("Email ou senha inválidos"), { status: 401 })) } : check);
+      }}
+    />
+  );
+}
+
+/** Os avisos do alto, com uma tela de exemplo embaixo para ver o quanto empurram. */
+function NoticesPreview({ stage = "todos" }: { stage?: "todos" | "plano" | "pedido" | "mesas" | "bloqueado" }) {
+  const notices = noticesOf({
+    view: "produtos",
+    role: "OWNER",
+    plan:
+      stage === "todos" || stage === "plano"
+        ? { kind: "soon", text: "Seu plano vence em 3 dias. Pague para o cardápio continuar no ar." }
+        : stage === "bloqueado"
+          ? { kind: "blocked", text: "O plano está vencido. Pague para voltar a receber pedidos." }
+          : null,
+    newOrder: stage === "todos" || stage === "pedido",
+    calls: stage === "todos" || stage === "mesas" ? 2 : 0,
+  });
+  return (
+    <>
+      <Notices notices={notices} />
+      <CategoriesPreview />
+    </>
+  );
+}
+
+/** A moldura das telas antigas. O desenho da tela antiga vem de arquivos que esta página não carrega, então aqui entra só um recado no lugar dela. */
+function LegacyPreview() {
+  return (
+    <LegacyFrame title="Equipe" sub="João, Dono">
+      <p className="nv-empty">(Aqui entra a tela antiga, funcionando como sempre.)</p>
+    </LegacyFrame>
+  );
+}
+
 function Screen() {
   const route = window.location.hash.replace(/^#\/?/, "");
+  const loginRoutes: Record<string, LoginStage> = {
+    entrar: "normal",
+    "entrar-preenchido": "preenchido",
+    "entrar-sem-email": "sem-email",
+    "entrar-email-ruim": "email-ruim",
+    "entrar-sem-senha": "sem-senha",
+    "entrar-senha-errada": "senha-errada",
+    "entrar-sem-sinal": "sem-sinal",
+    "entrar-servidor": "servidor",
+    "entrar-acabou": "acabou",
+    "entrar-entrando": "entrando",
+    "entrar-senha-visivel": "senha-visivel",
+  };
+  if (loginRoutes[route]) return <LoginPreview stage={loginRoutes[route]} />;
+  if (route === "avisos") return <NoticesPreview />;
+  if (route === "avisos-plano") return <NoticesPreview stage="plano" />;
+  if (route === "avisos-pedido") return <NoticesPreview stage="pedido" />;
+  if (route === "avisos-mesas") return <NoticesPreview stage="mesas" />;
+  if (route === "avisos-bloqueado") return <NoticesPreview stage="bloqueado" />;
+  if (route === "tela-antiga") return <LegacyPreview />;
   if (route === "entregas") return <DeliveriesPreview />;
   if (route === "entregas-pegar") return <DeliveriesPreview stage="pegar" />;
   if (route === "entregas-entregues") return <DeliveriesPreview stage="entregues" />;

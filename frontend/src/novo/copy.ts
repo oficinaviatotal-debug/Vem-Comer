@@ -465,3 +465,30 @@ export const LOGO_NAME_LABEL = "Nome na logomarca";
 export const LOGO_NAME_HINT = "Se o nome for comprido, escreva aqui uma versão curta. Só muda na logomarca.";
 export const LOGO_NAME_CUT = "O nome ficou cortado em alguns modelos. Escreva uma versão mais curta.";
 export const LOGO_NAME_EMPTY = "Escreva o nome que vai aparecer na logomarca.";
+
+// ---------------------------------------------------------------- a entrada do painel e a casca
+
+export const LOGIN_TITLE = "Entrar no painel";
+export const LOGIN_LEAD = "Entre com o e-mail e a senha do seu cadastro.";
+export const LOGIN_EMAIL_LABEL = "E-mail";
+export const LOGIN_EMAIL_HINT = "voce@restaurante.com";
+export const LOGIN_PASSWORD_LABEL = "Senha";
+export const LOGIN_SHOW = "Mostrar a senha";
+export const LOGIN_HIDE = "Esconder a senha";
+export const LOGIN_SUBMIT = "Entrar";
+export const LOGIN_SUBMITTING = "Entrando…";
+export const LOGIN_BACK = "Voltar ao cardápio";
+export const LOGIN_ENDED = "Seu acesso terminou. Entre de novo para continuar de onde parou.";
+export const LOGIN_NO_EMAIL = "Escreva o seu e-mail.";
+export const LOGIN_BAD_EMAIL = "O e-mail precisa ter o @. Por exemplo: voce@restaurante.com.";
+export const LOGIN_NO_PASSWORD = "Escreva a sua senha.";
+export const LOGIN_WRONG = "O e-mail ou a senha não conferem. Confira e toque em Entrar de novo.";
+export const LOGIN_OFFLINE = "Sem conexão com o servidor. Confira a internet e toque em Entrar de novo.";
+export const LOGIN_SERVER = "O servidor não respondeu direito. Toque em Entrar de novo em instantes.";
+export const LOGIN_TOO_MANY = "Muitas tentativas seguidas. Espere um pouco e toque em Entrar de novo.";
+
+export const SHELL_OPENING = "Abrindo o painel…";
+export const SHELL_OLD_NOTE = "Esta tela ainda está no desenho antigo. Ela funciona igual; o desenho novo chega na próxima rodada.";
+export const SHELL_OLD_LOADING = "Abrindo a tela…";
+export const SHELL_OLD_FAIL = "Não consegui abrir esta tela. Confira a internet e toque em Tentar de novo.";
+export const SHELL_RETRY = "Tentar de novo";

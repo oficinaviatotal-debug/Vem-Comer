@@ -180,9 +180,10 @@ test("etapa vazia diz o que fazer, em frase inteira e sem jargão", () => {
   }
 });
 
-// A cozinha nova ainda NÃO está ligada ao aplicativo que o público usa: só a página de conferência a enxerga.
+// As telas novas ainda NÃO estão ligadas ao aplicativo que o público usa. A única porta é a chave do painel novo
+// (`?novo=1`, desligada por padrão): App.tsx lê a chave e só baixa o painel novo, sob demanda, quando ela está ligada.
 // Quando o GD disser "pode", o PR que liga a tela troca esta cerca por um teste da ligação.
-test("nada do aplicativo importa o visual novo nem as telas novas (cozinha, hoje, loja): ainda não foram ao ar", () => {
+test("nada do aplicativo importa o visual novo nem as telas novas (cozinha, hoje, loja, painel), a não ser a porta da chave desligada", () => {
   const root = fileURLToPath(new URL("../../frontend/src/", import.meta.url));
   const offenders = [];
   const walk = (dir) => {
@@ -198,5 +199,13 @@ test("nada do aplicativo importa o visual novo nem as telas novas (cozinha, hoje
     }
   };
   walk(root);
-  assert.deepEqual(offenders, []);
+  assert.deepEqual(offenders, ["App.tsx"], "só App.tsx pode importar (as regras da chave)");
+
+  const app = readFileSync(join(root, "App.tsx"), "utf8");
+  const imports = [...app.matchAll(/^import [^;]*from ["']([^"']+)["']/gm)].map((match) => match[1]).filter((path) => /\/(novo|cozinha|hoje|loja|painel)\//.test(path));
+  assert.deepEqual(imports, ["./painel/shellLogic"], "de forma estática, App.tsx só importa as regras da chave");
+  assert.match(app, /lazy\(\(\) => import\("\.\/painel\/PanelShell"\)\)/, "o painel novo só é baixado sob demanda");
+  assert.ok(!/<PanelShell/.test(app.replace(/if \(freshPanel\) \{[\s\S]*?\n    \}\n/, "")), "o painel novo só é desenhado dentro de `if (freshPanel)`");
+  assert.match(app, /useState\(newPanelOn\)/, "a chave é lida uma vez, na abertura");
+  assert.match(app, /readFlag\(location\.search, remembered, import\.meta\.env\.VITE_PAINEL_NOVO\)/, "a chave vem do endereço, do aparelho e do build");
 });

@@ -18,6 +18,8 @@ type Props = {
   companyId: string;
   /** Papel de quem está logado (OWNER, KITCHEN, ...): o entregador não recebe o apito de pedido novo. */
   role?: string | null;
+  /** O menu do painel. Sem ele o botão de menu não aparece. */
+  onMenu?: () => void;
 };
 
 /** A cozinha de verdade: busca os pedidos do restaurante a cada 5 s, apita no pedido novo e troca o status. */
@@ -25,7 +27,7 @@ const POLL_MS = 5000;
 /** Os minutos de espera andam sozinhos, mesmo sem pedido novo. */
 const CLOCK_MS = 30000;
 
-export default function KitchenScreen({ companyId, role = null }: Props) {
+export default function KitchenScreen({ companyId, role = null, onMenu }: Props) {
   const [orders, setOrders] = useState<KitchenOrder[]>([]);
   const [chosen, setChosen] = useState<KitchenTabId | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -89,6 +91,7 @@ export default function KitchenScreen({ companyId, role = null }: Props) {
       busyId={busyId}
       error={error}
       emptyText={emptyText(active)}
+      onMenu={onMenu}
     />
   );
 }

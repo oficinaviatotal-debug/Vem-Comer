@@ -58,15 +58,20 @@ export function expireSession() {
  * "offline" changes nothing (the next try may work).
  */
 export async function refreshSession(): Promise<"ok" | "expired" | "offline"> {
-  if (!getToken()) return "expired";
+  const sent = getToken();
+  if (!sent) return "expired";
   try {
     const response = await fetch(`${API_URL}/auth/refresh`, { method: "POST", headers: authHeaders() });
+    // Se a pessoa saiu (ou entrou outra) enquanto a resposta vinha, a resposta velha não mexe em nada:
+    // nem traz o login de volta depois do "Sair", nem derruba o login novo.
+    if (getToken() !== sent) return getToken() ? "ok" : "expired";
     if (response.status === 401) {
       expireSession();
       return "expired";
     }
     if (!response.ok) return "offline";
     const data = await response.json();
+    if (getToken() !== sent) return getToken() ? "ok" : "expired";
     if (typeof data?.token === "string" && data.token) setToken(data.token);
     if (data?.user) localStorage.setItem(USER_KEY, JSON.stringify(data.user));
     return "ok";
@@ -83,7 +88,8 @@ export async function login(email: string, password: string) {
   });
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || "Email ou senha inválidos");
+    // O status vai junto para a tela nova separar "senha errada" de "o servidor falhou"; a tela antiga só lê a frase.
+    throw new HttpError(err.error || "Email ou senha inválidos", response.status);
   }
   const data = await response.json();
   setToken(data.token);

@@ -40,6 +40,8 @@ type Props = {
   companyId: string;
   /** Voltar para o menu do painel. */
   onBack: () => void;
+  /** O menu do painel. Sem ele o botão de menu não aparece. */
+  onMenu?: () => void;
   /** A logomarca mudou (salva ou removida): o painel pode mostrar a nova no topo. `null` = sem logomarca. */
   onChanged?: (logoPath: string | null) => void;
 };
@@ -67,7 +69,7 @@ function useObjectUrl(blob: Blob | null): string {
  * criando uma em três toques (falando, escrevendo ou tocando), e só salva depois do "sim" da pessoa. Remover pede um segundo
  * toque. A frase do servidor, quando ele recusa, passa como veio; erro ao abrir nunca vira "sem logomarca".
  */
-export default function LogoScreen({ companyId, onBack, onChanged }: Props) {
+export default function LogoScreen({ companyId, onBack, onMenu, onChanged }: Props) {
   const [load, setLoad] = useState<"loading" | "ready" | "error">("loading");
   const [loadError, setLoadError] = useState("");
   const [brand, setBrand] = useState<Brand>({ name: "", logoPath: null });
@@ -411,6 +413,7 @@ export default function LogoScreen({ companyId, onBack, onChanged }: Props) {
       onMake={startMaking}
       onRemove={() => void remove()}
       onBack={back}
+      onMenu={onMenu}
       onRetry={() => void open()}
       onUse={() => void useCandidate()}
       onToggleRefined={() => setCandidate((old) => (old ? { ...old, useRefined: !old.useRefined } : old))}

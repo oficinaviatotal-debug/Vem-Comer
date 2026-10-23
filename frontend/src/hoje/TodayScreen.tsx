@@ -14,6 +14,8 @@ type Props = {
   name: string;
   /** Leva a outra tela do painel ("pedidos", "mesas", ...). */
   onGo: (view: string) => void;
+  /** O menu do painel. Sem ele o botão de menu não aparece. */
+  onMenu?: () => void;
 };
 
 /** De quanto em quanto tempo cada pedaço da tela pergunta ao servidor. */
@@ -26,7 +28,7 @@ const FAILED_SALES = "Não consegui abrir as vendas agora. Mostro de novo em ins
  * O "Hoje" de verdade: busca os pedidos, as mesas chamando e as vendas do dia e entrega tudo à tela nova.
  * Uma busca que falha nunca apaga o que já está na tela: o dono continua vendo os últimos números.
  */
-export default function TodayScreen({ companyId, role, name, onGo }: Props) {
+export default function TodayScreen({ companyId, role, name, onGo, onMenu }: Props) {
   const [orders, setOrders] = useState<TodayOrder[]>([]);
   const [calls, setCalls] = useState<PanelCall[]>([]);
   const [business, setBusiness] = useState<BusinessView | null>(null);
@@ -136,6 +138,7 @@ export default function TodayScreen({ companyId, role, name, onGo }: Props) {
       today={today}
       onGo={onGo}
       onTodo={(item) => void handleTodo(item)}
+      onMenu={onMenu}
       busyId={busyId}
       error={actionError ?? (offline ? "Sem conexão com o servidor. Os números na tela podem estar desatualizados." : null)}
     />

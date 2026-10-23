@@ -867,3 +867,25 @@ export type LogoView = {
   /** A frase que o leitor de tela ouve a cada mudança. */
   live: string;
 };
+
+/** A tela de entrada do painel. */
+export type LoginView = {
+  /** O nome do restaurante, quando já se sabe; vazio quando não. */
+  place: string;
+  lead: string;
+  /** "Seu acesso terminou…": o login acabou, não foi erro da pessoa. */
+  notice: string;
+  /** A frase do problema (campo vazio, senha errada, sem sinal); vazia quando está tudo certo. */
+  problem: string;
+  /** Qual campo tem o problema, para o foco ir até ele; `null` quando o problema é da conexão ou do servidor. */
+  problemField: "email" | "password" | null;
+  email: string;
+  password: string;
+  showPassword: boolean;
+  busy: boolean;
+  /** A frase que o leitor de tela lê quando algo muda. */
+  live: string;
+};
+
+/** Um aviso no alto do painel (plano, pedido novo, mesa chamando). */
+export type ShellNotice = { id: string; tone: "info" | "warn" | "urgent"; text: string; action: string };

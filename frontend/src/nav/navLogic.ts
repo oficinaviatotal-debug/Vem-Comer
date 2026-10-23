@@ -106,6 +106,11 @@ const CASH = ["OWNER", "MANAGER", "CASHIER"];
 /** Who goes to a table: "Abrir mesa" (read the QR, see its calls and orders). The kitchen and the couriers do not. */
 const TABLE_ROLES = ["OWNER", "MANAGER", "WAITER", "CASHIER"];
 
+/** Who opens a table and answers its calls (the same list as the "Abrir mesa" item of the menu). */
+export function canOpenTable(role: string | null | undefined): boolean {
+  return TABLE_ROLES.includes(String(role ?? "").toUpperCase());
+}
+
 /**
  * Every screen of the panel, in the order of the menu. The visibility rules are the ones the tabs always had
  * (who saw what before still sees it): the menu changed the way to reach the screens, not who may open them.
