@@ -127,7 +127,7 @@ export default function App() {
   if (freshPanel) {
     return (
       <Suspense fallback={<main className="loading-state">Carregando…</main>}>
-        <OrderFlow company={company} tableId={tableId} />
+        <OrderFlow company={company} tableId={tableId} teamHref={ownerLoginUrl(location.origin, location.pathname)} />
       </Suspense>
     );
   }

@@ -1184,13 +1184,13 @@ outra frase/silêncio/cancelar derrubam a pergunta, servidor com defeito e recus
 **Limites honestos:**
 
 - **Não foi testado em Android de verdade**, só com microfone de teste. As listas de palavras ("quero", "tirar", "buscar", "abrir"…) e como o celular escreve os pratos são **palpite meu** para afinar com clientes de verdade.
-- O caminho novo do cliente **ainda não tem o link "Sou da equipe ou dono"** que o aplicativo de sempre tem no rodapé. Isso precisa entrar antes de ligar para o público.
+- O fim do cardápio novo do cliente **traz o link "Sou da equipe ou dono"** (como o aplicativo de sempre; o endereço vem do `App.tsx`, o link some se o endereço não vier), com altura de dedo.
 - A voz do cliente, como a do painel, usa o reconhecimento do navegador (no Chrome o áudio vai para o Google). O texto de privacidade sobre isso **continua dependendo de advogado**.
 - Nada disso vai ao ar sem o "pode": a chave `?novo=1` continua desligada por padrão.
 
 **Como foi conferido:** `tests/novo/shopVoiceLogic.test.mjs` (25 testes: quantidade, plural, máximo, número no nome, prato com escolhas, fechado/esgotado/indisponível, mais de um, nenhum, tirar, telas, nunca envia, busca, cardápio não pronto, ajuda, conta da sacola, frases com os mesmos fatos, nomes de botão, ligação no `App.tsx` e no `OrderFlow`). No navegador, com o aplicativo de verdade e o microfone de teste
 (**199 conferências, 36 novas**): prato simples na sacola com a quantidade dita, Desfazer, folha de escolhas com a faixa por cima e quantidade 2, Adicionar pelo toque, esgotado e indisponível sem pôr nada, busca escrita na caixa, sacola aberta por voz, "enviar" que não envia, **nenhuma chamada ao servidor em toda a conversa**, restaurante fechado, mesa (garçom e cardápio), celular sem voz (o toque nos pratos segue valendo), sem a chave o aplicativo de sempre, e 320 px sem rolagem lateral com o botão Enviar e a bolinha lado a lado.
-**725 testes passam só na pasta do visual novo (1564 no total das pastas de teste)**; tipos, build, segurança e conformidade em ordem.
+**726 testes passam só na pasta do visual novo (1565 no total das pastas de teste)**; 200 conferências no navegador (a do link da equipe entrou); tipos, build, segurança e conformidade em ordem.
 
 ## Como as telas novas entram, sem ir ao ar antes da hora
 

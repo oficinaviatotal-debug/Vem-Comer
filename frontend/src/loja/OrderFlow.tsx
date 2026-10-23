@@ -20,6 +20,8 @@ type Props = {
   /** Quem entrou pelo QR da mesa traz o código da mesa; senão null. */
   tableId: string | null;
   jobsHref?: string | null;
+  /** O link "Sou da equipe ou dono" no fim do cardápio (o aplicativo de sempre sempre teve). */
+  teamHref?: string | null;
   /** O servidor aceitou o pedido (a tela já levou a pessoa ao acompanhamento). */
   onSent?: (order: SentOrder) => void;
 };
@@ -35,7 +37,7 @@ type Picking = { product: Product; editKey?: string; line?: CartLine; quantity?:
  * neste aparelho (e ainda tem o pedido guardado) abre direto no acompanhamento; quem leu o QR da mesa abre na tela da
  * mesa (chamar o garçom, pedir a conta); os outros, no cardápio. Como sempre foi.
  */
-export default function OrderFlow({ company, tableId, jobsHref = null, onSent }: Props) {
+export default function OrderFlow({ company, tableId, jobsHref = null, teamHref = null, onSent }: Props) {
   const shop = useShop(company, tableId);
   const [orders, setOrders] = useState<RememberedOrder[]>(() => orderMemory.list(company.slug, tableId));
   const [screenState, setScreen] = useState<Screen>(() => (orders.length > 0 ? "tracking" : tableId ? "table" : "menu"));
@@ -90,6 +92,7 @@ export default function OrderFlow({ company, tableId, jobsHref = null, onSent }:
           onQuery={setQuery}
           tableId={tableId}
           jobsHref={jobsHref}
+          teamHref={teamHref}
           onChoose={(product) => setPicking({ product })}
           onBag={() => goTo("bag")}
           ordersCount={orders.length}

@@ -1623,6 +1623,28 @@ button.nv-now-cell:active {
   font-weight: 700;
 }
 
+/* O cardápio do cliente acaba com um link discreto para a equipe e o dono (como no aplicativo de sempre). */
+.nv-root .nv-team {
+  margin: 28px 0 8px;
+  text-align: center;
+}
+
+.nv-root .nv-team-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  color: var(--nv-muted);
+  font-size: 16px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.nv-root .nv-team-link:focus-visible {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 2px;
+}
+
 .nv-empty {
   margin: 8px 0 18px;
   padding: 22px 18px;

@@ -14,6 +14,8 @@ type Props = {
   tableId: string | null;
   /** Endereço do Vem Trabalhar para o balãozinho. Sem endereço configurado, o balão não aparece. */
   jobsHref?: string | null;
+  /** O link "Sou da equipe ou dono" no fim do cardápio. */
+  teamHref?: string | null;
   /** Toque num prato com tamanho ou extras: abre as escolhas dele. */
   onChoose: (product: Product) => void;
   /** Toque em "Ver sacola". */
@@ -35,7 +37,7 @@ type Props = {
  * O cardápio de verdade: mostra o que o servidor disse (aberto, fechado, em pausa, prato esgotado) e mexe na sacola.
  * Quem busca os dados é `useShop`; aqui só se desenha e se toca.
  */
-export default function ShopScreen({ shop, tableId, jobsHref = null, onChoose, onBag, ordersCount = 0, onTrack, onTable, query: givenQuery, onQuery }: Props) {
+export default function ShopScreen({ shop, tableId, jobsHref = null, teamHref = null, onChoose, onBag, ordersCount = 0, onTrack, onTable, query: givenQuery, onQuery }: Props) {
   const [ownQuery, setOwnQuery] = useState("");
   const query = givenQuery ?? ownQuery;
   const setQuery = onQuery ?? setOwnQuery;
@@ -101,6 +103,7 @@ export default function ShopScreen({ shop, tableId, jobsHref = null, onChoose, o
       tableLabel={onTable ? (tableNumber !== null && tableNumber > 0 ? `Mesa ${tableNumber}` : "Sua mesa") : null}
       onTable={onTable}
       jobsHref={safeJobsUrl(jobsHref)}
+      teamHref={teamHref}
     />
   );
 }

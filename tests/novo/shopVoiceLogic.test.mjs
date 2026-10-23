@@ -390,3 +390,13 @@ test("a folha de escolhas abre com a quantidade dita, mas o botão continua dize
   assert.match(sheet, /useState\(initial\?\.quantity \?\? clampQuantity\(asked \?\? 1\)\)/);
   assert.doesNotMatch(sheet, /editing = .*asked/, "pedir a quantidade não vira edição de linha");
 });
+
+test("o cardápio novo do cliente tem o link \"Sou da equipe ou dono\" como o de sempre, e só o App decide o endereço", () => {
+  assert.match(read("customer/CustomerApp.tsx"), /Sou da equipe ou dono/, "o aplicativo de sempre tem o link");
+  assert.match(read("novo/ShopMenu.tsx"), /Sou da equipe ou dono/);
+  assert.match(read("novo/ShopMenu.tsx"), /\{teamHref \? \(/, "sem endereço o link não aparece");
+  assert.match(read("loja/ShopScreen.tsx"), /teamHref=\{teamHref\}/);
+  assert.match(read("loja/OrderFlow.tsx"), /teamHref=\{teamHref\}/);
+  assert.match(read("App.tsx"), /<OrderFlow company=\{company\} tableId=\{tableId\} teamHref=\{ownerLoginUrl\(location\.origin, location\.pathname\)\} \/>/);
+  assert.match(read("novo/novo.css"), /\.nv-root \.nv-team-link \{[^}]*min-height: 44px/, "tamanho de dedo");
+});

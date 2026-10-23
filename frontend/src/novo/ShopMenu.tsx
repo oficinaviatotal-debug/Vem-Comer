@@ -37,6 +37,8 @@ type Props = {
   onMenu?: () => void;
   /** Endereço do Vem Trabalhar para o balãozinho. Sem endereço configurado, o balão não aparece. */
   jobsHref?: string | null;
+  /** Para onde vai quem é da equipe ou dono e abriu o cardápio do cliente por engano. Sem endereço, o link não aparece. */
+  teamHref?: string | null;
   /** Só a conferência mostra o botão de menu sem ele levar a lugar nenhum. */
   showMenu?: boolean;
 };
@@ -80,6 +82,7 @@ export default function ShopMenu({
   onPromos,
   onMenu,
   jobsHref = null,
+  teamHref = null,
   showMenu = false,
 }: Props) {
   const [crossOpen, setCrossOpen] = useState(true);
@@ -204,6 +207,14 @@ export default function ShopMenu({
             ))}
           </section>
         ))}
+
+        {teamHref ? (
+          <p className="nv-team">
+            <a className="nv-team-link" href={teamHref}>
+              Sou da equipe ou dono
+            </a>
+          </p>
+        ) : null}
       </main>
 
       {cross ? (
