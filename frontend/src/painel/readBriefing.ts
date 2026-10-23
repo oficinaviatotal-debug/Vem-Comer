@@ -9,7 +9,7 @@ import type { Phraser } from "../novo/phrasing";
 /** Cada busca espera no máximo isto; depois a fala diz que não conseguiu ler aquilo (nunca fica esperando para sempre). */
 export const BRIEF_WAIT_MS = 10000;
 
-function within<T>(work: Promise<T>): Promise<T> {
+export function within<T>(work: Promise<T>): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const late = new Promise<never>((_, reject) => {
     timer = setTimeout(() => reject(new Error("demorou")), BRIEF_WAIT_MS);

@@ -1039,7 +1039,7 @@ Frases da faixa e do resumo em `novo/voiceCopy.ts` (motor em `novo/phrasing.ts`;
 - A lista de palavras é **palpite meu** sobre como o dono fala. Vale ouvir donos de verdade e ajustar: é só acrescentar frases em `voiceNavLogic.ts` (o teste confere que nenhuma frase fica em duas telas).
 - O reconhecimento é o do próprio navegador do celular (precisa de internet e de permissão do microfone). Onde o navegador não oferece, a bolinha avisa e manda ao menu. **Não foi testado em um Android
   de verdade**, só com um microfone de teste no navegador.
-- **Ainda não faz**: cadastrar ou mudar coisas por voz no painel, responder perguntas além do resumo do dia ("qual prato vende mais?"), microfone ao lado de cada campo de escrever (**feito na vigésima quarta rodada** para os campos de texto livre do painel novo), e a voz do lado do cliente (a bolinha do cardápio do cliente
+- **Ainda não faz**: cadastrar ou mudar coisas por voz no painel (**marcar prato esgotado ou de volta, feito na vigésima quinta rodada**; o resto, não), responder perguntas além do resumo do dia ("qual prato vende mais?"), microfone ao lado de cada campo de escrever (**feito na vigésima quarta rodada** para os campos de texto livre do painel novo), e a voz do lado do cliente (a bolinha do cardápio do cliente
   continua só enfeite).
 - Nada disso vai ao ar sem o "pode": a chave `?novo=1` continua desligada por padrão.
 
@@ -1117,6 +1117,42 @@ conferência por voz) — um teste garante que nenhum desses ganha microfone. O 
 (**139 conferências, 10 novas**): o formulário do prato tem microfone no nome e no "o que vem no prato" e **nenhum no preço**, o que se fala vai para o campo arrumado, o painel diz o que escreveu na faixa e em voz alta, **nada foi salvo**, sem ninguém falar o campo fica como estava,
 o botão e a bolinha ficam marcados ouvindo, tocar de novo cancela, mudar de tela cancela, a categoria recebe o nome falado, e celular que não escuta não mostra microfone.
 **682 testes passam só na pasta do visual novo (1521 no total das pastas de teste)**; tipos, build, segurança e conformidade em ordem.
+
+## Vigésima quinta rodada: "acabou o pastel de carne", a voz marca o prato, mas só depois do "sim" (23/10/2026)
+
+"Pode prosseguir com os demais" (GD, 23/10, 17:49). Até aqui a bolinha só **abria telas e lia o dia**. Esta é a primeira coisa que ela **muda**: a pessoa fala **"acabou o pastel de carne"** (ou "voltou o açaí") e o prato fica esgotado (ou volta) no cardápio do cliente, sem abrir a tela de Produtos.
+
+**Como funciona** (conta em `painel/voiceDishLogic.ts`, ida ao servidor em `painel/voiceDish.ts`, escuta e pergunta em `painel/useVoiceNav.ts`, botões na faixa em `novo/VoiceBubble.tsx`):
+
+1. A pessoa toca na bolinha e fala. A voz entende "acabou", "esgotou", "terminou", "faltou", "ficou sem", "não tem mais" (esgotar) e "voltou", "chegou", "tem de novo", "tira o esgotado", "desmarca" (voltar), mais o resto da frase como nome do prato.
+2. A voz **busca a lista de pratos na hora** (só lê, nada muda) e acha o prato.
+3. **Pergunta antes**, com o nome que entendeu, na faixa e em voz alta: "Marcar Pastel de carne como esgotado? Toque em Sim, ou toque na bolinha e diga sim." Dois botões de 44 px: **Sim** e **Não**.
+4. **Só depois do "sim"** (no botão ou falado na bolinha) o pedido vai ao servidor. A voz então diz **o que o servidor confirmou** ("Pronto: Pastel de carne marcado como esgotado. Para desfazer, diga: voltou Pastel de carne.") e a tela de Pratos, se estiver aberta, lê a lista de novo na hora.
+
+**Regras de honestidade e de segurança** (todas com teste):
+
+- **Nunca muda na primeira frase.** Um teste garante que só existe **uma** escrita no servidor em todo o fluxo, que ela só roda dentro da confirmação, e que o gancho de voz e as contas não falam com o servidor.
+- **Não adivinha.** Mais de um prato com a palavra ("açaí" com o de 300 e o de 500): lista os nomes ("Açaí 300ml ou Açaí 500ml") e **pede o nome inteiro**, sem perguntar nem marcar nada. Nenhum prato: diz isso e **abre Pratos** para a pessoa procurar. Nunca marca "o parecido".
+- **Já está assim**: "Pastel de carne já está marcado como esgotado. Não mudei nada." Sem pergunta.
+- **A pergunta some e nada é marcado** se a pessoa disser "não", disser **outra frase**, tocar para cancelar, fechar, ficar em silêncio ou deixar passar **30 segundos**.
+- **"Não" ganha de "sim"** ("não pode" é não). Frase com "não" no pedido ("não acabou o pastel") não vira pedido.
+- **Conversa de movimento não é prato**: "o pedido chegou", "a entrega terminou", "a mesa 4 chamou" não viram pedido de prato.
+- **Só para quem o servidor deixa marcar**: dono, gerente e cozinha. Garçom, caixa e entregador veem Produtos no menu, mas o servidor recusaria; a voz **nem faz a pergunta** (um teste confere os papéis com a regra do servidor).
+- **A voz só afirma o que o servidor confirmou.** Servidor com defeito ou resposta diferente: "Não consegui confirmar a marcação do prato. Veja na tela de produtos como ficou." (**não** jura que nada mudou, porque o pedido pode ter chegado). Recusa com motivo (4xx): a frase do servidor aparece como veio. Lista que não carrega: "Não consegui ver os pratos agora", **nunca** "nenhum prato".
+- "Acabou" sozinho, sem nome de prato, continua só abrindo a tela de Produtos.
+- As frases (pergunta, "pronto", "já estava", "mais de um", "não achei") variam e encurtam pelo mesmo motor da rodada 23; os nomes dos botões, **Sim** e **Não**, nunca variam.
+
+**Limites honestos:**
+
+- **Não foi testado em Android de verdade**, só com microfone de teste. O que o celular ouve de "açaí" ou "pastéis" pode vir diferente; a conta ignora acento e plural, mas as **listas de palavras ("acabou", "voltou"…) são palpite meu** para afinar com donos de verdade.
+- Só marca **esgotado** e **de volta**. **Preço por voz** continua fora (número falado precisa de conferência própria), e "voltou tudo" não foi ligado à voz.
+- A pergunta usa a lista do servidor **na hora da fala**: se o prato mudou de nome um segundo depois, a confirmação vale para o prato que foi perguntado (o mesmo `id`).
+- Nada disso vai ao ar sem o "pode": a chave `?novo=1` continua desligada por padrão.
+
+**Como foi conferido:** `tests/novo/voiceDishLogic.test.mjs` (18 testes: o que a pessoa pediu, qual prato, o plural, empate, nenhum, a lista de nomes, a resposta, a regra de papéis conferida com o servidor, o "sim" e o "não", e as garantias de que nada é marcado antes do "sim"). No navegador, com o aplicativo de verdade e o microfone de teste
+(**163 conferências, 24 novas**): pergunta com o nome certo e Sim/Não, nada no servidor antes do "sim", o servidor recebeu o pedido certo uma vez, o "não" não manda nada, o "sim" falado na bolinha vale, dois açaís pedem o nome inteiro, prato já esgotado não pergunta, prato que não existe abre Pratos,
+outra frase/silêncio/cancelar derrubam a pergunta, servidor com defeito e recusa 4xx, lista que não carrega, garçom e caixa sem pergunta, cozinha marca, e a tela de Pratos mostra o prato esgotado logo depois.
+**700 testes passam só na pasta do visual novo (1539 no total das pastas de teste)**; tipos, build, segurança e conformidade em ordem.
 
 ## Como as telas novas entram, sem ir ao ar antes da hora
 

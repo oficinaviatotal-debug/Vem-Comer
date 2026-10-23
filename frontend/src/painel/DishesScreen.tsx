@@ -22,6 +22,7 @@ import { deleteProductPhoto, mediaUrl, uploadProductPhoto } from "../service/api
 import { toSendablePhoto } from "../photos/photoFiles";
 import { photoErrorText } from "../photos/photoLogic";
 import { resetSoldOut, setSoldOut } from "../service/hoursApi";
+import { DISHES_CHANGED } from "./voiceDish";
 import { addDish, editDish, loadDishes, removeDish } from "./dishesApi";
 import DishOptionsScreen from "./DishOptionsScreen";
 import { dishOptionsLineOf } from "./optionsLogic";
@@ -115,11 +116,14 @@ export default function DishesScreen({ companyId, canManage, onMake, onMenu }: P
       if (!document.hidden) void load();
     };
     document.addEventListener("visibilitychange", onVisible);
+    // A voz acabou de marcar (ou desmarcar) um prato: lê de novo para a lista mostrar o que o servidor guardou.
+    window.addEventListener(DISHES_CHANGED, onVisible);
     return () => {
       alive.current = false;
       window.clearInterval(poll);
       window.clearTimeout(timer.current);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener(DISHES_CHANGED, onVisible);
     };
   }, [load]);
 

@@ -13,6 +13,7 @@
  */
 import { isManager } from "../nav/navLogic.ts";
 import { plainPhraser, type Phraser } from "../novo/phrasing.ts";
+import { canMarkDishes, parseDishCommand, type DishAction } from "./voiceDishLogic.ts";
 import { SAY_BLOCKED, SAY_HELP, SAY_HERE, SAY_NO_EXAMPLES, SAY_OPENING, SAY_UNKNOWN } from "../novo/voiceCopy.ts";
 
 export type VoiceAnswer =
@@ -22,6 +23,8 @@ export type VoiceAnswer =
   | { kind: "stay"; say: string }
   /** A pessoa perguntou como está o dia: quem chama busca os números e lê a fala (não há frase pronta). */
   | { kind: "brief" }
+  /** "Acabou o pastel" / "voltou o açaí": quem chama acha o prato, pergunta e só então marca (ver `voiceDishLogic.ts`). `words` são as palavras do nome do prato. */
+  | { kind: "dish"; action: DishAction; words: string[] }
   /** Não entendeu: a frase diz o que falar. */
   | { kind: "unknown"; say: string };
 
@@ -323,6 +326,10 @@ export function interpretVoiceNav(input: VoiceInput): VoiceAnswer {
     const view = !input.allowed.includes(target.view) && target.instead && input.allowed.includes(target.instead) ? target.instead : target.view;
     hits.push({ view, asked: target.view, size, order });
   });
+
+  // Marcar prato esgotado só para quem o servidor deixa (dono, gerente, cozinha) e abre Produtos; sem nome de prato na frase ("acabou" sozinho) isto não vale e a frase abre a tela.
+  const dish = input.allowed.includes("produtos") && canMarkDishes(input.role) ? parseDishCommand(text) : null;
+  if (dish) return { kind: "dish", action: dish.action, words: dish.words };
 
   const help = bestMatch(text, HELP_SAYS);
   const brief = bestMatch(text, BRIEF_SAYS);

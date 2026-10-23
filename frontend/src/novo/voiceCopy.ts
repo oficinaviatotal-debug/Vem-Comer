@@ -123,6 +123,94 @@ export const SAY_DICTATED = bank<[string]>("voz.ditar.escrevi", {
   full: [(words) => `Escrevi: ${words}.`, (words) => `Anotei: ${words}.`, (words) => `Ficou assim: ${words}.`],
 });
 
+// ---------------------------------------------------------------- "acabou o pastel": marcar prato esgotado falando (sempre com confirmação)
+
+export const SAY_DISH_WAIT = bank("prato.espera", {
+  full: ["Procurando o prato…", "Olhando o cardápio…", "Um instante, procurando o prato…"],
+});
+
+/** A pergunta antes de marcar. Fala o nome do prato como está no cardápio, para a pessoa ouvir se o celular entendeu certo. */
+export const SAY_DISH_ASK_SOLD = bank<[string]>("prato.pergunta-esgotou", {
+  full: [
+    (name) => `Marcar ${name} como esgotado? Toque em Sim, ou toque na bolinha e diga sim.`,
+    (name) => `Vou marcar ${name} como esgotado. Confirma? Toque em Sim, ou diga sim na bolinha.`,
+    (name) => `Esgotado: ${name}. Confirma? Toque em Sim, ou toque na bolinha e diga sim.`,
+  ],
+  short: [(name) => `Marcar ${name} como esgotado? Sim ou não?`, (name) => `Esgotado: ${name}. Confirma?`, (name) => `Vou marcar ${name} como esgotado. Confirma?`],
+});
+
+export const SAY_DISH_ASK_BACK = bank<[string]>("prato.pergunta-voltou", {
+  full: [
+    (name) => `Tirar o esgotado de ${name}? Toque em Sim, ou toque na bolinha e diga sim.`,
+    (name) => `Vou deixar ${name} disponível de novo. Confirma? Toque em Sim, ou diga sim na bolinha.`,
+    (name) => `Voltou: ${name}. Confirma? Toque em Sim, ou toque na bolinha e diga sim.`,
+  ],
+  short: [(name) => `Tirar o esgotado de ${name}? Sim ou não?`, (name) => `Voltou: ${name}. Confirma?`, (name) => `Deixar ${name} disponível de novo? Confirma?`],
+});
+
+export const SAY_DISH_DONE_SOLD = bank<[string]>("prato.feito-esgotou", {
+  full: [
+    (name) => `Pronto: ${name} marcado como esgotado. Para desfazer, diga: voltou ${name}.`,
+    (name) => `Feito: ${name} está como esgotado. Para desfazer, diga: voltou ${name}.`,
+    (name) => `Marquei ${name} como esgotado. Para desfazer, diga: voltou ${name}.`,
+  ],
+  short: [(name) => `Pronto: ${name} marcado como esgotado.`, (name) => `Feito: ${name} está como esgotado.`, (name) => `Marquei ${name} como esgotado.`],
+});
+
+export const SAY_DISH_DONE_BACK = bank<[string]>("prato.feito-voltou", {
+  full: [(name) => `Pronto: ${name} voltou ao cardápio.`, (name) => `Feito: ${name} está disponível de novo.`, (name) => `Tirei o esgotado de ${name}.`],
+});
+
+export const SAY_DISH_ALREADY_SOLD = bank<[string]>("prato.ja-esgotado", {
+  full: [(name) => `${name} já está marcado como esgotado. Não mudei nada.`, (name) => `Não mudei nada: ${name} já estava como esgotado.`, (name) => `Já estava como esgotado: ${name}. Não mudei nada.`],
+});
+
+export const SAY_DISH_ALREADY_BACK = bank<[string]>("prato.ja-disponivel", {
+  full: [(name) => `${name} já está disponível. Não mudei nada.`, (name) => `Não mudei nada: ${name} já estava disponível.`, (name) => `Já estava disponível: ${name}. Não mudei nada.`],
+});
+
+/** Mais de um prato com essa palavra: não adivinha, pede o nome inteiro. */
+export const SAY_DISH_MANY = bank<[string]>("prato.mais-de-um", {
+  full: [
+    (names) => `Achei mais de um prato: ${names}. Diga o nome inteiro.`,
+    (names) => `Tem mais de um parecido: ${names}. Fale o nome inteiro.`,
+    (names) => `Não sei qual deles: ${names}. Diga o nome inteiro.`,
+  ],
+});
+
+export const SAY_DISH_NONE = bank("prato.nenhum", {
+  full: [
+    "Não achei um prato com esse nome. Abri os produtos para você procurar.",
+    "Nenhum prato com esse nome. Abri os produtos para você procurar.",
+    "Não encontrei esse prato. Abri os produtos para você ver a lista.",
+  ],
+});
+
+export const SAY_DISH_LOAD_FAIL = bank("prato.nao-li", {
+  full: [
+    "Não consegui ver os pratos agora. Confira a internet e fale de novo.",
+    "Os pratos não carregaram agora. Confira a internet e fale de novo.",
+    "Não consegui olhar o cardápio agora. Veja a internet e fale de novo.",
+  ],
+});
+
+/** Falhou ou não deu para confirmar: a voz não jura que "nada mudou" (o pedido pode ter chegado); manda conferir na tela. */
+export const SAY_DISH_DO_FAIL = bank("prato.nao-marquei", {
+  full: [
+    "Não consegui confirmar a marcação do prato. Veja na tela de produtos como ficou.",
+    "Não deu para confirmar que o prato foi marcado. Veja na tela de produtos como ficou.",
+    "A marcação do prato não foi confirmada. Veja na tela de produtos como ficou.",
+  ],
+});
+
+export const SAY_DISH_DOING = bank("prato.marcando", {
+  full: ["Marcando o prato…", "Um instante, marcando…", "Estou marcando…"],
+});
+
+export const SAY_DISH_CANCELED = bank("prato.cancelado", {
+  full: ["Certo, não mudei nada.", "Tudo bem, deixei como estava.", "Ok, não marquei nada."],
+});
+
 // ---------------------------------------------------------------- "como está o dia?": o que a bolinha lê em voz alta
 
 export const SAY_BRIEF_WAIT = bank("dia.espera", {
@@ -258,6 +346,19 @@ export const ALL_BANKS: readonly Registered[] = [
   entry(SAY_DICTATE_NOT_HEARD),
   entry(SAY_DICTATE_OFF),
   entry(SAY_DICTATED, ["Pastel de carne"], ["Sem cebola"]),
+  entry(SAY_DISH_WAIT),
+  entry(SAY_DISH_ASK_SOLD, ["Pastel de carne"], ["Açaí 300ml"]),
+  entry(SAY_DISH_ASK_BACK, ["Pastel de carne"], ["Açaí 300ml"]),
+  entry(SAY_DISH_DONE_SOLD, ["Pastel de carne"]),
+  entry(SAY_DISH_DONE_BACK, ["Pastel de carne"]),
+  entry(SAY_DISH_ALREADY_SOLD, ["Pastel de carne"]),
+  entry(SAY_DISH_ALREADY_BACK, ["Pastel de carne"]),
+  entry(SAY_DISH_MANY, ["Açaí 300ml ou Açaí 500ml"], ["Pastel de carne, Pastel de queijo ou Pastel de frango"]),
+  entry(SAY_DISH_NONE),
+  entry(SAY_DISH_LOAD_FAIL),
+  entry(SAY_DISH_DO_FAIL),
+  entry(SAY_DISH_DOING),
+  entry(SAY_DISH_CANCELED),
   entry(SAY_BRIEF_WAIT),
   entry(SAY_BRIEF_FAIL),
   entry(SAY_BRIEF_NO_ORDERS),

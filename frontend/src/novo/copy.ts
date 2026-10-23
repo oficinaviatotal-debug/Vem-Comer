@@ -512,3 +512,7 @@ export const DICTATE_OPT_ITEM = (spoken: string): string => `Falar o nome de ${s
 export const DICTATE_OPT_TEXT = "Falar as opções";
 export const DICTATE_MODEL_SEARCH = "Falar o tipo de negócio";
 export const DICTATE_MODEL_ADD = "Falar o prato para acrescentar";
+
+// ---------------------------------------------------------------- confirmar por voz ("acabou o pastel"): nome dos dois botões da faixa
+export const VOICE_YES = "Sim";
+export const VOICE_NO = "Não";

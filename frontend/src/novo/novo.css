@@ -5267,6 +5267,36 @@ button.nv-now-cell:active {
   font-weight: 700;
 }
 
+/* A pergunta da voz ("Marcar como esgotado?"): dois botões de dedo, o "Sim" cheio e o "Não" só com contorno. */
+.nv-voice-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.nv-voice-act {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  background: none;
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.nv-voice-act.is-primary {
+  border-color: #fff;
+  background: #fff;
+  color: var(--nv-ink);
+}
+
+.nv-voice-act:active {
+  transform: translateY(1px);
+}
+
 /* ---------- O microfone ao lado de um campo de escrever ---------- */
 
 .nv-root .nv-dictate {

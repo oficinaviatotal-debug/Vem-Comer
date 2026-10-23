@@ -28,6 +28,7 @@ import { useOwnerPlan } from "../service/useOwnerPlan";
 import { allowedViews, noticesOf, ownerStartView, screenOf, shownView, watchCalls, watchOrders, type ShellContext } from "./shellLogic";
 import { useSession, type SessionUser } from "./useSession";
 import { readBriefing } from "./readBriefing";
+import { askDish, doDish } from "./voiceDish";
 import { useVoiceNav } from "./useVoiceNav";
 import { useCallsWatch, useOrdersWatch, usePlatformCounts } from "./useWatchers";
 
@@ -156,6 +157,8 @@ function Panel({ companyId, companySlug, companyName, onBack, user, onLogout }: 
     current: shown,
     onGo: go,
     onBrief: (phrase) => readBriefing({ companyId, role, name: user.name, phrase, canOpenOrders: allowedViews(context).includes("pedidos") }),
+    onDish: (action, words, phrase) => askDish({ companyId, action, words, phrase }),
+    onDishDo: (offer, phrase) => doDish(offer, phrase),
   });
   const voiceControl = useMemo(() => ({ onPress: voice.press, listening: voice.listening, dictate: voice.dictate }), [voice.press, voice.listening, voice.dictate]);
 
@@ -304,7 +307,7 @@ function Panel({ companyId, companySlug, companyName, onBack, user, onLogout }: 
       ) : null}
 
       {voice.caption && !menuOpen ? (
-        <VoiceBubble tone={voice.caption.tone} text={voice.caption.text} heard={voice.caption.heard} onClose={voice.close} />
+        <VoiceBubble tone={voice.caption.tone} text={voice.caption.text} heard={voice.caption.heard} actions={voice.caption.actions} onClose={voice.close} />
       ) : null}
     </VoiceContext.Provider>
   );
