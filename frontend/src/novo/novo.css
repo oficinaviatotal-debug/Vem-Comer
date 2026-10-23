@@ -4722,3 +4722,151 @@ button.nv-now-cell:active {
 .nv-field input[aria-invalid="true"] {
   color: var(--nv-alert);
 }
+
+/* Opções do prato (tamanho, adicionais, retirar): campos afundados para escrever, botões em relevo para tocar, o que só informa fica liso. */
+.nv-optgroup {
+  gap: 14px;
+}
+
+.nv-optrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 12px;
+}
+
+.nv-optrow-label {
+  flex: 1 1 150px;
+  font: 700 17px/1.2 var(--nv-display);
+}
+
+.nv-optseg {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+.nv-optseg .nv-btn {
+  min-width: 76px;
+}
+
+.nv-optstep {
+  flex: none;
+  width: 150px;
+  margin-top: 0;
+}
+
+.nv-optrule {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.nv-optitems {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-optitem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--nv-line);
+}
+
+.nv-optitem:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.nv-optitem.is-off .nv-field:first-child input {
+  color: var(--nv-muted);
+  text-decoration: line-through;
+}
+
+.nv-optitem-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.nv-optprice {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.nv-optitem-line .nv-btn {
+  flex: none;
+}
+
+.nv-optacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nv-btn.is-ghost.is-armed {
+  --nv-edge: var(--nv-ember-a);
+  background: var(--nv-alert);
+  color: #fff;
+}
+
+.nv-optsaid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.nv-optsaid p,
+.nv-optsaid ul {
+  margin: 0;
+}
+
+.nv-optsaid ul,
+.nv-optnotes {
+  padding-left: 20px;
+}
+
+.nv-optnotes {
+  margin: 6px 0 0;
+  font-weight: 600;
+}
+
+.nv-optsaid .nv-btn {
+  align-self: flex-start;
+}
+
+.nv-optstarters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nv-optstarters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* No lápis do prato: o resumo das opções de hoje e o botão que leva à tela das opções. */
+.nv-dishform-options p {
+  margin: 0;
+}

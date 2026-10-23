@@ -633,7 +633,7 @@ export const DISH_PRODUCTS_EXAMPLE = [
   { id: "d1", menu_id: "m-lanches", name: "X-tudo", price: "25.00", description: "Pão, carne, ovo, bacon e queijo", thumb_url: "emoji:🍔" },
   { id: "d2", menu_id: "m-lanches", name: "X-salada", price: "22.00", description: "Pão, carne, queijo, alface e tomate", thumb_url: "emoji:🥪" },
   { id: "d3", menu_id: "m-lanches", name: "X-bacon", price: "27.00", description: "Pão, carne, queijo e bastante bacon", thumb_url: "emoji:🥓", sold_out: true },
-  { id: "d4", menu_id: "m-porcoes", name: "Batata frita com cheddar e bacon (serve duas pessoas)", price: "38.00", thumb_url: "emoji:🍟", option_groups: [{}, {}] },
+  { id: "d4", menu_id: "m-porcoes", name: "Batata frita com cheddar e bacon (serve duas pessoas)", price: "38.00", thumb_url: "emoji:🍟", option_groups: [{ id: "og1", name: "Tamanho" }, { id: "og2", name: "Adicionais" }] },
   { id: "d5", menu_id: "m-porcoes", name: "Calabresa acebolada", price: "34.00", thumb_url: "emoji:🌭" },
   { id: "d6", menu_id: "m-bebidas", name: "Coca-Cola lata", price: "6.00", thumb_url: "emoji:🥤" },
   { id: "d7", menu_id: "m-bebidas", name: "Suco de laranja", price: "9.00", thumb_url: "emoji:🍊", sold_out: true },
@@ -642,3 +642,39 @@ export const DISH_PRODUCTS_EXAMPLE = [
   { id: "d10", menu_id: null, name: "Brinde da casa", price: "1.00" },
 ];
 
+
+/** As opções de um prato como o servidor as manda, só para a conferência da tela de opções (tamanho, adicionais, retirar). */
+export const OPTIONS_EXAMPLE = [
+  {
+    id: "og-tamanho",
+    name: "Tamanho",
+    min_choices: 1,
+    max_choices: 1,
+    items: [
+      { id: "oi-p", name: "Pequeno", price_delta: "0.00", active: true },
+      { id: "oi-m", name: "Médio", price_delta: "5.00", active: true },
+      { id: "oi-g", name: "Grande", price_delta: "10.00", active: true },
+    ],
+  },
+  {
+    id: "og-adicionais",
+    name: "Adicionais",
+    min_choices: 0,
+    max_choices: 3,
+    items: [
+      { id: "oi-bacon", name: "Bacon", price_delta: "4.00", active: true },
+      { id: "oi-ovo", name: "Ovo", price_delta: "2.50", active: false },
+      { id: "oi-queijo", name: "Queijo extra", price_delta: "3.00", active: true },
+    ],
+  },
+  {
+    id: "og-retirar",
+    name: "Retirar",
+    min_choices: 0,
+    max_choices: 2,
+    items: [
+      { id: "oi-cebola", name: "Sem cebola", price_delta: "0.00", active: true },
+      { id: "oi-tomate", name: "Sem tomate", price_delta: "0.00", active: true },
+    ],
+  },
+];

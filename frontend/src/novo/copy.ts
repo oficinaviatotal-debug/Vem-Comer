@@ -321,3 +321,63 @@ export const CATS_NAME_TWICE = "Essa categoria já existe.";
 export const CATS_LOAD_ERROR = "Sem sinal. Tente de novo.";
 export const CATS_ADD_ERROR = "Sem sinal. Antes de tentar de novo, veja na lista se a categoria já entrou.";
 export const CATS_REMOVE_ERROR = "Não consegui remover a categoria. Tente de novo.";
+
+// ------------------------------------------------------------------------------------------------ opções do prato (tamanho, adicionais, retirar)
+
+/** No lápis do prato: o resumo das opções de hoje e o botão que leva à tela das opções. */
+export const DISH_OPTIONS_LABEL = "Opções do prato";
+export const DISH_OPTIONS_NONE = "Sem opções. Serve para tamanho, adicional ou retirar algo.";
+export const DISH_OPTIONS_MAKE = "Montar as opções";
+export const DISH_OPTIONS_CHANGE = "Mudar as opções";
+
+export const OPT_TITLE = "Opções";
+export const OPT_LOADING = "Abrindo as opções…";
+export const OPT_LOAD_ERROR = "Não consegui abrir as opções deste prato.";
+export const OPT_RETRY = "Tentar de novo";
+export const OPT_BACK = "Voltar aos pratos";
+export const OPT_BACK_ARMED = "Sair sem salvar? Toque de novo";
+
+export const OPT_INTRO_NONE_VOICE = "Este prato não tem opções. Fale como o cliente escolhe, escreva ou toque em um modelo. Os nomes são só sugestões: é só mudar.";
+export const OPT_INTRO_NONE = "Este prato não tem opções. Escreva como o cliente escolhe ou toque em um modelo. Os nomes são só sugestões: é só mudar.";
+export const OPT_INTRO_HAS = "O cliente escolhe antes de pedir. O preço de cada opção soma no prato; deixe vazio se não custa a mais. Se uma opção acabar, toque em Tem e vira Acabou.";
+
+export const OPT_MIC = "Falar as opções";
+export const OPT_MIC_LISTENING = "Estou ouvindo. Toque para parar";
+export const OPT_MIC_OFF = "Este celular não escuta. Escreva as opções ou toque em um modelo.";
+export const OPT_SAY_EXAMPLE = "Exemplo: tamanho pequeno, médio mais 5, grande mais 10. Adicionais bacon 4, ovo 2. Sem cebola.";
+export const OPT_TYPE_LABEL = "Ou escreva as opções";
+export const OPT_TYPE_HINT = "Ex.: tamanho pequeno, grande mais 6";
+export const OPT_NOTE = "Anotar";
+
+export const OPT_YOU_SAID = "Você disse:";
+export const OPT_UNDERSTOOD = "Entendi:";
+export const OPT_CHECK_BELOW = "Confira abaixo e toque em Salvar as opções. Ainda não foi salvo.";
+export const OPT_NOT_UNDERSTOOD = "Não entendi nenhuma opção.";
+export const OPT_NOT_HEARD = "Não ouvi nada.";
+export const OPT_CLOSE_NOTICE = "Fechar aviso";
+
+export const OPT_STARTERS_NONE = "Começar com um modelo";
+export const OPT_STARTERS_MORE = "Pôr mais um grupo";
+
+export const OPT_GROUP_NAME = "Nome do grupo";
+export const OPT_GROUP_NAME_HINT = "Ex.: Tamanho";
+export const OPT_REQUIRED_Q = "O cliente precisa escolher?";
+export const OPT_YES = "Sim";
+export const OPT_NO = "Não";
+export const OPT_HOW_MANY = "Pode escolher até";
+export const OPT_AT_LEAST = "Tem que escolher pelo menos";
+export const OPT_ITEM_NAME_HINT = "Nome da opção";
+export const OPT_ITEM_PRICE_HINT = "+ R$ 0,00";
+export const OPT_HAVE = "Tem";
+export const OPT_GONE = "Acabou";
+export const OPT_ADD_ITEM = "Pôr outra opção";
+export const OPT_REMOVE_GROUP = "Tirar o grupo";
+export const OPT_REMOVE_GROUP_ARMED = "Toque de novo para tirar";
+
+export const OPT_SAVE = "Salvar as opções";
+export const OPT_SAVING = "Salvando…";
+export const OPT_UNSAVED = "Falta salvar. O cliente só vê depois de salvar.";
+export const OPT_PROBLEMS = "Falta acertar:";
+export const OPT_SAVED = "Opções salvas. O cliente já vê no cardápio.";
+export const OPT_SAVED_NONE = "Pronto. Este prato ficou sem opções.";
+export const OPT_SAVE_ERROR = "Não consegui salvar as opções. Tente de novo.";

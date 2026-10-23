@@ -3,6 +3,7 @@ import "./novo.css";
 import NvIcon from "./Icons";
 import { Photo, Spinner, TopBar, VoiceOrb } from "./parts";
 import {
+  DISH_OPTIONS_LABEL,
   DISH_PHOTO_HAS,
   DISH_PHOTO_LABEL,
   DISH_PHOTO_NONE,
@@ -36,7 +37,7 @@ import {
   DISHES_SEARCH,
   DISHES_SOLD_CHIP,
 } from "./copy";
-import type { DishForm, DishPhotoView, DishRow, DishesView } from "./types";
+import type { DishForm, DishOptionsLine, DishPhotoView, DishRow, DishesView } from "./types";
 
 /** O que está indo ao servidor agora. Cada prato tem a sua vez; adicionar e voltar tudo seguram a tela inteira. */
 export type DishesBusy = {
@@ -61,6 +62,9 @@ type FormProps = {
   photo?: DishPhotoView | null;
   onPhoto?: (file: File) => void;
   onPhotoRemove?: () => void;
+  /** As opções do prato (tamanho, adicionais): o resumo de hoje e o botão que abre a tela delas; sem isto (prato novo) a parte não aparece. */
+  options?: DishOptionsLine | null;
+  onOptions?: () => void;
 };
 
 /** Os botões da foto: tirar na hora, escolher do celular e (se há foto) tirar a foto. O campo de arquivo fica dentro do rótulo, escondido. */
@@ -112,7 +116,7 @@ function DishPhotoBox({ photo, onPhoto, onPhotoRemove }: { photo: DishPhotoView;
  * descrição é opcional. Ao abrir, o foco vem para o nome e o teclado sobe. Os campos são afundados (escrever); os botões,
  * em relevo (tocar). `adding` vale para os dois: enquanto o servidor não responde, os campos esperam.
  */
-export function DishFormBox({ form, categories, problemText, adding, onForm, onAdd, onClose, photo, onPhoto, onPhotoRemove }: FormProps) {
+export function DishFormBox({ form, categories, problemText, adding, onForm, onAdd, onClose, photo, onPhoto, onPhotoRemove, options, onOptions }: FormProps) {
   const name = useRef<HTMLInputElement>(null);
   useEffect(() => {
     name.current?.focus();
@@ -209,6 +213,19 @@ export function DishFormBox({ form, categories, problemText, adding, onForm, onA
       </div>
 
       {editing && photo ? <DishPhotoBox photo={photo} onPhoto={onPhoto} onPhotoRemove={onPhotoRemove} /> : null}
+
+      {editing && options ? (
+        <div className="nv-dishform-field nv-dishform-options" role="group" aria-labelledby="nv-dishoptions-label">
+          <span className="nv-code-label" id="nv-dishoptions-label">
+            {DISH_OPTIONS_LABEL}
+          </span>
+          <p className="nv-code-hint">{options.summary}</p>
+          <button type="button" id="nv-dish-options" className="nv-btn is-ghost is-block" disabled={adding} onClick={onOptions}>
+            <NvIcon name="edit" />
+            {options.button}
+          </button>
+        </div>
+      ) : null}
 
       {problemText ? (
         <p className="nv-error" id="nv-dish-problem" role="alert">
@@ -327,6 +344,9 @@ type Props = {
   photo?: DishPhotoView | null;
   onPhoto?: (file: File) => void;
   onPhotoRemove?: () => void;
+  /** As opções do prato aberto no lápis: o resumo e o botão que leva à tela das opções. */
+  options?: DishOptionsLine | null;
+  onOptions?: () => void;
   /** Leva ao montar o cardápio por foto, arquivo ou voz. Sem isto o botão não aparece. */
   onMake?: () => void;
   onRefresh?: () => void;
@@ -357,6 +377,8 @@ export default function Dishes({
   photo = null,
   onPhoto,
   onPhotoRemove,
+  options = null,
+  onOptions,
   onMake,
   onRefresh,
   onMenu,
@@ -397,6 +419,8 @@ export default function Dishes({
               photo={photo}
               onPhoto={onPhoto}
               onPhotoRemove={onPhotoRemove}
+              options={options}
+              onOptions={onOptions}
             />
           ) : (
             <button type="button" id="nv-dishes-new" className="nv-btn is-green is-block" onClick={onOpenForm}>

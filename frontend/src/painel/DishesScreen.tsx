@@ -23,6 +23,8 @@ import { toSendablePhoto } from "../photos/photoFiles";
 import { photoErrorText } from "../photos/photoLogic";
 import { resetSoldOut, setSoldOut } from "../service/hoursApi";
 import { addDish, editDish, loadDishes, removeDish } from "./dishesApi";
+import DishOptionsScreen from "./DishOptionsScreen";
+import { dishOptionsLineOf } from "./optionsLogic";
 import {
   ARM_MS,
   DISHES_POLL_MS,
@@ -69,6 +71,8 @@ export default function DishesScreen({ companyId, canManage, onMake, onMenu }: P
   const [removing, setRemoving] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
   const [adding, setAdding] = useState(false);
+  /** O prato cuja tela de opções (tamanho, adicionais) está aberta no lugar da lista. O lápis fica guardado e volta ao fechar. */
+  const [optionsFor, setOptionsFor] = useState<string | null>(null);
   /** A foto do prato que o lápis está mostrando: o que está acontecendo com ela agora (ou null). */
   const [photoState, setPhotoState] = useState<{ id: string; phase: DishPhotoView["phase"]; message: string } | null>(null);
   /** Cada foto tem o seu número: se o lápis fechar ou mudar de prato, a resposta que chega tarde não escreve na tela. */
@@ -360,6 +364,23 @@ export default function DishesScreen({ companyId, canManage, onMake, onMenu }: P
       }
     : null;
 
+  const optionsDish = optionsFor ? products?.find((entry) => entry.id === optionsFor) : undefined;
+  if (optionsDish) {
+    return (
+      <DishOptionsScreen
+        key={optionsDish.id}
+        productId={optionsDish.id}
+        productName={optionsDish.name}
+        price={optionsDish.price}
+        onBack={() => {
+          setOptionsFor(null);
+          focusLater("nv-dish-options");
+        }}
+        onSaved={() => void load()}
+      />
+    );
+  }
+
   return (
     <Dishes
       view={view}
@@ -368,6 +389,8 @@ export default function DishesScreen({ companyId, canManage, onMake, onMenu }: P
       photo={photoView}
       onPhoto={(file) => void sendPhoto(file)}
       onPhotoRemove={() => void dropPhoto()}
+      options={editing ? dishOptionsLineOf(editing) : null}
+      onOptions={() => editing && setOptionsFor(editing.id)}
       problemText={form ? dishProblemText(form.problem) : ""}
       busy={busy}
       onQuery={setQuery}

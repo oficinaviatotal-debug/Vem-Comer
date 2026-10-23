@@ -979,3 +979,43 @@ test("categorias: o cartão é liso, tem o nome e a conta de pratos de um lado e
   assert.match(cats, /<p className="nv-dishcard-arm">/);
 });
 
+
+test("opções do prato: escrever é campo afundado, tocar é botão em relevo, e o que só informa fica liso e sem toque", () => {
+  const tela = read("DishOptions.tsx");
+  // Só se toca em <button> (ou <label> de arquivo, que aqui não há): nada de div com onClick.
+  assert.ok(!/<(div|p|span|li|ul)[^>]*onClick/.test(tela), "nada que só informa pode receber toque");
+  // Os campos de nome e de preço ficam no vão afundado.
+  assert.ok((tela.match(/<div className="nv-field/g) ?? []).length >= 3, "nome do grupo, nome e preço da opção são campos afundados");
+  // Tem / Acabou e Sim / Não são botões que dizem em que estado estão.
+  assert.match(tela, /aria-pressed=\{item\.active\}/);
+  assert.match(tela, /aria-pressed=\{group\.required\}/);
+  // A regra em palavras e o que foi entendido só informam.
+  assert.match(tela, /<p className="nv-optrule">/);
+  const rule = block(".nv-optrule");
+  assert.ok(!/box-shadow/.test(rule), "a regra em palavras é lisa");
+  assert.ok(!/box-shadow/.test(block(".nv-optsaid")), "o cartão do que foi entendido é liso");
+  // O menos e o mais são os mesmos botões de 44 px do cardápio; o número no meio só informa.
+  assert.match(tela, /className="nv-step nv-optstep"/);
+  assert.match(block(".nv-optstep"), /width: 150px/);
+  // O botão de tirar o grupo pede um segundo toque e muda de cor quando já recebeu o primeiro.
+  assert.match(block(".nv-btn.is-ghost.is-armed"), /background: var\(--nv-alert\)/);
+});
+
+test("opções do prato: a barra de baixo guia o próximo passo (salvar, ou voltar quando nada falta salvar)", () => {
+  const tela = read("DishOptions.tsx");
+  assert.match(tela, /view\.dirty \|\| view\.saving \?/);
+  assert.match(tela, /OPT_SAVE/);
+  assert.match(tela, /OPT_BACK_ARMED/);
+  assert.match(block(".nv-savebar"), /position: sticky/);
+  // Os cinco textos de estado (abrindo, não abriu, vazio, montado, erro) existem, e os dois primeiros não mostram grupo nem salvar.
+  assert.match(tela, /view\.stage === "loading"/);
+  assert.match(tela, /view\.stage === "error"/);
+  assert.match(tela, /const ready = view\.stage === "ready"/);
+});
+
+test("o lápis do prato só mostra as opções para prato que já existe", () => {
+  const dishes = read("Dishes.tsx");
+  assert.match(dishes, /editing && options \?/);
+  assert.match(dishes, /id="nv-dish-options"/);
+  assert.match(dishes, /disabled=\{adding\}/);
+});

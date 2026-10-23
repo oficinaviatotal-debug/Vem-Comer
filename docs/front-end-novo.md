@@ -838,6 +838,55 @@ Para ver: `preview-novo.html#/pratos` (frase e etiquetas), `#/pratos-foto`, `#/p
 
 **Ainda não está ligado ao painel público** (o painel antigo continua mandando).
 
+## Décima nona rodada: opções do prato, tamanho, adicionais e retirar (22/10/2026)
+
+O GD disse "Dê total continuidade" (20:56). Segui a ordem que já estava dita: depois da foto do prato, as **opções do prato**, no mesmo lápis. O servidor já guarda
+tudo isso (`GET` e `PUT /api/admin/products/<id>/options`, já no ar no `main`) e a tela antiga já tinha as contas; esta rodada refaz a tela no visual novo, sem
+mudar regra nenhuma. Nada vai ao ar sem o "pode".
+
+**Como se chega:** no lápis do prato (só prato que já existe) aparece **"Opções do prato"** com o resumo de hoje ("Sem opções. Serve para tamanho, adicional ou
+retirar algo." ou "2 grupos de opções: Tamanho, Adicionais.") e o botão **Montar as opções** (ou **Mudar as opções**). Ele abre a tela das opções no lugar da lista;
+ao voltar, o lápis está como estava, com o foco no mesmo botão.
+
+**A tela** (`novo/DishOptions.tsx`, contas em `painel/optionsLogic.ts`, tela de verdade em `painel/DishOptionsScreen.tsx`):
+
+- **Três jeitos de montar, a pessoa escolhe:** **Falar as opções** (a bolinha grande: ouve, mostra as palavras e, ao tocar de novo, usa o que ouviu), **escrever**
+  (a mesma frase, na caixa "Ou escreva as opções", botão Anotar) e **modelos para tocar** (Tamanho, Adicionais, Retirar, Outro grupo). Foto não entra aqui: não há o que
+  fotografar numa escolha de tamanho.
+- **A frase falada ou escrita** usa o entendedor que já existia (`service/spokenOptions`): "tamanho pequeno, médio mais 5, grande mais 10. Adicionais bacon 4, ovo 2. Sem
+  cebola". Ele só **monta o rascunho na tela**; a tela mostra **"Você disse"**, **"Entendi"** e **"Ainda não foi salvo"**. Preço duvidoso fica vazio e a frase avisa;
+  se o limite de grupos (8) ou de opções (30) deixou algo de fora, a frase diz o quê. Não entendeu: a lista fica como estava e a frase ensina a falar. Não ouviu: diz que não ouviu.
+- **Cada grupo** tem nome, **"O cliente precisa escolher? Sim / Não"**, **"Pode escolher até"** e (se obrigatório) **"Tem que escolher pelo menos"**, com menos e mais de 44 px, e a
+  regra em palavras do jeito que o cliente vai ver ("O cliente escolhe 1."). Cada opção tem nome, **preço a mais** (vazio = não custa a mais) e **Tem / Acabou**; dá para
+  pôr outra opção, tirar uma opção e tirar o grupo (pede um segundo toque).
+- **O sistema conversa (princípio 8):** a frase de cima diz o que fazer (sem opções: "fale, escreva ou toque em um modelo"; com opções: "o cliente escolhe antes de pedir…");
+  a barra de baixo diz **o que falta** ("Falta salvar. O cliente só vê depois de salvar." ou "Tem 2 coisas para acertar antes de salvar."); e o botão principal de baixo **guia o
+  próximo passo**: com coisa por salvar é **Salvar as opções**, e sem nada por salvar vira **Voltar aos pratos**. Sair com coisa por salvar pede um segundo toque
+  ("Sair sem salvar? Toque de novo").
+- **Só salva quando a pessoa toca em Salvar.** Antes, a tela confere com as mesmas regras do servidor (nome vazio, opção repetida, preço inválido, mínimo maior que o número de
+  opções) e diz o que acertar, sem mandar nada. Depois do "salvo" a tela diz **"Opções salvas. O cliente já vê no cardápio."** só depois da resposta certa do servidor; se o
+  servidor recusar com frase, ela passa como veio; sem frase boa, "Não consegui salvar as opções. Tente de novo." e nada do que foi montado some. Dois toques seguidos mandam um só pedido.
+- **Honestidade:** se as opções não abriram, a tela diz isso e oferece Tentar de novo; **não** finge que o prato "não tem opções" (sem microfone, sem modelos, sem salvar).
+  Sem reconhecedor de voz no celular, o botão de falar não aparece e a frase diz que o celular não escuta.
+- **Os ids do servidor ficam:** mudar só o preço de uma opção não troca a opção de quem está pedindo agora (o servidor mantém pelo id).
+- **Só dono e gerente** chegam ao lápis (a cozinha não vê lápis, logo não vê opções); o servidor confere de novo.
+
+**O que ainda não faz:**
+
+- Não mexe na ordem dos grupos nem das opções (só acrescenta e tira).
+- A importação do cardápio (foto, arquivo ou fala) ainda não cria opções; é preciso entrar no lápis de cada prato.
+- Não copia as opções de um prato para outro (ex.: o mesmo "Tamanho" em cinco pizzas); fica para decidir se vale.
+
+**Como foi conferido:** `tests/novo/optionsLogic.test.mjs` (26: a tela por grupo, setas, Sim/Não, frase falada e limites, o que falta na barra, resumo do lápis) e `toque.test.mjs` (+3: campo afundado,
+botão em relevo, barra que guia). 549 testes passam só na pasta do visual novo. No navegador, com a tela de verdade e um servidor de mentira (58 conferências): resumo e botão
+no lápis, abrir devagar e abrir com erro, modelo Tamanho, preço, Tem/Acabou, Sim/Não e as setas, escrever, falar com reconhecedor de mentira (parar, silêncio), salvar com
+duplo toque (um pedido só, preço com duas casas), frase do servidor que passa como veio, erro sem frase, tirar grupo com dois toques, sair com e sem coisa por salvar,
+sem microfone, cozinha sem lápis, e 320 a 480 px sem rolagem lateral e sem botão menor que 44 px.
+Para ver: `preview-novo.html#/pratos-mudar-opcoes` (o lápis com o resumo), `#/pratos-opcoes`, `#/pratos-opcoes-vazio`, `#/pratos-opcoes-ouvi`, `#/pratos-opcoes-erros`,
+`#/pratos-opcoes-salvo`, `#/pratos-opcoes-sair`, `#/pratos-opcoes-carregando`, `#/pratos-opcoes-erro` e `#/pratos-opcoes-sem-microfone`.
+
+**Ainda não está ligado ao painel público** (o painel antigo continua mandando).
+
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
 - Tudo mora em `frontend/src/novo/` e **não é importado pelo aplicativo**: o `index.html` e o `main.tsx` não mudam.

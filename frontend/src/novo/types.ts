@@ -711,3 +711,77 @@ export type CategoriesView = {
   notice: string;
 };
 
+
+// ------------------------------------------------------------------------------------------------ opções do prato
+
+/** No lápis do prato: o que o prato tem de opções hoje (uma frase) e o que o botão diz. Sem isto (prato novo) a parte não aparece. */
+export type DishOptionsLine = { summary: string; button: string };
+
+export type OptionItemView = {
+  uid: string;
+  /** O que está escrito no nome e no preço (o preço como a pessoa escreve: "6,50"; vazio = não custa a mais). */
+  name: string;
+  price: string;
+  /** Tem (a pessoa pode escolher) ou Acabou. */
+  active: boolean;
+  /** Como o leitor de tela chama esta opção: o nome, ou "opção 2" enquanto está sem nome. */
+  spoken: string;
+};
+
+export type OptionGroupView = {
+  uid: string;
+  /** Posição do grupo na lista (1, 2…), para o leitor de tela quando o grupo ainda não tem nome. */
+  position: number;
+  name: string;
+  /** A regra em palavras, do jeito que o cliente vai ver: "O cliente escolhe 1." */
+  sentence: string;
+  required: boolean;
+  max: number;
+  canMore: boolean;
+  canLess: boolean;
+  min: number;
+  canMinMore: boolean;
+  canMinLess: boolean;
+  items: OptionItemView[];
+  canAddItem: boolean;
+  /** A lixeira do grupo já recebeu o primeiro toque. */
+  armed: boolean;
+};
+
+/** O que foi ouvido ou escrito e o que o sistema entendeu. Nada disto foi salvo ainda. */
+export type OptionsHeardView = {
+  said: string;
+  lines: string[];
+  notes: string[];
+  /** Frase de quando nada foi entendido ("Não ouvi nada." ou "Não entendi nenhuma opção." + como falar). */
+  unclear: string;
+};
+
+export type DishOptionsView = {
+  stage: "loading" | "error" | "ready";
+  title: string;
+  sub: string;
+  /** Frase de apoio de cima: o que fazer agora. */
+  intro: string;
+  /** Falha ao abrir (frase do servidor, quando veio). */
+  error: string;
+  canListen: boolean;
+  listening: boolean;
+  /** As palavras que o celular já ouviu, enquanto a pessoa fala. */
+  heard: string;
+  said: OptionsHeardView | null;
+  groups: OptionGroupView[];
+  /** Os modelos para tocar (Tamanho, Adicionais, Retirar, Outro grupo); vazio quando já não cabe mais grupo. */
+  starters: { kind: string; label: string }[];
+  startersLabel: string;
+  dirty: boolean;
+  saving: boolean;
+  /** A frase da barra de baixo: o que falta para o cliente ver as opções. */
+  hint: string;
+  problems: string[];
+  notice: { ok: boolean; text: string } | null;
+  /** "Voltar" já recebeu o primeiro toque com coisa por salvar. */
+  backArmed: boolean;
+  /** A frase que o leitor de tela ouve a cada mudança. */
+  live: string;
+};

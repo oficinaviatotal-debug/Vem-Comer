@@ -14,11 +14,34 @@ import Deliveries from "./Deliveries";
 import Settle from "./Settle";
 import MenuSetup from "./MenuSetup";
 import Dishes, { NOT_BUSY } from "./Dishes";
+import DishOptions from "./DishOptions";
 import Categories from "./Categories";
 import DeskTable from "./DeskTable";
 import QrScan from "./QrScan";
 import PanelMenu from "../painel/PanelMenu";
 import { deskTableViewOf, deskViewOf, openTyped, parsePanelCalls } from "../painel/deskLogic";
+import {
+  addItem as optAddItem,
+  addStarter,
+  dishOptionsLineOf,
+  draftsOfApi,
+  flipItem,
+  hearOptions,
+  optionsViewOf,
+  priceItem,
+  problemsOf,
+  removeGroup,
+  removeItem as optRemoveItem,
+  renameGroup,
+  renameItem,
+  savedTextOf,
+  setRequired,
+  snapshotOf,
+  stepMax,
+  stepMin,
+  type DraftGroup,
+  type StarterKind,
+} from "../painel/optionsLogic";
 import { ORDERS_CHANGED, nextStatusOf, ordersViewOf, type PanelOrder } from "../painel/ordersLogic";
 import { deliveriesViewOf, pickedText, type CourierOrder } from "../painel/deliveriesLogic";
 import { armKey, markedIds, settleViewOf, toggleLeft } from "../painel/settleLogic";
@@ -43,7 +66,7 @@ import {
   withPhoto,
   withSoldOut,
 } from "../painel/dishesLogic";
-import type { DishForm, DishPhotoView } from "./types";
+import type { DishForm, DishPhotoView, OptionsHeardView } from "./types";
 import type { Menu, Product } from "../customer/types";
 import {
   addUnclear,
@@ -80,7 +103,7 @@ import {
 import { codeIsComplete, deliveredText, onlyCodeDigits } from "../courier/courierLogic";
 import type { CashView } from "../courier/courierLogic";
 import { emptyText, isKitchenTab, kitchenTabs, ticketsFor, type KitchenTabId } from "../cozinha/kitchenLogic";
-import { DISH_MENUS_EXAMPLE, DISH_PRODUCTS_EXAMPLE, MENU_READ_EXAMPLE, MENU_SPOKEN_EXAMPLE, MODEL_EXAMPLE, MODEL_TYPES_EXAMPLE, ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
+import { DISH_MENUS_EXAMPLE, DISH_PRODUCTS_EXAMPLE, OPTIONS_EXAMPLE, MENU_READ_EXAMPLE, MENU_SPOKEN_EXAMPLE, MODEL_EXAMPLE, MODEL_TYPES_EXAMPLE, ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
 import { choicesViewOf, confirmChoices, nextQuantity, pressOption } from "../loja/choicesLogic";
 import { bagProblem, bagViewOf } from "../loja/bagLogic";
 import { copiedOutcome, pixOf, ratingOf, trackOf } from "../loja/trackingLogic";
@@ -556,6 +579,7 @@ type DishesStage =
   | "novo-erro"
   | "mudar"
   | "mudar-erro"
+  | "mudar-opcoes"
   | "foto"
   | "foto-enviando"
   | "foto-erro"
@@ -584,6 +608,8 @@ function DishesPreview({ stage = "normal" }: { stage?: DishesStage }) {
     if (stage === "novo") return { ...emptyDishForm("m-bebidas"), name: "Guaraná lata", price: "6" };
     if (stage === "novo-erro") return { ...emptyDishForm("m-bebidas"), name: "Guaraná lata", price: "seis", problem: "price" };
     if (stage === "mudar") return formOfDish(DISH_PRODUCTS_EXAMPLE[1] as Product, DISH_MENUS_EXAMPLE);
+    // O prato que já tem opções (Batata frita: tamanho e adicionais) aberto no lápis, para ver o resumo e o botão "Mudar as opções".
+    if (stage === "mudar-opcoes") return formOfDish(DISH_PRODUCTS_EXAMPLE[3] as Product, DISH_MENUS_EXAMPLE);
     // O prato sem foto (Água mineral) aberto no lápis, para ver os botões da foto.
     if (stage === "foto" || stage === "foto-enviando" || stage === "foto-erro") return formOfDish(DISH_PRODUCTS_EXAMPLE[7] as Product, DISH_MENUS_EXAMPLE);
     if (stage === "mudar-erro") return { ...formOfDish(DISH_PRODUCTS_EXAMPLE[1] as Product, DISH_MENUS_EXAMPLE), name: "x-tudo", problem: "twice" };
@@ -610,6 +636,7 @@ function DishesPreview({ stage = "normal" }: { stage?: DishesStage }) {
       query={query}
       form={form}
       photo={editedDish ? { src: emojiPhoto(editedDish.thumb_url), phase: photoPhase, message: photoMessage } : null}
+      options={editedDish ? dishOptionsLineOf(editedDish) : null}
       onPhoto={() => {
         if (!editedDish) return;
         setPhotoPhase("working");
@@ -671,6 +698,98 @@ function DishesPreview({ stage = "normal" }: { stage?: DishesStage }) {
       onMake={() => setNotice("Aqui abriria o montar por foto, arquivo ou voz.")}
       onRefresh={() => setNotice("")}
       showMenu
+    />
+  );
+}
+
+type OptionsStage = "montado" | "vazio" | "ouvi" | "erros" | "salvo" | "sair" | "carregando" | "erro" | "sem-microfone";
+
+/** As opções do prato da conferência: passam pelas contas de verdade (`optionsViewOf` e as de mexer nos grupos); tudo funciona na tela, e "salvar" só finge. */
+function OptionsPreview({ stage = "montado" }: { stage?: OptionsStage }) {
+  const base = (): DraftGroup[] => draftsOfApi(OPTIONS_EXAMPLE);
+  const [saved, setSaved] = useState(() => snapshotOf(stage === "vazio" || stage === "ouvi" || stage === "sem-microfone" ? [] : base()));
+  const [heardNow, setHeardNow] = useState<OptionsHeardView | null>(() =>
+    stage === "ouvi" ? hearOptions([], "tamanho pequeno, médio mais 5, grande mais 10. adicionais bacon 4, ovo 2. sem cebola", 2500).heard : null,
+  );
+  const [groups, setGroups] = useState<DraftGroup[]>(() => {
+    if (stage === "vazio" || stage === "sem-microfone" || stage === "carregando" || stage === "erro") return [];
+    if (stage === "ouvi") return hearOptions([], "tamanho pequeno, médio mais 5, grande mais 10. adicionais bacon 4, ovo 2. sem cebola", 2500).groups;
+    const start = base();
+    if (stage === "erros") {
+      return renameItem(priceItem(start, start[1].uid, start[1].items[0].uid, "abc"), start[1].uid, start[1].items[2].uid, "");
+    }
+    if (stage === "sair") return priceItem(start, start[0].uid, start[0].items[2].uid, "12");
+    return start;
+  });
+  const [problems, setProblems] = useState<string[]>(() => (stage === "erros" ? problemsOf(groups) : []));
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(stage === "salvo" ? { ok: true, text: savedTextOf(3) } : null);
+  const [armedGroup, setArmedGroup] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
+  const [heard, setHeard] = useState("");
+  const change = (next: DraftGroup[]) => {
+    setGroups(next);
+    setProblems([]);
+    setNotice(null);
+    setArmedGroup(null);
+  };
+  const view = optionsViewOf({
+    load: stage === "carregando" ? "loading" : stage === "erro" ? "error" : "ready",
+    productName: "X-tudo",
+    groups,
+    saved,
+    canListen: stage !== "sem-microfone",
+    listening,
+    heard,
+    said: heardNow,
+    saving: false,
+    problems,
+    notice,
+    error: stage === "erro" ? "Não consegui abrir as opções deste prato." : "",
+    armedGroup,
+    backArmed: stage === "sair",
+  });
+  const understand = (words: string) => {
+    const out = hearOptions(groups, words, 2500);
+    setGroups(out.groups);
+    setHeardNow(out.heard);
+    setProblems([]);
+    setNotice(null);
+  };
+  return (
+    <DishOptions
+      view={view}
+      onMic={() => {
+        if (listening) {
+          setListening(false);
+          return understand(heard);
+        }
+        setListening(true);
+        setHeardNow(null);
+        setHeard("tamanho pequeno");
+        window.setTimeout(() => setHeard("tamanho pequeno, médio mais 5, grande mais 10"), 900);
+      }}
+      onText={understand}
+      onCloseSaid={() => setHeardNow(null)}
+      onStarter={(kind) => change(addStarter(groups, kind as StarterKind))}
+      onGroupName={(group, value) => change(renameGroup(groups, group, value))}
+      onRequired={(group, required) => change(setRequired(groups, group, required))}
+      onMax={(group, delta) => change(stepMax(groups, group, delta))}
+      onMin={(group, delta) => change(stepMin(groups, group, delta))}
+      onItemName={(group, item, value) => change(renameItem(groups, group, item, value))}
+      onItemPrice={(group, item, value) => change(priceItem(groups, group, item, value))}
+      onItemFlip={(group, item) => change(flipItem(groups, group, item))}
+      onAddItem={(group) => change(optAddItem(groups, group))}
+      onRemoveItem={(group, item) => change(optRemoveItem(groups, group, item))}
+      onRemoveGroup={(group) => (armedGroup === group ? change(removeGroup(groups, group)) : setArmedGroup(group))}
+      onSave={() => {
+        const found = problemsOf(groups);
+        if (found.length > 0) return setProblems(found);
+        setSaved(snapshotOf(groups));
+        setHeardNow(null);
+        setNotice({ ok: true, text: savedTextOf(groups.length) });
+      }}
+      onBack={() => setNotice({ ok: true, text: "Aqui voltaria para a lista de pratos." })}
+      onRetry={() => setNotice(null)}
     />
   );
 }
@@ -1070,6 +1189,7 @@ function Screen() {
     "pratos-novo-erro": "novo-erro",
     "pratos-mudar": "mudar",
     "pratos-mudar-erro": "mudar-erro",
+    "pratos-mudar-opcoes": "mudar-opcoes",
     "pratos-foto": "foto",
     "pratos-foto-enviando": "foto-enviando",
     "pratos-foto-erro": "foto-erro",
@@ -1083,6 +1203,18 @@ function Screen() {
     "pratos-erro": "erro",
   };
   if (dishRoutes[route]) return <DishesPreview stage={dishRoutes[route]} />;
+  const optionRoutes: Record<string, OptionsStage> = {
+    "pratos-opcoes": "montado",
+    "pratos-opcoes-vazio": "vazio",
+    "pratos-opcoes-ouvi": "ouvi",
+    "pratos-opcoes-erros": "erros",
+    "pratos-opcoes-salvo": "salvo",
+    "pratos-opcoes-sair": "sair",
+    "pratos-opcoes-carregando": "carregando",
+    "pratos-opcoes-erro": "erro",
+    "pratos-opcoes-sem-microfone": "sem-microfone",
+  };
+  if (optionRoutes[route]) return <OptionsPreview stage={optionRoutes[route]} />;
   const categoryRoutes: Record<string, CategoriesStage> = {
     categorias: "normal",
     "categorias-vazio": "vazio",
