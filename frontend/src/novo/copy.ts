@@ -381,3 +381,87 @@ export const OPT_PROBLEMS = "Falta acertar:";
 export const OPT_SAVED = "Opções salvas. O cliente já vê no cardápio.";
 export const OPT_SAVED_NONE = "Pronto. Este prato ficou sem opções.";
 export const OPT_SAVE_ERROR = "Não consegui salvar as opções. Tente de novo.";
+
+/* ------------------------------------------------------------------------------------------------ logomarca (20ª rodada) */
+
+export const LOGO_TITLE = "Logomarca";
+export const LOGO_SUB_FALLBACK = "O que o cliente vê no alto do cardápio";
+export const LOGO_LOADING = "Abrindo a logomarca…";
+export const LOGO_LOAD_ERROR = "Não consegui abrir a logomarca. Confira a internet e tente de novo.";
+export const LOGO_RETRY = "Tentar de novo";
+export const LOGO_BACK = "Voltar";
+
+export const LOGO_LEAD_NONE = "O seu cardápio ainda está sem logomarca. Sem ela, o cliente vê só o nome do restaurante.";
+export const LOGO_LEAD_HAS = "É esta a logomarca que o cliente vê no alto do cardápio.";
+export const LOGO_NEXT_NONE = "Tire uma foto da sua placa ou escolha uma imagem do celular. Se não tiver nenhuma, crie uma de graça em três toques.";
+export const LOGO_NEXT_HAS = "Quer trocar? Tire outra foto, escolha outra imagem ou crie uma nova.";
+export const LOGO_TIP = "Imagem com fundo transparente (PNG) fica melhor no cardápio.";
+export const LOGO_FRAME_NONE = "Sem logomarca";
+export const LOGO_FRAME_ALT = "A logomarca de agora";
+
+export const LOGO_TAKE = "Tirar foto da logomarca";
+export const LOGO_PICK = "Escolher do celular";
+export const LOGO_MAKE = "Criar minha logomarca";
+export const LOGO_MAKE_ANOTHER = "Criar outra logomarca";
+export const LOGO_REMOVE = "Remover a logomarca";
+export const LOGO_REMOVE_ARMED = "Toque de novo para remover";
+
+export const LOGO_OPENING = "Abrindo a imagem…";
+export const LOGO_SAVING = "Salvando…";
+export const LOGO_REMOVING = "Removendo…";
+export const LOGO_SAVED = "Logomarca salva. O cliente já vê no cardápio.";
+export const LOGO_REMOVED = "Logomarca removida. O cardápio volta a mostrar só o nome.";
+export const LOGO_NOTHING_SAVED = "Nada foi salvo.";
+export const LOGO_OPEN_FAIL = "Não consegui abrir a imagem. Tente de novo.";
+export const LOGO_SEND_FAIL = "Não consegui enviar a logomarca. Tente de novo.";
+export const LOGO_REMOVE_FAIL = "Não consegui remover a logomarca. Tente de novo.";
+export const LOGO_MAKE_FAIL = "Não consegui montar a logomarca. Tente de novo.";
+
+export const LOGO_REVIEW_TITLE = "Ficou bom?";
+export const LOGO_REVIEW_NOT_SAVED = "Ainda não foi salvo.";
+export const LOGO_REVIEW_LEAD = "Veja como o cliente vai ver a sua logomarca no cardápio.";
+export const LOGO_REVIEW_LEAD_REFINED = "Tirei a margem vazia em volta e centralizei, para a logomarca aparecer maior no cardápio.";
+export const LOGO_SENT = "A que você mandou";
+export const LOGO_ADJUSTED = "Depois do ajuste";
+export const LOGO_SENT_ALT = "Logomarca que você mandou";
+export const LOGO_ADJUSTED_ALT = "Logomarca depois do ajuste";
+export const LOGO_AS_SEEN = "Assim o cliente vê, no alto do cardápio.";
+export const LOGO_NAME_FALLBACK = "Seu restaurante";
+export const LOGO_TOO_LIGHT = "Essa logomarca é muito clara e pode sumir no fundo branco do cardápio. Se não aparecer bem acima, escolha uma versão mais escura.";
+export const LOGO_SMALL = "Essa imagem é pequena e pode ficar borrada. Se tiver uma maior, escolha ela.";
+export const LOGO_USE = "Sim, usar esta";
+export const LOGO_USE_ORIGINAL = "Usar a original, sem ajuste";
+export const LOGO_USE_ADJUSTED = "Usar a versão ajustada";
+export const LOGO_OTHER_TAKE = "Tirar outra foto";
+export const LOGO_OTHER_PICK = "Escolher outra imagem";
+export const LOGO_CANCEL = "Cancelar";
+
+export const LOGO_STEP_OF = (step: number): string => `Passo ${step} de 3`;
+export const LOGO_Q1 = "O que você vende?";
+export const LOGO_Q2 = "Qual é a cor da sua fachada?";
+export const LOGO_Q2_HINT = "Sem fachada, escolha a cor que você mais gosta.";
+export const LOGO_Q3 = "Escolha o modelo";
+export const LOGO_GUESS = "parece ser este";
+export const LOGO_LIVE_ALT = "Como a logomarca está ficando";
+export const LOGO_MODEL_ALT = (label: string): string => `Modelo ${label}`;
+export const LOGO_NEXT = "Continuar";
+export const LOGO_PREV = "Voltar";
+export const LOGO_MAKER_SAVE = "Usar esta logomarca";
+export const LOGO_NEXT_HINT = "Toque em uma figura para continuar.";
+
+export const LOGO_SAY_FOOD = "Falar o que eu vendo";
+export const LOGO_SAY_NAME = "Falar o nome";
+export const LOGO_LISTENING = "Estou ouvindo. Toque para parar";
+export const LOGO_SAY_FOOD_EXAMPLE = "Diga, por exemplo: pizzaria, lanchonete, açaí.";
+export const LOGO_SAY_NAME_EXAMPLE = "Diga o nome do restaurante.";
+export const LOGO_FOOD_MIC_OFF = "Este celular não escuta. Toque em uma das figuras.";
+export const LOGO_NAME_MIC_OFF = "Este celular não escuta. Escreva o nome no campo.";
+export const LOGO_HEARD_FOOD = (label: string): string => `Entendi: ${label}. Se estiver certo, toque em Continuar.`;
+export const LOGO_HEARD_FOOD_NONE = "Não entendi. Toque em uma das figuras.";
+export const LOGO_HEARD_NONE = "Não ouvi nada. Toque em Falar e tente de novo.";
+export const LOGO_HEARD_NAME = (name: string): string => `Escrevi: ${name}. Confira no campo abaixo.`;
+
+export const LOGO_NAME_LABEL = "Nome na logomarca";
+export const LOGO_NAME_HINT = "Se o nome for comprido, escreva aqui uma versão curta. Só muda na logomarca.";
+export const LOGO_NAME_CUT = "O nome ficou cortado em alguns modelos. Escreva uma versão mais curta.";
+export const LOGO_NAME_EMPTY = "Escreva o nome que vai aparecer na logomarca.";

@@ -4870,3 +4870,252 @@ button.nv-now-cell:active {
 .nv-dishform-options p {
   margin: 0;
 }
+
+/* ---------- Logomarca (20ª rodada) ----------
+   Botões e figuras de tocar: relevo grosso que afunda ao apertar. A logomarca de agora, o "como o cliente vê" e os avisos só
+   informam: lisos, sem sombra. O nome é um campo afundado (escrever). */
+
+.nv-logoframe {
+  display: grid;
+  place-items: center;
+  width: min(100%, 232px);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 2px solid var(--nv-line);
+  border-radius: var(--nv-r-lg);
+  background: #fff;
+}
+
+.nv-logoframe img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.nv-logoframe.is-none {
+  border-style: dashed;
+  background: var(--nv-peach);
+  color: var(--nv-muted);
+}
+
+.nv-logoframe-none {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.nv-logoframe-none svg {
+  width: 44px;
+  height: 44px;
+}
+
+.nv-logolead {
+  margin: 0;
+  font: 700 20px/1.25 var(--nv-display);
+  text-align: center;
+}
+
+.nv-logoask {
+  margin: 0;
+  font: 700 26px/1.15 var(--nv-display);
+  color: var(--nv-ink);
+}
+
+.nv-logoacts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nv-logoacts > .nv-code-hint {
+  font-weight: 700;
+  text-align: center;
+}
+
+.nv-logocompare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 12px;
+}
+
+.nv-logocompare figure {
+  margin: 0;
+}
+
+.nv-logocompare .nv-logoframe {
+  width: 100%;
+}
+
+.nv-logocompare figcaption {
+  margin-top: 6px;
+  color: var(--nv-muted);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.nv-logoseen {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-peach);
+  font: 700 19px/1.2 var(--nv-display);
+  overflow-wrap: anywhere;
+}
+
+.nv-logobadge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border: 2px solid var(--nv-line);
+  border-radius: 50%;
+  background: #fff;
+}
+
+.nv-logobadge img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.nv-logowarn {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 5px solid var(--nv-sun);
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-peach);
+  color: var(--nv-ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.nv-logovoice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nv-logosaid:empty {
+  margin-top: -8px;
+}
+
+.nv-logogrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.nv-logogrid.is-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 12px;
+}
+
+.nv-logopick {
+  --nv-edge: rgba(27, 67, 50, 0.2);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 112px;
+  padding: 10px 6px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, #fff, #f3efe6);
+  color: var(--nv-ink);
+  font: 700 14px/1.15 var(--nv-ui);
+  overflow-wrap: anywhere;
+  text-align: center;
+  box-shadow: var(--nv-hi), 0 var(--nv-depth) 0 var(--nv-edge), 0 calc(var(--nv-depth) + 9px) 16px -6px var(--nv-floor);
+}
+
+.nv-logopick:active {
+  transform: translateY(calc(var(--nv-depth) - 1px));
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-edge), 0 2px 5px var(--nv-floor);
+}
+
+.nv-logopick:focus-visible {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 3px;
+}
+
+/* Marcado: fundo verde, aro verde e um sinal de certo no canto (não depende só da cor). */
+.nv-logopick[aria-checked="true"] {
+  --nv-edge: var(--nv-green-edge);
+  background: var(--nv-green-soft);
+  outline: 3px solid var(--nv-green);
+  outline-offset: 0;
+}
+
+.nv-logopick[aria-checked="true"]::after {
+  content: "✓";
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--nv-green);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.nv-logopick.is-model {
+  min-height: 0;
+  padding: 8px;
+}
+
+.nv-logopick-guess {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--nv-sun);
+  color: var(--nv-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nv-logoswatch {
+  display: block;
+  width: 52px;
+  height: 52px;
+  border: 2px solid var(--nv-line);
+  border-radius: 50%;
+}
+
+.nv-logocanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.nv-logofood {
+  display: block;
+  width: 64px;
+  height: 64px;
+}
+
+.nv-logolive {
+  width: min(100%, 232px);
+  margin: 0 auto;
+  padding: 8px;
+  border: 2px solid var(--nv-line);
+  border-radius: var(--nv-r-lg);
+  background: #fff;
+}

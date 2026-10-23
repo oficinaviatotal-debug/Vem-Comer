@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import Kitchen from "./Kitchen";
 import OwnerToday from "./OwnerToday";
@@ -15,10 +15,29 @@ import Settle from "./Settle";
 import MenuSetup from "./MenuSetup";
 import Dishes, { NOT_BUSY } from "./Dishes";
 import DishOptions from "./DishOptions";
+import Logo from "./Logo";
 import Categories from "./Categories";
 import DeskTable from "./DeskTable";
 import QrScan from "./QrScan";
 import PanelMenu from "../painel/PanelMenu";
+import { drawnLogoUrl, makerPictures } from "../painel/LogoPictures";
+import {
+  foodFromWords,
+  logoViewOf,
+  markCut as markLogoCut,
+  nameFromWords,
+  nextStep as logoNext,
+  pickFood as logoPickFood,
+  pickModel as logoPickModel,
+  pickPalette as logoPickPalette,
+  prevStep as logoPrev,
+  saidFoodText,
+  saidNameText,
+  startMaker,
+  typeName as logoTypeName,
+  type MakerState,
+} from "../painel/logoViewLogic";
+import { LOGO_NOTHING_SAVED, LOGO_REMOVED, LOGO_SAVED } from "./copy";
 import { deskTableViewOf, deskViewOf, openTyped, parsePanelCalls } from "../painel/deskLogic";
 import {
   addItem as optAddItem,
@@ -794,6 +813,187 @@ function OptionsPreview({ stage = "montado" }: { stage?: OptionsStage }) {
   );
 }
 
+type LogoStage =
+  | "inicio"
+  | "sem"
+  | "salvo"
+  | "removido"
+  | "erro-imagem"
+  | "remover"
+  | "removendo"
+  | "carregando"
+  | "erro"
+  | "conferir"
+  | "conferir-simples"
+  | "conferir-avisos"
+  | "conferir-erro"
+  | "conferir-salvando"
+  | "criar"
+  | "criar-ouvindo"
+  | "criar-entendi"
+  | "criar-nao-entendi"
+  | "criar-cores"
+  | "criar-modelos"
+  | "criar-cortado"
+  | "criar-sem-nome"
+  | "criar-sem-microfone";
+
+/** Imagens de exemplo da logomarca: a de agora e a que o dono "mandou" (com margem vazia em volta), desenhadas na hora. */
+function useLogoArt(): { logo: string; original: string; refined: string } {
+  const [art, setArt] = useState({ logo: "", original: "", refined: "" });
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const logo = await drawnLogoUrl({ template: "quadrado", food: "pizza", palette: "vermelho", name: "Pizzaria do Zé" }, 512);
+      const refined = await drawnLogoUrl({ template: "selo", food: "pizza", palette: "vermelho", name: "Pizzaria do Zé" }, 512);
+      const canvas = document.createElement("canvas");
+      canvas.width = 640;
+      canvas.height = 420;
+      const context = canvas.getContext("2d");
+      const img = new Image();
+      img.src = refined;
+      await img.decode().catch(() => undefined);
+      if (context) {
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, 640, 420);
+        context.drawImage(img, 220, 110, 200, 200);
+      }
+      if (alive) setArt({ logo, original: canvas.toDataURL("image/png"), refined });
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return art;
+}
+
+/**
+ * A logomarca da conferência: passa pelas contas de verdade (`logoViewOf` e as do criar em três toques); tocar, escolher e criar
+ * funcionam na tela. "Salvar" e "foto" só fingem (não há servidor aqui). A fala também finge: toca e entende "pizzaria".
+ */
+function LogoPreview({ stage = "inicio" }: { stage?: LogoStage }) {
+  const art = useLogoArt();
+  const isMaker = stage.startsWith("criar");
+  const isReview = stage.startsWith("conferir");
+  const [hasLogo, setHasLogo] = useState(!["sem", "carregando", "erro"].includes(stage));
+  const [mode, setMode] = useState<"home" | "review" | "maker">(isMaker ? "maker" : isReview ? "review" : "home");
+  const [maker, setMaker] = useState<MakerState>(() => {
+    let state = startMaker(stage === "criar-cortado" ? "Pizzaria e Lanchonete do Zé Carlos Silva Santos" : stage === "criar-sem-nome" ? "" : "Cantinho do Zé");
+    if (stage === "criar-entendi") state = logoPickFood(state, "pizza");
+    if (stage === "criar-cores") state = logoNext(logoPickFood(state, "pizza"));
+    if (stage === "criar-modelos" || stage === "criar-cortado" || stage === "criar-sem-nome") state = logoNext(logoNext(logoPickFood(state, "pizza")));
+    if (stage === "criar-cortado") state = markLogoCut(markLogoCut(state, "selo", true), "letras", true);
+    return state;
+  });
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(() => {
+    if (stage === "salvo") return { ok: true, text: LOGO_SAVED };
+    if (stage === "removido") return { ok: true, text: LOGO_REMOVED };
+    if (stage === "erro-imagem") return { ok: false, text: "Não consegui abrir essa imagem. Escolha outra, em PNG ou JPG." };
+    if (stage === "conferir-erro") return { ok: false, text: "Essa imagem é grande demais. Escolha uma menor." };
+    if (stage === "criar-sem-nome") return { ok: false, text: "Escreva o nome que vai aparecer na logomarca." };
+    return null;
+  });
+  const [useRefined, setUseRefined] = useState(true);
+  const [removeArmed, setRemoveArmed] = useState(stage === "remover");
+  const [listening, setListening] = useState<"" | "food" | "name">(stage === "criar-ouvindo" ? "food" : "");
+  const [heard, setHeard] = useState(stage === "criar-ouvindo" ? "pizza" : "");
+  const [said, setSaid] = useState(stage === "criar-entendi" ? saidFoodText("pizzaria", "pizza") : stage === "criar-nao-entendi" ? saidFoodText("blá", null) : "");
+  const view = logoViewOf({
+    load: stage === "carregando" ? "loading" : stage === "erro" ? "error" : "ready",
+    loadError: "Não consegui abrir a logomarca. Confira a internet e tente de novo.",
+    name: "Pizzaria do Zé",
+    logoSrc: hasLogo ? art.logo : "",
+    mode,
+    working: stage === "removendo" ? "removing" : stage === "conferir-salvando" ? "saving" : "",
+    notice,
+    removeArmed,
+    review: isReview || mode === "review" ? { originalSrc: art.original, refinedSrc: stage === "conferir-simples" ? "" : art.refined, useRefined, tooLight: stage === "conferir-avisos", small: stage === "conferir-avisos" } : null,
+    maker: isMaker || mode === "maker" ? maker : null,
+    canListen: stage !== "criar-sem-microfone",
+    listening,
+    heard,
+    said,
+  });
+  const change = (next: MakerState) => {
+    setMaker(next);
+    setSaid("");
+    setNotice(null);
+  };
+  return (
+    <Logo
+      view={view}
+      pictures={makerPictures(maker, (template, cut) => setMaker((old) => markLogoCut(old, template, cut)))}
+      onFile={() => {
+        setNotice(null);
+        setMode("review");
+      }}
+      onMake={() => {
+        setMaker(startMaker("Pizzaria do Zé"));
+        setMode("maker");
+        setNotice(null);
+      }}
+      onRemove={() => {
+        if (!removeArmed) return setRemoveArmed(true);
+        setRemoveArmed(false);
+        setHasLogo(false);
+        setNotice({ ok: true, text: LOGO_REMOVED });
+      }}
+      onBack={() => setNotice({ ok: true, text: "Aqui voltaria para o menu." })}
+      onRetry={() => setNotice(null)}
+      onUse={() => {
+        setHasLogo(true);
+        setMode("home");
+        setNotice({ ok: true, text: LOGO_SAVED });
+      }}
+      onToggleRefined={() => setUseRefined(!useRefined)}
+      onCancel={() => {
+        setMode("home");
+        setNotice({ ok: true, text: LOGO_NOTHING_SAVED });
+      }}
+      onFood={(id) => change(logoPickFood(maker, id as never))}
+      onPalette={(id) => change(logoPickPalette(maker, id as never))}
+      onModel={(id) => change(logoPickModel(maker, id as never))}
+      onName={(value) => change(logoTypeName(maker, value))}
+      onMic={(target) => {
+        if (listening) {
+          const words = target === "food" ? "pizzaria" : "pizzaria do zé";
+          setListening("");
+          setHeard("");
+          if (target === "food") {
+            const food = foodFromWords(words);
+            if (food) setMaker(logoPickFood(maker, food));
+            setSaid(saidFoodText(words, food));
+          } else {
+            const name = nameFromWords(words);
+            setMaker(logoTypeName(maker, name));
+            setSaid(saidNameText(words, name));
+          }
+          return;
+        }
+        setListening(target);
+        setSaid("");
+        setHeard("");
+        window.setTimeout(() => setHeard(target === "food" ? "pizza" : "pizzaria do zé"), 700);
+      }}
+      onNext={() => {
+        setNotice(null);
+        setSaid("");
+        setMaker(logoNext(maker));
+      }}
+      onPrev={() => {
+        setNotice(null);
+        setSaid("");
+        setMaker(logoPrev(maker));
+      }}
+      onSave={() => {
+        setHasLogo(true);
+        setMode("home");
+        setNotice({ ok: true, text: LOGO_SAVED });
+      }}
+    />
+  );
+}
+
 type CategoriesStage = "normal" | "vazio" | "remover" | "repetida" | "erro" | "carregando";
 
 /** As categorias da conferência: passam pela conta de verdade (`categoriesViewOf`); adicionar e remover funcionam na tela. */
@@ -1215,6 +1415,32 @@ function Screen() {
     "pratos-opcoes-sem-microfone": "sem-microfone",
   };
   if (optionRoutes[route]) return <OptionsPreview stage={optionRoutes[route]} />;
+  const logoRoutes: Record<string, LogoStage> = {
+    logomarca: "inicio",
+    "logomarca-sem": "sem",
+    "logomarca-salva": "salvo",
+    "logomarca-removida": "removido",
+    "logomarca-erro-imagem": "erro-imagem",
+    "logomarca-remover": "remover",
+    "logomarca-removendo": "removendo",
+    "logomarca-carregando": "carregando",
+    "logomarca-erro": "erro",
+    "logomarca-conferir": "conferir",
+    "logomarca-conferir-simples": "conferir-simples",
+    "logomarca-conferir-avisos": "conferir-avisos",
+    "logomarca-conferir-erro": "conferir-erro",
+    "logomarca-conferir-salvando": "conferir-salvando",
+    "logomarca-criar": "criar",
+    "logomarca-criar-ouvindo": "criar-ouvindo",
+    "logomarca-criar-entendi": "criar-entendi",
+    "logomarca-criar-nao-entendi": "criar-nao-entendi",
+    "logomarca-criar-cores": "criar-cores",
+    "logomarca-criar-modelos": "criar-modelos",
+    "logomarca-criar-cortado": "criar-cortado",
+    "logomarca-criar-sem-nome": "criar-sem-nome",
+    "logomarca-criar-sem-microfone": "criar-sem-microfone",
+  };
+  if (logoRoutes[route]) return <LogoPreview stage={logoRoutes[route]} />;
   const categoryRoutes: Record<string, CategoriesStage> = {
     categorias: "normal",
     "categorias-vazio": "vazio",

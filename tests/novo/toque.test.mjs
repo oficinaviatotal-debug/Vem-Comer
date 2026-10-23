@@ -1019,3 +1019,56 @@ test("o lápis do prato só mostra as opções para prato que já existe", () =>
   assert.match(dishes, /id="nv-dish-options"/);
   assert.match(dishes, /disabled=\{adding\}/);
 });
+
+test("logomarca: tirar foto abre a câmera, escolher abre os arquivos; os dois são rótulos com o campo escondido dentro", () => {
+  const tela = read("Logo.tsx");
+  assert.match(tela, /capture=\{camera \? "environment" : undefined\}/);
+  assert.match(tela, /<FileButton camera label=\{LOGO_TAKE\}/);
+  assert.match(tela, /<FileButton camera=\{false\} label=\{LOGO_PICK\}/);
+  assert.match(tela, /<FileButton camera label=\{LOGO_OTHER_TAKE\}/);
+  assert.match(tela, /<FileButton camera=\{false\} label=\{LOGO_OTHER_PICK\}/);
+  assert.match(tela, /className="nv-sr" type="file" accept="image\/\*"/);
+  // Escolher a mesma imagem outra vez também funciona: o campo é limpo depois de cada escolha.
+  assert.match(tela, /event\.target\.value = ""/);
+  // Nada que só informa recebe toque.
+  assert.ok(!/<(div|p|span|li|ul|figure|img)[^>]*onClick/.test(tela), "nada que só informa pode receber toque");
+});
+
+test("logomarca: o que se toca tem relevo e afunda; a logomarca, o 'como o cliente vê' e os avisos são lisos", () => {
+  const tapped = block(".nv-logopick");
+  assert.match(tapped, /box-shadow: var\(--nv-hi\), 0 var\(--nv-depth\) 0 var\(--nv-edge\)/);
+  assert.match(css, /\.nv-logopick:active \{[^}]*transform: translateY/);
+  for (const flat of [".nv-logoframe", ".nv-logoseen", ".nv-logobadge", ".nv-logowarn", ".nv-logolive"]) {
+    assert.ok(!/box-shadow/.test(block(flat)), `${flat} só informa: liso`);
+  }
+  // A figura marcada se vê sem depender da cor: aro e sinal de certo.
+  assert.match(css, /\.nv-logopick\[aria-checked="true"\]::after \{[^}]*content: "✓"/);
+  assert.match(block(".nv-logopick"), /min-height: 112px/);
+  // O botão não pode ter position (os botões em relevo ficam como os outros); a figura sim, para o sinal no canto.
+  assert.ok(!/position/.test(block(".nv-btn")));
+});
+
+test("logomarca: as escolhas são um grupo de botões marcáveis, o nome é um campo afundado e o criar tem barra fixa embaixo", () => {
+  const tela = read("Logo.tsx");
+  assert.match(tela, /role="radiogroup" aria-labelledby="nv-logo-q"/);
+  assert.ok((tela.match(/role="radio" aria-checked=/g) ?? []).length >= 3, "tipo, cor e modelo são marcáveis");
+  assert.match(tela, /<div className="nv-field">\s*<input id="nv-logo-name"/);
+  assert.match(tela, /<div className="nv-savebar">/);
+  // O botão de falar diz quando está ouvindo, e o que o sistema entendeu fica numa região viva que já existia.
+  assert.match(tela, /aria-pressed=\{mine\}/);
+  assert.match(tela, /role="status" aria-live="polite"/);
+  assert.match(tela, /<p className="nv-sr" id="nv-logo-live" role="status" aria-live="polite" tabIndex=\{-1\}>/);
+  // O aviso de que deu certo desenhado não é lido duas vezes.
+  assert.match(tela, /<p className="nv-ok" aria-hidden="true">/);
+});
+
+test("logomarca: remover pede um segundo toque e muda de cor depois do primeiro; 'Ficou bom?' diz que ainda não foi salvo", () => {
+  const tela = read("Logo.tsx");
+  assert.match(tela, /home\.removeArmed \? LOGO_REMOVE_ARMED : LOGO_REMOVE/);
+  assert.match(tela, /is-block\$\{home\.removeArmed \? " is-armed" : ""\}/);
+  assert.match(tela, /LOGO_REVIEW_NOT_SAVED/);
+  assert.match(tela, /LOGO_USE\}/);
+  // Enquanto abre, salva ou remove, os botões esperam.
+  assert.match(tela, /disabled=\{review\.busy\}/);
+  assert.match(tela, /disabled=\{wait\}/);
+});

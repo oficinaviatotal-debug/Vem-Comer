@@ -785,3 +785,85 @@ export type DishOptionsView = {
   /** A frase que o leitor de tela ouve a cada mudança. */
   live: string;
 };
+
+/* ------------------------------------------------------------------------------------------------ logomarca (20ª rodada) */
+
+/** Uma figura para tocar: o tipo de comida, a cor da fachada ou o modelo da logomarca. */
+export type LogoPick = {
+  id: string;
+  label: string;
+  picked: boolean;
+  /** Só nos tipos de comida: "parece ser este" (o sistema adivinhou pelo nome do restaurante). */
+  hint?: string;
+  /** Só nas cores: a cor da amostra. */
+  color?: string;
+};
+
+export type LogoMakerView = {
+  step: 1 | 2 | 3;
+  stepText: string;
+  question: string;
+  /** Frase de apoio da pergunta (só na cor da fachada). */
+  help: string;
+  foods: LogoPick[];
+  palettes: LogoPick[];
+  models: LogoPick[];
+  name: string;
+  nameHelp: string;
+  /** O nome ficou cortado em algum modelo: a frase manda encurtar. Vazio quando coube em todos. */
+  cutNote: string;
+  canListen: boolean;
+  /** Qual pergunta está sendo ouvida agora: "food" (o que vende), "name" (o nome) ou vazio. */
+  listening: "" | "food" | "name";
+  heard: string;
+  /** O que o sistema entendeu do que foi dito (ou que não entendeu). */
+  said: string;
+  /** Falta escolher algo para poder continuar (só o tipo de comida). */
+  canNext: boolean;
+  nextHint: string;
+  saving: boolean;
+  /** A frase do que deu errado ao salvar. */
+  error: string;
+};
+
+export type LogoReviewView = {
+  originalSrc: string;
+  /** A versão sem a margem vazia; vazio quando não havia o que tirar. */
+  refinedSrc: string;
+  useRefined: boolean;
+  /** A que vai ser salva, para mostrar como o cliente vê. */
+  shownSrc: string;
+  lead: string;
+  restaurant: string;
+  warnings: string[];
+  /** Abrindo outra imagem ou salvando: os botões esperam. */
+  busy: boolean;
+  saving: boolean;
+  error: string;
+};
+
+export type LogoHomeView = {
+  logoSrc: string;
+  hasLogo: boolean;
+  lead: string;
+  next: string;
+  tip: string;
+  makeLabel: string;
+  /** O botão de remover já recebeu o primeiro toque. */
+  removeArmed: boolean;
+  /** Enquanto abre, salva ou remove, os botões esperam; a frase diz o que está acontecendo. */
+  working: string;
+  notice: { ok: boolean; text: string } | null;
+};
+
+export type LogoView = {
+  stage: "loading" | "error" | "home" | "review" | "maker";
+  title: string;
+  sub: string;
+  error: string;
+  home: LogoHomeView | null;
+  review: LogoReviewView | null;
+  maker: LogoMakerView | null;
+  /** A frase que o leitor de tela ouve a cada mudança. */
+  live: string;
+};

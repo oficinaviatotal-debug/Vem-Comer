@@ -887,13 +887,69 @@ Para ver: `preview-novo.html#/pratos-mudar-opcoes` (o lápis com o resumo), `#/p
 
 **Ainda não está ligado ao painel público** (o painel antigo continua mandando).
 
+## Vigésima rodada: a logomarca do restaurante, por foto, por escolha ou criada em três toques (23/10/2026)
+
+O GD disse "Pode prosseguir com os demais. Pode continuar." (22/10, 21:27) e, hoje, "Pode pegar seguir..." e "Prosseguir" (23/10, 15:10). Li como continuar construindo, não como
+"pode" para ir ao ar nem para juntar. Seguindo a ordem do cadastro do cardápio, a vez foi da **logomarca** (a entrada "Marca" do menu). O servidor já guarda e entrega a
+logomarca (`POST` e `DELETE /api/admin/company/logo`, já no ar no `main`, e `logo_url` na empresa pública) e a tela antiga já tinha as contas (tipos de comida, cores, seis modelos,
+o ajuste da margem vazia); esta rodada refaz a tela no visual novo, **sem mudar regra nenhuma e sem servidor novo**. Aplica o item 90 (voz, escrita ou foto) e o princípio 8 (o sistema conversa).
+
+**A tela** (`novo/Logo.tsx`, contas em `painel/logoViewLogic.ts`, desenhos em `painel/LogoPictures.tsx`, tela de verdade em `painel/LogoScreen.tsx`):
+
+- **Início: o que o cliente vê agora e três jeitos de trocar.** Um quadro liso mostra a logomarca de hoje (ou "Sem logomarca"). Embaixo: **Tirar foto da logomarca** (abre a câmera
+  de trás), **Escolher do celular** e **Criar minha logomarca** (ou "Criar outra logomarca"); com logomarca, também **Remover a logomarca** (dois toques; o primeiro muda o botão
+  para "Toque de novo para remover" e some sozinho depois de uns segundos). Pelo menos uma frase diz sempre **o que falta e o que fazer**: sem logomarca, "O seu cardápio ainda está
+  sem logomarca. Sem ela, o cliente vê só o nome do restaurante" e "tire uma foto da sua placa, escolha uma imagem ou crie uma de graça em três toques"; com logomarca, "É esta a
+  logomarca que o cliente vê no alto do cardápio" e "Quer trocar?…".
+- **"Ficou bom?" antes de salvar.** A imagem da foto ou do celular passa pelo mesmo preparo da tela antiga (PNG e JPG pequenos seguem como estão; os grandes são reduzidos aqui;
+  arquivo que não é imagem é recusado com frase). A tela mostra **a que você mandou** e, se havia margem vazia em volta, **depois do ajuste** (vem escolhida; um botão volta para a
+  original), e **como o cliente vê** (o selo redondo ao lado do nome do restaurante). Avisa quando a imagem é **clara demais** (some no fundo branco) ou **pequena** (fica borrada).
+  **Nada é enviado até tocar em "Sim, usar esta".** Dá para tirar outra foto, escolher outra imagem ou cancelar ("Nada foi salvo.").
+- **Criar em três toques, com voz, escrita e toque.** Passo 1, **o que você vende** (13 figuras; o tipo já vem marcado quando o nome diz, e a figura adivinhada mostra "parece ser este"
+  se a pessoa escolher outra); o botão **Falar o que eu vendo** entende "pizzaria", "lanche", "açaí"… com as mesmas palavras que já adivinhavam pelo nome do restaurante, e a tela
+  diz "Entendi: Pizza. Se estiver certo, toque em Continuar", ou "Não entendi. Toque em uma das figuras", ou "Não ouvi nada". Passo 2, **a cor da fachada** (nove cores, com prévia que
+  muda). Passo 3, **o modelo** (seis desenhos) e o **nome na logomarca**: já vem escrito, dá para escrever (até 40 letras) ou **Falar o nome** ("pizzaria do zé" vira "Pizzaria do Zé");
+  se o nome ficou cortado em algum modelo, a frase manda escrever uma versão mais curta. A barra de baixo é fixa e guia: **Continuar** (só com o tipo escolhido; sem ele diz
+  "Toque em uma figura para continuar"), **Voltar**, e no fim **Usar esta logomarca**, que só então desenha o PNG aqui no celular e manda. Sem nome, não manda e diz o que escrever.
+- **Honestidade.** "Logomarca salva. O cliente já vê no cardápio." só aparece depois da resposta certa do servidor; "Logomarca removida. O cardápio volta a mostrar só o nome." também.
+  Se o servidor recusa com frase (imagem pequena demais, por exemplo), a frase passa como veio e a pessoa continua onde estava ("Ficou bom?" ou o passo 3), podendo tentar de novo sem
+  escolher tudo outra vez; erro sem frase boa vira "Não consegui enviar a logomarca. Tente de novo." **Se a logomarca não abriu, a tela diz isso e oferece Tentar de novo: nunca finge que
+  o restaurante está sem logomarca.** Erro do navegador em inglês não aparece: só as frases nossas, em português, passam. O arquivo vai com o nome `logomarca.png` (ou `.jpg`, `.webp`),
+  nunca com o nome que o celular deu à foto. Dois toques seguidos mandam uma só chamada.
+- **Voz sem a chave da IA.** O falar do criar usa só o ditado do celular e palavras fixas; não precisa da chave (que só o GD digita em `configurar-ia.sh`). Sem reconhecedor de voz,
+  o botão de falar não aparece e a frase manda tocar numa figura (ou escrever o nome).
+- **Só dono e gerente** (é a regra do menu: "Marca" só aparece para eles) e o servidor confere de novo.
+
+**O que ainda não faz:**
+
+- **Foto de placa não vira logomarca limpa:** o sistema tira a margem vazia e centraliza, e avisa se está clara ou pequena, mas **não tira o fundo** nem endireita foto torta. Quem tem o
+  arquivo da logomarca (PNG com fundo transparente) fica com o melhor resultado.
+- O topo do painel ainda não troca a logomarca sozinho: a tela avisa a casca (`onChanged`), e a casca nova ainda não está ligada.
+- A logomarca ainda não entra nos posts da semana nem no QR pequeno (etapas seguintes). O QR ainda não tem entrada por foto.
+- Os desenhos feitos por código continuam sendo de logomarca simples; não substituem um designer.
+
+**Como foi conferido:** `tests/novo/logoViewLogic.test.mjs` (27: começo do criar e tipo adivinhado, cor que acompanha o tipo até a pessoa escolher, passos, limite do nome,
+palavras ditas para cada um dos 13 tipos, nome falado, frases de entendi/não entendi/não ouvi, frase de erro só em português, nome do arquivo enviado, cada parte da tela) e
+`toque.test.mjs` (+4: rótulos de câmera e de arquivos, relevo só no que se toca, grupo de escolhas e barra fixa, remover em dois toques). 580 testes passam só na pasta do visual novo.
+No navegador, com a tela de verdade e um servidor de mentira (67 conferências): abrir devagar, com logomarca, sem logomarca e com erro (e Tentar de novo), escolher imagem e conferir
+(nada enviado antes do "sim", a versão ajustada e a original, o arquivo enviado com o tamanho certo, imagem que já enche tudo sem ajuste), servidor recusando com frase e com erro
+sem frase, tentar de novo sem escolher outra vez, dois toques (uma chamada só), arquivo que não é imagem, cancelar, escolher outra imagem, remover em dois toques (e o primeiro
+toque que desarma sozinho), remover com erro e recusado, criar de ponta a ponta (tipo, cor, modelo, nome limitado a 40, voltar sem perder o que escolheu, salvar PNG), criar sem
+pista e sem nome, voz com reconhecedor de mentira (entendi, não entendi, tocar para parar, nome falado), sem microfone, voltar, e 320 a 480 px sem rolagem lateral e sem botão menor que 44 px.
+Para ver: `preview-novo.html#/logomarca` (com logomarca), `#/logomarca-sem`, `#/logomarca-salva`, `#/logomarca-removida`, `#/logomarca-erro-imagem`, `#/logomarca-remover`,
+`#/logomarca-removendo`, `#/logomarca-carregando`, `#/logomarca-erro`, `#/logomarca-conferir`, `#/logomarca-conferir-simples`, `#/logomarca-conferir-avisos`,
+`#/logomarca-conferir-erro`, `#/logomarca-conferir-salvando`, `#/logomarca-criar`, `#/logomarca-criar-ouvindo`, `#/logomarca-criar-entendi`, `#/logomarca-criar-nao-entendi`,
+`#/logomarca-criar-cores`, `#/logomarca-criar-modelos`, `#/logomarca-criar-cortado`, `#/logomarca-criar-sem-nome` e `#/logomarca-criar-sem-microfone`.
+
+**Ainda não está ligado ao painel público** (o painel antigo continua mandando).
+
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
 - Tudo mora em `frontend/src/novo/` e **não é importado pelo aplicativo**: o `index.html` e o `main.tsx` não mudam.
   Um teste (`tests/novo`) garante que o visual novo não depende do antigo e que só a página de conferência usa dados
   de exemplo.
 - Para ver: `cd frontend && npx vite build --config vite.preview-novo.config.ts --outDir /tmp/novo` e abrir
-  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu`, `#/menu-garcom`, `#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro`, `#/mesa-aberta`, `#/pedidos`, `#/pedidos-caixa`, `#/pedidos-garcom`, `#/pedidos-cozinha`, `#/pedidos-calmo`, `#/pedidos-erro`, `#/pedidos-enviando`, `#/entregas`, `#/entregas-pegar`, `#/entregas-entregues`, `#/entregas-codigo`, `#/entregas-bloqueado`, `#/entregas-erro`, `#/entregas-calmo`, `#/entregas-carregando`, `#/entregas-gerente`, `#/acerto`, `#/acerto-confirmar`, `#/acerto-calmo`, `#/acerto-erro`, `#/acerto-carregando`, `#/cardapio` (e as outras 16 telas `#/cardapio-…`, listadas na décima terceira rodada), `#/pratos` ou `#/categorias` (e as outras 18 telas `#/pratos-…` e `#/categorias-…`, listadas na décima quarta rodada)
+  `preview-novo.html#/loja`, `#/hoje`, `#/cozinha`, `#/vagas`, `#/escolhas`, `#/escolhas-erro`, `#/sacola`, `#/entrega`, `#/loja-pedido`, `#/pedido`, `#/pedido-rua`, `#/pedido-pronto`, `#/mesa`, `#/mesa-chamada`, `#/loja-mesa`, `#/menu`, `#/menu-garcom`, `#/mesas`, `#/mesas-calmo`, `#/mesas-qr`, `#/mesas-carregando`, `#/mesas-erro`, `#/mesa-aberta`, `#/pedidos`, `#/pedidos-caixa`, `#/pedidos-garcom`, `#/pedidos-cozinha`, `#/pedidos-calmo`, `#/pedidos-erro`, `#/pedidos-enviando`, `#/entregas`, `#/entregas-pegar`, `#/entregas-entregues`, `#/entregas-codigo`, `#/entregas-bloqueado`, `#/entregas-erro`, `#/entregas-calmo`, `#/entregas-carregando`, `#/entregas-gerente`, `#/acerto`, `#/acerto-confirmar`, `#/acerto-calmo`, `#/acerto-erro`, `#/acerto-carregando`, `#/cardapio` (e as outras 16 telas `#/cardapio-…`, listadas na décima terceira rodada), `#/pratos` ou `#/categorias` (e as outras 18 telas `#/pratos-…` e `#/categorias-…`, listadas na décima quarta rodada), `#/logomarca` (e as outras 22 telas `#/logomarca-…`, listadas na vigésima rodada)
   (a pasta pública vai junto, por causa das fontes).
 - Cada tela ganha um PR próprio: ligada aos dados de verdade (por props), com teste, e a tela antiga correspondente
   sai no mesmo PR. **Nada disso vira o que o público vê sem o "pode" do GD.**
