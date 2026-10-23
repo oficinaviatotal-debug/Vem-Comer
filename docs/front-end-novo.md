@@ -1032,7 +1032,7 @@ gerente; mesas só para quem vai a uma mesa; Pix só para quem confere Pix. A fa
 
 **Como as peças se dividem:** `novo/voice.ts` (só o canal que entrega a voz às telas), `novo/VoiceBubble.tsx` (a faixa, só visual, com `role="status"`), `painel/voiceNavLogic.ts` (conta pura, sem
 microfone nem rede), `painel/useVoiceNav.ts` (microfone e fala, usa o `hear` e o `speakAsync` que o Assistente já usa), `hoje/briefLogic.ts` (a fala do dia, conta pura) e `painel/readBriefing.ts` (as buscas).
-Frases da faixa e do resumo em `novo/copy.ts`.
+Frases da faixa e do resumo em `novo/voiceCopy.ts` (motor em `novo/phrasing.ts`; ver a vigésima terceira rodada).
 
 **Limites honestos:**
 
@@ -1050,6 +1050,40 @@ manda em tudo). No navegador, com o aplicativo de verdade, um servidor de mentir
 e de lá a uma tela nova, não entendi, ninguém falar, microfone negado, Fechar, menu aberto, a bolinha própria do Assistente, garçom ("custos" recusa, "mesa" abre a nova), celular que não escuta, 320 px sem rolagem lateral,
 "como está o dia" (dono, servidor com defeito, garçom, e resposta velha descartada).
 **649 testes passam só na pasta do visual novo (1488 no total das pastas de teste)**; tipos, build, segurança e conformidade em ordem.
+
+## Vigésima terceira rodada: as frases da voz não cansam nem envelhecem (23/10/2026)
+
+O GD escreveu, às 17:49 de 23/10: "Lembre de atualizar essas frases em tempos para não ficarem ultrapassadas e, ou cansativas. .. sejam dinâmicas e inteligentes e atualizadas... Pode prosseguir com os demais, também."
+Li assim: **a bolinha e o resumo do dia não podem dizer sempre a mesma frase** (cansa), **têm de falar de acordo com a hora e com o que está acontecendo** (inteligente) e **têm de ser revistas de tempos em tempos** (não envelhecem).
+
+**O que mudou** (motor em `novo/phrasing.ts`, textos em `novo/voiceCopy.ts`, ligado em `painel/useVoiceNav.ts`, `painel/voiceNavLogic.ts` e `hoje/briefLogic.ts`):
+
+- **Não repete.** Cada situação tem de 3 a 5 formas de dizer a mesma coisa ("Abrindo os pedidos." / "Certo, abrindo os pedidos." / "Vamos para os pedidos." / "Indo para os pedidos."). Elas saem numa **sacola embaralhada**: todas passam
+  uma vez antes de qualquer uma voltar, e a mesma frase **nunca sai duas vezes seguidas** (testado com 60 sorteios diferentes).
+- **Encurta com o uso.** As primeiras vezes a bolinha explica ("Estou ouvindo. Diga a tela que você quer abrir."); depois de 3 vezes fica "Pode falar." / "Estou ouvindo." / "Diga." O "Não entendi" e o aviso de microfone também
+  ficam curtos. **A conta fica só no celular da pessoa** (guarda um número e o dia, nada do restaurante); quem passa **21 dias** sem ouvir uma frase volta a ouvir a explicação completa.
+- **Os exemplos andam.** O "Não entendi. Diga, por exemplo: pedidos, abrir mesa ou mesas." mostra três telas dela, e **na vez seguinte mostra outras três** (sempre só telas que o menu dela mostra, nunca a que já está aberta).
+- **O resumo do dia fala conforme o dia.** A saudação às vezes diz o dia da semana ("Bom dia, João. Hoje é sexta-feira."). **Pedido esperando há 20 minutos ou mais (a cor vermelha da comanda) puxa a atenção**: "Atenção: 2 pedidos esperando, o mais
+  antigo há 25 minutos." As vendas usam o jeito da hora ("Até agora, R$ 420,00 em 12 pedidos." de manhã; "No dia, …" à noite), e o "ainda sem vendas" não promete nada: de manhã "O dia está começando", depois "Hoje ainda não teve venda".
+  No fim, enquanto a pessoa ainda está aprendendo, vem uma dica ("Para abrir, diga pedidos."), **só quando há pedido esperando e a pessoa abre a tela de Pedidos**; depois de 3 vezes ela some.
+- **Os fatos nunca mudam, só o jeito.** Todas as formas de cada situação dizem os mesmos números e os mesmos nomes (teste confere o número, o tempo, o singular e o plural em todas). **Busca que falhou continua dizendo
+  que falhou, em qualquer forma**, e nunca vira "nenhum pedido".
+- **O que é ordem não varia.** Nome de botão ("Fechar", "Tentar de novo") e instrução de como fazer ficam sempre iguais; só saudação, confirmação, "não entendi" e resumo mudam. Quem aprendeu onde tocar não pode ter o botão trocado de nome.
+
+**Como as frases ficam atualizadas** (a parte do "em tempos" do GD):
+
+1. **O que é dado nunca envelhece**: hora, dia da semana, números, e os exemplos saem das telas que o menu mostra naquele momento (quando entra uma tela nova com palavras em `voiceNavLogic.ts`, os exemplos já a incluem).
+2. **O que é redação tem data de revisão**: `PHRASES_REVIEWED` em `novo/voiceCopy.ts` (hoje, 2026-10-23). A rotina, escrita no topo do mesmo arquivo: **a cada uns 2 meses, ou quando entra uma tela nova**, ler cada lista em voz alta,
+   trocar a forma que já cansa ou que fala de algo que mudou, e mexer na data. Próxima revisão marcada para **por volta de 23/12/2026**.
+3. **O teste não deixa a qualidade cair**: `tests/novo/phrasing.test.mjs` confere **toda forma de toda lista** (mínimo de 3 formas, frase curta de ouvir, termina em ponto, sem palavra difícil, sem "em os"/"de o", sem número faltando,
+   a forma curta é mesmo mais curta, sem forma repetida). Não há prazo que quebre o teste: um prazo vencido derrubaria a publicação automática sem culpa de ninguém.
+
+**Limites honestos:** as redações são **minhas** e nunca passaram por um ouvido de dono de restaurante; ouvir o GD e donos e trocar o que soar estranho é a revisão que mais vale. As frases do **resto do sistema** (avisos, telas de entrada,
+textos de ajuda do Hoje, o cliente) **ainda são fixas** de propósito: são instrução ("toque em Tentar de novo"), e instrução que muda de um dia para o outro atrapalha; se o GD quiser variar algum texto desses, é um a um.
+
+**Como foi conferido:** `tests/novo/phrasing.test.mjs` (26: a sacola, as duas formas e a uma só, o encurtar com o uso, o contador no celular com prazo e com armazenamento quebrado, os exemplos andando, a hora do dia, a escrita de cada forma do banco,
+os fatos em todas as formas, a bolinha e o resumo do dia com o sorteio de verdade e o resumo "de sempre" sem ele). No navegador, com o aplicativo de verdade e o microfone de teste (**129 conferências, 5 novas**): o convite não repete, explica nas
+primeiras vezes e fica curto depois, o "não entendi" muda de jeito e de exemplos e fica curto, só a contagem fica no celular. **675 testes passam só na pasta do visual novo (1514 no total das pastas de teste)**; tipos, build, segurança e conformidade em ordem.
 
 ## Como as telas novas entram, sem ir ao ar antes da hora
 

@@ -495,30 +495,8 @@ export const SHELL_RETRY = "Tentar de novo";
 
 // ---------------------------------------------------------------- a bolinha de voz do painel (ir para uma tela falando)
 
-export const VOICE_LISTENING = "Estou ouvindo. Diga a tela que você quer abrir.";
-export const VOICE_NOT_HEARD = "Não ouvi nada. Toque na bolinha e fale de novo. Se o celular pedir o microfone, toque em Permitir.";
-export const VOICE_OFF = "Este celular não escuta por aqui. Use o menu no alto da tela.";
+// As frases que variam (ouvindo, não entendi, abrindo…, o resumo do dia) moram em `voiceCopy.ts`, com o motor em `phrasing.ts`.
+// Aqui ficam só as que nunca mudam: o rótulo do botão e do que a pessoa disse.
 export const VOICE_HEARD = (words: string): string => `Você disse: “${words}”`;
-export const VOICE_OPENING = (what: string): string => `Abrindo ${what}.`;
-export const VOICE_HERE = (what: string): string => `Você já está ${what}.`;
-export const VOICE_BLOCKED = (what: string): string => `Não posso abrir ${what} para você agora. Toque no menu para ver o que está liberado.`;
-export const VOICE_UNKNOWN = (examples: string): string => `Não entendi. Diga, por exemplo: ${examples}.`;
-export const VOICE_HELP = (examples: string): string => `Você pode dizer: ${examples}. Para ver todas as telas, toque no menu.`;
-export const VOICE_NO_EXAMPLES = "Toque no menu, no alto da tela, para escolher uma tela.";
 export const VOICE_CLOSE = "Fechar";
 export const VOICE_BUBBLE_LABEL = "A bolinha de voz";
-
-// ---------------------------------------------------------------- "como está o dia?": o que a bolinha lê em voz alta
-
-export const VOICE_BRIEF_WAIT = "Olhando como está o dia…";
-export const BRIEF_FAIL = "Não consegui ver como está o dia agora. Confira a internet e pergunte de novo.";
-export const BRIEF_NO_ORDERS = "Não consegui ler os pedidos agora.";
-export const BRIEF_NO_CALLS = "Não consegui ver as mesas chamando agora.";
-export const BRIEF_NO_SALES = "Não consegui ler as vendas agora.";
-export const BRIEF_NONE_WAITING = "Nenhum pedido esperando.";
-export const BRIEF_WAITING = (count: number, oldest: string): string =>
-  `${count} ${count === 1 ? "pedido esperando" : "pedidos esperando"}${oldest ? `, o mais antigo há ${oldest}` : ""}.`;
-export const BRIEF_COOKING = (count: number): string => `${count} na cozinha.`;
-export const BRIEF_ON_THE_WAY = (count: number): string => `${count} a caminho.`;
-export const BRIEF_SALES = (money: string, count: number): string => `Vendas de hoje: ${money} em ${count} ${count === 1 ? "pedido" : "pedidos"}.`;
-export const BRIEF_NO_SALES_YET = "Ainda sem vendas hoje.";

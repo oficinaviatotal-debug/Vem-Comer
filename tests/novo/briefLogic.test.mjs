@@ -125,7 +125,7 @@ test("a busca pergunta ao servidor na hora, uma busca por pedaço, cada uma com 
 test("quem escuta lê a fala em voz alta e descarta a resposta velha se a pessoa tocou de novo", () => {
   const hook = read("painel/useVoiceNav.ts");
   assert.match(hook, /answer\.kind === "brief"/);
-  assert.match(hook, /\.catch\(\(\) => BRIEF_FAIL\)/);
+  assert.match(hook, /\.catch\(\(\) => phrase\.say\(SAY_BRIEF_FAIL\)\)/);
   assert.match(hook, /if \(mine !== turn\.current\) return;\n\s+show\(\{ tone: "answer", heard, text \}\);\n\s+void speakAsync\(text\)/);
-  assert.match(read("painel/PanelShell.tsx"), /onBrief: \(\) => readBriefing\(\{ companyId, role, name: user\.name \}\)/);
+  assert.match(read("painel/PanelShell.tsx"), /onBrief: \(phrase\) => readBriefing\(\{ companyId, role, name: user\.name, phrase, canOpenOrders: allowedViews\(context\)\.includes\("pedidos"\) \}\)/);
 });

@@ -12,14 +12,8 @@
  * - o que não foi entendido vira uma frase com exemplos reais (as telas dela), nunca um palpite.
  */
 import { isManager } from "../nav/navLogic.ts";
-import {
-  VOICE_BLOCKED,
-  VOICE_HELP,
-  VOICE_HERE,
-  VOICE_NO_EXAMPLES,
-  VOICE_OPENING,
-  VOICE_UNKNOWN,
-} from "../novo/copy.ts";
+import { plainPhraser, type Phraser } from "../novo/phrasing.ts";
+import { SAY_BLOCKED, SAY_HELP, SAY_HERE, SAY_NO_EXAMPLES, SAY_OPENING, SAY_UNKNOWN } from "../novo/voiceCopy.ts";
 
 export type VoiceAnswer =
   /** Abrir esta tela e dizer a frase. */
@@ -280,14 +274,16 @@ const EXAMPLE_WORDS: ReadonlyArray<readonly [string, string]> = [
   ["inicio", "início"],
 ];
 
-/** Até três exemplos do que esta pessoa pode dizer agora, das telas que ela abre e menos a que já está aberta. */
-export function examplesFor(allowed: readonly string[], current: string): string {
-  const words = EXAMPLE_WORDS.filter(([view]) => allowed.includes(view) && view !== current)
-    .slice(0, 3)
-    .map(([, said]) => said);
-  if (words.length === 0) return "";
-  if (words.length === 1) return words[0];
-  return `${words.slice(0, -1).join(", ")} ou ${words[words.length - 1]}`;
+/**
+ * Até três exemplos do que esta pessoa pode dizer agora, das telas que ela abre e menos a que já está aberta. Com um
+ * `phrase` de verdade os exemplos andam pela lista a cada vez (não são sempre os mesmos três); sem ele, os três primeiros.
+ */
+export function examplesFor(allowed: readonly string[], current: string, phrase: Phraser = plainPhraser): string {
+  const words = EXAMPLE_WORDS.filter(([view]) => allowed.includes(view) && view !== current).map(([, said]) => said);
+  const chosen = phrase.window("voz.exemplos", words, 3);
+  if (chosen.length === 0) return "";
+  if (chosen.length === 1) return chosen[0];
+  return `${chosen.slice(0, -1).join(", ")} ou ${chosen[chosen.length - 1]}`;
 }
 
 /** A frase mais comprida (em letras) de `says` que aparece em `text`; 0 se nenhuma. */
@@ -307,12 +303,16 @@ export type VoiceInput = {
   allowed: readonly string[];
   /** A tela aberta agora. */
   current: string;
+  /** Quem escolhe a forma de dizer cada frase (sem repetir, mais curta com o uso). Sem ele, sempre a forma de referência. */
+  phrase?: Phraser;
 };
 
 /** O que fazer com o que a pessoa disse. */
 export function interpretVoiceNav(input: VoiceInput): VoiceAnswer {
   const text = normalizeSpeech(input.transcript);
-  const examples = examplesFor(input.allowed, input.current);
+  const phrase = input.phrase ?? plainPhraser;
+  // Os exemplos só são contados quando a frase de fato os usa (senão a lista andaria à toa).
+  const examples = () => examplesFor(input.allowed, input.current, phrase);
 
   type Hit = { view: string; asked: string; size: number; order: number };
   const hits: Hit[] = [];
@@ -334,13 +334,17 @@ export function interpretVoiceNav(input: VoiceInput): VoiceAnswer {
 
   if (brief > 0 && (!top || brief > top.size) && brief >= help) return { kind: "brief" };
   if (help > 0 && (!top || help > top.size)) {
-    return { kind: "stay", say: examples ? VOICE_HELP(examples) : VOICE_NO_EXAMPLES };
+    const some = examples();
+    return { kind: "stay", say: some ? phrase.say(SAY_HELP, some) : phrase.say(SAY_NO_EXAMPLES) };
   }
-  if (!top) return { kind: "unknown", say: examples ? VOICE_UNKNOWN(examples) : VOICE_NO_EXAMPLES };
+  if (!top) {
+    const some = examples();
+    return { kind: "unknown", say: some ? phrase.say(SAY_UNKNOWN, some) : phrase.say(SAY_NO_EXAMPLES) };
+  }
 
-  if (!input.allowed.includes(top.view)) return { kind: "stay", say: VOICE_BLOCKED(spokenName(top.asked, input.role)) };
-  if (top.view === input.current) return { kind: "stay", say: VOICE_HERE(spokenIn(top.view, input.role)) };
-  return { kind: "go", view: top.view, say: VOICE_OPENING(spokenName(top.view, input.role)) };
+  if (!input.allowed.includes(top.view)) return { kind: "stay", say: phrase.say(SAY_BLOCKED, spokenName(top.asked, input.role)) };
+  if (top.view === input.current) return { kind: "stay", say: phrase.say(SAY_HERE, spokenIn(top.view, input.role)) };
+  return { kind: "go", view: top.view, say: phrase.say(SAY_OPENING, spokenName(top.view, input.role)) };
 }
 
 /** Os nomes de tela que a voz sabe abrir (para o teste conferir com o menu). */

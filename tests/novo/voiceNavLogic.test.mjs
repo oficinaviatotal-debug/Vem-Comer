@@ -290,7 +290,7 @@ test("a casca liga a voz uma vez para todas as telas, e a moldura das telas anti
 
 test("o microfone só abre depois do toque, e sair do painel o corta", () => {
   const hook = read("painel/useVoiceNav.ts");
-  assert.match(hook, /stopSpeaking\(\);\n    if \(!canListen\(\)\)/, "o painel não fala por cima da pessoa");
+  assert.match(hook, /stopSpeaking\(\);\n    const phrase = phraser\(\);\n    if \(!canListen\(\)\)/, "o painel não fala por cima da pessoa");
   assert.match(hook, /hearing\.current\?\.cancel\(\);\n      hearing\.current = null;\n      stopSpeaking\(\);/, "sair do painel corta o microfone e a fala");
   assert.doesNotMatch(hook, /useEffect\([^)]*\bhear\(/, "nada escuta por conta própria");
   // A resposta é só frase e navegação: o hook não chama o servidor.

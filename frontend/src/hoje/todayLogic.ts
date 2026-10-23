@@ -137,6 +137,11 @@ export function dateLineOf(now: number): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+/** "sexta-feira": o dia da semana, em Brasília, em letras minúsculas (para dizer "Hoje é sexta-feira"). */
+export function weekdayOf(now: number): string {
+  return new Intl.DateTimeFormat("pt-BR", { weekday: "long", timeZone: ZONE }).format(new Date(now)).toLowerCase();
+}
+
 /** "Bom dia, João" (ou só "Bom dia" quando não há nome). */
 export function greetingOf(name: string | null | undefined, now: number): string {
   const hello = greeting(hourOf(now));

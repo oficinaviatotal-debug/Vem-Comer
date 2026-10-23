@@ -155,7 +155,7 @@ function Panel({ companyId, companySlug, companyName, onBack, user, onLogout }: 
     allowed: allowedViews(context),
     current: shown,
     onGo: go,
-    onBrief: () => readBriefing({ companyId, role, name: user.name }),
+    onBrief: (phrase) => readBriefing({ companyId, role, name: user.name, phrase, canOpenOrders: allowedViews(context).includes("pedidos") }),
   });
   const voiceControl = useMemo(() => ({ onPress: voice.press, listening: voice.listening }), [voice.press, voice.listening]);
 
