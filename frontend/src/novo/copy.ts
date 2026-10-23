@@ -500,3 +500,15 @@ export const SHELL_RETRY = "Tentar de novo";
 export const VOICE_HEARD = (words: string): string => `Você disse: “${words}”`;
 export const VOICE_CLOSE = "Fechar";
 export const VOICE_BUBBLE_LABEL = "A bolinha de voz";
+
+// ---------------------------------------------------------------- o microfone ao lado de cada campo de escrever
+// Nome do botão: o leitor de tela fala isto. Não varia (é o nome de um botão); só campo de texto livre ganha microfone.
+export const DICTATE_DISH_NAME = "Falar o nome do prato";
+export const DICTATE_DISH_TEXT = "Falar o que vai no prato";
+export const DICTATE_DISH_SEARCH = "Falar o prato que quer achar";
+export const DICTATE_CAT_NAME = "Falar o nome da categoria";
+export const DICTATE_OPT_GROUP = "Falar o nome do grupo de opções";
+export const DICTATE_OPT_ITEM = (spoken: string): string => `Falar o nome de ${spoken}`;
+export const DICTATE_OPT_TEXT = "Falar as opções";
+export const DICTATE_MODEL_SEARCH = "Falar o tipo de negócio";
+export const DICTATE_MODEL_ADD = "Falar o prato para acrescentar";

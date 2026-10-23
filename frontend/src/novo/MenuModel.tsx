@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import "./novo.css";
+import DictateButton from "./DictateButton";
 import NvIcon from "./Icons";
 import { MenuLive, Spinner, TopBar } from "./parts";
 import {
@@ -14,6 +15,8 @@ import {
   MENU_PRICES_ASK,
   MENU_PRICES_DROP,
   MENU_TITLE,
+  DICTATE_MODEL_SEARCH,
+  DICTATE_MODEL_ADD,
 } from "./copy";
 import type { MenuSetupView } from "./types";
 
@@ -67,6 +70,7 @@ export function ModelTypes({ view, onQuery, onChooseType, onRetryTypes, onBack, 
               if (event.key === "Enter") event.preventDefault();
             }}
           />
+          <DictateButton id="nv-model-search" label={DICTATE_MODEL_SEARCH} max={40} disabled={view.loading} onText={(text) => onQuery?.(text)} />
         </div>
       </div>
 
@@ -143,6 +147,7 @@ function AddBox({ onAddDish }: { onAddDish?: (text: string) => void }) {
             placeholder={MENU_PICK_ADD_HINT}
             onChange={(event) => setText(event.target.value)}
           />
+          <DictateButton id="nv-model-add" label={DICTATE_MODEL_ADD} max={80} onText={setText} />
         </div>
         <button type="submit" className="nv-btn is-green" disabled={!ready}>
           {MENU_NOTE}

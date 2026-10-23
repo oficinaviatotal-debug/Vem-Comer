@@ -10,6 +10,22 @@ export type VoiceControl = {
   onPress: () => void;
   /** O celular está ouvindo agora. */
   listening: boolean;
+  /** Ditar num campo de escrever. Falta quando o celular não escuta (aí o microfone do campo nem aparece). */
+  dictate?: Dictate;
+};
+
+/**
+ * O microfone ao lado de um campo de escrever. A pessoa toca, fala, e o que ela disse vai para o campo (que ela vê e
+ * pode corrigir); nada é salvo até ela tocar no botão de salvar de sempre. Só há um microfone por vez no painel.
+ */
+export type Dictate = {
+  /** O `id` do campo que está ouvindo agora, ou `null`. */
+  active: string | null;
+  /**
+   * Toque no microfone do campo `id`: ouve uma frase e entrega `apply(palavras)`, que escreve no campo e devolve o texto
+   * que de fato escreveu (para o painel ler de volta). Tocar de novo enquanto ouve cancela e não escreve nada.
+   */
+  press: (id: string, apply: (words: string) => string) => void;
 };
 
 export const VoiceContext = createContext<VoiceControl | null>(null);

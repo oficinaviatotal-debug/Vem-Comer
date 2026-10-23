@@ -5266,3 +5266,51 @@ button.nv-now-cell:active {
   font-size: 15px;
   font-weight: 700;
 }
+
+/* ---------- O microfone ao lado de um campo de escrever ---------- */
+
+.nv-root .nv-dictate {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 -10px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--nv-green);
+  cursor: pointer;
+}
+
+.nv-root .nv-dictate svg {
+  width: 24px;
+  height: 24px;
+  color: inherit;
+}
+
+.nv-root .nv-dictate:active {
+  background: rgba(27, 67, 50, 0.12);
+}
+
+.nv-root .nv-dictate:focus-visible {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 1px;
+}
+
+/* Ouvindo: o botão escurece e o ícone pulsa, como a bolinha (não depende só da cor). */
+.nv-root .nv-dictate.is-listening {
+  background: var(--nv-ink);
+  color: #fff;
+}
+
+.nv-root .nv-dictate.is-listening svg {
+  animation: nv-beat 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-root .nv-dictate.is-listening svg {
+    animation: none;
+  }
+}

@@ -97,6 +97,32 @@ export const SAY_NO_EXAMPLES = bank("voz.sem-exemplos", {
   ],
 });
 
+// ---------------------------------------------------------------- o microfone ao lado de um campo de escrever
+
+export const SAY_DICTATE_LISTENING = bank("voz.ditar.ouvindo", {
+  full: ["Estou ouvindo. Fale o que você quer escrever.", "Pode falar. Eu escrevo no campo.", "Estou aqui. Diga o que escrever."],
+  short: ["Pode falar.", "Estou ouvindo.", "Fale agora."],
+});
+
+export const SAY_DICTATE_NOT_HEARD = bank("voz.ditar.nao-ouvi", {
+  full: [
+    "Não ouvi nada. Toque no microfone do campo e fale de novo. Se o celular pedir o microfone, toque em Permitir.",
+    "Não consegui ouvir. Toque no microfone do campo e fale de novo. Se aparecer um pedido de microfone, toque em Permitir.",
+    "Silêncio por aqui. Toque no microfone do campo e fale de novo; se o celular pedir o microfone, toque em Permitir.",
+  ],
+  short: ["Não ouvi nada. Toque no microfone e fale de novo.", "Não peguei nada. Tente de novo.", "Não ouvi. Fale mais perto do celular."],
+  after: 2,
+});
+
+export const SAY_DICTATE_OFF = bank("voz.ditar.sem-voz", {
+  full: ["Este celular não escuta por aqui. Escreva no campo.", "A voz não funciona neste celular. Escreva no campo.", "Aqui o celular não deixa eu ouvir. Escreva no campo."],
+});
+
+/** O que a pessoa ouve de volta depois de ditar. A palavra é a que foi escrita no campo, igual. */
+export const SAY_DICTATED = bank<[string]>("voz.ditar.escrevi", {
+  full: [(words) => `Escrevi: ${words}.`, (words) => `Anotei: ${words}.`, (words) => `Ficou assim: ${words}.`],
+});
+
 // ---------------------------------------------------------------- "como está o dia?": o que a bolinha lê em voz alta
 
 export const SAY_BRIEF_WAIT = bank("dia.espera", {
@@ -228,6 +254,10 @@ export const ALL_BANKS: readonly Registered[] = [
   entry(SAY_UNKNOWN, ["pedidos, abrir mesa ou mesas"], ["pedidos"]),
   entry(SAY_HELP, ["pedidos, abrir mesa ou mesas"], ["pedidos"]),
   entry(SAY_NO_EXAMPLES),
+  entry(SAY_DICTATE_LISTENING),
+  entry(SAY_DICTATE_NOT_HEARD),
+  entry(SAY_DICTATE_OFF),
+  entry(SAY_DICTATED, ["Pastel de carne"], ["Sem cebola"]),
   entry(SAY_BRIEF_WAIT),
   entry(SAY_BRIEF_FAIL),
   entry(SAY_BRIEF_NO_ORDERS),

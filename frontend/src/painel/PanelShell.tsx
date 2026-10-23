@@ -157,7 +157,7 @@ function Panel({ companyId, companySlug, companyName, onBack, user, onLogout }: 
     onGo: go,
     onBrief: (phrase) => readBriefing({ companyId, role, name: user.name, phrase, canOpenOrders: allowedViews(context).includes("pedidos") }),
   });
-  const voiceControl = useMemo(() => ({ onPress: voice.press, listening: voice.listening }), [voice.press, voice.listening]);
+  const voiceControl = useMemo(() => ({ onPress: voice.press, listening: voice.listening, dictate: voice.dictate }), [voice.press, voice.listening, voice.dictate]);
 
   // No instante em que o restaurante fica bloqueado, a pessoa cai em como pagar; os Pedidos continuam a um toque.
   useEffect(() => {

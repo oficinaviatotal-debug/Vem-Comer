@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import "./novo.css";
+import DictateButton from "./DictateButton";
 import NvIcon from "./Icons";
 import { TopBar, VoiceOrb } from "./parts";
 import {
@@ -11,6 +12,7 @@ import {
   CATS_TITLE,
   DISHES_REMOVE_ARM,
   DISHES_REMOVING,
+  DICTATE_CAT_NAME,
 } from "./copy";
 import type { CategoriesView } from "./types";
 
@@ -90,6 +92,7 @@ export default function Categories({ view, name = "", problemText = "", busy = C
                   aria-describedby={problemText ? "nv-cat-problem" : undefined}
                   onChange={(event) => onName?.(event.target.value)}
                 />
+                <DictateButton id="nv-cat-name" label={DICTATE_CAT_NAME} max={60} disabled={locked} onText={(text) => onName?.(text)} />
               </div>
             </div>
             {problemText ? (

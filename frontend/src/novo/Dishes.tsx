@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ChangeEvent } from "react";
 import "./novo.css";
+import DictateButton from "./DictateButton";
 import NvIcon from "./Icons";
 import { Photo, Spinner, TopBar, VoiceOrb } from "./parts";
 import {
@@ -36,6 +37,9 @@ import {
   DISHES_RESETTING,
   DISHES_SEARCH,
   DISHES_SOLD_CHIP,
+  DICTATE_DISH_NAME,
+  DICTATE_DISH_SEARCH,
+  DICTATE_DISH_TEXT,
 } from "./copy";
 import type { DishForm, DishOptionsLine, DishPhotoView, DishRow, DishesView } from "./types";
 
@@ -154,6 +158,7 @@ export function DishFormBox({ form, categories, problemText, adding, onForm, onA
             aria-describedby={form.problem === "name" || form.problem === "twice" ? "nv-dish-problem" : undefined}
             onChange={(event) => onForm?.({ name: event.target.value })}
           />
+          <DictateButton id="nv-dish-name" label={DICTATE_DISH_NAME} max={80} disabled={adding} onText={(text) => onForm?.({ name: text })} />
         </div>
       </div>
 
@@ -209,6 +214,7 @@ export function DishFormBox({ form, categories, problemText, adding, onForm, onA
             readOnly={adding || undefined}
             onChange={(event) => onForm?.({ description: event.target.value })}
           />
+          <DictateButton id="nv-dish-text" label={DICTATE_DISH_TEXT} max={160} disabled={adding} onText={(text) => onForm?.({ description: text })} />
         </div>
       </div>
 
@@ -452,6 +458,7 @@ export default function Dishes({
               value={query}
               onChange={(event) => onQuery?.(event.target.value)}
             />
+            <DictateButton id="nv-dish-search" label={DICTATE_DISH_SEARCH} onText={(text) => onQuery?.(text)} />
           </label>
         ) : null}
 

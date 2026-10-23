@@ -71,7 +71,7 @@ test("peças de toque têm 44 px ou mais e o movimento respeita quem pediu menos
 
 test("nenhuma tela do visual novo escreve texto de interface que o dono não entende", () => {
   const banned = /\b(dashboard|checkout|onboarding|template|upload|click here)\b/i;
-  for (const name of ["ShopMenu.tsx", "OwnerToday.tsx", "Kitchen.tsx", "JobsHome.tsx", "Choices.tsx", "Bag.tsx", "Tracking.tsx", "Table.tsx", "MainMenu.tsx", "Desk.tsx", "DeskTable.tsx", "QrScan.tsx", "Orders.tsx", "Deliveries.tsx", "Settle.tsx", "MenuSetup.tsx", "MenuModel.tsx", "Dishes.tsx", "DishOptions.tsx", "Logo.tsx", "Categories.tsx", "Login.tsx", "Notices.tsx", "LegacyFrame.tsx", "VoiceBubble.tsx", "copy.ts", "voiceCopy.ts", "phrasing.ts"]) {
+  for (const name of ["ShopMenu.tsx", "OwnerToday.tsx", "Kitchen.tsx", "JobsHome.tsx", "Choices.tsx", "Bag.tsx", "Tracking.tsx", "Table.tsx", "MainMenu.tsx", "Desk.tsx", "DeskTable.tsx", "QrScan.tsx", "Orders.tsx", "Deliveries.tsx", "Settle.tsx", "MenuSetup.tsx", "MenuModel.tsx", "Dishes.tsx", "DishOptions.tsx", "Logo.tsx", "Categories.tsx", "Login.tsx", "Notices.tsx", "LegacyFrame.tsx", "VoiceBubble.tsx", "copy.ts", "voiceCopy.ts", "phrasing.ts", "dictation.ts", "DictateButton.tsx"]) {
     assert.ok(!banned.test(read(name)), `${name} tem palavra de jargão`);
   }
 });

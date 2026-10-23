@@ -1039,7 +1039,7 @@ Frases da faixa e do resumo em `novo/voiceCopy.ts` (motor em `novo/phrasing.ts`;
 - A lista de palavras é **palpite meu** sobre como o dono fala. Vale ouvir donos de verdade e ajustar: é só acrescentar frases em `voiceNavLogic.ts` (o teste confere que nenhuma frase fica em duas telas).
 - O reconhecimento é o do próprio navegador do celular (precisa de internet e de permissão do microfone). Onde o navegador não oferece, a bolinha avisa e manda ao menu. **Não foi testado em um Android
   de verdade**, só com um microfone de teste no navegador.
-- **Ainda não faz**: cadastrar ou mudar coisas por voz no painel, responder perguntas além do resumo do dia ("qual prato vende mais?"), microfone ao lado de cada campo de escrever, e a voz do lado do cliente (a bolinha do cardápio do cliente
+- **Ainda não faz**: cadastrar ou mudar coisas por voz no painel, responder perguntas além do resumo do dia ("qual prato vende mais?"), microfone ao lado de cada campo de escrever (**feito na vigésima quarta rodada** para os campos de texto livre do painel novo), e a voz do lado do cliente (a bolinha do cardápio do cliente
   continua só enfeite).
 - Nada disso vai ao ar sem o "pode": a chave `?novo=1` continua desligada por padrão.
 
@@ -1084,6 +1084,39 @@ textos de ajuda do Hoje, o cliente) **ainda são fixas** de propósito: são ins
 **Como foi conferido:** `tests/novo/phrasing.test.mjs` (26: a sacola, as duas formas e a uma só, o encurtar com o uso, o contador no celular com prazo e com armazenamento quebrado, os exemplos andando, a hora do dia, a escrita de cada forma do banco,
 os fatos em todas as formas, a bolinha e o resumo do dia com o sorteio de verdade e o resumo "de sempre" sem ele). No navegador, com o aplicativo de verdade e o microfone de teste (**129 conferências, 5 novas**): o convite não repete, explica nas
 primeiras vezes e fica curto depois, o "não entendi" muda de jeito e de exemplos e fica curto, só a contagem fica no celular. **675 testes passam só na pasta do visual novo (1514 no total das pastas de teste)**; tipos, build, segurança e conformidade em ordem.
+
+## Vigésima quarta rodada: o microfone ao lado dos campos de escrever (23/10/2026)
+
+"Pode prosseguir com os demais" (GD, 23/10, 17:49). O próximo item do plano do item 90 ("toda entrada por voz, escrita ou foto"): **todo campo de texto livre ganha um microfone ao lado**.
+
+**Como funciona** (`novo/DictateButton.tsx`, texto em `novo/dictation.ts`, escuta em `painel/useVoiceNav.ts`, entregue às telas por `novo/voice.ts`): a pessoa toca no microfone dentro do campo, **fala**, e o que ela disse **aparece no campo**, arrumado
+(primeira letra maiúscula, sem ponto no fim; nada é trocado nem "corrigido"). O painel **lê de volta** o que escreveu ("Ficou assim: Pastel de carne.") e mostra na mesma faixa da bolinha. A pessoa vê o campo e corrige à mão se precisar.
+**Nada é salvo**: o prato só vai ao servidor quando ela toca no botão de salvar de sempre (provado no navegador: zero envios ao servidor depois de ditar).
+
+**Onde entra agora** (campos de texto livre das telas novas): nome do prato, "o que vem no prato" e a busca em Pratos; nome da categoria; nome do grupo de opções, nome de cada opção e o campo "escreva as opções" (nesse, de várias linhas, a fala vai **depois** do que já está escrito);
+busca do tipo de negócio e "acrescentar prato" no "começar de um modelo". **Onde não entra, de propósito:** senha, e-mail, **preço**, código de entrega, número da mesa e envio de arquivo (número falado vira erro fácil: "doze noventa" tem de virar 12,90, e isso fica para quando houver
+conferência por voz) — um teste garante que nenhum desses ganha microfone. O campo do **Assistente do cardápio** já tinha o ditado dele e continua com ele.
+
+**Regras de honestidade** (todas com teste):
+
+- **Só depois do toque**, e **só um microfone por vez** (o mesmo da bolinha): tocar no microfone do campo enquanto ouve cancela e não escreve nada; **mudar de tela enquanto ouve também cancela**.
+- **Sem fala, o campo fica como estava**: a faixa diz o que fazer ("Não ouvi nada. Toque no microfone do campo e fale de novo. Se o celular pedir o microfone, toque em Permitir."). Nunca silêncio.
+- **Celular que não escuta: o microfone do campo nem aparece** (botão que não leva a lugar nenhum não entra). Fora do painel (conferência de imagem, telas do cliente) também não aparece.
+- Cada microfone tem **44 px**, nome claro para o leitor de tela ("Falar o nome do prato"), marca de "ouvindo" que não depende só da cor e respeita quem pediu menos movimento.
+- As frases de volta ("Escrevi: …" / "Anotei: …" / "Ficou assim: …") variam e encurtam pelo mesmo motor da rodada 23.
+
+**Limites honestos:**
+
+- **Não foi testado em Android de verdade**, só com microfone de teste no navegador; as palavras que o celular entende e acentua (ex.: "açaí") dependem do reconhecimento dele.
+- O reconhecimento de voz é o do **próprio navegador**. No Chrome, o áudio costuma ir ao serviço de voz do Google para virar texto. Isso já valia para o Assistente do cardápio e vale para a bolinha e o ditado. **Não encontrei o aviso disso nos textos de privacidade do projeto: vale incluir
+  e conferir com o advogado antes de abrir ao público.**
+- **Ainda sem microfone:** campos das telas antigas dentro da moldura (equipe, custos, horário, regiões…, que serão refeitas), do lado do cliente (a casca do cliente ainda não está ligada) e de preço (ver acima). **Cadastrar pelo painel falando a frase inteira** ("novo prato pastel de carne dezoito reais") continua não existindo.
+- Nada disso vai ao ar sem o "pode": a chave `?novo=1` continua desligada por padrão.
+
+**Como foi conferido:** `tests/novo/dictation.test.mjs` (7: o texto do campo, limite, o que não é inventado, campo de várias linhas, o botão, onde o microfone entra e **onde nunca entra**, e as regras da escuta). No navegador, com o aplicativo de verdade e o microfone de teste
+(**139 conferências, 10 novas**): o formulário do prato tem microfone no nome e no "o que vem no prato" e **nenhum no preço**, o que se fala vai para o campo arrumado, o painel diz o que escreveu na faixa e em voz alta, **nada foi salvo**, sem ninguém falar o campo fica como estava,
+o botão e a bolinha ficam marcados ouvindo, tocar de novo cancela, mudar de tela cancela, a categoria recebe o nome falado, e celular que não escuta não mostra microfone.
+**682 testes passam só na pasta do visual novo (1521 no total das pastas de teste)**; tipos, build, segurança e conformidade em ordem.
 
 ## Como as telas novas entram, sem ir ao ar antes da hora
 

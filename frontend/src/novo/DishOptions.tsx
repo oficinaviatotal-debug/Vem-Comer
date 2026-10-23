@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import "./novo.css";
+import DictateButton from "./DictateButton";
 import NvIcon from "./Icons";
 import { Spinner, TopBar } from "./parts";
 import {
@@ -35,6 +36,9 @@ import {
   OPT_UNDERSTOOD,
   OPT_YES,
   OPT_YOU_SAID,
+  DICTATE_OPT_GROUP,
+  DICTATE_OPT_ITEM,
+  DICTATE_OPT_TEXT,
 } from "./copy";
 import type { DishOptionsView, OptionGroupView } from "./types";
 
@@ -99,6 +103,7 @@ function GroupCard({ group, onGroupName, onRequired, onMax, onMin, onItemName, o
             value={group.name}
             onChange={(event) => onGroupName?.(group.uid, event.target.value)}
           />
+          <DictateButton id={`nv-opt-name-${group.uid}`} label={DICTATE_OPT_GROUP} max={60} onText={(text) => onGroupName?.(group.uid, text)} />
         </div>
       </div>
 
@@ -134,6 +139,12 @@ function GroupCard({ group, onGroupName, onRequired, onMax, onMin, onItemName, o
                 placeholder={OPT_ITEM_NAME_HINT}
                 value={item.name}
                 onChange={(event) => onItemName?.(group.uid, item.uid, event.target.value)}
+              />
+              <DictateButton
+                id={`nv-opt-iname-${group.uid}-${item.uid}`}
+                label={DICTATE_OPT_ITEM(item.spoken)}
+                max={60}
+                onText={(text) => onItemName?.(group.uid, item.uid, text)}
               />
             </div>
             <div className="nv-optitem-line">
@@ -198,6 +209,7 @@ function TypeBox({ onText }: { onText?: (text: string) => void }) {
       <div className="nv-typerow">
         <div className="nv-field is-area">
           <textarea id="nv-opt-type" value={text} rows={3} maxLength={1200} autoComplete="off" placeholder={OPT_TYPE_HINT} onChange={(event) => setText(event.target.value)} />
+          <DictateButton id="nv-opt-type" label={DICTATE_OPT_TEXT} max={1200} append value={text} onText={setText} />
         </div>
         <button type="submit" className="nv-btn is-green" disabled={!ready}>
           {OPT_NOTE}
