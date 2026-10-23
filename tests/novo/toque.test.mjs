@@ -813,8 +813,12 @@ test("cardápio: a bolinha de voz leva a falar os pratos na porta e no fim; na t
   // A bolinha faz o que o rótulo diz: sem a função ela só enfeita (a pré-visualização), com ela vai falar.
   assert.match(setup, /<VoiceOrb label="Falar os pratos" onPress=\{handlers\.onOrb\} \/>/);
   const orb = read("parts.tsx");
-  assert.match(orb, /aria-pressed=\{listening === undefined \? undefined : listening\}/);
-  assert.match(orb, /onClick=\{onPress\}/);
+  assert.match(orb, /aria-pressed=\{hearing === undefined \? undefined : hearing\}/);
+  assert.match(orb, /onClick=\{press\}/);
+  // A tela que passa o próprio `onPress` manda em tudo; só sem ele vale a voz do painel (novo/voice.ts).
+  assert.match(orb, /const own = onPress !== undefined;/);
+  assert.match(orb, /const press = own \? onPress : panel\?\.onPress;/);
+  assert.match(orb, /const hearing = own \? listening : panel\?\.listening;/);
   assert.match(block(".nv-orb.is-listening"), /background: radial-gradient/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.nv-orb\.is-listening svg \{\s*animation: none;/);
 });

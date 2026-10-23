@@ -1,5 +1,6 @@
 import "./novo.css";
 import NvIcon from "./Icons";
+import { useVoice } from "./voice";
 
 /** Peças que as telas novas repartem. Só visual: nenhuma delas fala com o servidor. */
 
@@ -33,19 +34,25 @@ export function MenuLive({ text }: { text: string }) {
   );
 }
 
-/** A bolinha de voz: o elemento de personalidade do Vem. Toda tela tem uma. */
 /**
- * A bolinha de voz. Sem `onPress` ela só enfeita a tela (as telas que ainda não escutam); com `onPress` ela faz o que o rótulo diz.
+ * A bolinha de voz: o elemento de personalidade do Vem. Toda tela tem uma.
+ * Com `onPress` ela faz o que a tela quer (o Assistente do cardápio escuta os pratos). Sem `onPress` ela usa a voz do
+ * painel (`novo/voice.ts`), que abre telas; fora do painel (conferência de imagem) ela só enfeita a tela.
  * `listening` mostra que o celular está ouvindo: a bolinha escurece, o ícone pulsa e o leitor de tela ouve "pressionado".
  */
 export function VoiceOrb({ label = "Falar", onPress, listening }: { label?: string; onPress?: () => void; listening?: boolean }) {
+  const panel = useVoice();
+  // A tela que passa o próprio `onPress` manda em tudo; só sem ele vale a voz do painel.
+  const own = onPress !== undefined;
+  const press = own ? onPress : panel?.onPress;
+  const hearing = own ? listening : panel?.listening;
   return (
     <button
       type="button"
-      className={`nv-orb${listening ? " is-listening" : ""}`}
+      className={`nv-orb${hearing ? " is-listening" : ""}`}
       aria-label={label}
-      aria-pressed={listening === undefined ? undefined : listening}
-      onClick={onPress}
+      aria-pressed={hearing === undefined ? undefined : hearing}
+      onClick={press}
     >
       <NvIcon name="mic" />
     </button>

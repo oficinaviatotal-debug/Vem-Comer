@@ -1,6 +1,8 @@
-import { Component, Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from "react";
+import { Component, Suspense, lazy, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import LegacyFrame from "../novo/LegacyFrame";
 import Notices from "../novo/Notices";
+import VoiceBubble from "../novo/VoiceBubble";
+import { VoiceContext } from "../novo/voice";
 import { SHELL_OLD_FAIL, SHELL_OLD_LOADING, SHELL_OPENING, SHELL_RETRY } from "../novo/copy";
 import CategoriesScreen from "./CategoriesScreen";
 import DeliveriesScreen from "./DeliveriesScreen";
@@ -23,8 +25,9 @@ import { suggestedTopic } from "../service/helpLogic";
 import { tableOrderUrl } from "../service/links";
 import { bannerOf, hasPlanTab, viewAllowed } from "../service/subscriptionView";
 import { useOwnerPlan } from "../service/useOwnerPlan";
-import { noticesOf, ownerStartView, screenOf, shownView, watchCalls, watchOrders, type ShellContext } from "./shellLogic";
+import { allowedViews, noticesOf, ownerStartView, screenOf, shownView, watchCalls, watchOrders, type ShellContext } from "./shellLogic";
 import { useSession, type SessionUser } from "./useSession";
+import { useVoiceNav } from "./useVoiceNav";
 import { useCallsWatch, useOrdersWatch, usePlatformCounts } from "./useWatchers";
 
 type Props = {
@@ -145,6 +148,10 @@ function Panel({ companyId, companySlug, companyName, onBack, user, onLogout }: 
   }, []);
   const openMenu = useCallback(() => setMenuOpen(true), []);
 
+  // A bolinha de voz de todas as telas: falar o nome de uma tela abre a tela (e responde na tela e em voz alta).
+  const voice = useVoiceNav({ role, allowed: allowedViews(context), current: shown, onGo: go });
+  const voiceControl = useMemo(() => ({ onPress: voice.press, listening: voice.listening }), [voice.press, voice.listening]);
+
   // No instante em que o restaurante fica bloqueado, a pessoa cai em como pagar; os Pedidos continuam a um toque.
   useEffect(() => {
     if (planBlocked) setView("plano");
@@ -232,7 +239,7 @@ function Panel({ companyId, companySlug, companyName, onBack, user, onLogout }: 
   }
 
   return (
-    <>
+    <VoiceContext.Provider value={voiceControl}>
       <Notices
         notices={notices.map(({ id, tone, text, action }) => ({ id, tone, text, action }))}
         onAct={(id) => {
@@ -288,6 +295,10 @@ function Panel({ companyId, companySlug, companyName, onBack, user, onLogout }: 
           </Suspense>
         </Catch>
       ) : null}
-    </>
+
+      {voice.caption && !menuOpen ? (
+        <VoiceBubble tone={voice.caption.tone} text={voice.caption.text} heard={voice.caption.heard} onClose={voice.close} />
+      ) : null}
+    </VoiceContext.Provider>
   );
 }

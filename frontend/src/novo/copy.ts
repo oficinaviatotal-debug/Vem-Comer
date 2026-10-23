@@ -492,3 +492,18 @@ export const SHELL_OLD_NOTE = "Esta tela ainda está no desenho antigo. Ela func
 export const SHELL_OLD_LOADING = "Abrindo a tela…";
 export const SHELL_OLD_FAIL = "Não consegui abrir esta tela. Confira a internet e toque em Tentar de novo.";
 export const SHELL_RETRY = "Tentar de novo";
+
+// ---------------------------------------------------------------- a bolinha de voz do painel (ir para uma tela falando)
+
+export const VOICE_LISTENING = "Estou ouvindo. Diga a tela que você quer abrir.";
+export const VOICE_NOT_HEARD = "Não ouvi nada. Toque na bolinha e fale de novo. Se o celular pedir o microfone, toque em Permitir.";
+export const VOICE_OFF = "Este celular não escuta por aqui. Use o menu no alto da tela.";
+export const VOICE_HEARD = (words: string): string => `Você disse: “${words}”`;
+export const VOICE_OPENING = (what: string): string => `Abrindo ${what}.`;
+export const VOICE_HERE = (what: string): string => `Você já está ${what}.`;
+export const VOICE_BLOCKED = (what: string): string => `Não posso abrir ${what} para você agora. Toque no menu para ver o que está liberado.`;
+export const VOICE_UNKNOWN = (examples: string): string => `Não entendi. Diga, por exemplo: ${examples}.`;
+export const VOICE_HELP = (examples: string): string => `Você pode dizer: ${examples}. Para ver todas as telas, toque no menu.`;
+export const VOICE_NO_EXAMPLES = "Toque no menu, no alto da tela, para escolher uma tela.";
+export const VOICE_CLOSE = "Fechar";
+export const VOICE_BUBBLE_LABEL = "A bolinha de voz";

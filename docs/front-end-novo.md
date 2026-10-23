@@ -987,7 +987,7 @@ foi **copiado** para `painel/legacyPanels.tsx` (o painel antigo não foi tocado)
   (`onChanged` não está ligado). Os avisos ficam **fixos no alto da página** (não acompanham a rolagem: o painel esconde a rolagem lateral, o que desliga o "grudar").
   O botão de avisos no celular só aparece no Hoje.
 - A marca de "guia visto" é uma por navegador e por usuário.
-- **Falta a bolinha de voz de verdade em todas as telas** (item 90) e o microfone ao lado de cada campo.
+- **A bolinha de voz do painel já abre telas falando** (vigésima segunda rodada); falta o microfone ao lado de cada campo e a voz do lado do cliente.
 - Nada disso vai ao ar sem o "pode". **Para as telas de Produtos funcionarem de verdade no servidor, o PR #76 precisa entrar antes** (a rota para editar prato).
 
 **Como foi conferido:** `tests/novo/shellLogic.test.mjs` (24: a chave, o que cada função abre, plano bloqueado, qual tela é nova e qual é antiga, primeira vez do dono, quando olhar pedidos e
@@ -1001,6 +1001,46 @@ Para ver sem servidor: `preview-novo.html#/entrar` (e `#/entrar-preenchido`, `#/
 `#/avisos-bloqueado` e `#/tela-antiga`.
 
 **Ainda não está ligado para o público:** a chave `?novo=1` vem desligada.
+
+## Vigésima segunda rodada: a bolinha de voz do painel, falar o nome da tela (23/10/2026)
+
+O GD escreveu, às 17:19 de 23/10, "Esqueça esse pode juntar que falei, e vamos perseguir ." e, às 17:20, "Prosseguir, corrigindo minha escrita acima". Li assim: **o "pode juntar"
+que ele tinha dito fica sem efeito** (nada foi nem será juntado sem um "pode" novo e claro) e **"perseguir" quer dizer "prosseguir"**. Segui o plano do documento de mercado: a aposta
+mais forte do Vem é **falar com o dono que escreve pouco**, então a primeira coisa é a bolinha de voz funcionar de verdade (item 90 e item 92 do GD).
+
+**O que a bolinha faz agora** (`painel/useVoiceNav.ts`, contas em `painel/voiceNavLogic.ts`, ligada na casca em `painel/PanelShell.tsx`): em **toda tela do painel novo**, inclusive as
+antigas dentro da moldura, um toque na bolinha abre o microfone; a pessoa fala o nome de uma tela ("pedidos", "mesas", "números", "montar o cardápio", "pix", "horário"...); o painel
+**abre a tela, responde numa faixa acima da bolinha ("Você disse: … / Abrindo os pedidos.") e diz a mesma frase em voz alta**. Tocar de novo enquanto ouve cancela. A faixa tem botão Fechar
+(44 px) e some sozinha em 8 segundos; com o menu aberto ela não aparece. O celular **só ouve depois do toque**, nunca por conta própria.
+
+**Regras de honestidade** (todas com teste):
+
+- **Só abre telas.** Não cria, não muda e não apaga nada; palavra errada, no máximo, abre a tela errada, e basta falar de novo. Por isso não pede confirmação.
+- **Só leva ao que o menu mostra àquela pessoa** (a lista vem de `allowedViews`, a mesma do menu). O garçom que fala "custos" ouve "Não posso abrir os custos para você agora…"; com plano bloqueado,
+  só abre o que o menu deixa. Testado para todas as funções, com e sem plano bloqueado e com e sem dono do sistema: **nunca leva a tela fora da lista**.
+- **Não entendeu: diz o que falar.** "Não entendi. Diga, por exemplo: pedidos, abrir mesa ou mesas." com exemplos **das telas dela** (nunca a tela em que já está). Sem ninguém falar, ou com o
+  microfone negado, a faixa diz o que fazer ("toque na bolinha e fale de novo; se o celular pedir o microfone, toque em Permitir"). Celular que não escuta manda ao menu. **Nunca silêncio.**
+- **A frase mais comprida ganha**: "montar cardápio" abre o Assistente, "cardápio" abre Produtos, "taxa de entrega" abre Regiões, "pagar o plano" abre Plano, "pix para conferir" abre Pedidos.
+  O garçom e a cozinha, que não abrem "Abrir mesa", ouvem "mesas" em vez de recusa. "Ajuda" diz o que se pode falar.
+- A tela que já tem escuta própria (o **Assistente do cardápio**, "Falar os pratos") **continua com a dela**; a bolinha só usa a voz do painel quando a tela não passa a função (`novo/parts.tsx`).
+
+**Como as peças se dividem:** `novo/voice.ts` (só o canal que entrega a voz às telas), `novo/VoiceBubble.tsx` (a faixa, só visual, com `role="status"`), `painel/voiceNavLogic.ts` (conta pura, sem
+microfone nem rede), `painel/useVoiceNav.ts` (microfone e fala, usa o `hear` e o `speakAsync` que o Assistente já usa). Frases da faixa em `novo/copy.ts`.
+
+**Limites honestos:**
+
+- A lista de palavras é **palpite meu** sobre como o dono fala. Vale ouvir donos de verdade e ajustar: é só acrescentar frases em `voiceNavLogic.ts` (o teste confere que nenhuma frase fica em duas telas).
+- O reconhecimento é o do próprio navegador do celular (precisa de internet e de permissão do microfone). Onde o navegador não oferece, a bolinha avisa e manda ao menu. **Não foi testado em um Android
+  de verdade**, só com um microfone de teste no navegador.
+- **Ainda não faz**: ler os números do Hoje em voz alta, cadastrar ou mudar coisas por voz no painel, microfone ao lado de cada campo de escrever, e a voz do lado do cliente (a bolinha do cardápio do cliente
+  continua só enfeite).
+- Nada disso vai ao ar sem o "pode": a chave `?novo=1` continua desligada por padrão.
+
+**Como foi conferido:** `tests/novo/voiceNavLogic.test.mjs` (21: a fala sem acento e sem pontuação, cada tela do menu tem frase, nenhuma frase em duas telas, a frase mais comprida, o que cada função não abre, bloqueio por plano,
+"já está aqui" com a preposição certa, ajuda, não entendi, exemplos, e a ligação na casca e na moldura) e `toque.test.mjs` (a bolinha da tela manda em tudo). No navegador, com o aplicativo de verdade, um servidor de
+mentira e um **microfone de teste** (**22 conferências novas, 117 no total**): ouvindo, cancelar, "pedidos", "já está aqui", "mesas" na moldura antiga e de lá a uma tela nova, não entendi, ninguém falou, microfone negado,
+Fechar, menu aberto, a bolinha própria do Assistente, garçom ("custos" recusa, "mesa" abre a nova), celular que não escuta, e 320 px sem rolagem lateral.
+**634 testes passam só na pasta do visual novo (1473 no total das pastas de teste)**; tipos, build, segurança e conformidade em ordem.
 
 ## Como as telas novas entram, sem ir ao ar antes da hora
 

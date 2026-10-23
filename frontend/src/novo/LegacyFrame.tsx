@@ -1,7 +1,7 @@
 import "./novo.css";
 import type { ReactNode } from "react";
 import { SHELL_OLD_NOTE } from "./copy";
-import { TopBar } from "./parts";
+import { TopBar, VoiceOrb } from "./parts";
 
 type Props = {
   title: string;
@@ -26,6 +26,11 @@ export default function LegacyFrame({ title, sub, onMenu, children }: Props) {
         <p className="nv-code-hint nv-legacy-note">{SHELL_OLD_NOTE}</p>
         <div className="adm nv-legacy-body">{children}</div>
       </main>
+
+      {/* A bolinha de voz do painel também nas telas que ainda são as antigas: falar "pedidos" leva ao lugar. */}
+      <div className="nv-dock is-float">
+        <VoiceOrb label="Falar com o Vem" />
+      </div>
     </div>
   );
 }
