@@ -17,6 +17,16 @@ export function tableOrderUrl(
   return url.toString();
 }
 
+/**
+ * The restaurant's own link: what the owner sends on WhatsApp and puts on his Instagram. It opens the menu directly,
+ * for anyone, so it carries the restaurant only (never a table, never the panel).
+ */
+export function restaurantUrl(origin: string, pathname: string, slug: string): string {
+  const url = new URL(pathname || "/", origin);
+  url.searchParams.set("empresa", slug);
+  return url.toString();
+}
+
 /** Link the restaurant owner opens to reach the panel. */
 export function panelUrl(origin: string, pathname: string, slug: string): string {
   const url = new URL(pathname || "/", origin);

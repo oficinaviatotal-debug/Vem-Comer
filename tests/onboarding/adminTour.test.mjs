@@ -4,15 +4,23 @@ import { readFile } from "node:fs/promises";
 
 import { ADMIN_TOUR, ADMIN_TOUR_ID } from "../../frontend/src/onboarding/adminTour.ts";
 import { parseTourCommand } from "../../frontend/src/onboarding/tourEngine.ts";
+import { menuViews } from "../../frontend/src/nav/navLogic.ts";
 
-// The panel's screens live in AdminPanel.tsx and in the files it hands a tab to.
+// The panel's screens live in AdminPanel.tsx and in the files it hands a screen to; the menu rows live in AdminDrawer.tsx.
 const panel = (
   await Promise.all(
-    ["AdminPanel.tsx", "PixSettingsPanel.tsx"].map((file) =>
-      readFile(new URL(`../../frontend/src/service/${file}`, import.meta.url), "utf8")
+    ["service/AdminPanel.tsx", "service/PixSettingsPanel.tsx", "nav/AdminDrawer.tsx"].map((file) =>
+      readFile(new URL(`../../frontend/src/${file}`, import.meta.url), "utf8")
     )
   )
 ).join("\n");
+
+/** True when an element with this id is in the panel's code: written out, as an object field, or one row of the menu. */
+function hasId(id) {
+  if (panel.includes(`id="${id}"`) || panel.includes(`id: "${id}"`)) return true;
+  // The menu draws one row per screen, with the id `admin-tab-<screen>`.
+  return id.startsWith("admin-tab-") && menuViews().includes(id.slice("admin-tab-".length)) && panel.includes("id={`admin-tab-${");
+}
 
 test("the owner tour has an id and enough steps", () => {
   assert.match(ADMIN_TOUR_ID, /^admin-v\d+$/);
@@ -38,10 +46,7 @@ test("every highlighted target is an id that exists in AdminPanel.tsx", () => {
   for (const step of ADMIN_TOUR.filter((item) => item.target)) {
     assert.match(step.target, /^#[a-z0-9-]+$/, `${step.id}: use an #id selector`);
     const id = step.target.slice(1);
-    assert.ok(
-      panel.includes(`id="${id}"`),
-      `${step.id}: AdminPanel.tsx has no element with id="${id}"`
-    );
+    assert.ok(hasId(id), `${step.id}: the panel has no element with id="${id}"`);
   }
 });
 
@@ -114,7 +119,23 @@ test("the tour never asks the owner to type a category or a dish: the Assistente
   const pointer = ADMIN_TOUR.find((step) => step.target === "#admin-tab-assistente");
   assert.ok(pointer, "one step must point at the Assistente tab");
   assert.equal(pointer.advanceOnClick, undefined, "pointing at it must not open it in the middle of the tour");
-  assert.match(panel, /id="admin-tab-assistente"/);
+  assert.ok(hasId("admin-tab-assistente"));
+});
+
+test("steps that point into the side menu open it, and the menu button itself is pointed at first", () => {
+  const inMenu = (step) => /^#admin-(tab|btn)-/.test(step.target ?? "");
+  for (const step of ADMIN_TOUR.filter(inMenu)) {
+    assert.equal(step.menu, true, `${step.id}: ${step.target} is inside the menu, so the step must say menu: true`);
+  }
+  for (const step of ADMIN_TOUR.filter((item) => item.menu)) {
+    assert.ok(inMenu(step), `${step.id}: menu: true but the target is not in the menu`);
+  }
+  const first = ADMIN_TOUR.find((step) => step.target);
+  assert.equal(first.target, "#admin-menu-button", "the first thing shown is the Menu button");
+  assert.ok(first.advanceOnClick, "tapping the Menu button moves the guide on");
+  assert.ok(panel.includes('id="admin-menu-button"'));
+  // the panel hands the guide the way to open and close the menu
+  assert.match(panel, /onMenu=\{setMenuOpen\}/);
 });
 
 test("a first-time owner with no menu goes to the Assistente instead of the tour", () => {

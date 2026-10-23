@@ -5,6 +5,7 @@ import {
   entryScreen,
   ownerLoginUrl,
   panelUrl,
+  restaurantUrl,
   salesUrl,
   signupUrl,
   tableOrderUrl,
@@ -87,4 +88,20 @@ test("entryScreen only accepts =1, ignores the rest and lets the terms win", () 
   assert.equal(entryScreen("?sistema=1&cadastro=1"), "signup");
   assert.equal(entryScreen("?sistema=1&entrar=1"), "login");
   assert.equal(entryScreen("?sistema=0"), null);
+});
+
+test("the restaurant's own link opens its menu: only the restaurant, never a table or the panel", () => {
+  const url = new URL(restaurantUrl(ORIGIN, "/", "acaiteria-do-joao"));
+  assert.equal(url.origin, ORIGIN);
+  assert.deepEqual([...url.searchParams.keys()], ["empresa"]);
+  assert.equal(url.searchParams.get("empresa"), "acaiteria-do-joao");
+  assert.equal(wantsPanel(url.search), false);
+  // Built from the origin and the path, so what the owner has in his own address cannot leak into the link he shares.
+  assert.equal(restaurantUrl(ORIGIN, "/", "a&painel=1#x").includes("&painel=1"), false);
+});
+
+test("?sistema=1 asks for the sales page, ?entrar=1 for the sign-in, and nothing asks for no entry screen", () => {
+  assert.equal(entryScreen(""), null);
+  assert.equal(entryScreen("?sistema=1"), "sales");
+  assert.equal(entryScreen("?entrar=1"), "login");
 });

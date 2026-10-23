@@ -31,6 +31,8 @@ type Props = {
   onClose: (finished: boolean) => void;
   /** Called when a step lives in another screen/tab of the host app. */
   onNavigate?: (view: string) => void;
+  /** Called on every step: true when the step points into the host's side menu, so the host opens it (false closes it). */
+  onMenu?: (open: boolean) => void;
 };
 
 type Box = { top: number; left: number; width: number; height: number };
@@ -84,7 +86,7 @@ function prefersReducedMotion(): boolean {
  * "repetir", "pular"). On steps that point at a form field it also writes
  * what the person says into that field. The host app only supplies the steps.
  */
-export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
+export default function OnboardingGuide({ steps, onClose, onNavigate, onMenu }: Props) {
   const total = steps.length;
   const [state, setState] = useState<TourState>(startTour);
   const [box, setBox] = useState<Box | null>(null);
@@ -101,6 +103,7 @@ export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
   const listenerRef = useRef<Listener | null>(null);
   const onCloseRef = useRef(onClose);
   const onNavigateRef = useRef(onNavigate);
+  const onMenuRef = useRef(onMenu);
   const stateRef = useRef(state);
   // One spoken phrase must cause one action, even if a partial and a final result both arrive.
   const handledRef = useRef(false);
@@ -108,7 +111,8 @@ export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
   useEffect(() => {
     onCloseRef.current = onClose;
     onNavigateRef.current = onNavigate;
-  }, [onClose, onNavigate]);
+    onMenuRef.current = onMenu;
+  }, [onClose, onNavigate, onMenu]);
 
   useEffect(() => {
     stateRef.current = state;
@@ -128,11 +132,12 @@ export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
     prepareVoice();
   }, []);
 
-  // Stop talking and listening when the guide goes away.
+  // Stop talking and listening when the guide goes away, and give the side menu back.
   useEffect(() => {
     return () => {
       stopSpeaking();
       listenerRef.current?.stop();
+      onMenuRef.current?.(false);
     };
   }, []);
 
@@ -151,6 +156,7 @@ export default function OnboardingGuide({ steps, onClose, onNavigate }: Props) {
     setInfo("");
     setHeard("");
     if (step.view) onNavigateRef.current?.(step.view);
+    onMenuRef.current?.(Boolean(step.menu));
     readStep(step);
     // Only a change of step should re-read; toggling voice is handled in toggleVoice.
   }, [state.index]);

@@ -2,9 +2,11 @@ import { useEffect, useState, type FormEvent } from "react";
 import "../ui.css";
 import "../admin.css";
 import "./signup.css";
+import "../nav/nav.css";
 import { fetchCompany, fetchSignupStatus, login } from "../service/api";
 import { rememberCompany } from "../service/lastCompany";
 import { panelUrl, signupUrl } from "../service/links";
+import { entryRoleFromSearch } from "../nav/navLogic";
 
 /**
  * Entrada do dono pelo endereço principal, sem precisar saber o link do restaurante:
@@ -17,6 +19,10 @@ export default function OwnerLogin() {
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
+  // The start screen sends each function here with ?funcao=...: the screen answers the button that was tapped.
+  // The account decides what opens afterwards, so a wrong button never gives someone a screen that is not theirs.
+  const [entry] = useState(() => entryRoleFromSearch(window.location.search));
+  const isOwnerEntry = !entry || entry.key === "dono";
 
   useEffect(() => {
     let alive = true;
@@ -62,8 +68,8 @@ export default function OwnerLogin() {
         <img className="adm-login-logo" src="/logo-vem-comer.png" alt="Vem Comer" />
 
         <div>
-          <h1 className="adm-title">Área do restaurante</h1>
-          <p className="adm-lead">Entre com o e-mail e a senha do seu cadastro.</p>
+          <h1 className="adm-title">{entry?.loginTitle ?? "Área do restaurante"}</h1>
+          <p className="adm-lead">{entry?.loginLead ?? "Entre com o e-mail e a senha do seu cadastro."}</p>
         </div>
 
         <label className="field">
@@ -119,11 +125,21 @@ export default function OwnerLogin() {
           {sending ? "Entrando…" : "Entrar"}
         </button>
 
-        {signupOpen && (
+        {signupOpen && isOwnerEntry && (
           <a className="btn btn-quiet" href={signupUrl(window.location.origin, window.location.pathname)}>
             Ainda não tenho cadastro
           </a>
         )}
+
+        {!isOwnerEntry && (
+          <p className="adm-muted nav-entry-note">
+            Ainda não tem e-mail e senha? Peça ao dono ou ao gerente do restaurante para criar o seu acesso.
+          </p>
+        )}
+
+        <a className="btn btn-quiet" href={window.location.pathname || "/"}>
+          Voltar
+        </a>
       </form>
     </main>
   );
