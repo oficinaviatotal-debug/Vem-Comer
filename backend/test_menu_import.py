@@ -104,6 +104,11 @@ class ParsePriceTests(unittest.TestCase):
                       "100000", 99999.995, float("nan"), float("inf"), [], {}, "1,2,3"):
             self.assertIsNone(menu_import.parse_price(value), repr(value))
 
+    def test_an_enormous_number_is_refused_and_does_not_crash(self):
+        # Antes, arredondar 1e30 levantava InvalidOperation (erro 500 em vez de "preco invalido").
+        for value in (1e30, "1e30", "1E+400", Decimal("1E+999"), 10 ** 40):
+            self.assertIsNone(menu_import.parse_price(value), repr(value))
+
 
 class TextTests(unittest.TestCase):
     def test_clean_text(self):

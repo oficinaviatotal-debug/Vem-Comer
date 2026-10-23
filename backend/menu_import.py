@@ -77,6 +77,10 @@ def parse_price(value):
     if not price.is_finite():
         return None
 
+    # Antes de arredondar: um numero enorme (1e30) faz o proprio arredondamento falhar.
+    if price > MAX_PRICE + Decimal("0.005"):
+        return None
+
     price = price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
     if price <= 0 or price > MAX_PRICE:
