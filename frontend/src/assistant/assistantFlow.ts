@@ -16,7 +16,7 @@
 
 import { normalizeSpeech } from "../onboarding/tourEngine.ts";
 import { normalizePrice, type SpokenItems } from "./assistantLogic.ts";
-import type { SpokenMenu } from "./spokenMenu.ts";
+import { MAX_DESCRIPTION_CHARS, type SpokenMenu } from "./spokenMenu.ts";
 
 export type TemplateFull = {
   id: string;
@@ -416,6 +416,21 @@ export function renameItem(state: FlowState, categoryIndex: number, itemIndex: n
   return withItem(state, categoryIndex, itemIndex, (current) => ({ ...current, name }));
 }
 
+/** What goes inside the dish, tidied: one line, as long as the menu has room for. An empty text means "nothing". */
+export function cleanDescription(raw: string): string {
+  return raw.replace(/\s+/g, " ").trim().slice(0, MAX_DESCRIPTION_CHARS).trim();
+}
+
+/** Changes what goes inside a dish (the owner typed it, said it, or the photo read it). Empty text takes it off. */
+export function describeItem(state: FlowState, categoryIndex: number, itemIndex: number, rawText: string): FlowState {
+  const text = cleanDescription(rawText);
+  return withItem(state, categoryIndex, itemIndex, (item) => {
+    if ((item.description ?? "") === text) return item;
+    const { description: _old, ...rest } = item;
+    return text ? { ...rest, description: text } : rest;
+  });
+}
+
 /* --------------------------------------------------------------- saving */
 
 export type ImportPayload = {
@@ -456,6 +471,8 @@ export type SpokenResult = {
   added: Array<{ name: string; price: string }>;
   /** Dishes that were already on the list and got a (new) price. */
   priced: Array<{ name: string; price: string }>;
+  /** Dishes that got what goes inside ("vai ter ovo e bacon"): new ones with it said, and old ones that were told. */
+  described: Array<{ name: string; description: string }>;
 };
 
 /** The dish anywhere on the list with this name (same words, any accent or plural). */
@@ -476,6 +493,16 @@ export function addSpokenMenu(state: FlowState, menu: SpokenMenu): SpokenResult 
   let next = state;
   const added: SpokenResult["added"] = [];
   const priced: SpokenResult["priced"] = [];
+  const described: SpokenResult["described"] = [];
+
+  if (menu.loneDescription && next.lastSaid) {
+    const { categoryIndex, itemIndex } = next.lastSaid;
+    const item = next.categories[categoryIndex]?.items[itemIndex];
+    if (item && item.selected) {
+      next = withItem(next, categoryIndex, itemIndex, (current) => ({ ...current, description: menu.loneDescription }));
+      described.push({ name: item.name, description: menu.loneDescription });
+    }
+  }
 
   if (menu.lonePrice && next.lastSaid) {
     const { categoryIndex, itemIndex } = next.lastSaid;
@@ -497,7 +524,9 @@ export function addSpokenMenu(state: FlowState, menu: SpokenMenu): SpokenResult 
         ...current,
         selected: true,
         price: price || current.price,
+        ...(dish.description ? { description: dish.description } : {}),
       }));
+      if (dish.description && dish.description !== item.description) described.push({ name: item.name, description: dish.description });
       if (price && price !== item.price) priced.push({ name: item.name, price });
       else if (!item.selected) added.push({ name: item.name, price: price || item.price });
       next = { ...next, lastSaid: found };
@@ -515,13 +544,17 @@ export function addSpokenMenu(state: FlowState, menu: SpokenMenu): SpokenResult 
       categories: next.categories.map((category, c) =>
         c !== categoryIndex
           ? category
-          : { ...category, items: [...category.items, { name, selected: true, custom: true, price }] }
+          : {
+              ...category,
+              items: [...category.items, { name, selected: true, custom: true, price, ...(dish.description ? { description: dish.description } : {}) }],
+            }
       ),
       lastSaid: { categoryIndex, itemIndex },
     };
     added.push({ name, price });
+    if (dish.description) described.push({ name, description: dish.description });
   }
-  return { state: next, added, priced };
+  return { state: next, added, priced, described };
 }
 
 /** "Tira a coca": takes the dish off the list. Returns the same state when no dish has that name. */

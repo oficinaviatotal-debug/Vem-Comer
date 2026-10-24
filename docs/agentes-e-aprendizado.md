@@ -169,3 +169,55 @@ sem enviar nada) e o aviso no celular do GD quando chegar um cartão.
 3. ~~Região e tipos de negócio~~ **Respondido em 15/10, 08:42: Rio Grande do Norte inteiro, todo tipo de operação de comida e hotéis.**
 4. Domínio e e-mail de envio (itens já pendentes).
 5. Advogado para a revisão do e-mail para empresas.
+
+## 10. O elenco dos dez agentes (pedido do GD, 22/10/2026, 11:55)
+
+O GD lembrou, no meio do trabalho: **"Não esquecer dos agentes de Marketing, retenção, prospecção, estratégia, tecnologia e
+engenharia, jurista, vendas, campanhas, humanidade, criação de riquezas."** (item 83 de `docs/requisitos-do-dono-vem-comer.md`).
+Os agentes da parte "Agent organization" do `docs/LIVING_SYSTEM_SPINE.md` (orquestrador, olheiro, tecnologia, segurança, conversão, operação, margem,
+aprendizado) ficam como a **estrutura**; estes dez são o **elenco com nome que o GD quer ver**. Todos seguem o mesmo laço da
+seção 3, o mesmo registro de ações e a mesma fila de aprovação. **Nenhum roda ainda.** Falta a chave de IA no servidor (instalada
+por ele, por script, nunca no chat), o executor e o botão de parar.
+
+| Agente | Cuida de | O que prepara (nunca age sozinho) | Dados que usa | Quem aprova | O que já existe |
+|---|---|---|---|---|---|
+| **Estratégia** | Para onde ir primeiro | As 3 prioridades da semana; desempata quando dois agentes querem coisas contrárias (ex.: campanha que come a margem) | Placar dos outros nove, `insights.py` | GD (nível 3) | Fila "Aprovações"; o laço |
+| **Marketing** | Ser encontrado | Página pública do restaurante, texto de Google e Instagram, cartaz com o QR, foto melhor | Cardápio, fotos, avaliações do próprio restaurante | Dono, antes de publicar (nível 2) | Foto melhorada, logomarca, QR de mesa; página pública ainda falta |
+| **Prospecção** | Achar restaurantes e vagas | Lista do RN (CNPJ, CNAE 55 e 56) com fonte e data, e a primeira mensagem | Cadastro público, site da empresa | **GD, cada envio** nos primeiros 30 dias | A trava `outreach.py`; nada envia |
+| **Vendas** | Fechar | Resposta a quem se interessou, proposta, teste grátis até plano; dentro do restaurante, a sugestão de venda no prato (sem empurrar bebida alcoólica, nunca para menor) | Pedidos, cardápio, plano | Preço: dono (nível 2). Plano da plataforma: GD | `subscription.py`; sugestão de venda ainda falta |
+| **Campanhas** | Trazer o cliente de volta com promoção | Cupom, horário parado, aniversário, só para quem **consentiu** e com como sair | Base de clientes com consentimento | Dono, um toque (nível 2) | `consent.py`; nada envia |
+| **Retenção** | Não perder ninguém | Restaurante que esfriou (sem pedido, sem foto, cardápio velho), cliente que sumiu, candidato sem resposta | Pedidos, avaliações (rostinho), `feedback.py` | Aviso interno: sistema (nível 1). Mensagem a cliente: dono (nível 2) | `insights.py`, `feedback.py` |
+| **Tecnologia e engenharia** | Produto rápido, seguro e simples | Melhoria, correção de segurança, ideia de ferramenta nova; sempre como pull request com testes e a volta pronta | Testes, erros, desempenho, benchmark | **GD, com o "pode"**; nunca mexe em produção sozinho | O trabalho que já faço; CI com cinco verificações |
+| **Jurista** | Cumprir a lei | LGPD, termos, regras de bebida alcoólica, regras do trabalho (Vem Trabalhar), texto legal; marca "precisa do advogado" | `compliance/check.py`, registro de obrigações | GD **e advogado**. **Não substitui advogado** | Registro de obrigações e teste de conformidade |
+| **Humanidade** | As pessoas | Linguagem simples, toque grande, voz, atenção a quem lê pouco; avisa quando o sistema está pesando para alguém (fila, chamado sem resposta, cozinha sobrecarregada); no Vem Trabalhar, candidato nunca fica sem resposta | Chamados, filas, avaliações | Nível 1 para texto e ordem; o resto, quem for o dono do assunto | As regras de linguagem simples, os testes de toque e de leitura por voz |
+| **Criação de riquezas** | Sobrar mais dinheiro | Margem, CMV, preço do prato, desperdício, ticket médio, caixa da semana; para o ecossistema, receita por restaurante contra custo de IA | `costing.py`, `costs_view.py`, `insights.py` | Preço: dono (nível 2). Plano e custo da plataforma: GD | Custos e CMV do restaurante |
+
+**Regras que valem para os dez**
+
+1. **O dono do restaurante não vê "dez agentes".** Vê **uma voz** (a bolinha) e **"Hoje: 3 coisas"**, em frase curta. Os agentes
+   trabalham por trás. Quem vê o nome de cada agente é o GD, em cada cartão da fila de aprovação. É a regra de 22/10 (menos
+   escrita, menos dado, menos informação).
+2. **Estratégia arbitra.** Dois agentes nunca mandam ao dono ao mesmo tempo sobre o mesmo assunto.
+3. **Jurista e Humanidade podem barrar** uma ação antes de ela chegar à fila (proposta minha; o GD decide).
+4. **Teto de gasto por agente e por restaurante, botão de parar por agente, manual versionado** (seção 4).
+5. **Criação de riquezas é sobre o negócio** (margem, caixa, preço, receita). Não faz recomendação de investimento pessoal de
+   ninguém e não mexe em dinheiro: Pix e cobrança continuam só pelo que já existe.
+
+**O que entendi e quero que o GD confirme.** "Humanidade": entendi como o agente que cuida das **pessoas** (equipe, cliente,
+candidato, quem lê pouco) e do **respeito** no tratamento. "Criação de riquezas": entendi como **gerar mais lucro e caixa** para o
+restaurante e para o ecossistema. Se ele quis dizer outra coisa, ajusto.
+
+**Ordem que proponho (pelos dados que já existem):** 1) Criação de riquezas e Retenção, porque `insights.py`, custos e
+avaliações já existem; 2) Jurista e Tecnologia, que já rodam como trabalho meu; 3) Humanidade, que já vale como regra de toda tela
+nova; 4) Prospecção, depois do domínio, de SPF, DKIM e DMARC e do advogado; 5) Marketing, Vendas e Campanhas, depois do consentimento
+dos clientes e do envio; 6) Estratégia, quando houver placar de verdade para ela ler.
+
+## 11. O que a diretriz estratégica de 22/10/2026 acrescenta a estes agentes
+
+Resumo; o detalhe está em `docs/diretriz-estrategica.md`.
+
+1. **Princípio de execução, virando regra do cartão de aprovação:** cada campanha tem **objetivo**, cada recomendação **fundamento** (fonte e data, já exigido), cada automação **limite** (teto e botão de parar),
+   cada melhoria é **testada** (pull request com teste) e cada resultado é **medido** (`finish`). Hoje o cartão não tem os campos "objetivo", "como vou medir" e "limite": entram junto do primeiro agente.
+2. **Metas mensais:** quem fixa e eleva é o GD (nível 3). Nenhum agente eleva a própria meta, e meta de volume só vale se a qualidade não piorar.
+3. **Desconto e promoção:** só com a margem à vista, calculada pelo custo cadastrado; sem custo, o agente pede o custo e não sugere desconto.
+4. **Mensagem ao cliente:** um teto por pessoa por dia somando todos os restaurantes, aceite separado para aviso do pedido e para ofertas, saída com um toque.

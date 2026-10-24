@@ -1,0 +1,6031 @@
+/*
+ * Visual novo do Vem (feito do zero, em 21/10/2026, a partir da prancha "Templates principais" do GD).
+ * Tudo aqui usa o prefixo nv- e não depende de styles.css, ui.css nem admin.css: o antigo sai de cena tela por tela.
+ *
+ * Linguagem da prancha: fundo branco, cartões bem arredondados, verde-floresta e laranja-brasa, títulos grossos e
+ * redondos, azulejos pêssego para categorias, promoção em vermelho-brasa com botão amarelo.
+ * Um só elemento de personalidade: a bolinha de voz (nv-orb), presente em toda tela ("voz primeiro").
+ *
+ * Profundidade (pedido do GD em 22/10/2026: "dar impressão de 3D" e "tudo clicável"). A luz vem de cima.
+ * Regra única, que o desenho inteiro obedece: o que tem borda grossa embaixo, brilho em cima e afunda quando o
+ * dedo aperta, TOCA. O que só informa (pílulas, tempo de espera, painéis) fica liso ou com sombra macia, sem borda.
+ * Assim ninguém precisa aprender o que é botão: o desenho mostra.
+ */
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/fonts/BricolageGrotesque-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("/fonts/InstrumentSans-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("/fonts/InstrumentSans-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+.nv-root {
+  /* Cor (texto sobre fundo claro passa de 4,5:1) */
+  --nv-ink: #1b4332;
+  --nv-green: #2e7032;
+  --nv-green-soft: #e6f1e3;
+  --nv-fire: #ff6f00;
+  /* O laranja de texto sobre o fundo pêssego: #c74700 dava 4,27:1 (o mínimo é 4,5). */
+  --nv-fire-text: #b84200;
+  /* O laranja do texto pequeno sobre o fundo pêssego: o mais claro que ainda passa de 4,5:1. */
+  --nv-fire-deep: #a83c00;
+  --nv-sun: #ffc83a;
+  --nv-paper: #ffffff;
+  --nv-peach: #fdeedf;
+  /* Texto de apoio: sobre as caixas de cor clara o #566a5f dava 4,37:1; este passa de 4,5:1. */
+  --nv-muted: #4d6157;
+  --nv-line: rgba(27, 67, 50, 0.12);
+  --nv-ember-a: #7c1d0c;
+  --nv-ember-b: #d2470f;
+  --nv-alert: #b42318;
+  --nv-alert-soft: #fde8e4;
+  --nv-brand-comer: #c74700;
+  --nv-orb-hi: #ff9a3d;
+  --nv-orb-lo: #e05a00;
+  --nv-ring: rgba(255, 111, 0, 0.35);
+  --nv-glow: rgba(255, 111, 0, 0.28);
+
+  /* Forma */
+  --nv-r-sm: 12px;
+  --nv-r-md: 18px;
+  --nv-r-lg: 26px;
+  --nv-shadow: 0 1px 2px rgba(27, 67, 50, 0.06), 0 10px 26px rgba(27, 67, 50, 0.09);
+  --nv-shadow-lift: 0 2px 4px rgba(27, 67, 50, 0.1), 0 16px 34px var(--nv-glow);
+
+  /* Profundidade: brilho em cima, espessura embaixo (a "borda" de cada cor) e sombra no chão. */
+  --nv-depth: 5px;
+  --nv-hi: inset 0 2px 0 rgba(255, 255, 255, 0.5);
+  --nv-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 52%);
+  --nv-green-edge: #1b4a1f;
+  --nv-fire-edge: #b34700;
+  --nv-sun-edge: #cf9a00;
+  --nv-ink-edge: #0a2218;
+  --nv-peach-hi: #fff6ea;
+  --nv-peach-edge: #efcfa8;
+  --nv-slab-edge: #e0dbcc;
+  --nv-floor: rgba(27, 67, 50, 0.3);
+  /* Cartão que se toca: grosso embaixo. Painel que só informa: sombra macia, sem borda. */
+  --nv-card-3d: inset 0 2px 0 #fff, 0 4px 0 var(--nv-slab-edge), 0 18px 22px -12px var(--nv-floor);
+  --nv-card-3d-pressed: inset 0 2px 0 #fff, 0 1px 0 var(--nv-slab-edge), 0 4px 8px -4px var(--nv-floor);
+  --nv-panel-3d: inset 0 1.5px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(27, 67, 50, 0.08), 0 14px 24px -12px var(--nv-floor);
+
+  /* Letra */
+  --nv-display: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+  --nv-ui: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  margin: 0 auto;
+  max-width: 480px;
+  min-height: 100vh;
+  background: var(--nv-paper);
+  color: var(--nv-ink);
+  font-family: var(--nv-ui);
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nv-root *,
+.nv-root *::before,
+.nv-root *::after {
+  box-sizing: border-box;
+}
+
+/* :where() zera o peso da regra: cada peça (nv-btn, nv-bag, nv-orb...) decide a própria cor e o próprio peso. */
+.nv-root :where(button) {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Todo toque responde: a peça afunda um pouco quando o dedo aperta. Quem pediu menos movimento recebe a mudança sem animação. */
+.nv-root :where(button, a) {
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.09s ease-out,
+    box-shadow 0.09s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-root :where(button, a) {
+    transition: none;
+  }
+}
+
+/* Toque estendido: o botão principal de um cartão cobre o cartão inteiro, então tocar em qualquer lugar dele vale.
+   Os botões de dentro (mais, menos, fechar) ficam por cima com position: relative e z-index: 1. */
+.nv-root .nv-hit {
+  position: static;
+}
+
+.nv-hit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+.nv-root :focus-visible {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 2px;
+}
+
+.nv-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 14px 16px 132px;
+}
+
+/* ---------- Topo ---------- */
+
+.nv-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nv-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, #7c3aed, #4c1d95);
+  font-size: 28px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), 0 4px 0 rgba(27, 67, 50, 0.16), 0 12px 16px -8px var(--nv-floor);
+}
+
+.nv-top-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-name {
+  margin: 0;
+  font: 700 24px/1.05 var(--nv-display);
+  letter-spacing: -0.01em;
+}
+
+.nv-sub {
+  margin: 2px 0 0;
+  color: var(--nv-muted);
+  font-size: 14px;
+}
+
+.nv-icon-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff, #f1ede4);
+  color: var(--nv-ink);
+  box-shadow: var(--nv-hi), 0 4px 0 rgba(27, 67, 50, 0.16), 0 10px 14px -8px var(--nv-floor);
+}
+
+.nv-icon-btn:active {
+  transform: translateY(3px);
+  box-shadow: var(--nv-hi), 0 1px 0 rgba(27, 67, 50, 0.16), 0 2px 4px var(--nv-floor);
+}
+
+.nv-icon-btn svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* ---------- Informações em pílulas ---------- */
+
+.nv-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nv-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.nv-fact svg {
+  width: 17px;
+  height: 17px;
+  color: var(--nv-green);
+}
+
+.nv-fact.is-open {
+  background: var(--nv-green);
+  color: #fff;
+}
+
+.nv-fact.is-open svg {
+  color: #fff;
+}
+
+/* ---------- Busca ---------- */
+
+.nv-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #f4f1ea;
+  box-shadow: inset 0 3px 6px rgba(27, 67, 50, 0.16), inset 0 -2px 0 #fff;
+  color: var(--nv-muted);
+}
+
+.nv-search svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+/* ---------- Categorias: azulejos pêssego ---------- */
+
+.nv-cats {
+  display: flex;
+  gap: 12px;
+  margin: 0 -16px;
+  padding: 2px 16px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nv-cat {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 78px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nv-cat-tile {
+  display: grid;
+  place-items: center;
+  width: 78px;
+  height: 78px;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, var(--nv-peach-hi), var(--nv-peach));
+  box-shadow: var(--nv-hi), 0 var(--nv-depth) 0 var(--nv-peach-edge), 0 16px 18px -10px var(--nv-floor);
+  font-size: 38px;
+  line-height: 1;
+}
+
+.nv-cat:active .nv-cat-tile {
+  transform: translateY(4px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-peach-edge), 0 2px 4px var(--nv-floor);
+}
+
+.nv-cat.is-on .nv-cat-tile {
+  background: var(--nv-shine), var(--nv-fire);
+  box-shadow: var(--nv-hi), 0 var(--nv-depth) 0 var(--nv-fire-edge), 0 16px 20px -8px var(--nv-glow);
+}
+
+/* ---------- Títulos de seção ---------- */
+
+.nv-h2-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: -6px;
+}
+
+.nv-h2 {
+  margin: 0;
+  font: 700 22px/1.1 var(--nv-display);
+  letter-spacing: -0.01em;
+}
+
+.nv-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--nv-fire-text);
+  font-weight: 700;
+}
+
+/* ---------- Promoção ---------- */
+
+.nv-promo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 188px;
+  padding: 22px 20px;
+  overflow: hidden;
+  border-radius: var(--nv-r-lg);
+  background:
+    radial-gradient(circle at 82% 55%, rgba(255, 200, 58, 0.55), transparent 46%),
+    linear-gradient(120deg, var(--nv-ember-a), var(--nv-ember-b));
+  color: #fff;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 6px 0 #5a1306, 0 22px 28px -12px rgba(124, 29, 12, 0.6);
+}
+
+.nv-promo:has(.nv-hit:active) {
+  transform: translateY(4px);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 2px 0 #5a1306, 0 8px 12px -6px rgba(124, 29, 12, 0.6);
+}
+
+.nv-promo h3 {
+  margin: 0;
+  max-width: 62%;
+  font: 700 28px/1.02 var(--nv-display);
+}
+
+.nv-promo-price {
+  margin: 6px 0 0;
+  color: var(--nv-sun);
+  font: 700 30px/1 var(--nv-display);
+}
+
+.nv-promo-note {
+  margin: 4px 0 0;
+  max-width: 60%;
+  font-size: 14px;
+  opacity: 0.92;
+}
+
+.nv-promo-art {
+  position: absolute;
+  right: -6px;
+  top: 14px;
+  font-size: 104px;
+  line-height: 1;
+  filter: drop-shadow(0 14px 12px rgba(0, 0, 0, 0.45));
+  transform: rotate(-8deg);
+}
+
+.nv-btn {
+  --nv-edge: var(--nv-sun-edge);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--nv-shine), var(--nv-sun);
+  color: var(--nv-ink);
+  font-weight: 700;
+  font-size: 17px;
+  box-shadow: var(--nv-hi), 0 var(--nv-depth) 0 var(--nv-edge), 0 calc(var(--nv-depth) + 9px) 16px -6px var(--nv-floor);
+}
+
+/* Quem é o toque estendido (nv-hit) não se mexe sozinho: se se mexesse, a área de toque encolheria no meio do aperto. O cartão afunda por ele. */
+.nv-btn:active:not(:disabled):not(.nv-hit) {
+  transform: translateY(calc(var(--nv-depth) - 1px));
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-edge), 0 2px 5px var(--nv-floor);
+}
+
+.nv-promo .nv-btn {
+  align-self: flex-start;
+}
+
+.nv-btn.is-green {
+  --nv-edge: var(--nv-green-edge);
+  background: var(--nv-shine), var(--nv-green);
+  color: #fff;
+}
+
+.nv-btn.is-fire {
+  --nv-edge: var(--nv-fire-edge);
+  background: var(--nv-shine), var(--nv-fire);
+  color: #1b1200;
+}
+
+.nv-btn.is-ghost {
+  --nv-edge: rgba(27, 67, 50, 0.2);
+  background: linear-gradient(180deg, #fff, #f3efe6);
+}
+
+.nv-btn.is-block {
+  width: 100%;
+}
+
+.nv-btn svg {
+  flex: none;
+  width: 24px;
+  height: 24px;
+}
+
+/* ---------- Pratos: 2 por linha, o cartão inteiro é o botão de pedir ---------- */
+
+.nv-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 14px;
+}
+
+.nv-dish {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 8px 12px;
+  border: 0;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-card-3d);
+  text-align: left;
+}
+
+.nv-dish:has(.nv-dish-hit:active) {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+.nv-dish:has(.nv-dish-hit:focus-visible) {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 3px;
+}
+
+/* Prato que não se pede agora (esgotado, restaurante fechado): sem espessura, porque não se toca. */
+.nv-dish.is-off {
+  box-shadow: inset 0 1.5px 0 #fff, 0 1px 2px rgba(27, 67, 50, 0.1);
+  background: #f7f4ee;
+}
+
+/* O botão de pedir tem o nome do prato por dentro e cobre o cartão inteiro por fora. */
+.nv-dish-hit {
+  position: static;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+.nv-dish-hit:focus-visible {
+  outline: none;
+}
+
+.nv-dish-hit::after {
+  border-radius: var(--nv-r-lg);
+}
+
+.nv-dish-box {
+  position: relative;
+}
+
+.nv-photo {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--nv-r-md);
+  background: radial-gradient(circle at 35% 30%, #fff3dc, #f7d9b1);
+  box-shadow: inset 0 -8px 14px -8px rgba(120, 70, 20, 0.35);
+  font-size: 46px;
+}
+
+.nv-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nv-add {
+  position: absolute;
+  right: 10px;
+  bottom: 12px;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 26%, var(--nv-orb-hi), var(--nv-fire) 58%, var(--nv-orb-lo));
+  color: #fff;
+  pointer-events: none;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.55),
+    0 4px 0 var(--nv-fire-edge),
+    0 12px 14px -4px rgba(0, 0, 0, 0.35);
+}
+
+.nv-dish:has(.nv-dish-hit:active) .nv-add {
+  transform: translateY(3px);
+}
+
+.nv-add svg {
+  width: 20px;
+  height: 20px;
+}
+
+.nv-dish-name {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.nv-dish-price {
+  color: var(--nv-green);
+  font: 700 16px/1 var(--nv-display);
+}
+
+/* ---------- Barra de baixo e bolinha de voz ---------- */
+
+.nv-dock {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 480px);
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--nv-line);
+  box-shadow: 0 -14px 24px -16px var(--nv-floor);
+}
+
+.nv-bag {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  --nv-edge: var(--nv-green-edge);
+  min-height: 64px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--nv-shine), var(--nv-green);
+  color: #fff;
+  font-weight: 700;
+  font-size: 17px;
+  box-shadow: var(--nv-hi), 0 6px 0 var(--nv-edge), 0 16px 18px -8px var(--nv-floor);
+}
+
+.nv-bag:active:not(:disabled) {
+  transform: translateY(5px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-edge), 0 3px 6px var(--nv-floor);
+}
+
+.nv-bag small {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+.nv-bag strong {
+  font: 700 22px/1 var(--nv-display);
+}
+
+.nv-orb {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 26%, var(--nv-orb-hi), var(--nv-fire) 52%, var(--nv-orb-lo));
+  color: #fff;
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -6px 10px rgba(110, 30, 0, 0.35),
+    0 6px 0 var(--nv-fire-edge),
+    0 18px 24px -6px var(--nv-glow);
+}
+
+.nv-orb:active {
+  transform: translateY(5px);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -6px 10px rgba(110, 30, 0, 0.35),
+    0 1px 0 var(--nv-fire-edge),
+    0 4px 8px var(--nv-glow);
+}
+
+.nv-orb svg {
+  width: 30px;
+  height: 30px;
+}
+
+.nv-orb::before,
+.nv-orb::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border: 2px solid var(--nv-ring);
+  border-radius: 50%;
+  animation: nv-pulse 2.8s ease-out infinite;
+}
+
+.nv-orb::after {
+  animation-delay: 1.4s;
+}
+
+/* Ouvindo: a bolinha escurece e o ícone pulsa (e o rótulo muda para "Parar de ouvir"): não depende só da cor. */
+.nv-orb.is-listening {
+  background: radial-gradient(circle at 32% 26%, #2f6b52, var(--nv-ink) 60%, var(--nv-ink-edge));
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -6px 10px rgba(0, 0, 0, 0.35),
+    0 6px 0 var(--nv-ink-edge),
+    0 18px 24px -6px var(--nv-glow);
+}
+
+.nv-orb.is-listening svg {
+  animation: nv-beat 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-orb.is-listening svg {
+    animation: none;
+  }
+}
+
+@keyframes nv-pulse {
+  from {
+    transform: scale(0.88);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.32);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-orb::before,
+  .nv-orb::after {
+    animation: none;
+  }
+}
+
+/* Só a bolinha de voz, sem faixa: nas telas de trabalho (Hoje, Cozinha) a faixa só roubaria espaço. */
+.nv-dock.is-float {
+  justify-content: flex-end;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+.nv-dock.is-float > * {
+  pointer-events: auto;
+}
+
+/* ---------- Balãozinho cruzado (Vem Trabalhar) ---------- */
+
+.nv-cross {
+  position: fixed;
+  left: 50%;
+  bottom: 96px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(calc(100% - 32px), 448px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.nv-cross-bubble {
+  --nv-edge: #0a2f8a;
+  position: relative;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 4px 0 14px;
+  border-radius: 999px;
+  background: var(--nv-shine), #0f4bd1;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: var(--nv-hi), 0 4px 0 var(--nv-edge), 0 14px 18px -8px rgba(11, 42, 111, 0.55);
+}
+
+.nv-cross-bubble:has(.nv-hit:active) {
+  transform: translateY(3px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-edge), 0 3px 6px rgba(11, 42, 111, 0.4);
+}
+
+.nv-cross-bubble svg {
+  width: 18px;
+  height: 18px;
+}
+
+.nv-cross-close {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.nv-cross-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---------- Hoje (dono) ---------- */
+
+.nv-hello {
+  margin: 0;
+  font: 700 30px/1.05 var(--nv-display);
+  letter-spacing: -0.015em;
+}
+
+.nv-date {
+  margin: 4px 0 0;
+  color: var(--nv-muted);
+}
+
+.nv-now {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 20px 20px;
+  border-radius: var(--nv-r-lg);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(130, 205, 150, 0.28), transparent 46%),
+    linear-gradient(160deg, #1f5039, #153628);
+  color: #fff;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.16), 0 1px 2px rgba(0, 0, 0, 0.2), 0 22px 30px -14px rgba(21, 54, 40, 0.75);
+}
+
+.nv-now-big {
+  margin: 0;
+  font: 700 46px/0.95 var(--nv-display);
+  letter-spacing: -0.02em;
+}
+
+.nv-now-big span {
+  display: block;
+  margin-top: 6px;
+  font: 400 17px/1.25 var(--nv-ui);
+  letter-spacing: 0;
+  opacity: 0.92;
+}
+
+.nv-now-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.nv-now-cell {
+  min-width: 0;
+  overflow-wrap: anywhere; /* letra muito grande: a palavra quebra em vez de empurrar a tela */
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--nv-r-sm);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  text-align: left;
+}
+
+/* Quando leva a outra tela, vira tecla: sobe, tem espessura e afunda no toque. Quando só informa, fica lisa. */
+button.nv-now-cell {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.1));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.35), 0 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+button.nv-now-cell:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.35), 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.nv-now-cell b {
+  display: block;
+  font: 700 26px/1 var(--nv-display);
+}
+
+.nv-now-cell span {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.2;
+  opacity: 0.92;
+}
+
+.nv-todo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-todo li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px 14px 16px;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-todo li.is-call {
+  background: var(--nv-shine), var(--nv-sun);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(27, 67, 50, 0.1), 0 14px 24px -12px var(--nv-floor);
+}
+
+/* O ícone do aviso só informa: disco liso, sem espessura (peça que sobe é peça que toca). */
+.nv-todo-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+}
+
+.nv-todo li.is-call .nv-todo-icon {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.nv-todo-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.nv-todo-text {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+.nv-todo-text strong {
+  display: block;
+  font: 700 17px/1.2 var(--nv-display);
+}
+
+.nv-todo-text span {
+  font-size: 14px;
+  color: var(--nv-muted);
+}
+
+.nv-todo li.is-call .nv-todo-text span {
+  color: var(--nv-ink);
+}
+
+.nv-todo .nv-btn {
+  min-height: 48px;
+  padding: 0 18px;
+  font-size: 16px;
+}
+
+.nv-sales {
+  position: relative;
+  padding: 18px 18px 14px;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, var(--nv-peach-hi), var(--nv-peach));
+  box-shadow: var(--nv-hi), 0 var(--nv-depth) 0 var(--nv-peach-edge), 0 18px 22px -12px var(--nv-floor);
+}
+
+.nv-sales:has(.nv-hit:active) {
+  transform: translateY(4px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-peach-edge), 0 4px 8px -4px var(--nv-floor);
+}
+
+.nv-sales-total {
+  margin: 0;
+  font: 700 36px/1 var(--nv-display);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere; /* letra muito grande: quebra em vez de passar da tela */
+}
+
+.nv-sales-note {
+  margin: 6px 0 14px;
+  color: var(--nv-muted);
+  font-size: 15px;
+}
+
+.nv-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 64px;
+}
+
+.nv-bars i {
+  flex: 1;
+  min-height: 4px;
+  border-radius: 6px 6px 3px 3px;
+  background: linear-gradient(180deg, rgba(46, 112, 50, 0.42), rgba(46, 112, 50, 0.26));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.5), 0 2px 0 rgba(46, 112, 50, 0.22);
+}
+
+.nv-bars i.is-now {
+  background: var(--nv-shine), var(--nv-fire);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.5), 0 2px 0 var(--nv-fire-edge);
+}
+
+.nv-bars-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  color: var(--nv-muted);
+  font-size: 12px;
+}
+
+.nv-quick {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nv-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 72px;
+  padding: 0 12px;
+  overflow-wrap: anywhere;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, #fff, #f6f2ea);
+  box-shadow: var(--nv-card-3d);
+  font: 700 17px/1.1 var(--nv-display);
+  text-align: left;
+}
+
+.nv-quick-btn:active {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+.nv-quick-btn svg {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  color: var(--nv-fire-text);
+}
+
+/* ---------- Cozinha ---------- */
+
+.nv-tabs {
+  display: grid;
+  /* Cada aba pede espaço em "em" (cresce com a letra): com a letra bem grande as abas descem para outra linha. */
+  grid-template-columns: repeat(auto-fit, minmax(max(3.3em, 30%), 1fr));
+  gap: 6px;
+  padding: 5px;
+  border-radius: var(--nv-r-lg);
+  background: var(--nv-green-soft);
+  box-shadow: inset 0 3px 6px rgba(27, 67, 50, 0.16), inset 0 -2px 0 #fff;
+}
+
+.nv-tab {
+  /* Com letra grande a conta (o número) desce para baixo do nome em vez de empurrar a aba para fora da tela. */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+  gap: 2px 4px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-weight: 700;
+}
+
+.nv-tab b {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(27, 67, 50, 0.12);
+}
+
+.nv-tab:active {
+  transform: translateY(2px);
+}
+
+.nv-tab.is-on {
+  background: var(--nv-shine), var(--nv-ink);
+  color: #fff;
+  box-shadow: var(--nv-hi), 0 3px 0 var(--nv-ink-edge), 0 8px 10px -4px var(--nv-floor);
+}
+
+.nv-tab.is-on b {
+  background: var(--nv-fire);
+  color: #1b1200;
+}
+
+.nv-tickets {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A comanda: ficha branca com a ponta serrilhada embaixo, como o papel que já existe na cozinha. */
+.nv-ticket {
+  position: relative;
+  padding: 16px 16px 24px;
+  border-radius: var(--nv-r-md) var(--nv-r-md) 0 0;
+  background: linear-gradient(180deg, #fff, #fcfaf6);
+  border: 1.5px solid var(--nv-line);
+  border-bottom: 0;
+  /* O filtro segue a ponta serrilhada; uma sombra de caixa ignoraria os dentes. */
+  filter: drop-shadow(0 1px 0 rgba(27, 67, 50, 0.1)) drop-shadow(0 14px 10px rgba(27, 67, 50, 0.16));
+  --nv-tape: var(--nv-green);
+}
+
+.nv-ticket::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 6px;
+  border-radius: var(--nv-r-md) var(--nv-r-md) 0 0;
+  background: var(--nv-tape);
+}
+
+.nv-ticket::after {
+  content: "";
+  position: absolute;
+  left: -1.5px;
+  right: -1.5px;
+  bottom: -10px;
+  height: 10px;
+  background:
+    linear-gradient(135deg, var(--nv-paper) 50%, transparent 50%) 0 0 / 14px 10px repeat-x,
+    linear-gradient(225deg, var(--nv-paper) 50%, transparent 50%) 0 0 / 14px 10px repeat-x;
+}
+
+.nv-ticket.is-late {
+  --nv-tape: var(--nv-alert);
+}
+
+.nv-ticket.is-warn {
+  --nv-tape: var(--nv-sun);
+}
+
+.nv-ticket-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nv-ticket-num {
+  margin: 0;
+  font: 700 30px/1 var(--nv-display);
+}
+
+.nv-ticket-where {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nv-wait {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  font-weight: 700;
+}
+
+.nv-wait svg {
+  width: 16px;
+  height: 16px;
+}
+
+.nv-ticket.is-warn .nv-wait {
+  background: var(--nv-sun);
+}
+
+.nv-ticket.is-late .nv-wait {
+  background: var(--nv-alert);
+  color: #fff;
+}
+
+.nv-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 18px;
+}
+
+.nv-lines b {
+  display: inline-block;
+  min-width: 34px;
+  color: var(--nv-fire-text);
+  font: 700 20px/1 var(--nv-display);
+}
+
+.nv-lines small {
+  display: block;
+  margin-left: 34px;
+  color: var(--nv-muted);
+  font-size: 14px;
+}
+
+.nv-note {
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-alert-soft);
+  color: var(--nv-alert);
+  font-weight: 700;
+}
+
+.nv-ticket .nv-btn {
+  margin-top: 14px;
+  min-height: 60px;
+  font-size: 19px;
+}
+
+/* ---------- Tema do Vem Trabalhar: a mesma casa, em azul ---------- */
+
+.nv-work {
+  --nv-ink: #0b2a6f;
+  --nv-green: #0f4bd1;
+  --nv-green-soft: #e6eeff;
+  /* Botão azul com letra branca e brilho em cima: #1f63ff dava 4,2:1 no ponto mais claro; este passa de 4,5:1. */
+  --nv-fire: #1650e0;
+  --nv-fire-text: #0f4bd1;
+  --nv-peach: #eaf1ff;
+  --nv-muted: #4b5f86;
+  --nv-line: rgba(11, 42, 111, 0.13);
+  --nv-orb-hi: #7aa9ff;
+  --nv-orb-lo: #0b3fb8;
+  --nv-ring: rgba(31, 99, 255, 0.35);
+  --nv-glow: rgba(31, 99, 255, 0.3);
+  --nv-shadow: 0 1px 2px rgba(11, 42, 111, 0.07), 0 10px 26px rgba(11, 42, 111, 0.1);
+  --nv-green-edge: #0a2f8a;
+  --nv-fire-edge: #1243b8;
+  --nv-ink-edge: #061a47;
+  --nv-peach-hi: #f6f9ff;
+  --nv-peach-edge: #c4d6f7;
+  --nv-slab-edge: #cbd7ef;
+  --nv-floor: rgba(11, 42, 111, 0.32);
+}
+
+.nv-work .nv-btn.is-fire {
+  color: #fff;
+}
+
+.nv-tabs.is-two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.nv-find {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbfcff);
+  box-shadow: var(--nv-panel-3d);
+}
+
+/* Campo de escrever: afundado, o oposto do botão. */
+.nv-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 16px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-peach);
+  box-shadow: inset 0 3px 6px rgba(11, 42, 111, 0.14), inset 0 -2px 0 #fff;
+  color: var(--nv-muted);
+}
+
+.nv-field input {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  border: 0;
+  background: none;
+  color: var(--nv-ink);
+  font: 500 17px/1 var(--nv-ui);
+}
+
+.nv-field input::placeholder {
+  color: var(--nv-muted);
+}
+
+.nv-field input:focus {
+  outline: none;
+}
+
+.nv-field:focus-within {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 2px;
+}
+
+/* Campo de várias linhas (escrever os pratos, o que vai dentro): o mesmo vão afundado, com a letra do campo comum. */
+.nv-field.is-area {
+  align-items: stretch;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.nv-field.is-area textarea {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 0;
+  border: 0;
+  background: none;
+  color: var(--nv-ink);
+  font: 500 17px/1.35 var(--nv-ui);
+  resize: none;
+}
+
+.nv-field.is-area textarea::placeholder {
+  color: var(--nv-muted);
+}
+
+.nv-field.is-area textarea:focus {
+  outline: none;
+}
+
+.nv-field svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  color: var(--nv-green);
+}
+
+.nv-cat-tile svg {
+  width: 36px;
+  height: 36px;
+  color: var(--nv-green);
+}
+
+.nv-jobs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-job {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 4px 14px;
+  padding: 16px;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbfcff);
+  box-shadow: var(--nv-card-3d);
+}
+
+.nv-job:has(.nv-hit:active) {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+.nv-job:has(.nv-hit:focus-visible) {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 3px;
+}
+
+.nv-job .nv-hit:focus-visible {
+  outline: none;
+}
+
+.nv-job .nv-hit::after {
+  border-radius: var(--nv-r-lg);
+}
+
+.nv-job-badge {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-shine), var(--nv-green);
+  color: #fff;
+  font: 700 24px/1 var(--nv-display);
+  box-shadow: var(--nv-hi), 0 3px 0 var(--nv-green-edge);
+}
+
+.nv-job h3 {
+  margin: 0;
+  font: 700 19px/1.15 var(--nv-display);
+}
+
+.nv-job-company {
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 15px;
+}
+
+.nv-job-chips {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.nv-job-chips span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.nv-job-chips svg {
+  width: 15px;
+  height: 15px;
+  color: var(--nv-green);
+}
+
+.nv-job-foot {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+  color: var(--nv-muted);
+  font-size: 14px;
+}
+
+.nv-job-foot .nv-btn {
+  min-height: 48px;
+  padding: 0 20px;
+  font-size: 16px;
+}
+
+.nv-cross-bubble.is-food {
+  --nv-edge: #7d2f00;
+  /* Letra branca de 14 px: com o brilho em cima, #c74700 dava 4,2:1; um tom mais escuro passa de 4,5:1. */
+  background: var(--nv-shine), #b84200;
+  box-shadow: var(--nv-hi), 0 4px 0 var(--nv-edge), 0 14px 18px -8px rgba(125, 47, 0, 0.55);
+}
+
+/* ---------- Cardápio do cliente com dados de verdade ---------- */
+
+.nv-mark-img {
+  background: var(--nv-paper);
+  object-fit: cover;
+}
+
+.nv-fact.is-closed {
+  background: var(--nv-alert-soft);
+  color: var(--nv-alert);
+}
+
+.nv-fact.is-closed svg {
+  color: var(--nv-alert);
+}
+
+.nv-notice {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: #fff3cf;
+  color: var(--nv-ink);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.nv-search-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  border: 0;
+  background: none;
+  color: var(--nv-ink);
+  font: 500 17px/1 var(--nv-ui);
+}
+
+.nv-search-input::placeholder {
+  color: var(--nv-muted);
+}
+
+.nv-search-input:focus {
+  outline: none;
+}
+
+.nv-search:focus-within {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 2px;
+}
+
+.nv-cat-tile img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.nv-cat-tile {
+  overflow: hidden;
+}
+
+.nv-group {
+  scroll-margin-top: 12px;
+}
+
+.nv-section {
+  margin-top: 14px;
+}
+
+.nv-h3 {
+  margin: 0 0 10px;
+  color: var(--nv-muted);
+  font: 700 15px/1.2 var(--nv-ui);
+}
+
+.nv-photo-empty svg {
+  width: 38px;
+  height: 38px;
+  color: rgba(27, 67, 50, 0.28);
+}
+
+.nv-dish.is-off .nv-photo {
+  opacity: 0.55;
+  filter: grayscale(0.7);
+}
+
+.nv-dish-state {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  padding: 6px 4px;
+  border-radius: 999px;
+  background: rgba(27, 67, 50, 0.88);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.nv-dish-desc {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--nv-muted);
+  font-size: 12.5px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.nv-dish-price small {
+  color: var(--nv-muted);
+  font: 600 11.5px/1 var(--nv-ui);
+}
+
+.nv-step {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  box-shadow: inset 0 3px 5px rgba(27, 67, 50, 0.16), inset 0 -2px 0 #fff;
+  text-align: center;
+}
+
+.nv-step button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--nv-shine), var(--nv-green);
+  color: #fff;
+  font: 700 24px/1 var(--nv-display);
+  box-shadow: var(--nv-hi), 0 3px 0 var(--nv-green-edge);
+}
+
+.nv-step button:active {
+  transform: translateY(2px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-green-edge);
+}
+
+.nv-step b {
+  font: 700 17px/1 var(--nv-display);
+}
+
+.nv-inorder {
+  color: var(--nv-green);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.nv-cross-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+}
+
+/* Sacola vazia: nada para abrir, então a tecla fica rente ao chão e apagada. */
+.nv-bag:disabled {
+  opacity: 0.6;
+  transform: translateY(5px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-edge);
+}
+
+/* Aviso de erro e etapa vazia: dizem o que fazer, em frase inteira. */
+.nv-error,
+.nv-ok,
+.nv-hint,
+.nv-empty,
+.nv-code-hint,
+.nv-notice-text {
+  overflow-wrap: anywhere; /* e-mail, link e número compridos quebram em vez de passar da tela */
+}
+
+.nv-error {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-alert-soft);
+  color: var(--nv-alert);
+  font-weight: 700;
+}
+
+/* O cardápio do cliente acaba com um link discreto para a equipe e o dono (como no aplicativo de sempre). */
+.nv-root .nv-team {
+  margin: 28px 0 8px;
+  text-align: center;
+}
+
+.nv-root .nv-team-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  color: var(--nv-muted);
+  font-size: 16px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.nv-root .nv-team-link:focus-visible {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 2px;
+}
+
+.nv-empty {
+  margin: 8px 0 18px;
+  padding: 22px 18px;
+  border: 2px dashed var(--nv-line);
+  border-radius: var(--nv-r-md);
+  color: var(--nv-muted);
+  font-size: 17px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.nv-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+  transform: translateY(calc(var(--nv-depth) - 1px));
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-edge);
+}
+
+/* Celular bem pequeno (320 px): as etapas da cozinha cabem sem rolar de lado. */
+@media (max-width: 340px) {
+  .nv-tab {
+    font-size: 14px;
+  }
+
+  .nv-tab b {
+    padding: 1px 6px;
+  }
+}
+
+/* ---------- Escolhas do prato: a folha que sobe de baixo ---------- */
+
+/* Cobre a tela inteira. Quem monta cuida de travar a rolagem de trás; aqui só se desenha. */
+.nv-root.nv-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  max-width: none;
+  min-height: 0;
+  margin: 0;
+  background: none;
+}
+
+.nv-backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(10, 34, 24, 0.55);
+  animation: nv-fade 0.18s ease-out;
+}
+
+.nv-sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 480px);
+  max-height: 92vh;
+  max-height: 92dvh;
+  border-radius: var(--nv-r-lg) var(--nv-r-lg) 0 0;
+  background: var(--nv-paper);
+  box-shadow: 0 -18px 34px -12px rgba(10, 34, 24, 0.45);
+  animation: nv-rise 0.22s ease-out;
+}
+
+@keyframes nv-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes nv-rise {
+  from {
+    transform: translateY(36px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-backdrop,
+  .nv-sheet {
+    animation: none;
+  }
+}
+
+.nv-sheet-scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  padding: 18px 16px 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nv-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.nv-sheet-photo {
+  flex: none;
+  width: 68px;
+  font-size: 34px;
+}
+
+.nv-sheet-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-sheet-title h2 {
+  margin: 0;
+  font: 700 22px/1.1 var(--nv-display);
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.nv-sheet-title h2:focus {
+  outline: none;
+}
+
+.nv-sheet-title p {
+  display: -webkit-box;
+  margin: 4px 0 0;
+  overflow: hidden;
+  color: var(--nv-muted);
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.nv-sheet-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--nv-line);
+  background: var(--nv-paper);
+}
+
+.nv-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-sheet-foot .nv-btn {
+  min-height: 56px;
+  padding: 0 12px;
+  font-size: 17px;
+  text-align: center;
+}
+
+.nv-qty {
+  flex: none;
+  width: 124px;
+  margin-top: 0;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+}
+
+.nv-step button:disabled {
+  opacity: 0.4;
+  transform: translateY(2px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-green-edge);
+  cursor: default;
+}
+
+/* ---------- Um conjunto de opções (tamanho, extras...) ---------- */
+
+.nv-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-margin-top: 8px;
+}
+
+.nv-opts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nv-opts-head h3 {
+  margin: 0;
+  font: 700 19px/1.15 var(--nv-display);
+  overflow-wrap: anywhere;
+}
+
+/* Etiqueta que só informa: lisa, sem borda. "Obrigatório" ganha o laranja. */
+.nv-rule {
+  flex: none;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.nv-rule.is-required {
+  background: var(--nv-peach);
+  color: var(--nv-fire-deep);
+}
+
+.nv-opts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* A linha inteira é o botão. Solta: sobe, com borda grossa. Marcada: afunda e fica verde. */
+.nv-opt {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 10px 16px 10px 14px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-card-3d);
+  text-align: left;
+}
+
+.nv-opt:active:not(.is-blocked):not(.is-on) {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+.nv-opt.is-on {
+  background: var(--nv-green-soft);
+  box-shadow: inset 0 3px 6px rgba(27, 67, 50, 0.2), inset 0 -2px 0 #fff;
+  transform: translateY(2px);
+}
+
+.nv-opt.is-blocked {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.nv-opt-mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #fff;
+  color: #fff;
+  box-shadow: inset 0 2px 4px rgba(27, 67, 50, 0.22), 0 0 0 2px var(--nv-line);
+}
+
+.nv-opts-list[role="radiogroup"] .nv-opt-mark {
+  border-radius: 50%;
+}
+
+.nv-opt-mark svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+}
+
+.nv-opt.is-on .nv-opt-mark {
+  background: var(--nv-green);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 0 0 2px var(--nv-green-edge);
+}
+
+.nv-opt.is-on .nv-opt-mark svg {
+  opacity: 1;
+}
+
+.nv-opt-name {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.nv-opt-price {
+  color: var(--nv-green);
+  font: 700 16px/1 var(--nv-display);
+  white-space: nowrap;
+}
+
+/* ---------- Campo de escrever (observação, nome, endereço): afundado, o contrário da tecla ---------- */
+
+.nv-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nv-text > span {
+  color: var(--nv-muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.nv-text input {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-peach);
+  box-shadow: inset 0 3px 6px rgba(11, 42, 111, 0.14), inset 0 -2px 0 #fff;
+  color: var(--nv-ink);
+  font: 500 17px/1.2 var(--nv-ui);
+}
+
+.nv-text input::placeholder {
+  color: var(--nv-muted);
+  opacity: 1;
+}
+
+.nv-text small {
+  color: var(--nv-muted);
+  font-size: 13px;
+  text-align: right;
+}
+
+/* Passou do limite de letras: o contador fica vermelho antes de a pessoa tentar enviar. */
+.nv-text small.is-over {
+  color: var(--nv-alert);
+  font-weight: 700;
+}
+
+/* ---------- Botão pequeno, mas ainda com altura de dedo ---------- */
+
+.nv-btn.is-small {
+  --nv-depth: 3px;
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 15px;
+}
+
+/* ---------- A sacola: comanda, total, como receber, endereço, pagamento ---------- */
+
+.nv-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* A comanda: um painel que informa (sombra macia, sem borda grossa); as teclas dentro dele são as que tocam. */
+.nv-slip {
+  padding: 6px 16px 16px;
+  border-radius: var(--nv-r-lg);
+  background: #fffdf7;
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-slip-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-slip-lines > li {
+  padding: 14px 0;
+}
+
+.nv-slip-lines > li + li {
+  border-top: 2px dashed var(--nv-line);
+}
+
+.nv-slip-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font: 700 18px/1.2 var(--nv-display);
+}
+
+.nv-slip-top > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-slip-top > span:last-child {
+  flex: none;
+}
+
+.nv-slip-detail {
+  margin: 3px 0 0;
+  color: var(--nv-muted);
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.nv-slip-note {
+  margin: 3px 0 0;
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.nv-slip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.nv-slip-actions .nv-step {
+  flex: none;
+  width: 124px;
+  margin-top: 0;
+}
+
+/* "Mudar opções" e "Observação" andam juntos: se não cabem ao lado do mais/menos, descem os dois. */
+.nv-slip-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nv-block > .nv-btn.is-small {
+  align-self: flex-start;
+}
+
+.nv-note-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.nv-note-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.nv-slip-sum {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 2px solid var(--nv-ink);
+}
+
+/* Linha de cardápio com pontinhos: o nome de um lado, o valor do outro. */
+.nv-leader {
+  display: flex;
+  flex-wrap: wrap; /* letra grande: o valor desce para a linha de baixo em vez de sair da tela */
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0;
+  font-size: 16px;
+}
+
+.nv-leader > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-leader i {
+  flex: 1;
+  min-width: 12px;
+  border-bottom: 2px dotted var(--nv-line);
+}
+
+.nv-leader b {
+  font: 700 17px/1 var(--nv-display);
+  white-space: nowrap;
+}
+
+.nv-leader.is-total {
+  font: 700 20px/1.1 var(--nv-display);
+}
+
+.nv-leader.is-total b {
+  color: var(--nv-green);
+  font-size: 26px;
+}
+
+/* Como receber e como pagar: teclas lado a lado; a que vale fica afundada e verde. */
+.nv-picks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nv-picks.is-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.nv-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 72px;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-card-3d);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.nv-pick svg {
+  width: 26px;
+  height: 26px;
+  color: var(--nv-muted);
+}
+
+.nv-pick:active:not(.is-on) {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+.nv-pick.is-on {
+  background: var(--nv-green-soft);
+  box-shadow: inset 0 3px 6px rgba(27, 67, 50, 0.2), inset 0 -2px 0 #fff;
+  transform: translateY(2px);
+}
+
+.nv-pick.is-on svg {
+  color: var(--nv-green);
+}
+
+/* A resposta do servidor sobre o CEP: uma frase que informa, lisa. */
+.nv-quote {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.nv-quote.is-ok {
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+}
+
+.nv-quote.is-wait {
+  background: #fff3cf;
+  color: var(--nv-ink);
+}
+
+.nv-quote.is-no,
+.nv-quote.is-fail {
+  background: var(--nv-alert-soft);
+  color: var(--nv-alert);
+}
+
+.nv-hint {
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.nv-row2 {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  align-items: end;
+  gap: 12px;
+}
+
+.nv-cash {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.nv-cash .nv-text {
+  align-self: stretch;
+}
+
+.nv-send {
+  min-height: 64px;
+  font-size: 19px;
+}
+
+/* Dentro da folha e da sacola o aviso de erro não precisa da folga de baixo: quem manda é o espaço entre as peças. */
+.nv-sheet .nv-error,
+.nv-page-bag .nv-error {
+  margin: 0;
+}
+
+/* Celular bem pequeno (320 px): a folha e a sacola cabem sem rolar de lado. */
+@media (max-width: 340px) {
+  .nv-sheet-foot {
+    gap: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .nv-qty {
+    width: 112px;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+  }
+
+  .nv-sheet-foot .nv-btn {
+    font-size: 15px;
+  }
+
+  .nv-pick {
+    font-size: 14px;
+  }
+
+  /* A barra da sacola cabe com a bolinha de voz ao lado: "Ver sacola" e o total ficam numa linha cada. */
+  .nv-bag {
+    gap: 6px;
+    padding: 0 16px;
+    font-size: 15px;
+  }
+
+  .nv-bag strong {
+    font-size: 18px;
+    white-space: nowrap;
+  }
+}
+
+/* ---------- Acompanhar o pedido e pagar com Pix ---------- */
+
+.nv-track {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.nv-track + .nv-track {
+  padding-top: 24px;
+  border-top: 2px dashed var(--nv-line);
+}
+
+.nv-track-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nv-where {
+  margin: 0;
+  font: 700 26px/1.05 var(--nv-display);
+  letter-spacing: -0.01em;
+}
+
+.nv-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: 0;
+}
+
+/* Para onde vai o pedido (ou o que fazer na retirada): informa, então fica liso. */
+.nv-nowrap {
+  white-space: nowrap;
+}
+
+.nv-handling {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-peach);
+  font-size: 15px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* O andamento: um painel que informa (sombra macia, sem borda grossa). */
+.nv-status {
+  padding: 18px 16px 16px;
+  border-radius: var(--nv-r-lg);
+  background: #fff;
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-status.is-done {
+  background: var(--nv-green-soft);
+}
+
+.nv-status h2 {
+  margin: 0;
+  font: 700 28px/1.05 var(--nv-display);
+  letter-spacing: -0.01em;
+}
+
+.nv-status p {
+  margin: 6px 0 0;
+  color: var(--nv-muted);
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.nv-status p.nv-hint {
+  font-size: 14px;
+}
+
+.nv-steps {
+  display: grid;
+  grid-template-columns: repeat(var(--nv-steps), minmax(0, 1fr));
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-steps li {
+  position: relative;
+  overflow-wrap: anywhere; /* letra muito grande: a palavra quebra em vez de passar da tela */
+  padding-top: 34px;
+  color: var(--nv-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.nv-steps li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: inset 0 0 0 3px var(--nv-line);
+}
+
+.nv-steps li::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 100%;
+  height: 4px;
+  background: var(--nv-line);
+}
+
+.nv-steps li:last-child::after {
+  display: none;
+}
+
+.nv-steps li.is-done {
+  color: var(--nv-ink);
+}
+
+.nv-steps li.is-done::before {
+  background: var(--nv-green);
+  box-shadow: none;
+}
+
+.nv-steps li.is-done::after {
+  background: var(--nv-green);
+}
+
+.nv-steps li.is-current {
+  color: var(--nv-ink);
+}
+
+.nv-steps li.is-current::before {
+  background: var(--nv-fire);
+  box-shadow: 0 0 0 5px var(--nv-ring);
+}
+
+/* O código de entrega: o que a pessoa precisa ver de longe e ler em voz alta na porta. */
+.nv-dcode {
+  padding: 16px;
+  border-radius: var(--nv-r-lg);
+  background: #fff3cf;
+  text-align: center;
+}
+
+.nv-dcode h2 {
+  margin: 0;
+  font: 700 19px/1.15 var(--nv-display);
+}
+
+.nv-dcode-digits {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.nv-dcode-digit {
+  width: 56px;
+  height: 72px;
+  border-radius: var(--nv-r-md);
+  background: #fff;
+  box-shadow: var(--nv-panel-3d);
+  font: 700 42px/72px var(--nv-display);
+}
+
+.nv-dcode-hint {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+/* Pagamento recebido e agradecimento: informam, lisos. */
+.nv-paid,
+.nv-thanks {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-green-soft);
+  line-height: 1.35;
+}
+
+.nv-paid svg,
+.nv-thanks svg {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  color: var(--nv-green);
+}
+
+.nv-paid b {
+  display: block;
+  font-size: 17px;
+}
+
+.nv-thanks {
+  align-items: center;
+  font-weight: 700;
+}
+
+.nv-pix,
+.nv-rate {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--nv-r-lg);
+  background: #fff;
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-pix .nv-hint:empty {
+  display: none;
+}
+
+.nv-pix-steps {
+  margin: 0;
+  padding-left: 22px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.nv-pix-steps li + li {
+  margin-top: 4px;
+}
+
+.nv-text textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-peach);
+  box-shadow: inset 0 3px 6px rgba(11, 42, 111, 0.14), inset 0 -2px 0 #fff;
+  color: var(--nv-ink);
+  font: 500 17px/1.35 var(--nv-ui);
+  resize: vertical;
+}
+
+.nv-pix .nv-text textarea {
+  font: 500 13px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+  resize: none;
+}
+
+.nv-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  text-align: center;
+}
+
+.nv-qr img {
+  width: 200px;
+  height: 200px;
+  max-width: 100%;
+  padding: 8px;
+  border-radius: var(--nv-r-md);
+  background: #fff;
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-rate-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.nv-rate-group + .nv-rate-group {
+  margin-top: 10px;
+}
+
+.nv-rate-group legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font: 700 16px/1.2 var(--nv-ui);
+}
+
+.nv-picks.is-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.nv-picks.is-4 .nv-pick {
+  min-height: 56px;
+  padding: 6px 4px;
+  font-size: 14px;
+}
+
+@media (max-width: 380px) {
+  .nv-picks.is-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nv-dcode-digit {
+    width: 52px;
+  }
+}
+
+.nv-page-track .nv-error {
+  margin: 0;
+}
+
+/* ---------- A mesa: o que abre quando o cliente lê o QR ---------- */
+
+.nv-root {
+  --nv-call-sun: #fff1c2;
+  --nv-call-sun-edge: #e6c96a;
+  --nv-call-pill: #ffe08a;
+  --nv-answered-pill: #cfe6ca;
+  --nv-green-soft-edge: #b9d6b3;
+}
+
+.nv-lead {
+  margin: 4px 0 -6px;
+  font: 700 26px/1.1 var(--nv-display);
+  letter-spacing: -0.01em;
+}
+
+/* Botão de ação principal da tela: mais alto que os outros, para o polegar achar sem olhar. */
+.nv-btn.is-tall {
+  --nv-depth: 6px;
+  min-height: 68px;
+  font-size: 20px;
+}
+
+.nv-btn {
+  text-decoration: none;
+}
+
+.nv-calls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.nv-calls.is-small {
+  gap: 12px;
+}
+
+.nv-call {
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px 14px;
+  border: 0;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, var(--nv-peach-hi), var(--nv-peach));
+  color: var(--nv-ink);
+  text-align: left;
+  box-shadow: var(--nv-hi), 0 var(--nv-depth) 0 var(--nv-peach-edge), 0 16px 18px -10px var(--nv-floor);
+}
+
+.nv-call.is-big {
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 148px;
+}
+
+.nv-call.is-small {
+  --nv-depth: 4px;
+  align-items: center;
+  gap: 8px;
+  min-height: 64px;
+  padding: 10px;
+  border-radius: var(--nv-r-md);
+}
+
+.nv-call:active:not(.is-called):not(.is-busy) {
+  transform: translateY(calc(var(--nv-depth) - 1px));
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-peach-edge), 0 2px 4px var(--nv-floor);
+}
+
+/* O ícone só enfeita e identifica; quem toca é o botão inteiro. */
+.nv-call-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--nv-shine), var(--nv-fire);
+  color: #1b1200;
+  box-shadow: var(--nv-hi);
+}
+
+.nv-call-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.nv-call.is-small .nv-call-icon {
+  width: 38px;
+  height: 38px;
+}
+
+.nv-call.is-small .nv-call-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.nv-call-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-call-title {
+  font: 700 19px/1.15 var(--nv-display);
+}
+
+.nv-call.is-small .nv-call-title {
+  font-size: 16px;
+}
+
+.nv-call-status {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--nv-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.nv-call.is-small .nv-call-status {
+  padding: 1px 7px;
+  font-size: 12px;
+}
+
+.nv-call-note {
+  color: var(--nv-muted);
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+/* Recém-chamado: afundado e amarelo. Não há o que tocar agora; a tela diz que já vem. */
+.nv-call.is-called,
+.nv-call.is-busy {
+  background: var(--nv-call-sun);
+  transform: translateY(calc(var(--nv-depth) - 1px));
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-call-sun-edge);
+}
+
+.nv-call.is-called .nv-call-icon,
+.nv-call.is-busy .nv-call-icon {
+  background: var(--nv-sun);
+}
+
+.nv-call.is-called .nv-call-status,
+.nv-call.is-busy .nv-call-status {
+  background: var(--nv-call-pill);
+}
+
+.nv-call.is-busy {
+  cursor: progress;
+}
+
+/* Atendido: verde, sobe de novo (pode chamar outra vez). */
+.nv-call.is-answered {
+  background: linear-gradient(180deg, #f3f9f1, var(--nv-green-soft));
+  box-shadow: var(--nv-hi), 0 var(--nv-depth) 0 var(--nv-green-soft-edge), 0 16px 18px -10px var(--nv-floor);
+}
+
+.nv-call.is-answered:active {
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-green-soft-edge), 0 2px 4px var(--nv-floor);
+}
+
+.nv-call.is-answered .nv-call-icon {
+  background: var(--nv-green);
+  color: #fff;
+}
+
+.nv-call.is-answered .nv-call-status {
+  background: var(--nv-answered-pill);
+}
+
+/* Um minuto sem resposta: o botão sobe de novo e a etiqueta chama atenção. */
+.nv-call.is-again .nv-call-status {
+  color: var(--nv-fire-deep);
+}
+
+/* A confirmação do toque: só informa, fica lisa. Vazia, sai do desenho mas continua na página (leitor de tela). */
+.nv-callnote {
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-weight: 700;
+}
+
+.nv-callnote:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.nv-page-table .nv-error {
+  margin: 0;
+}
+
+@media (max-width: 340px) {
+  /* Celular bem pequeno: o texto dos botões largos cabe numa linha ("Acompanhar o seu pedido"), junto do ícone. */
+  .nv-btn {
+    padding: 0 16px;
+    font-size: 16px;
+  }
+
+  .nv-calls {
+    gap: 10px;
+  }
+
+  .nv-call.is-big {
+    min-height: 136px;
+    padding: 14px 12px;
+  }
+
+  .nv-call-title {
+    font-size: 17px;
+  }
+
+  .nv-call.is-small {
+    padding: 8px;
+  }
+
+  .nv-call.is-small .nv-call-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .nv-lead {
+    font-size: 24px;
+  }
+}
+
+.nv-table-btn {
+  align-self: flex-start;
+}
+
+/* ---------- O menu geral: abre do lado do botão de menu, por cima da tela ---------- */
+
+.nv-backdrop.is-side {
+  align-items: stretch;
+}
+
+/* A moldura segura o menu dentro da coluna do aplicativo (480 px), mesmo numa janela larga. */
+.nv-drawer-frame {
+  display: flex;
+  justify-content: flex-end;
+  width: min(100%, 480px);
+  height: 100%;
+}
+
+.nv-drawer {
+  display: flex;
+  flex-direction: column;
+  width: min(90%, 380px);
+  height: 100%;
+  border-radius: var(--nv-r-lg) 0 0 var(--nv-r-lg);
+  background: var(--nv-paper);
+  box-shadow: -18px 0 34px -12px rgba(10, 34, 24, 0.45);
+  animation: nv-slide 0.22s ease-out;
+}
+
+@keyframes nv-slide {
+  from {
+    transform: translateX(36px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-drawer {
+    animation: none;
+  }
+}
+
+.nv-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 16px 10px;
+}
+
+.nv-drawer-who {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-drawer-who h2 {
+  margin: 0;
+  font: 700 22px/1.1 var(--nv-display);
+  overflow-wrap: anywhere;
+}
+
+.nv-drawer-who h2:focus {
+  outline: none;
+}
+
+.nv-drawer-who p {
+  margin: 4px 0 0;
+  color: var(--nv-muted);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.nv-drawer-scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+  padding: 6px 16px 28px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nv-menu-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nv-menu-group h3 {
+  margin: 0;
+  font: 700 18px/1.1 var(--nv-display);
+}
+
+.nv-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cada função é um cartão que se toca: borda grossa embaixo, afunda no toque. */
+.nv-menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 68px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-card-3d);
+  color: var(--nv-ink);
+  text-align: left;
+}
+
+.nv-menu-item:active:not(.is-current) {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+/* A tela de agora: afundada e verde, como a opção marcada. */
+.nv-menu-item.is-current {
+  background: var(--nv-green-soft);
+  box-shadow: inset 0 3px 6px rgba(27, 67, 50, 0.2), inset 0 -2px 0 #fff;
+  transform: translateY(2px);
+}
+
+.nv-menu-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--nv-peach);
+  color: var(--nv-ink);
+  box-shadow: var(--nv-hi);
+}
+
+.nv-menu-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.nv-menu-item.is-current .nv-menu-icon {
+  background: var(--nv-green);
+  color: #fff;
+}
+
+.nv-menu-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-menu-label {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.nv-menu-hint {
+  color: var(--nv-muted);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+/* O número de pedidos em aberto só informa: pílula lisa. */
+.nv-menu-badge {
+  flex: none;
+  min-width: 28px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--nv-fire-deep);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.nv-btn.is-quiet {
+  color: var(--nv-alert);
+}
+
+/* Texto só para o leitor de tela. */
+.nv-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Mesas do painel: quem chama vem primeiro, com o botão de atender ---------- */
+
+.nv-page-desk .nv-error {
+  margin: 0;
+}
+
+.nv-deskcalls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* O chamado é um painel de sombra macia (informa); a fita de cima muda de cor pela espera; só o botão de baixo toca. */
+.nv-deskcall {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 14px 14px;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-panel-3d);
+  --nv-tape: var(--nv-green);
+}
+
+.nv-deskcall::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 6px;
+  border-radius: var(--nv-r-lg) var(--nv-r-lg) 0 0;
+  background: var(--nv-tape);
+}
+
+.nv-deskcall.is-warn {
+  --nv-tape: var(--nv-sun);
+}
+
+.nv-deskcall.is-late {
+  --nv-tape: var(--nv-alert);
+}
+
+.nv-deskcall-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  min-height: 56px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+}
+
+/* Tocar na mesa abre a mesa: a linha afunda como o resto, e a setinha avisa que leva a algum lugar. */
+.nv-deskcall-head.is-open:active {
+  transform: translateY(2px);
+}
+
+.nv-deskcall-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+}
+
+.nv-deskcall.is-warn .nv-deskcall-icon {
+  background: var(--nv-sun);
+}
+
+.nv-deskcall.is-late .nv-deskcall-icon {
+  background: var(--nv-alert);
+  color: #fff;
+}
+
+.nv-deskcall-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.nv-deskcall-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-deskcall-where {
+  font: 700 24px/1.05 var(--nv-display);
+}
+
+.nv-deskcall-what {
+  color: var(--nv-muted);
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.nv-deskcall.is-warn .nv-wait {
+  background: var(--nv-sun);
+}
+
+.nv-deskcall.is-late .nv-wait {
+  background: var(--nv-alert);
+  color: #fff;
+}
+
+.nv-deskcall-go {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--nv-muted);
+}
+
+.nv-deskcall-go svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* A espera dita em palavra, para quem não vê a cor da fita. Pílulas lisas: só informam. */
+.nv-deskcall-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.nv-deskcall-flag {
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nv-deskcall-flag.is-word {
+  background: var(--nv-call-pill);
+}
+
+.nv-deskcall.is-late .nv-deskcall-flag.is-word {
+  background: var(--nv-alert);
+  color: #fff;
+}
+
+.nv-deskcall .nv-btn {
+  min-height: 64px;
+  font-size: 19px;
+}
+
+/* Abrir uma mesa: ler o QR do cartaz ou digitar o número. */
+.nv-desk-type {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nv-desk-label {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.nv-desk-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.nv-desk-row .nv-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-desk-row .nv-btn {
+  min-height: 56px;
+}
+
+/* A resposta ao que foi digitado: só informa. Vazia, sai do desenho mas continua na página (leitor de tela). */
+.nv-desk-msg {
+  margin: 0;
+  color: var(--nv-alert);
+  font-weight: 700;
+}
+
+.nv-desk-msg:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.nv-scan {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* A câmera, quadrada, com uma moldura por cima para o garçom saber onde apontar. */
+.nv-scan-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--nv-r-lg);
+  background: var(--nv-ink);
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-scan-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nv-scan-guide {
+  position: absolute;
+  inset: 18%;
+  border: 4px solid var(--nv-sun);
+  border-radius: 22px;
+  box-shadow: 0 0 0 999px rgba(27, 67, 50, 0.45);
+  pointer-events: none;
+}
+
+.nv-scan-hint {
+  margin: 0;
+  color: var(--nv-muted);
+  text-align: center;
+}
+
+/* Todas as mesas: cada ficha é uma tecla com o número e o que existe nela agora. */
+.nv-desk-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-desktile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  min-height: 88px;
+  padding: 10px 6px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  color: var(--nv-ink);
+  box-shadow: var(--nv-card-3d);
+}
+
+.nv-desktile:active {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+.nv-desktile-num {
+  font: 700 30px/1 var(--nv-display);
+}
+
+.nv-desktile-note {
+  color: var(--nv-muted);
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* Com pedido andando: verde claro. Chamando: amarela, a que pede atenção. */
+.nv-desktile.is-busy {
+  background: linear-gradient(180deg, #f3f9f1, var(--nv-green-soft));
+  box-shadow: inset 0 2px 0 #fff, 0 4px 0 var(--nv-green-soft-edge), 0 18px 22px -12px var(--nv-floor);
+}
+
+.nv-desktile.is-busy:active {
+  box-shadow: inset 0 2px 0 #fff, 0 1px 0 var(--nv-green-soft-edge), 0 4px 8px -4px var(--nv-floor);
+}
+
+.nv-desktile.is-busy .nv-desktile-note,
+.nv-desktile.is-call .nv-desktile-note {
+  color: var(--nv-ink);
+  font-weight: 700;
+}
+
+.nv-desktile.is-call {
+  background: var(--nv-shine), var(--nv-sun);
+  box-shadow: var(--nv-hi), 0 4px 0 var(--nv-sun-edge), 0 18px 22px -12px var(--nv-floor);
+}
+
+.nv-desktile.is-call:active {
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-sun-edge), 0 4px 8px -4px var(--nv-floor);
+}
+
+/* Uma mesa aberta: os pedidos andando são painéis de sombra macia (só informam). */
+.nv-deskorders {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-deskorder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-deskorder-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-deskorder-text b {
+  font: 700 18px/1.2 var(--nv-display);
+}
+
+.nv-deskorder-text > span {
+  color: var(--nv-muted);
+  font-size: 14px;
+}
+
+.nv-deskorder-chip {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-weight: 700;
+}
+
+.nv-deskorder-chip.is-wait {
+  background: var(--nv-sun);
+}
+
+.nv-deskorder-chip.is-prep {
+  background: var(--nv-ink);
+  color: #fff;
+}
+
+.nv-deskorder-chip.is-go {
+  background: var(--nv-green);
+  color: #fff;
+}
+
+.nv-deskorder-price {
+  flex: none;
+  font: 700 18px/1 var(--nv-display);
+}
+
+.nv-deskmake {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nv-desk-fine {
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+@media (max-width: 340px) {
+  .nv-deskcall-where {
+    font-size: 22px;
+  }
+
+  .nv-deskcall-head {
+    flex-wrap: wrap;
+  }
+
+  .nv-desk-grid {
+    gap: 10px;
+  }
+}
+
+/* ---------- Pedidos e caixa do painel: um cartão por pedido, botões embaixo ---------- */
+
+.nv-page-orders .nv-error {
+  margin: 0;
+}
+
+/* Com quatro etapas (quem recebe o dinheiro), duas em cima e duas embaixo: o dedo acerta e o texto cabe em 320 px. */
+.nv-tabs.is-four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-radius: var(--nv-r-lg);
+}
+
+.nv-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* O pedido é um painel de sombra macia (informa); a fita de cima muda de cor pela espera; só os botões de baixo tocam. */
+.nv-order {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 14px 14px;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-panel-3d);
+  --nv-tape: var(--nv-green);
+}
+
+.nv-order::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 6px;
+  border-radius: var(--nv-r-lg) var(--nv-r-lg) 0 0;
+  background: var(--nv-tape);
+}
+
+.nv-order.is-warn {
+  --nv-tape: var(--nv-sun);
+}
+
+.nv-order.is-late {
+  --nv-tape: var(--nv-alert);
+}
+
+/* Pedido encerrado: sem cor de espera, só para conferir. */
+.nv-order.is-closed {
+  --nv-tape: var(--nv-slab-edge);
+}
+
+.nv-order.is-warn .nv-wait {
+  background: var(--nv-sun);
+}
+
+.nv-order.is-late .nv-wait {
+  background: var(--nv-alert);
+  color: #fff;
+}
+
+.nv-order-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.nv-order-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-order-where {
+  margin: 0;
+  font: 700 28px/1.05 var(--nv-display);
+}
+
+.nv-order-meta {
+  margin: 4px 0 0;
+  color: var(--nv-muted);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.nv-order-head .nv-wait {
+  flex: none;
+}
+
+/* A etapa e o pagamento em palavra, para quem não vê a cor. Pílulas lisas: só informam. */
+.nv-order-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.nv-order-chip {
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nv-order-chip.is-wait {
+  background: var(--nv-sun);
+}
+
+.nv-order-chip.is-prep {
+  background: var(--nv-ink);
+  color: #fff;
+}
+
+.nv-order-chip.is-go {
+  background: var(--nv-green);
+  color: #fff;
+}
+
+.nv-order-chip.is-pay-ok {
+  background: var(--nv-answered-pill);
+}
+
+.nv-order-chip.is-pay-wait {
+  background: var(--nv-call-pill);
+}
+
+.nv-order-chip.is-pay-info {
+  background: var(--nv-peach);
+}
+
+/* Para onde vai, quem leva e como ligar: um bloco liso, o endereço em letra grande. */
+.nv-order-ship {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-peach);
+}
+
+.nv-order-ship-main {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.nv-order-ship-sub {
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 15px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.nv-order-ship .nv-btn {
+  margin-top: 8px;
+}
+
+.nv-order .nv-lines,
+.nv-order .nv-note {
+  margin: 0;
+}
+
+.nv-order-money {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1.5px solid var(--nv-line);
+}
+
+.nv-order-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+}
+
+.nv-order-total span {
+  color: var(--nv-muted);
+  font-size: 16px;
+}
+
+.nv-order-total b {
+  font: 700 28px/1 var(--nv-display);
+}
+
+.nv-order-split {
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 14px;
+}
+
+.nv-order-change {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-call-pill);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.nv-order .nv-btn {
+  min-height: 56px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  line-height: 1.15;
+  text-align: center;
+}
+
+/* ---------- Entregas e acerto do caixa: o cartão do pedido, com o dinheiro da porta e os 4 números do cliente ---------- */
+
+.nv-page-deliveries .nv-error,
+.nv-page-settle .nv-error {
+  margin: 0;
+}
+
+/* O dinheiro que o motoqueiro ainda deve ao caixa fica sempre no topo: é a dívida dele, não pode sumir com a aba. Só informa (liso). */
+.nv-held {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-call-pill);
+  color: var(--nv-ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+/* Aviso de que deu certo ("Entrega concluída…"). Liso, verde; o leitor de tela ouve a mesma frase na região de cima. */
+.nv-ok {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-answered-pill);
+  color: var(--nv-ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+/* Quanto receber na porta e o troco a levar: o número em letra grande, o troco logo abaixo. Só informa. */
+.nv-delivery-cash {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-call-pill);
+}
+
+.nv-delivery-cash svg {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  color: var(--nv-ink);
+}
+
+.nv-delivery-cash p {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+}
+
+.nv-delivery-cash b {
+  font: 700 20px/1.15 var(--nv-display);
+}
+
+.nv-delivery-cash span {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Ligar e Mapa lado a lado; em tela estreita quebram a linha em vez de apertar. */
+.nv-delivery-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.nv-delivery-links .nv-btn {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.nv-delivery-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nv-code-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nv-code-label {
+  font: 700 20px/1.1 var(--nv-display);
+}
+
+.nv-code-hint {
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+/* Os 4 números: campo afundado (é de escrever), dígitos grandes e abertos para o dedo e o olho conferirem um a um. */
+.nv-field.is-code {
+  justify-content: center;
+  min-height: 72px;
+}
+
+.nv-field.is-code input {
+  flex: none;
+  width: 100%;
+  min-height: 64px;
+  color: var(--nv-ink);
+  font: 700 36px/1 var(--nv-display);
+  letter-spacing: 0.4em;
+  text-align: center;
+  text-indent: 0.4em;
+}
+
+/* Acerto: o total que o motoqueiro deve no alto do cartão; a frase de confirmação embaixo do botão armado. */
+.nv-settle-owes {
+  flex: none;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--nv-call-pill);
+  font: 700 20px/1.2 var(--nv-display);
+}
+
+.nv-settle-confirm {
+  margin: 0;
+  color: var(--nv-ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.nv-settle .nv-opts-list {
+  gap: 10px;
+}
+
+@media (max-width: 340px) {
+  .nv-field.is-code input {
+    font-size: 32px;
+    letter-spacing: 0.3em;
+    text-indent: 0.3em;
+  }
+}
+
+/* ---------- Cardápio: montar (porta, páginas, leitura, falar, conferir, cadastrado) ---------- */
+
+.nv-page-menu.is-speak,
+.nv-page-menu.is-reading {
+  padding-bottom: 32px;
+}
+
+/* A conferência é longa: o botão de cadastrar fica preso embaixo, então a página não reserva o espaço da bolinha. */
+.nv-page-menu.is-review {
+  padding-bottom: 24px;
+}
+
+.nv-menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* A porta: cada jeito é uma tecla grande que sobe do chão. O que o servidor não lê fica liso, com o porquê escrito. */
+.nv-door {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-doorcard {
+  position: relative;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 96px;
+  padding: 14px 16px 14px 14px;
+  border: 0;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-card-3d);
+  color: var(--nv-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.nv-doorcard.is-ready:active {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+.nv-doorcard:has(input:focus-visible) {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 3px;
+}
+
+.nv-doorcard.is-off {
+  background: var(--nv-peach);
+  box-shadow: var(--nv-panel-3d);
+  cursor: default;
+}
+
+.nv-door-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--nv-green-soft);
+  color: var(--nv-green);
+}
+
+.nv-doorcard.is-off .nv-door-icon {
+  background: #fff;
+  color: var(--nv-muted);
+}
+
+.nv-door-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.nv-door-text b {
+  display: block;
+  font: 700 21px/1.1 var(--nv-display);
+  letter-spacing: -0.01em;
+}
+
+.nv-door-text span {
+  display: block;
+  margin-top: 4px;
+  color: var(--nv-muted);
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.nv-doorcard.is-off .nv-door-text b {
+  color: var(--nv-muted);
+}
+
+.nv-door-go svg {
+  width: 24px;
+  height: 24px;
+  color: var(--nv-green);
+}
+
+.nv-door-badge {
+  position: absolute;
+  top: -12px;
+  right: 16px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--nv-sun);
+  color: var(--nv-ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Esperando o servidor: a roda gira; com pouco movimento ela fica parada, com a frase ao lado dizendo o que acontece. */
+.nv-working {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 16px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-green-soft);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.nv-working.is-big {
+  flex-direction: column;
+  justify-content: center;
+  padding: 44px 20px;
+  font: 700 22px/1.25 var(--nv-display);
+  text-align: center;
+}
+
+.nv-spin {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 4px solid var(--nv-line);
+  border-top-color: var(--nv-green);
+  border-radius: 50%;
+  animation: nv-spin 0.9s linear infinite;
+}
+
+.nv-working.is-big .nv-spin {
+  width: 56px;
+  height: 56px;
+  border-width: 6px;
+}
+
+@keyframes nv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-spin {
+    animation: none;
+    border-color: var(--nv-green) var(--nv-green) var(--nv-line) var(--nv-line);
+  }
+}
+
+/* As páginas fotografadas: miniaturas lisas (só mostram) com um X de 44 px para tirar a página. */
+.nv-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 16px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-pages li {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--nv-r-md);
+  background: #fff;
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-pages img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--nv-r-md);
+  object-fit: cover;
+}
+
+.nv-pages-remove {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--nv-alert);
+  color: #fff;
+  box-shadow: var(--nv-hi), 0 3px 0 var(--nv-ember-a), 0 8px 12px -4px var(--nv-floor);
+}
+
+.nv-pages-remove:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-ember-a);
+}
+
+.nv-pages-remove:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.nv-pages-remove svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* A tecla de câmera e de galeria é um rótulo com o campo de arquivo escondido dentro: o toque no rótulo abre a câmera. */
+.nv-filebtn {
+  cursor: pointer;
+}
+
+.nv-filebtn:has(input:focus-visible) {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 3px;
+}
+
+.nv-filebtn.is-off {
+  opacity: 0.6;
+  cursor: progress;
+  transform: translateY(calc(var(--nv-depth) - 1px));
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-edge);
+}
+
+/* Falar: a tecla grande do microfone. Ouvindo, ela escurece e o ícone pulsa (e a frase muda): não depende só da cor. */
+.nv-mic.is-listening {
+  --nv-edge: var(--nv-ink-edge);
+  background: var(--nv-shine), var(--nv-ink);
+  color: #fff;
+}
+
+.nv-mic.is-listening svg {
+  animation: nv-beat 1.1s ease-in-out infinite;
+}
+
+@keyframes nv-beat {
+  50% {
+    transform: scale(1.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-mic.is-listening svg {
+    animation: none;
+  }
+}
+
+.nv-heard {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-peach);
+  color: var(--nv-muted);
+  font-size: 17px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.nv-typebox {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nv-typerow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nv-typerow .nv-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-typerow .nv-btn {
+  flex: none;
+  padding: 0 20px;
+}
+
+.nv-unclear {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nv-unclear .nv-btn {
+  justify-content: flex-start;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  line-height: 1.25;
+  text-align: left;
+}
+
+/* Os pratos: cada categoria é um cartão de informação (liso) e cada prato é uma linha. Só os botões se tocam. */
+.nv-dish-group {
+  font-size: 22px;
+}
+
+.nv-dishrows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-dishrow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1.5px solid var(--nv-line);
+}
+
+.nv-dishrow:first-child {
+  border-top: 0;
+}
+
+.nv-dishrow-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nv-dishrow-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-dishrow-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.nv-dishrow-inside {
+  margin: 4px 0 0;
+  color: var(--nv-muted);
+  font: 500 15px/1.3 var(--nv-ui);
+  overflow-wrap: anywhere;
+}
+
+.nv-dishrow-price {
+  margin: 2px 0 0;
+  color: var(--nv-green);
+  font: 700 18px/1.2 var(--nv-display);
+  white-space: nowrap;
+}
+
+.nv-dishrow.is-missing .nv-dishrow-price {
+  color: var(--nv-alert);
+}
+
+.nv-dishrow-acts {
+  flex: none;
+  display: flex;
+  gap: 10px;
+}
+
+.nv-icon-btn.is-danger {
+  color: var(--nv-alert);
+}
+
+/* O prato sem preço pede o lápis: a tecla do lápis fica amarela. */
+.nv-icon-btn.is-needed {
+  background: var(--nv-sun);
+  box-shadow: var(--nv-hi), 0 4px 0 var(--nv-sun-edge), 0 10px 14px -8px var(--nv-floor);
+}
+
+.nv-icon-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.nv-dishrow-doubt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--nv-r-sm);
+  background: rgba(255, 200, 58, 0.28);
+}
+
+.nv-dishrow-doubt p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.nv-dishedit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nv-dishedit-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+/* Cadastrar: a tecla fica presa embaixo para a pessoa achar sem rolar a lista inteira. */
+.nv-savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 -16px -24px;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--nv-line);
+  box-shadow: 0 -14px 24px -16px var(--nv-floor);
+}
+
+.nv-savebar .nv-code-hint {
+  font-weight: 700;
+  text-align: center;
+}
+
+.nv-menu-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 30px 16px;
+  border-radius: var(--nv-r-lg);
+  background: var(--nv-green-soft);
+  box-shadow: var(--nv-panel-3d);
+  text-align: center;
+}
+
+.nv-menu-done .nv-lead {
+  margin: 0;
+}
+
+/* O que falta depois de cadastrar: frases soltas que só informam (rente ao chão); o botão que resolve é o de baixo. */
+.nv-menu-next {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nv-menu-next .nv-h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.nv-menu-next ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-menu-next li {
+  padding: 12px 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-call-pill);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.nv-menu-done-mark {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: var(--nv-green);
+  color: #fff;
+  box-shadow: var(--nv-hi), 0 5px 0 var(--nv-green-edge), 0 16px 20px -8px var(--nv-floor);
+}
+
+.nv-menu-done-mark svg {
+  width: 46px;
+  height: 46px;
+}
+
+@media (max-width: 340px) {
+  .nv-doorcard {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .nv-door-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .nv-door-text b {
+    font-size: 19px;
+  }
+
+  .nv-typerow .nv-btn {
+    padding: 0 14px;
+  }
+}
+
+/* ---------- Começar de um modelo: o tipo do negócio, os pratos que se tocam, o preço de um prato por vez ---------- */
+
+.nv-page-menu.is-types,
+.nv-page-menu.is-prices {
+  padding-bottom: 32px;
+}
+
+/* Marcar os pratos é longo: a tecla de seguir fica presa embaixo, como a de cadastrar. */
+.nv-page-menu.is-pick {
+  padding-bottom: 24px;
+}
+
+/* Os tipos de negócio: teclas grandes, duas por linha, com o desenho em cima e o nome embaixo. */
+.nv-typetiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-typetile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 108px;
+  padding: 12px 10px;
+  border: 0;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-card-3d);
+  color: var(--nv-ink);
+  text-align: center;
+  cursor: pointer;
+}
+
+.nv-typetile:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: var(--nv-card-3d-pressed);
+}
+
+.nv-typetile:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.nv-typetile-icon {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.nv-typetile-name {
+  font: 700 18px/1.15 var(--nv-display);
+  overflow-wrap: anywhere;
+}
+
+/* A categoria que está na tela: o nome grande, a dica, quantos já estão marcados e "Marcar todos". */
+.nv-pickhead {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nv-pickhead .nv-lead {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-pickbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nv-pickcount {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--nv-green);
+  font: 700 18px/1.2 var(--nv-display);
+}
+
+/* O preço: um prato por vez, o campo grande já com o foco, o botão logo abaixo. */
+.nv-pricing {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 16px;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbfcff);
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-pricing-group {
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.nv-pricing .nv-lead {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-field.is-price {
+  min-height: 76px;
+}
+
+.nv-field.is-price input {
+  min-height: 68px;
+  font: 700 34px/1 var(--nv-display);
+}
+
+/* O exemplo "Ex.: 18,50" fica menor e mais leve que o número: não parece um preço já escrito. */
+.nv-field.is-price input::placeholder {
+  font: 500 20px/1 var(--nv-ui);
+}
+
+.nv-price-cur {
+  flex: none;
+  color: var(--nv-muted);
+  font: 700 24px/1 var(--nv-display);
+}
+
+/* ---------- Pratos e categorias: cuidar do cardápio ---------- */
+
+/* O cartão do prato só informa (sombra macia). Quem toca são os botões de baixo: Esgotou/Voltou e a lixeira. */
+.nv-dishlist {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nv-dishlist-head {
+  display: flex;
+  flex-wrap: wrap; /* letra grande: a conta de pratos desce para baixo do nome */
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  overflow-wrap: anywhere;
+  margin: 0;
+  font: 700 24px/1.1 var(--nv-display);
+}
+
+.nv-dishlist-head span {
+  color: var(--nv-muted);
+  font: 600 15px/1 var(--nv-ui);
+}
+
+.nv-dishsection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nv-dishsection-head {
+  margin: 0;
+  color: var(--nv-muted);
+  font: 700 17px/1.2 var(--nv-ui);
+}
+
+.nv-dishcards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-dishcard {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 10px;
+  align-items: start;
+  padding: 12px;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-panel-3d);
+}
+
+/* A foto fica à esquerda e vale as duas linhas (o nome e o preço; os botões). */
+.nv-dishcard .nv-photo {
+  grid-row: 1 / span 2;
+  width: 56px;
+  font-size: 28px;
+}
+
+.nv-dishcard-text,
+.nv-dishcard-acts {
+  grid-column: 2;
+}
+
+.nv-dishcard-arm {
+  grid-column: 1 / -1;
+}
+
+.nv-dishcard.is-off .nv-photo {
+  opacity: 0.45;
+  filter: grayscale(0.7);
+}
+
+.nv-dishcard-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nv-dishcard-name {
+  font: 700 19px/1.2 var(--nv-display);
+  overflow-wrap: anywhere;
+}
+
+.nv-dishcard-price {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--nv-green);
+}
+
+.nv-dishcard-desc {
+  color: var(--nv-muted);
+  font-size: 15px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.nv-dishcard-acts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nv-dishcard-acts .nv-btn {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-dishcard-arm {
+  margin: 0;
+  color: var(--nv-alert);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* O formulário de cima está mudando este prato: o cartão fica de lado, sem botão que se possa tocar. */
+.nv-dishcard.is-editing {
+  /* 0,8 e não menos: com 0,6 o texto das etiquetas caía para 3,2 de contraste (o mínimo é 4,5). */
+  opacity: 0.8;
+}
+
+.nv-dishcard-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--nv-muted);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* A categoria não tem foto: o nome e a conta de pratos de um lado, a lixeira do outro (uma linha só). */
+.nv-dishcard.is-cat {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.nv-dishcard-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nv-icon-btn.is-armed {
+  background: var(--nv-alert);
+  color: #fff;
+  box-shadow: var(--nv-hi), 0 4px 0 #7a1710, 0 10px 14px -8px var(--nv-floor);
+}
+
+/* A faixa de pratos esgotados informa (lisa) e traz o botão de voltar tudo. */
+.nv-soldbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-call-pill);
+}
+
+.nv-soldbar p {
+  flex: 1 1 200px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+/* O formulário do prato novo e da categoria nova: campos afundados, botões em relevo. */
+.nv-dishform {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 14px;
+  border-radius: var(--nv-r-lg);
+  background: linear-gradient(180deg, #fff, #fbf9f4);
+  box-shadow: var(--nv-panel-3d);
+}
+
+.nv-dishform-title {
+  margin: 0;
+  font: 700 24px/1.1 var(--nv-display);
+}
+
+.nv-dishform-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nv-dishform .nv-error {
+  margin: 0;
+}
+
+/* A foto do prato dentro do lápis: a foto de agora ao lado dos botões (tirar, escolher, tirar a foto). */
+.nv-dishphoto-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.nv-dishphoto-row .nv-photo {
+  width: 96px;
+  height: 96px;
+}
+
+.nv-dishphoto-acts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nv-dishphoto > p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.nv-dishes-hint {
+  margin: 0;
+  font-weight: 700;
+}
+
+.nv-field.is-select select {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--nv-ink);
+  font: 500 17px/1 var(--nv-ui);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.nv-field.is-select select:focus {
+  outline: none;
+}
+
+/* O ícone de seta aponta para a direita no desenho; no seletor ele aponta para baixo. */
+.nv-field.is-select svg {
+  transform: rotate(90deg);
+  pointer-events: none;
+}
+
+.nv-field input[aria-invalid="true"] {
+  color: var(--nv-alert);
+}
+
+/* Opções do prato (tamanho, adicionais, retirar): campos afundados para escrever, botões em relevo para tocar, o que só informa fica liso. */
+.nv-optgroup {
+  gap: 14px;
+}
+
+.nv-optrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 12px;
+}
+
+.nv-optrow-label {
+  flex: 1 1 150px;
+  font: 700 17px/1.2 var(--nv-display);
+}
+
+.nv-optseg {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+.nv-optseg .nv-btn {
+  min-width: 76px;
+}
+
+.nv-optstep {
+  flex: none;
+  width: 150px;
+  margin-top: 0;
+}
+
+.nv-optrule {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.nv-optitems {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-optitem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--nv-line);
+}
+
+.nv-optitem:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.nv-optitem.is-off .nv-field:first-child input {
+  color: var(--nv-muted);
+  text-decoration: line-through;
+}
+
+.nv-optitem-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.nv-optprice {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.nv-optitem-line .nv-btn {
+  flex: none;
+}
+
+.nv-optacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nv-btn.is-ghost.is-armed {
+  --nv-edge: var(--nv-ember-a);
+  background: var(--nv-alert);
+  color: #fff;
+}
+
+.nv-optsaid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.nv-optsaid p,
+.nv-optsaid ul {
+  margin: 0;
+}
+
+.nv-optsaid ul,
+.nv-optnotes {
+  padding-left: 20px;
+}
+
+.nv-optnotes {
+  margin: 6px 0 0;
+  font-weight: 600;
+}
+
+.nv-optsaid .nv-btn {
+  align-self: flex-start;
+}
+
+.nv-optstarters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nv-optstarters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* No lápis do prato: o resumo das opções de hoje e o botão que leva à tela das opções. */
+.nv-dishform-options p {
+  margin: 0;
+}
+
+/* ---------- Logomarca (20ª rodada) ----------
+   Botões e figuras de tocar: relevo grosso que afunda ao apertar. A logomarca de agora, o "como o cliente vê" e os avisos só
+   informam: lisos, sem sombra. O nome é um campo afundado (escrever). */
+
+.nv-logoframe {
+  display: grid;
+  place-items: center;
+  width: min(100%, 232px);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 2px solid var(--nv-line);
+  border-radius: var(--nv-r-lg);
+  background: #fff;
+}
+
+.nv-logoframe img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.nv-logoframe.is-none {
+  border-style: dashed;
+  background: var(--nv-peach);
+  color: var(--nv-muted);
+}
+
+.nv-logoframe-none {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.nv-logoframe-none svg {
+  width: 44px;
+  height: 44px;
+}
+
+.nv-logolead {
+  margin: 0;
+  font: 700 20px/1.25 var(--nv-display);
+  text-align: center;
+}
+
+.nv-logoask {
+  margin: 0;
+  font: 700 26px/1.15 var(--nv-display);
+  color: var(--nv-ink);
+}
+
+.nv-logoacts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nv-logoacts > .nv-code-hint {
+  font-weight: 700;
+  text-align: center;
+}
+
+.nv-logocompare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 12px;
+}
+
+.nv-logocompare figure {
+  margin: 0;
+}
+
+.nv-logocompare .nv-logoframe {
+  width: 100%;
+}
+
+.nv-logocompare figcaption {
+  margin-top: 6px;
+  color: var(--nv-muted);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.nv-logoseen {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-peach);
+  font: 700 19px/1.2 var(--nv-display);
+  overflow-wrap: anywhere;
+}
+
+.nv-logobadge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border: 2px solid var(--nv-line);
+  border-radius: 50%;
+  background: #fff;
+}
+
+.nv-logobadge img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.nv-logowarn {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 5px solid var(--nv-sun);
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-peach);
+  color: var(--nv-ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.nv-logovoice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nv-logosaid:empty {
+  margin-top: -8px;
+}
+
+.nv-logogrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.nv-logogrid.is-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 12px;
+}
+
+.nv-logopick {
+  --nv-edge: rgba(27, 67, 50, 0.2);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 112px;
+  padding: 10px 6px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, #fff, #f3efe6);
+  color: var(--nv-ink);
+  font: 700 14px/1.15 var(--nv-ui);
+  overflow-wrap: anywhere;
+  text-align: center;
+  box-shadow: var(--nv-hi), 0 var(--nv-depth) 0 var(--nv-edge), 0 calc(var(--nv-depth) + 9px) 16px -6px var(--nv-floor);
+}
+
+.nv-logopick:active {
+  transform: translateY(calc(var(--nv-depth) - 1px));
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-edge), 0 2px 5px var(--nv-floor);
+}
+
+.nv-logopick:focus-visible {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 3px;
+}
+
+/* Marcado: fundo verde, aro verde e um sinal de certo no canto (não depende só da cor). */
+.nv-logopick[aria-checked="true"] {
+  --nv-edge: var(--nv-green-edge);
+  background: var(--nv-green-soft);
+  outline: 3px solid var(--nv-green);
+  outline-offset: 0;
+}
+
+.nv-logopick[aria-checked="true"]::after {
+  content: "✓";
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--nv-green);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.nv-logopick.is-model {
+  min-height: 0;
+  padding: 8px;
+}
+
+.nv-logopick-guess {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--nv-sun);
+  color: var(--nv-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nv-logoswatch {
+  display: block;
+  width: 52px;
+  height: 52px;
+  border: 2px solid var(--nv-line);
+  border-radius: 50%;
+}
+
+.nv-logocanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.nv-logofood {
+  display: block;
+  width: 64px;
+  height: 64px;
+}
+
+.nv-logolive {
+  width: min(100%, 232px);
+  margin: 0 auto;
+  padding: 8px;
+  border: 2px solid var(--nv-line);
+  border-radius: var(--nv-r-lg);
+  background: #fff;
+}
+
+/* ---------- A casca do painel: entrada, avisos e a moldura das telas antigas ---------- */
+
+.nv-page-login .nv-link {
+  align-self: flex-start;
+}
+
+/* Os avisos ficam no alto, acima do topo de cada tela. A faixa só informa: lisa, sem relevo; o botão é o que se toca. */
+.nv-root.nv-notices {
+  min-height: 0;
+  padding: 10px 16px 0;
+  background: none;
+}
+
+.nv-notices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-peach);
+  color: var(--nv-ink);
+}
+
+.nv-notice.is-warn {
+  background: var(--nv-call-pill);
+}
+
+.nv-notice.is-urgent {
+  background: var(--nv-alert-soft);
+  color: var(--nv-alert);
+}
+
+.nv-notice-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.nv-notice .nv-btn {
+  flex: none;
+}
+
+/* A tela antiga dentro da moldura: ocupa a coluna inteira e não estoura para os lados. */
+.nv-legacy-note {
+  margin: -6px 0 0;
+}
+
+/* O admin.css (antigo) carrega depois e também põe margem e respiro no .adm: aqui a coluna nova manda. */
+.nv-legacy .nv-legacy-body {
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nv-legacy .nv-legacy-body > :first-child {
+  margin-top: 0;
+}
+
+/* As faixas antigas que a casca ainda usa (pausar pedidos, aviso no celular) ficam na coluna nova, acima da tela. */
+.nv-root .adm.nv-legacy-strip,
+.adm.nv-legacy-strip {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 10px 16px 0;
+}
+
+/* A resposta da bolinha de voz: uma faixa curta logo acima da bolinha. Fica por cima da tela, mas deixa o toque passar por fora dela. */
+.nv-root.nv-voice {
+  position: fixed;
+  left: 50%;
+  bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+  z-index: 6;
+  width: min(100%, 480px);
+  min-height: 0;
+  padding: 0 16px;
+  transform: translateX(-50%);
+  background: none;
+  pointer-events: none;
+}
+
+/* Com a folha das escolhas aberta (ela cobre a tela de baixo para cima), a faixa vai para o alto, por cima de tudo. */
+.nv-root.nv-voice.is-top {
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  bottom: auto;
+  z-index: 30;
+}
+
+.nv-voice-bubble {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 16px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-ink);
+  color: #fff;
+  box-shadow: var(--nv-panel-3d);
+  pointer-events: auto;
+}
+
+.nv-voice-bubble.is-listening {
+  background: var(--nv-green);
+}
+
+.nv-voice-bubble.is-warn {
+  background: var(--nv-fire-deep);
+}
+
+.nv-voice-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.nv-voice-heard {
+  margin: 0 0 4px;
+  font-size: 14px;
+  line-height: 1.3;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+
+.nv-voice-say {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.nv-voice-close {
+  flex: none;
+  min-width: 64px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  background: none;
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* A pergunta da voz ("Marcar como esgotado?"): dois botões de dedo, o "Sim" cheio e o "Não" só com contorno. */
+.nv-voice-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.nv-voice-act {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  background: none;
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.nv-voice-act.is-primary {
+  border-color: #fff;
+  background: #fff;
+  color: var(--nv-ink);
+}
+
+.nv-voice-act:active {
+  transform: translateY(1px);
+}
+
+/* ---------- O microfone ao lado de um campo de escrever ---------- */
+
+.nv-root .nv-dictate {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 -10px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--nv-green);
+  cursor: pointer;
+}
+
+.nv-root .nv-dictate svg {
+  width: 24px;
+  height: 24px;
+  color: inherit;
+}
+
+.nv-root .nv-dictate:active {
+  background: rgba(27, 67, 50, 0.12);
+}
+
+.nv-root .nv-dictate:focus-visible {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 1px;
+}
+
+/* Ouvindo: o botão escurece e o ícone pulsa, como a bolinha (não depende só da cor). */
+.nv-root .nv-dictate.is-listening {
+  background: var(--nv-ink);
+  color: #fff;
+}
+
+.nv-root .nv-dictate.is-listening svg {
+  animation: nv-beat 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-root .nv-dictate.is-listening svg {
+    animation: none;
+  }
+}
+
+/* ---------- Horário: agora (aberto, fechado, pausado), os sete dias e o que a pessoa falou ---------- */
+
+.nv-hours-now {
+  gap: 4px;
+  --nv-tape: var(--nv-green);
+}
+
+.nv-hours-now.is-closed {
+  --nv-tape: var(--nv-alert);
+}
+
+.nv-hours-now.is-paused {
+  --nv-tape: var(--nv-sun);
+}
+
+.nv-hours-now.is-none {
+  --nv-tape: var(--nv-slab-edge);
+}
+
+.nv-hours-pause {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nv-hours-day .nv-order-where {
+  font-size: 24px;
+}
+
+.nv-hours-shift {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: end;
+}
+
+.nv-hours-time {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nv-hours-time-label {
+  color: var(--nv-muted);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.nv-hours-time .nv-field {
+  padding: 0 10px;
+}
+
+.nv-hours-time .nv-field input {
+  width: 100%;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tirar o turno vai numa linha própria, com o nome escrito: assim as duas horas têm a largura toda (nenhuma fica cortada, nem com letra grande) e fica claro qual turno sai. */
+.nv-hours-remove {
+  grid-column: 1 / -1;
+  justify-self: end;
+}
+
+/* O que o celular está ouvindo e o que ele entendeu: faixa lisa e verde clara (só informa; os botões dela tocam). */
+.nv-hours-listen,
+.nv-hours-heard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+}
+
+.nv-hours-listen p,
+.nv-hours-heard p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.nv-hours-heard ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.nv-hours-said,
+.nv-hours-understood {
+  font-weight: 700;
+}
+
+.nv-hours-failed {
+  color: var(--nv-alert);
+  font-weight: 700;
+}
+
+.nv-hours-summary {
+  margin: 0;
+  color: var(--nv-ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.nv-hours-unsaved {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nv-hours-missing {
+  margin: 0 0 4px;
+}
+
+.nv-page-hours .nv-error ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.nv-page-hours .nv-error,
+.nv-page-hours .nv-ok {
+  margin: 0;
+}
+
+/* Celular bem pequeno (320 px): os dois horários cabem lado a lado, inteiros, sem rolar de lado. */
+@media (max-width: 340px) {
+  .nv-hours-shift {
+    gap: 6px;
+  }
+
+  .nv-hours-time .nv-field {
+    padding: 0 6px;
+  }
+
+  .nv-hours-time .nv-field input {
+    font-size: 16px;
+  }
+}
+
+/* ---------- Divulgar (o antigo "Meu link") ---------- */
+
+.nv-page-share .nv-share-box {
+  gap: 14px;
+}
+
+/* O link inteiro, marcável com um toque: quem não quiser o botão copia segurando o dedo. */
+.nv-share-url {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font: 600 16px/1.35 var(--nv-ui);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+/* O texto como o cliente vai ler no WhatsApp: balão de conversa. Só informa, então fica liso. */
+.nv-share-bubble {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 18px 18px 18px 6px;
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 16px;
+  line-height: 1.4;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* Dois botões pequenos lado a lado; com letra grande eles descem um para baixo do outro. */
+.nv-share-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11em), 1fr));
+  gap: 10px;
+}
+
+.nv-share-manual {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nv-share-manual p {
+  margin: 0;
+}
+
+.nv-share-manual textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--nv-line);
+  border-radius: var(--nv-r-sm);
+  background: #fff;
+  color: var(--nv-ink);
+  font: 500 16px/1.4 var(--nv-ui);
+  overflow-wrap: anywhere;
+  resize: none;
+}
+
+/* Os pratos que viram cartão: foto, nome e preço. Tocar escolhe (borda grossa embaixo, afunda ao apertar). */
+.nv-share-dishes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5em), 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-share-dishes li {
+  display: flex;
+}
+
+.nv-share-dish {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 8px 10px;
+  border: 0;
+  border-radius: var(--nv-r-md);
+  background: linear-gradient(180deg, var(--nv-peach-hi), var(--nv-peach));
+  color: var(--nv-ink);
+  text-align: left;
+  box-shadow: var(--nv-hi), 0 var(--nv-depth) 0 var(--nv-peach-edge), 0 14px 16px -10px var(--nv-floor);
+}
+
+.nv-share-dish:active {
+  transform: translateY(calc(var(--nv-depth) - 1px));
+  box-shadow: var(--nv-hi), 0 1px 0 var(--nv-peach-edge), 0 2px 4px var(--nv-floor);
+}
+
+.nv-share-dish.is-on {
+  background: var(--nv-shine), var(--nv-fire);
+  color: #1b1200;
+  box-shadow: var(--nv-hi), 0 var(--nv-depth) 0 var(--nv-fire-edge), 0 14px 18px -8px var(--nv-glow);
+}
+
+.nv-share-dish .nv-photo {
+  width: 100%;
+  font-size: 34px;
+}
+
+.nv-share-dish-name {
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.nv-share-dish-price {
+  color: var(--nv-fire-deep);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.nv-share-dish.is-on .nv-share-dish-price {
+  color: #1b1200;
+}
+
+/* O cartão escolhido: formato, prévia da imagem e o que fazer com ela. */
+.nv-share-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 6px;
+}
+
+.nv-share-preview {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  padding: 10px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-peach);
+}
+
+.nv-share-preview img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 30em;
+  border-radius: var(--nv-r-sm);
+  box-shadow: 0 8px 18px -8px var(--nv-floor);
+}
+
+.nv-share-preview .nv-empty {
+  margin: 0;
+}
+
+.nv-share-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.nv-share-check input {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  accent-color: var(--nv-green);
+}
+
+.nv-share-sub {
+  margin: 6px 0 0;
+  font: 700 18px/1.15 var(--nv-display);
+}
+
+/* Onde colocar o link: três dicas curtas, a última com atalho para as mesas. */
+.nv-share-where {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nv-share-where ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-share-where li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-green-soft);
+  overflow-wrap: anywhere;
+}
+
+.nv-share-where li span {
+  color: var(--nv-muted);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+/* ---------- Vendas (o caderno do dono do sistema para conquistar restaurantes) ---------- */
+
+/* Botão de ação sem volta (dizer que o negócio não quer ser procurado, apagar): vermelho, nunca perto do verde. */
+.nv-btn.is-alert {
+  --nv-edge: #7a1409;
+  background: var(--nv-shine), var(--nv-alert);
+  color: #fff;
+}
+
+.nv-page-sales {
+  gap: 16px;
+}
+
+.nv-sale-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nv-sale-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-sale {
+  --nv-tape: var(--nv-fire);
+  gap: 10px;
+}
+
+.nv-sale-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nv-sale-name {
+  flex: 1 1 10em;
+  min-width: 0;
+  margin: 0;
+  font: 700 21px/1.15 var(--nv-display);
+  overflow-wrap: anywhere;
+}
+
+.nv-sale-meta,
+.nv-sale-contact,
+.nv-sale-origin,
+.nv-sale-line,
+.nv-sale-time,
+.nv-sale-subject,
+.nv-sale-ask {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-sale-meta {
+  color: var(--nv-muted);
+  font-size: 15px;
+}
+
+.nv-sale-contact {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.nv-sale-origin {
+  color: var(--nv-muted);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.nv-sale-line {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.nv-sale-time {
+  color: var(--nv-fire-deep);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.nv-sale-time.is-good {
+  color: var(--nv-green);
+}
+
+/* Cada pedaço dentro do cartão (rascunho, perguntas, confirmação) é um vão liso: só informa. */
+.nv-sale-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--nv-r-md);
+  background: #f6f3ea;
+}
+
+.nv-sale-box.is-warn {
+  background: var(--nv-alert-soft);
+}
+
+.nv-sale-ask {
+  color: var(--nv-alert);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.nv-sale-subject {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+/* Os canais: botões de escolher (um só está ligado). A borda grossa mostra qual. */
+.nv-sale-chans {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nv-sale-chan {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 2px solid var(--nv-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--nv-ink);
+  font: 700 16px/1 var(--nv-ui);
+}
+
+.nv-sale-chan.is-on {
+  border-color: var(--nv-green);
+  background: var(--nv-green-soft);
+}
+
+.nv-sale-chan:focus-visible {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 2px;
+}
+
+.nv-sale-script {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding-left: 22px;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.nv-sale-script li {
+  overflow-wrap: anywhere;
+}
+
+.nv-sale-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nv-sale-note {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-peach);
+  color: var(--nv-ink);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.nv-sale-saved {
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.nv-sale-readnote {
+  font-size: 15px;
+}
+
+.nv-sale-sender,
+.nv-sale-fieldrow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nv-sale-label {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.nv-sale-form {
+  gap: 14px;
+}
+
+/* O funil: cada etapa com a barra proporcional ao maior número e o número ao lado. */
+.nv-sale-funnel,
+.nv-sale-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-sale-funnel li {
+  display: grid;
+  grid-template-columns: minmax(0, 8.5em) minmax(0, 1fr) 2.2em;
+  align-items: center;
+  gap: 10px;
+}
+
+.nv-sale-funnel-label {
+  font-size: 15px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.nv-sale-funnel-bar {
+  height: 14px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  overflow: hidden;
+}
+
+.nv-sale-funnel-bar i {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: 999px;
+  background: var(--nv-green);
+}
+
+.nv-sale-funnel b {
+  font-size: 17px;
+  text-align: right;
+}
+
+.nv-sale-sources li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-green-soft);
+  overflow-wrap: anywhere;
+}
+
+.nv-sale-sources li span {
+  color: var(--nv-muted);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+@media (max-width: 340px) {
+  .nv-sale-funnel li {
+    grid-template-columns: minmax(0, 6.5em) minmax(0, 1fr) 2em;
+    gap: 8px;
+  }
+
+  .nv-sale-name {
+    font-size: 19px;
+  }
+}

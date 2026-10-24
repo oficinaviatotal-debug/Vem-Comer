@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import "./styles.css";
 import { fetchCompanyBySlug, getToken } from "./service/api";
 import { lastCompany } from "./service/lastCompany";
@@ -11,7 +11,35 @@ import OwnerLogin from "./signup/OwnerLogin";
 import SalesPage from "./signup/SalesPage";
 import SignupPage from "./signup/SignupPage";
 import TermsPage from "./signup/TermsPage";
+import { FLAG_KEY, readFlag } from "./painel/shellLogic";
 import type { Company } from "./customer/types";
+
+// O painel novo só é baixado por quem liga a chave (?novo=1): para todos os outros nada muda.
+const PanelShell = lazy(() => import("./painel/PanelShell"));
+// O mesmo vale para o pedido do cliente no visual novo: quem não liga a chave continua no aplicativo de sempre.
+const OrderFlow = lazy(() => import("./loja/OrderFlow"));
+
+/**
+ * A chave do painel novo: desligada por padrão. `?novo=1` liga (e este aparelho lembra), `?novo=0` desliga.
+ * Armazenamento bloqueado (aba privada) só faz a chave valer para esta abertura.
+ */
+function newPanelOn(): boolean {
+  let remembered: string | null = null;
+  try {
+    remembered = window.localStorage.getItem(FLAG_KEY);
+  } catch {
+    /* sem armazenamento: vale só o endereço */
+  }
+  const flag = readFlag(location.search, remembered, import.meta.env.VITE_PAINEL_NOVO);
+  if (flag.remember) {
+    try {
+      window.localStorage.setItem(FLAG_KEY, flag.remember);
+    } catch {
+      /* idem */
+    }
+  }
+  return flag.on;
+}
 
 /**
  * Entry point. The address decides what opens:
@@ -39,6 +67,7 @@ export default function App() {
   const [loading, setLoading] = useState(Boolean(slug));
   const [error, setError] = useState(false);
   const [admin, setAdmin] = useState(wantsPanel(location.search) || Boolean(rememberedSlug));
+  const [freshPanel] = useState(newPanelOn);
 
   useEffect(() => {
     if (!slug) return;
@@ -85,7 +114,22 @@ export default function App() {
   }
 
   if (admin) {
+    if (freshPanel) {
+      return (
+        <Suspense fallback={<main className="loading-state">Abrindo o painel…</main>}>
+          <PanelShell companyId={company.id} companySlug={company.slug} companyName={company.name} onBack={() => setAdmin(false)} />
+        </Suspense>
+      );
+    }
     return <AdminPanel companyId={company.id} companySlug={company.slug} companyName={company.name} onBack={() => setAdmin(false)} />;
+  }
+
+  if (freshPanel) {
+    return (
+      <Suspense fallback={<main className="loading-state">Carregando…</main>}>
+        <OrderFlow company={company} tableId={tableId} teamHref={ownerLoginUrl(location.origin, location.pathname)} />
+      </Suspense>
+    );
   }
 
   return (

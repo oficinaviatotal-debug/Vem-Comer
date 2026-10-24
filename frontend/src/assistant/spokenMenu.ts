@@ -6,6 +6,10 @@
  * cleaning ("eu vendo", "que custa", "a"), headings ("de bebida", "pizzas:") and a guess of the
  * category from words of the dish ("coca" is a drink, "x-" is a sandwich).
  *
+ * What goes inside the dish is read too: "x-tudo custa 25, vai ter ovo, bacon, hambúrguer e salame" gives
+ * the dish "X-Tudo" at 25 with the description "Ovo, bacon, hambúrguer, salame". Only words the owner
+ * said are kept; nothing is made up.
+ *
  * Nothing here is guessed silently: a price that does not read as a clean number is left empty
  * (the assistant asks it later), and a long run of words with no price and no "de"/"com" is
  * returned as `unclear` for the owner to tap, never saved as one strange dish.
@@ -23,6 +27,8 @@ export type SpokenDish = {
   category: string;
   /** True when the owner said the heading ("de bebida ..."); a guess is false. */
   categorySaid: boolean;
+  /** What goes inside, as the owner said it: "Ovo, bacon, hambúrguer, salame". "" when nothing was said. */
+  description: string;
 };
 
 export type SpokenMenu = {
@@ -38,6 +44,11 @@ export type SpokenMenu = {
    * dish the owner said without a price. "" when there is none.
    */
   lonePrice: string;
+  /**
+   * What goes inside, said with no dish ("vai ter ovo e bacon" after a pause): it belongs to the last
+   * dish the owner said. "" when there is none.
+   */
+  loneDescription: string;
 };
 
 /* ------------------------------------------------------------------ tokens */
@@ -122,7 +133,16 @@ const LEAD = new Set([
   // "vamos lá, x-tudo 25", "vou falar o x-tudo", "vamos fazer o x-salada 22": talk before the dish
   "vamos", "vamo", "bora", "vou", "vai", "falar", "fala", "falo", "fazer", "faz", "seguinte", "primeiro",
   "proximo", "proxima",
+  // "eu quero que você cadastre um x-tudo": the order itself is not part of the dish
+  "voce", "ce", "cadastre", "registre", "registra", "registrar", "inclua", "inclui", "incluir", "crie", "cria",
+  "criar", "salve", "salva", "salvar", "adicione", "anote", "pode", "posso", "por", "favor", "gostaria", "ter",
 ]);
+
+/** "gostaria de cadastrar", "preciso pra cadastrar": the little word before the order is dropped with it. */
+const COMMAND_VERBS = new Set([
+  "cadastrar", "registrar", "incluir", "adicionar", "anotar", "criar", "colocar", "salvar", "botar", "fazer", "falar",
+]);
+const COMMAND_PREPS = new Set(["de", "pra", "para"]);
 
 /**
  * A piece that starts with one of these is talk about a price, never a dish: "unidade se for o combo 3"
@@ -358,6 +378,288 @@ function headingAt(tokens: Token[], index: number): string {
   return HEADINGS[tokens[index]?.base ?? ""] ?? "";
 }
 
+/* ------------------------------------------------------------ ingredients */
+
+/**
+ * Words that say what goes inside the dish: "x-tudo 25, vai ter ovo, bacon e salame", "x-salada leva alface e tomate".
+ * Only these start a list of ingredients. "com" is part of many dish names ("pizza com catupiry"), so it counts only
+ * right after a price ("x-tudo 25 com ovo e bacon").
+ */
+const INSIDE_STRONG: string[][] = [
+  ["vai", "ter"], ["vai", "levar"], ["vai", "com"], ["vai", "dentro"], ["tem", "dentro"], ["leva"], ["levam"], ["levando"],
+  ["contem"], ["vem", "com"], ["feito", "com"], ["feita", "com"], ["recheado", "com"], ["recheada", "com"],
+  ["ingredientes"], ["ingrediente"],
+];
+/** "tem" is also how a list of dishes is opened ("tem coca 6"), so it counts only after a dish or a price. */
+const INSIDE_WEAK = new Set(["tem", "tendo"]);
+/** Dropped at the start of each ingredient: "um ovo", "com queijo", "são ovo". */
+const INSIDE_SKIP = new Set([
+  "vai", "ter", "leva", "levam", "levando", "levar", "tem", "tendo", "contem", "vem", "ingredientes", "ingrediente", "dentro", "sao", "e",
+  "o", "a", "os", "as", "um", "uma", "uns", "umas", "mais", "tambem", "ainda", "com",
+]);
+/** The owner trails off: "e etc", "entre outros", "e tal". Dropped from the end of the list. */
+const FILLER_TAILS: string[][] = [
+  ["etc"], ["et", "cetera"], ["e", "tal"], ["e", "outros"], ["e", "outras"], ["entre", "outros"], ["entre", "outras"],
+  ["e", "mais"], ["e", "assim", "por", "diante"], ["e", "por", "ai", "vai"], ["por", "ai"], ["e", "outras", "coisas"],
+];
+const MAX_INGREDIENTS = 25;
+const MAX_INGREDIENT_CHARS = 60;
+/** What goes inside a dish: the server takes up to 500; the menu is kept shorter so it stays readable. */
+export const MAX_DESCRIPTION_CHARS = 300;
+
+/** "Bacon" -> "bacon"; "X-Bacon" stays (a name with a capital inside is a name). */
+function lowerFirst(text: string): string {
+  const rest = text.slice(1);
+  return rest === rest.toLocaleLowerCase("pt-BR") ? text.charAt(0).toLocaleLowerCase("pt-BR") + rest : text;
+}
+
+/** ["ovo", "bacon", "salame"] -> "Ovo, bacon, salame". Kept to the size the menu has room for. */
+export function joinIngredients(items: string[]): string {
+  const seen = new Set<string>();
+  const clean: string[] = [];
+  for (const raw of items) {
+    const item = lowerFirst(raw.replace(/\s+/g, " ").trim().replace(/^[.,;:!?-]+|[.,;:!?-]+$/g, "").trim()).slice(0, MAX_INGREDIENT_CHARS).trim();
+    const id = normalizeSpeech(item);
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    clean.push(item);
+    if (clean.length >= MAX_INGREDIENTS) break;
+  }
+  let text = clean.join(", ");
+  if (text.length > MAX_DESCRIPTION_CHARS) {
+    const cut = text.slice(0, MAX_DESCRIPTION_CHARS);
+    const comma = cut.lastIndexOf(", ");
+    text = comma > 0 ? cut.slice(0, comma) : cut.trim();
+  }
+  return text ? text.charAt(0).toLocaleUpperCase("pt-BR") + text.slice(1) : "";
+}
+
+/** How many words at the end are a closer ("pronto", "só isso"), and whether there was one. */
+function closing(tokens: Token[]): { total: number; finished: boolean } {
+  let total = tokens.length;
+  let finished = false;
+  for (;;) {
+    const tail = tokens.slice(0, total).map((token) => token.norm).join(" ");
+    const closer = CLOSERS.find((phrase) => tail === phrase || tail.endsWith(` ${phrase}`));
+    if (!closer) break;
+    finished = true;
+    total -= closer.split(" ").length;
+  }
+  return { total, finished };
+}
+
+type Inside = { at: number; items: string[] };
+
+/**
+ * Cuts the "what goes inside" clauses out of what was said, so the price reader does not take "ovo" and "bacon" for dishes.
+ * Returns the rest of the phrase and, for each clause, where it was cut (in words of the rest) and the ingredients.
+ *
+ * When it is not clear where a list ends (a price follows with no pause, as in "x-tudo 25 leva ovo e bacon x-salada 22"),
+ * nothing is cut: the old reading stays and the owner sees the strange name on the conference screen, never a lost price.
+ */
+function pullInside(transcript: string, line = false): { text: string; clauses: Inside[] } {
+  const tokenized = tokenize(transcript);
+  const { tokens, words, breaksAfter } = tokenized;
+  const { total } = closing(tokens);
+  const cuts: Array<{ a: number; b: number; items: string[] }> = [];
+
+  /** A dish before it, a price before it ("x-tudo custa 25 vai ter..."), or nothing; and whether an "e" joined them. */
+  const subjectBefore = (index: number): { kind: "price" | "dish" | "none"; joined: boolean } => {
+    let j = index - 1;
+    let joined = false;
+    while (j >= 0 && TRAIL.has(tokens[j].norm)) {
+      if (SEPARATORS.has(tokens[j].norm)) joined = true;
+      j -= 1;
+    }
+    if (j < 0) return { kind: "none", joined };
+    if (isNumberAt(tokens, j) || CURRENCY.has(tokens[j].norm)) return { kind: "price", joined };
+    const word = tokens[j].norm;
+    if (LEAD.has(word) || HEADING_PREP.has(word) || headingAt(tokens, j)) return { kind: "none", joined };
+    return { kind: "dish", joined };
+  };
+
+  const strongAt = (index: number): number => {
+    for (const sequence of INSIDE_STRONG) {
+      if (sequence.every((word, offset) => tokens[index + offset]?.norm === word)) return sequence.length;
+    }
+    return 0;
+  };
+
+  /** Where the list that starts at `from` ends; null when it is not safe to cut. */
+  const clauseEnd = (from: number, kind: "price" | "dish" | "none"): number | null => {
+    let j = from;
+    let stop = -1;
+    let end = total;
+    while (j < total) {
+      if (isNumberAt(tokens, j)) {
+        const run = readRun(tokenized, j);
+        const next = tokens[run.numEnd];
+        // "2 ovos", "200 g de carne": an amount inside the list, not a price
+        const amount =
+          !run.hasCurrency &&
+          next &&
+          (MEASURES.has(next.norm) || (COUNTED.has(next.norm) && (quantityOf(tokenized, run) ?? MAX_COUNTED + 1) <= MAX_COUNTED));
+        if (amount) {
+          j = run.numEnd;
+          continue;
+        }
+        stop = j;
+        break;
+      }
+      const lastOfWord = j + 1 >= tokens.length || tokens[j + 1].word !== tokens[j].word;
+      if (lastOfWord && /[.;!?]$/.test(words[tokens[j].word]) && tokens[j].norm !== "etc") {
+        end = j + 1;
+        break;
+      }
+      j += 1;
+    }
+    if (stop >= 0) {
+      // a price follows
+      if (kind === "none") return null;
+      if (kind === "dish") {
+        // "x-tudo tem ovo e bacon custa 25": the list stops before "custa"; the price is the dish's
+        end = stop;
+        while (end > from && TRAIL.has(tokens[end - 1].norm)) end -= 1;
+      } else {
+        // "x-tudo 25, vai ter ovo, bacon, x-salada 22": the price after the list is the next dish's. Only a pause tells where it starts.
+        let pause = -1;
+        for (let k = from; k < stop; k += 1) if (breaksAfter.has(k)) pause = k;
+        if (pause < 0) return null;
+        end = pause + 1;
+      }
+    }
+    return end > from ? end : null;
+  };
+
+  /** The ingredients inside [from, end): split at pauses and at "e"; "etc" and the like dropped. */
+  const itemsOf = (from: number, end: number): string[] => {
+    let to = end;
+    for (let again = true; again; ) {
+      again = false;
+      for (const filler of FILLER_TAILS) {
+        const start = to - filler.length;
+        if (start >= from && filler.every((word, offset) => tokens[start + offset].norm === word)) {
+          to = start;
+          again = true;
+        }
+      }
+    }
+    const items: string[] = [];
+    const add = (a: number, b: number) => {
+      const text = spanText(tokenized, a, b);
+      if (text) items.push(text);
+    };
+    const flush = (a: number, b: number) => {
+      let start = a;
+      while (start < b && INSIDE_SKIP.has(tokens[start].norm)) start += 1;
+      if (start >= b) return;
+      // the words of the piece (a word like "x-bacon" has two tokens)
+      const groups: Array<[number, number]> = [];
+      for (let k = start; k < b; k += 1) {
+        const last = groups[groups.length - 1];
+        if (last && tokens[last[1] - 1].word === tokens[k].word) last[1] = k + 1;
+        else groups.push([k, k + 1]);
+      }
+      // Two words are one ingredient ("queijo coalho", "molho verde"). Longer with no pause and no "e":
+      // the phone wrote "ovo bacon salame" for "ovo, bacon, salame"; "de/com" and a number stay with their neighbours.
+      if (groups.length <= 2) {
+        add(start, b);
+        return;
+      }
+      const glue = (g: number) => CONNECTORS.has(tokens[groups[g][0]].norm);
+      let g = 0;
+      while (g < groups.length) {
+        let h = g;
+        while (h + 1 < groups.length && (glue(h) || glue(h + 1) || isNumberAt(tokens, groups[h][0]))) h += 1;
+        add(groups[g][0], groups[h][1]);
+        g = h + 1;
+      }
+    };
+    let itemStart = from;
+    for (let k = from; k < to; k += 1) {
+      if (SEPARATORS.has(tokens[k].norm)) {
+        flush(itemStart, k);
+        itemStart = k + 1;
+      } else if (breaksAfter.has(k)) {
+        flush(itemStart, k + 1);
+        itemStart = k + 1;
+      }
+    }
+    flush(itemStart, to);
+    return items;
+  };
+
+  let index = 0;
+  while (index < total) {
+    let length = strongAt(index);
+    const word = tokens[index].norm;
+    const weak = length === 0 && INSIDE_WEAK.has(word);
+    const afterPrice = length === 0 && word === "com";
+    if (weak || afterPrice) length = 1;
+    if (length === 0) {
+      index += 1;
+      continue;
+    }
+    const subject = subjectBefore(index);
+    // "tem" and "com" start a list only after a dish or a price, and not as "25 e tem coca 6" (another dish)
+    const fits = weak ? subject.kind !== "none" && !subject.joined : afterPrice ? subject.kind === "price" && !subject.joined : true;
+    const end = fits ? clauseEnd(index + length, subject.kind) : null;
+    if (end === null) {
+      index += 1;
+      continue;
+    }
+    const items = itemsOf(index + length, end);
+    if (items.length > 0) cuts.push({ a: index, b: end, items });
+    index = end;
+  }
+
+  // One dish per line, written: after the only price on the line, what is left is what goes inside ("x-tudo 25 ovo, bacon, salame").
+  if (line && cuts.length === 0) {
+    const prices: Run[] = [];
+    for (let i = 0; i < total; i += 1) {
+      if (!isNumberAt(tokens, i)) continue;
+      const run = readRun(tokenized, i);
+      const next = tokens[run.numEnd];
+      const amount =
+        !run.hasCurrency &&
+        next &&
+        (MEASURES.has(next.norm) || (COUNTED.has(next.norm) && (quantityOf(tokenized, run) ?? MAX_COUNTED + 1) <= MAX_COUNTED));
+      if (amount) {
+        i = run.numEnd - 1;
+        continue;
+      }
+      prices.push(run);
+      i = Math.max(i, run.end - 1);
+    }
+    const only = prices.length === 1 ? prices[0] : null;
+    if (only && only.start >= 1 && only.end < total && !EACH.has(tokens[only.end].norm)) {
+      const items = itemsOf(only.end, total);
+      if (items.length > 0) cuts.push({ a: only.end, b: total, items });
+    }
+  }
+
+  if (cuts.length === 0) return { text: transcript, clauses: [] };
+
+  const drop = new Set<number>();
+  const clauses: Inside[] = [];
+  let removed = 0;
+  for (const cut of cuts) {
+    const firstWord = tokens[cut.a].word;
+    const lastWord = tokens[cut.b - 1].word;
+    let count = 0;
+    for (let w = firstWord; w <= lastWord; w += 1) {
+      if (!drop.has(w)) {
+        drop.add(w);
+        count += 1;
+      }
+    }
+    clauses.push({ at: firstWord - removed, items: cut.items });
+    removed += count;
+  }
+  const text = words.filter((_, w) => !drop.has(w)).join(" ");
+  return { text, clauses };
+}
+
 /* ---------------------------------------------------------------- reading */
 
 type Part = { from: number; to: number };
@@ -367,23 +669,47 @@ type Part = { from: number; to: number };
  * at the end of the previous phrase, so "de bebida: coca 6" and then "guaraná 5" both go to Bebidas.
  */
 export function parseSpokenMenu(transcript: string, currentCategory = ""): SpokenMenu {
-  const tokenized = tokenize(transcript);
+  // Written on several lines (or with ";"): one dish per line, so what comes after the price of a line is what goes inside.
+  const lines = transcript.split(/[\r\n;]+/).map((piece) => piece.trim()).filter(Boolean);
+  if (lines.length < 2) return readPhrase(transcript, currentCategory, false);
+
+  const merged: SpokenMenu = { dishes: [], unclear: [], finished: false, heading: currentCategory, lonePrice: "", loneDescription: "" };
+  for (const piece of lines) {
+    const one = readPhrase(piece, merged.heading, true);
+    const last = merged.dishes[merged.dishes.length - 1];
+    // a price or a list said alone on its line belongs to the dish before it
+    if (one.lonePrice) {
+      if (last && !last.price) last.price = one.lonePrice;
+      else if (!last && !merged.lonePrice) merged.lonePrice = one.lonePrice;
+    }
+    if (one.loneDescription) {
+      if (last && !last.description) last.description = one.loneDescription;
+      else if (!last && !merged.loneDescription) merged.loneDescription = one.loneDescription;
+    }
+    merged.dishes.push(...one.dishes);
+    merged.unclear.push(...one.unclear);
+    merged.heading = one.heading;
+    merged.finished = merged.finished || one.finished;
+  }
+  return merged;
+}
+
+function readPhrase(transcript: string, currentCategory: string, line: boolean): SpokenMenu {
+  // What goes inside the dish is cut out first, so "ovo" and "bacon" are not read as dishes.
+  const inside = pullInside(transcript, line);
+  const tokenized = tokenize(inside.text);
   const { tokens, breaksAfter } = tokenized;
   const dishes: SpokenDish[] = [];
+  /** Where each dish sits in the tokens: its words start at `from`; the dish (with its price) goes up to `upto`. */
+  const bounds: Array<{ from: number; upto: number }> = [];
   const unclear: string[] = [];
   let heading = currentCategory;
-  let finished = false;
   let lonePrice = "";
 
   // "... pronto" / "... só isso" at the very end closes the menu.
-  let total = tokens.length;
-  for (;;) {
-    const tail = tokens.slice(0, total).map((token) => token.norm).join(" ");
-    const closer = CLOSERS.find((phrase) => tail === phrase || tail.endsWith(` ${phrase}`));
-    if (!closer) break;
-    finished = true;
-    total -= closer.split(" ").length;
-  }
+  const closed = closing(tokens);
+  const total = closed.total;
+  const finished = closed.finished;
 
   /**
    * Drops opening words ("eu vendo", "e", "a") and reads headings ("de bebida") at the start of
@@ -399,6 +725,11 @@ export function parseSpokenMenu(transcript: string, currentCategory = ""): Spoke
     for (;;) {
       while (start < to && LEAD.has(tokens[start].norm) && !headingAt(tokens, start)) start += 1;
       if (start >= to) return { start, said };
+      // "gostaria de cadastrar um x-tudo": the little word goes with the order
+      if (start + 1 < to && COMMAND_PREPS.has(tokens[start].norm) && COMMAND_VERBS.has(tokens[start + 1].norm)) {
+        start += 2;
+        continue;
+      }
       // "de bebida (tem) ...", "na parte de lanches ..."
       let probe = start;
       let sawPrep = false;
@@ -469,13 +800,28 @@ export function parseSpokenMenu(transcript: string, currentCategory = ""): Spoke
     return parts;
   };
 
+  /**
+   * "um x-tudo, no x-tudo custa 25": the name said twice around a pause or a little word is one name.
+   * Returns how many words the name has once the repeat is gone.
+   */
+  const repeatLength = (from: number, end: number): number => {
+    const length = end - from;
+    for (let half = 1; half * 2 <= length; half += 1) {
+      const same = Array.from({ length: half }, (_, k) => tokens[from + k].norm === tokens[end - half + k].norm).every(Boolean);
+      const middle = tokens.slice(from + half, end - half).map((token) => token.norm);
+      if (same && middle.length <= 2 && middle.every((word) => CONNECTORS.has(word) || LEAD.has(word))) return half;
+    }
+    return length;
+  };
+
   /** One dish from [from, to), cleaned; or a piece for `unclear`. */
-  const addDish = (part: Part, price: string) => {
+  const addDish = (part: Part, price: string, upto = part.to) => {
     const opened = openSpan(part.from, part.to);
     if (opened.said) heading = opened.said;
     const from = opened.start;
-    const { end } = closeSpan(from, part.to);
-    if (end <= from) return;
+    const { end: closedEnd } = closeSpan(from, part.to);
+    if (closedEnd <= from) return;
+    const end = from + repeatLength(from, closedEnd);
     const length = end - from;
     const text = spanText(tokenized, from, end);
     if (!text) return;
@@ -495,11 +841,23 @@ export function parseSpokenMenu(transcript: string, currentCategory = ""): Spoke
     // Talk about a price ("unidade se for o combo 3"): not a dish, even with a number after it.
     if (PRICE_TALK_START.has(words[0]) || words.includes(CONDITION_WORD)) return;
     const name = tidyDishName(text);
-    dishes.push({ name, price, category: heading || guessCategory(name), categorySaid: Boolean(heading) });
+    // the same name said just before, with no price yet ("x-tudo, no x-tudo custa 25"): one dish, now with its price
+    const before = dishes[dishes.length - 1];
+    if (before && !before.price && normalizeSpeech(before.name.replace(/-/g, " ")) === normalizeSpeech(name.replace(/-/g, " "))) {
+      before.price = price;
+      if (heading) {
+        before.category = heading;
+        before.categorySaid = true;
+      }
+      bounds[bounds.length - 1].upto = Math.max(bounds[bounds.length - 1].upto, upto);
+      return;
+    }
+    dishes.push({ name, price, category: heading || guessCategory(name), categorySaid: Boolean(heading), description: "" });
+    bounds.push({ from, upto: Math.max(upto, end) });
   };
 
   /** A whole stretch of dish words, with the price that closed it ("" at the end of the phrase). */
-  const addSpan = (from: number, to: number, price: string, eachAfter = false) => {
+  const addSpan = (from: number, to: number, price: string, eachAfter = false, priceEnd = to) => {
     const opened = openSpan(from, to);
     if (opened.said) heading = opened.said;
     const start = opened.start;
@@ -513,7 +871,10 @@ export function parseSpokenMenu(transcript: string, currentCategory = ""): Spoke
       return;
     }
     const parts = split(start, end, each);
-    parts.forEach((part, index) => addDish(part, each || index === parts.length - 1 ? price : ""));
+    parts.forEach((part, index) => {
+      const last = index === parts.length - 1;
+      addDish(part, each || last ? price : "", last ? priceEnd : part.to);
+    });
   };
 
   const hasDishWords = (from: number, to: number) => {
@@ -567,16 +928,44 @@ export function parseSpokenMenu(transcript: string, currentCategory = ""): Spoke
     if (!hasDishWords(spanStart, index)) {
       // a price with no dish before it: the owner paused between the dish and the price
       if (price && dishes.length === 0 && !lonePrice) lonePrice = price;
-      else if (price && dishes.length > 0 && !dishes[dishes.length - 1].price) dishes[dishes.length - 1].price = price;
+      else if (price && dishes.length > 0 && !dishes[dishes.length - 1].price) {
+        dishes[dishes.length - 1].price = price;
+        bounds[bounds.length - 1].upto = run.end;
+      }
     } else {
-      addSpan(spanStart, index, price, eachAfter);
+      addSpan(spanStart, index, price, eachAfter, run.end);
     }
     spanStart = run.end;
     index = run.end;
   }
   addSpan(spanStart, total, "");
 
-  return { dishes, unclear, finished, lonePrice, heading };
+  // What goes inside goes to the dish it was said about: the one whose words or price surround the place it was cut from.
+  const inner: string[][] = dishes.map(() => []);
+  const lone: string[] = [];
+  for (const clause of inside.clauses) {
+    const found = tokens.findIndex((token) => token.word >= clause.at);
+    const place = found < 0 ? tokens.length : found;
+    let target = -1;
+    bounds.forEach((bound, i) => {
+      if (bound.from < place && place <= bound.upto) target = i;
+    });
+    if (target < 0) {
+      for (let i = bounds.length - 1; i >= 0; i -= 1) {
+        if (bounds[i].upto <= place) {
+          target = i;
+          break;
+        }
+      }
+    }
+    if (target >= 0) inner[target].push(...clause.items);
+    else lone.push(...clause.items);
+  }
+  dishes.forEach((dish, i) => {
+    dish.description = joinIngredients(inner[i]);
+  });
+
+  return { dishes, unclear, finished, lonePrice, loneDescription: joinIngredients(lone), heading };
 }
 
 /** True when what was said has at least one dish with a price: a menu, not a command. */
