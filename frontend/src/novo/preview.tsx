@@ -12,6 +12,7 @@ import Desk from "./Desk";
 import Orders from "./Orders";
 import Deliveries from "./Deliveries";
 import Hours from "./Hours";
+import Share from "./Share";
 import Settle from "./Settle";
 import MenuSetup from "./MenuSetup";
 import Dishes, { NOT_BUSY } from "./Dishes";
@@ -71,6 +72,10 @@ import { ORDERS_CHANGED, nextStatusOf, ordersViewOf, type PanelOrder } from "../
 import { deliveriesViewOf, pickedText, type CourierOrder } from "../painel/deliveriesLogic";
 import { armKey, markedIds, settleViewOf, toggleLeft } from "../painel/settleLogic";
 import { addShift, copyToAll, fromApi, hoursViewOf, removeShift, setClosed, setShift, validate, type ApiHours } from "../painel/hoursViewLogic";
+import { renderCard } from "../painel/shareCardRender";
+import { anotherCaption, anotherMessage, captionOf, cardSpec, dishChoices, messageOf, shareViewOf, type CardFormat } from "../painel/shareLogic";
+import { createPhraser, plainPhraser } from "./phrasing";
+import type { ShareManual } from "./types";
 import { HOURS_SAVED } from "./copy";
 import {
   allBack,
@@ -130,7 +135,7 @@ import {
 import { codeIsComplete, deliveredText, onlyCodeDigits } from "../courier/courierLogic";
 import type { CashView } from "../courier/courierLogic";
 import { emptyText, isKitchenTab, kitchenTabs, ticketsFor, type KitchenTabId } from "../cozinha/kitchenLogic";
-import { DISH_MENUS_EXAMPLE, DISH_PRODUCTS_EXAMPLE, OPTIONS_EXAMPLE, MENU_READ_EXAMPLE, MENU_SPOKEN_EXAMPLE, MODEL_EXAMPLE, MODEL_TYPES_EXAMPLE, ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, hoursExample, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
+import { DISH_MENUS_EXAMPLE, DISH_PRODUCTS_EXAMPLE, OPTIONS_EXAMPLE, MENU_READ_EXAMPLE, MENU_SPOKEN_EXAMPLE, MODEL_EXAMPLE, MODEL_TYPES_EXAMPLE, ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, hoursExample, shareProductsExample, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
 import { choicesViewOf, confirmChoices, nextQuantity, pressOption } from "../loja/choicesLogic";
 import { bagProblem, bagViewOf } from "../loja/bagLogic";
 import { copiedOutcome, pixOf, ratingOf, trackOf } from "../loja/trackingLogic";
@@ -589,6 +594,93 @@ function SettlePreview({ stage = "normal" }: { stage?: SettleStage }) {
       }}
       onRefresh={() => setNotice("")}
       showMenu
+    />
+  );
+}
+
+type ShareStage = "normal" | "prato" | "status" | "sem-foto" | "comprido" | "muitos" | "sem-prato" | "esgotados" | "carregando" | "erro" | "copiado" | "manual" | "sem-nome";
+
+const SHARE_URL = "https://vem.example/?empresa=pastelaria-do-ze";
+
+function SharePreview({ stage = "normal" }: { stage?: ShareStage }) {
+  const name = stage === "sem-nome" ? "" : "Pastelaria do Zé";
+  const products = stage === "sem-prato" ? [] : shareProductsExample({ many: stage === "muitos", soldOutOnly: stage === "esgotados" });
+  const dishes = dishChoices(products, (path) => path ?? "");
+  const firstId = stage === "sem-foto" ? "s2" : stage === "comprido" ? "s3" : "s1";
+  const picked = stage === "prato" || stage === "status" || stage === "sem-foto" || stage === "comprido" || stage === "copiado" || stage === "manual";
+  const [talker] = useState(() => createPhraser());
+  const [message, setMessage] = useState(() => messageOf(plainPhraser, name, SHARE_URL));
+  const [showAll, setShowAll] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(picked ? firstId : null);
+  const [format, setFormat] = useState<CardFormat>(stage === "status" ? "status" : "feed");
+  const [brand, setBrand] = useState(true);
+  const dish = dishes.find((candidate) => candidate.id === selectedId) ?? null;
+  const [caption, setCaption] = useState(() => (dish ? captionOf(plainPhraser, dish.name, dish.price, SHARE_URL) : ""));
+  const [image, setImage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState<ShareManual["id"] | null>(stage === "copiado" ? "link" : null);
+  const manual: ShareManual | null = stage === "manual" ? { id: "link", text: SHARE_URL } : null;
+
+  useEffect(() => {
+    setImage(null);
+    if (!dish) return;
+    let cancelled = false;
+    let url = "";
+    setBusy(true);
+    renderCard(cardSpec({ format, restaurant: name, dish, url: SHARE_URL, brand }))
+      .then((blob) => {
+        if (cancelled) return;
+        url = URL.createObjectURL(blob);
+        setImage(url);
+        setBusy(false);
+      })
+      .catch(() => setBusy(false));
+    return () => {
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [dish, format, brand, name]);
+
+  const view = shareViewOf({
+    person: "João Silva, dono",
+    name,
+    link: SHARE_URL,
+    message,
+    load: stage === "carregando" ? "loading" : stage === "erro" ? "error" : "ready",
+    error: "Não consegui buscar os seus pratos. Tente de novo.",
+    dishes,
+    totalProducts: products.length,
+    showAll,
+    selectedId: dish ? dish.id : null,
+    format,
+    brand,
+    caption,
+    image,
+    busy,
+    cardError: "",
+    canSendFile: stage !== "sem-foto",
+    copied,
+    manual,
+    live: "",
+  });
+  return (
+    <Share
+      view={view}
+      showMenu
+      onCopyLink={() => setCopied("link")}
+      onCopyMessage={() => setCopied("message")}
+      onOtherMessage={() => setMessage((now) => anotherMessage(talker, name, SHARE_URL, now))}
+      onPickDish={(id) => {
+        const next = dishes.find((candidate) => candidate.id === id);
+        if (!next) return;
+        setSelectedId(id);
+        setCaption(captionOf(plainPhraser, next.name, next.price, SHARE_URL));
+      }}
+      onMoreDishes={() => setShowAll(true)}
+      onFormat={setFormat}
+      onBrand={setBrand}
+      onCopyCaption={() => setCopied("caption")}
+      onOtherCaption={() => dish && setCaption((now) => anotherCaption(talker, dish.name, dish.price, SHARE_URL, now))}
     />
   );
 }
@@ -1640,6 +1732,22 @@ function Screen() {
     "horario-erro": "erro",
   };
   if (hoursRoutes[route]) return <HoursPreview stage={hoursRoutes[route]} />;
+  const shareRoutes: Record<string, ShareStage> = {
+    divulgar: "normal",
+    "divulgar-prato": "prato",
+    "divulgar-status": "status",
+    "divulgar-sem-foto": "sem-foto",
+    "divulgar-comprido": "comprido",
+    "divulgar-muitos": "muitos",
+    "divulgar-sem-prato": "sem-prato",
+    "divulgar-esgotados": "esgotados",
+    "divulgar-carregando": "carregando",
+    "divulgar-erro": "erro",
+    "divulgar-copiado": "copiado",
+    "divulgar-manual": "manual",
+    "divulgar-sem-nome": "sem-nome",
+  };
+  if (shareRoutes[route]) return <SharePreview stage={shareRoutes[route]} />;
   if (route === "acerto") return <SettlePreview />;
   if (route === "acerto-confirmar") return <SettlePreview stage="confirmar" />;
   if (route === "acerto-calmo") return <SettlePreview stage="calmo" />;

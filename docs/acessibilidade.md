@@ -2,7 +2,7 @@
 
 Escrito em 24/10/2026, a pedido do GD (23/10/2026, 21:22: "verificando os botões, verificando os comandos, a acessibilidade"). O público do Vem Comer inclui quem lê pouco, quem usa o celular com a mão suja, quem aumentou a letra do aparelho e quem usa leitor de tela. Acessibilidade aqui não é enfeite: é o mesmo trabalho de "menos escrita, mais facilidade".
 
-**Estado:** medido por máquina em mais de 160 telas da página de conferência (`preview-novo.html`), em celular de 390, 360 e 320 px de largura. **Não foi testado em celular de verdade nem com TalkBack ou VoiceOver**; isso está na lista de pendências (`docs/teste-no-celular.md`, "Fica para depois").
+**Estado:** medido por máquina em 175 telas da página de conferência (`preview-novo.html`), em celular de 390, 360 e 320 px de largura. **Não foi testado em celular de verdade nem com TalkBack ou VoiceOver**; isso está na lista de pendências (`docs/teste-no-celular.md`, "Fica para depois").
 
 ## O que é medido
 

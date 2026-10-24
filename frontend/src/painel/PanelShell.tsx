@@ -15,6 +15,7 @@ import MenuSetupScreen from "./MenuSetupScreen";
 import OrdersScreen from "./OrdersScreen";
 import PanelMenu from "./PanelMenu";
 import SettleScreen from "./SettleScreen";
+import ShareScreen from "./ShareScreen";
 import KitchenScreen from "../cozinha/KitchenScreen";
 import TodayScreen from "../hoje/TodayScreen";
 import { isManager, viewTitle } from "../nav/navLogic";
@@ -248,6 +249,8 @@ function Panel({ companyId, companySlug, companyName, onBack, user, onLogout }: 
         return <LogoScreen key="logo" companyId={companyId} onBack={() => go("inicio")} onMenu={openMenu} />;
       case "hours":
         return <HoursScreen key="hours" person={person} onMenu={openMenu} />;
+      case "share":
+        return <ShareScreen key="share" companyId={companyId} slug={companySlug} name={companyName ?? ""} person={person} onGo={go} onMenu={openMenu} />;
     }
   }
 

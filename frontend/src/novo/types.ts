@@ -958,3 +958,69 @@ export type HoursView = {
   /** A frase que o leitor de tela lê quando algo muda. */
   live: string;
 };
+
+// ---------------------------------------------------------------- Divulgar (o "Meu link" do painel)
+
+export type ShareDishView = {
+  id: string;
+  name: string;
+  /** "R$ 9,00". */
+  priceText: string;
+  /** A foto do prato (caminho já resolvido) ou nada. */
+  photo: string | null;
+  selected: boolean;
+  /** O que o leitor de tela lê no botão: "Fazer o cartão de Pastel de carne". */
+  label: string;
+};
+
+export type ShareFormatView = {
+  id: "feed" | "status";
+  label: string;
+  /** Uma linha que diz para que serve ("Quadrado alto, para o feed"). */
+  hint: string;
+  selected: boolean;
+};
+
+export type ShareCardView = {
+  dishName: string;
+  /** O texto que vai junto com a imagem. */
+  caption: string;
+  formats: ShareFormatView[];
+  /** Mostra "Feito com o Vem Comer" no pé do cartão. */
+  brand: boolean;
+  /** A imagem pronta (endereço de imagem) ou nada enquanto monta. */
+  image: string | null;
+  busy: boolean;
+  error: string;
+  /** O celular sabe mandar a imagem direto para outro aplicativo (senão só baixa). */
+  canSendFile: boolean;
+  /** O que o leitor de tela lê na imagem. */
+  alt: string;
+  captionHref: string;
+};
+
+export type ShareManual = { id: "link" | "message" | "caption"; text: string };
+
+export type ShareView = {
+  sub: string;
+  /** O link do restaurante, inteiro. */
+  link: string;
+  openHref: string;
+  /** A mensagem pronta para mandar aos clientes. */
+  message: string;
+  messageHref: string;
+  load: "loading" | "ready" | "error";
+  error: string;
+  dishes: ShareDishView[];
+  /** Quantos pratos ficaram de fora da lista curta (o botão "Ver os outros pratos" mostra); 0 = nenhum. */
+  hiddenDishes: number;
+  /** Por que não há pratos para fazer cartão ("Cadastre os pratos…"); vazio quando há. */
+  dishesHint: string;
+  card: ShareCardView | null;
+  /** O que acabou de ser copiado (o botão mostra "Copiado"). */
+  copied: ShareManual["id"] | null;
+  /** Copiar não foi permitido pelo celular: o texto aparece selecionado para copiar à mão. */
+  manual: ShareManual | null;
+  /** A frase que o leitor de tela lê quando algo muda. */
+  live: string;
+};

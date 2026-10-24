@@ -5,7 +5,6 @@ import type { OldScreen } from "./shellLogic";
 import BusinessPanel from "../business/BusinessPanel";
 import CostsPanel from "../costs/CostsPanel";
 import CourierHome from "../courier/CourierHome";
-import ShareLinkView from "../nav/ShareLinkView";
 import ApprovalsView from "../nav/ApprovalsView";
 import TablePoster from "../mesa/TablePoster";
 import PushToggle from "../push/PushToggle";
@@ -415,8 +414,6 @@ export default function LegacyView({ screen, companyId, slug, name, role, plan, 
       return <CostsPanel companyId={companyId} />;
     case "pix":
       return <PixSettingsPanel companyId={companyId} canEdit={role === "OWNER"} />;
-    case "link":
-      return <ShareLinkView slug={slug} name={name || slug} onGo={onGo} />;
     case "zones":
       return <DeliveryPanel />;
     case "team":

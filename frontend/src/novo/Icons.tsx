@@ -61,7 +61,11 @@ export type NvIconName =
   | "qr"
   | "phone"
   | "camera"
-  | "image";
+  | "image"
+  | "copy"
+  | "share"
+  | "download"
+  | "chat";
 
 const PATHS: Record<NvIconName, ReactNode> = {
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
@@ -206,6 +210,22 @@ const PATHS: Record<NvIconName, ReactNode> = {
       <path d="m4 17 5-4.5 3.5 3 3-2.5L20 16" />
     </>
   ),
+  copy: (
+    <>
+      <rect x="9" y="9" width="11" height="11" rx="2.5" />
+      <path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15" />
+    </>
+  ),
+  share: (
+    <>
+      <circle cx="6" cy="12" r="2.5" />
+      <circle cx="18" cy="6" r="2.5" />
+      <circle cx="18" cy="18" r="2.5" />
+      <path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6" />
+    </>
+  ),
+  download: <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14" />,
+  chat: <path d="M5 18.5 6.2 15A7.5 7.5 0 1 1 9 17.8L5 18.5Z" />,
 };
 
 export default function NvIcon({ name }: { name: NvIconName }) {

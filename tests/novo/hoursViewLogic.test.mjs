@@ -284,7 +284,7 @@ test("os textos do Horário são frases inteiras, sem jargão nem exclamação",
 
 test("o Horário novo substituiu o antigo na casca: o menu abre a tela nova", () => {
   const shell = read("painel/shellLogic.ts");
-  assert.match(shell, /horario: "hours",\n\};/, "horário está entre as telas novas");
+  assert.match(shell, /horario: "hours",\n/, "horário está entre as telas novas");
   assert.doesNotMatch(read("painel/legacyPanels.tsx"), /HoursPanel/, "a ponte não carrega mais a tela antiga");
   assert.match(read("painel/PanelShell.tsx"), /case "hours":\s*return <HoursScreen key="hours" person=\{person\} onMenu=\{openMenu\} \/>/);
 });

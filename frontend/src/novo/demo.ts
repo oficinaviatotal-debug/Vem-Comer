@@ -702,3 +702,30 @@ export function hoursExample(over: { configured?: boolean; paused?: boolean; ope
     open_message: configured ? (over.message ?? "Aberto até 15h. Volta às 18h.") : "",
   };
 }
+
+// ---------------------------------------------------------------- Divulgar (conferência do cartão do prato)
+
+/** Uma "foto" de prato desenhada em SVG (a página de conferência não tem foto de verdade): prato, comida e fundo de cor. */
+function plateSvg(table: string, plate: string, food: string, bits: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900"><rect width="900" height="900" fill="${table}"/><circle cx="450" cy="430" r="330" fill="${plate}"/><circle cx="450" cy="430" r="250" fill="#ffffff" opacity="0.55"/><ellipse cx="450" cy="430" rx="190" ry="130" fill="${food}"/><circle cx="380" cy="400" r="30" fill="${bits}"/><circle cx="500" cy="450" r="38" fill="${bits}"/><circle cx="440" cy="490" r="24" fill="${bits}"/><circle cx="520" cy="390" r="22" fill="${bits}"/></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+export const SHARE_PHOTO_PASTEL = plateSvg("#7a3b12", "#f4e3c8", "#d68a2c", "#8a3a10");
+export const SHARE_PHOTO_ACAI = plateSvg("#2f1450", "#efe7f6", "#5b1f8a", "#f3d34a");
+
+/** Os pratos do cadastro como o servidor os manda, para a conferência da tela Divulgar. */
+export function shareProductsExample(over: { many?: boolean; soldOutOnly?: boolean } = {}): Product[] {
+  const base: Product[] = [
+    { id: "s1", menu_id: "m1", name: "Pastel de carne", price: "9.00", image_url: SHARE_PHOTO_PASTEL },
+    { id: "s2", menu_id: "m1", name: "Pastel de queijo", price: "8.50" },
+    { id: "s3", menu_id: "m1", name: "Pastel de frango com catupiry e azeitonas pretas (tamanho grande)", price: "14.50" },
+    { id: "s4", menu_id: "m2", name: "Açaí de 500 ml", price: "18.00", image_url: SHARE_PHOTO_ACAI },
+    { id: "s5", menu_id: "m2", name: "Caldo de cana", price: "7.00" },
+    { id: "s6", menu_id: "m1", name: "Esfiha de carne", price: "6.00", sold_out: true },
+  ];
+  if (over.soldOutOnly) return base.map((product) => ({ ...product, sold_out: true }));
+  if (!over.many) return base;
+  const more = ["Pastel de pizza", "Pastel de palmito", "Pastel de carne seca", "Pastel de camarão", "Pastel doce de banana", "Pastel de nutella", "Suco de laranja", "Guaraná lata"];
+  return [...base, ...more.map((name, index): Product => ({ id: `m${index}`, menu_id: "m1", name, price: String(7 + index) }))];
+}

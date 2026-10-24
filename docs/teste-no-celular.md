@@ -75,5 +75,6 @@ Quando o GD puder, com **um Android (Chrome) e um iPhone (Safari)**, na ordem em
 10. **Celular simples.** Em um Android de entrada (2 a 3 GB), as telas abrem rápido? A rolagem trava? As peças em relevo (3D) pesam?
 11. **Sol forte e mão suja.** Na rua (entregador) e na cozinha: dá para ler com o brilho baixo? Os botões acertam com o dedo molhado ou engordurado?
 12. **Rede ruim.** Com o sinal indo e voltando, o pedido sai duas vezes? As mensagens de erro dizem o que fazer?
+13. **Cartão do prato (tela Meu link).** Escolher um prato com foto e outro sem: o cartão aparece em poucos segundos? *Mandar o cartão* abre o menu de compartilhar com a imagem e o texto, e o Instagram (feed) e o status do WhatsApp **aceitam a imagem sem cortar o nome nem o preço**? *Baixar a imagem* guarda na galeria (Android) ou em Arquivos (iPhone)? *Copiar o link* funciona sem pedir permissão, e quando o aparelho recusa o texto aparece marcado? A foto grande (5 a 10 MB) deixa o celular lento ao montar o cartão? O texto do cartão em *Status* fica longe dos botões que o Instagram põe em cima e embaixo?
 
-**Como me contar:** o mesmo modelo de erro acima (um erro por mensagem, com print). Quando o GD me mandar "testei o item 3 e deu certo", eu risco aqui. Os itens 1 e 5 são os que mais podem mudar o desenho.
+**Como me contar:** o mesmo modelo de erro acima (um erro por mensagem, com print). Quando o GD me mandar "testei o item 3 e deu certo", eu risco aqui. Os itens 1 e 5 são os que mais podem mudar o desenho; o 13, o cartão.
