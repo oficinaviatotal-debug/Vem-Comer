@@ -16,7 +16,7 @@ import hmac
 import outreach
 
 KINDS = ("dono", "cliente", "candidato", "empresa", "contato")
-PURPOSES = ("termos", "privacidade", "maior_de_18", "ia_foto_exterior", "alertas_email", "divulgacao_email")
+PURPOSES = ("termos", "privacidade", "maior_de_18", "ia_foto_exterior", "alertas_email", "divulgacao_email", "contato_comercial")
 CHANNELS = ("site", "painel", "email", "api", "presencial")
 # O que todo dono aceita ao se cadastrar (as novidades por e-mail são opcionais e entram só se ele marcar).
 SIGNUP_PURPOSES = ("termos", "privacidade", "maior_de_18")
@@ -55,16 +55,46 @@ def record(
     ip: str | None = None,
     secret: str = "",
 ) -> None:
+    record_hash(
+        cur,
+        outreach.email_hash(email),
+        kind=kind,
+        purpose=purpose,
+        granted=granted,
+        version=version,
+        channel=channel,
+        document_sha256=document_sha256,
+        ip=ip,
+        secret=secret,
+    )
+
+
+def record_hash(
+    cur,
+    subject_hash: str,
+    *,
+    kind: str,
+    purpose: str,
+    granted: bool,
+    version: str,
+    channel: str,
+    document_sha256: str | None = None,
+    ip: str | None = None,
+    secret: str = "",
+) -> None:
+    """Igual a `record`, para quem já tem a impressão digital (por exemplo, a de um telefone, quando a pessoa não deu e-mail)."""
     if kind not in KINDS or purpose not in PURPOSES or channel not in CHANNELS:
         raise ValueError("tipo, finalidade ou canal desconhecido")
     if not isinstance(granted, bool):
         raise ValueError("granted precisa ser verdadeiro ou falso")
     if not version or len(version) > 40:
         raise ValueError("versão do texto é obrigatória")
+    if not isinstance(subject_hash, str) or len(subject_hash) != 64:
+        raise ValueError("impressão digital inválida")
     cur.execute(
         SQL_RECORD,
         (
-            outreach.email_hash(email),
+            subject_hash,
             kind,
             purpose,
             granted,

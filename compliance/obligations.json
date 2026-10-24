@@ -315,6 +315,31 @@
     "falta": "Criar a mesma tabela no Vem Trabalhar e trocar as impressões digitais entre os dois produtos."
   },
   {
+    "id": "VENDAS-CONTATO-COMERCIAL",
+    "area": "comunicacao",
+    "norma": "LGPD art. 7º IX (interesse legítimo), art. 10 (finalidade e minimização) e art. 18 §2º (oposição); política comercial do WhatsApp",
+    "exige": "O primeiro contato comercial com um negócio de comida só pelo canal que ele mesmo divulgou ou pediu, feito por uma pessoa, com a origem do contato anotada; poucos contatos; \"não quero\" vale na hora e para sempre; quem pede para apagar é apagado.",
+    "aplica_a": ["vem_comer"],
+    "controle": "Caderno de vendas (migração 021) em que todo negócio entra com a origem do contato; no máximo 3 contatos por negócio e 2 por WhatsApp, com espera entre eles; nenhuma rota envia mensagem (a pessoa do Vem envia e toca em \"já mandei\"); \"não quero\" bloqueia telefone e e-mail por impressão digital, apaga o resto da ficha e impede cadastrar de novo; apagar a ficha a pedido do titular; guarda máxima de 24 meses para negócio encerrado; o formulário público \"quero que o Vem fale comigo\" nasce fechado, exige a caixa marcada, guarda a prova do consentimento e não aceita contato que já pediu para sair.",
+    "status": "parcial",
+    "fontes": ["lgpd"],
+    "verificado_em": "2026-10-24",
+    "evidencias": [
+      "backend/vendas.py",
+      "backend/test_vendas.py::CanTouchTests",
+      "backend/test_vendas.py::ClassifyReplyTests",
+      "backend/test_vendas.py::TouchAndReplyTests",
+      "backend/test_vendas_db.py::test_saying_no_blocks_everywhere_and_wipes_the_person_from_the_record",
+      "backend/test_vendas_db.py::test_someone_who_said_no_does_not_come_back_by_another_door",
+      "backend/test_vendas_db.py::test_forgetting_removes_the_record_and_its_history_and_keeps_only_fingerprints",
+      "backend/test_vendas_endpoint.py::AccessTests",
+      "backend/test_vendas_endpoint.py::InterestFormTests",
+      "backend/test_vendas.py::AddInboundTests",
+      "backend/inventario_dados.json"
+    ],
+    "falta": "Parecer do advogado sobre o interesse legítimo para o primeiro contato com negócio que divulgou o telefone em público e sobre o texto do formulário \"quero que o Vem fale comigo\" (que fica fechado até o GD ligar INTEREST_OPEN); texto padrão da mensagem de apresentação (com quem fala, por que fala e como parar); confirmação por e-mail (dupla) quando houver provedor; rotina agendada que chama a guarda de 24 meses; tela do painel para o GD."
+  },
+  {
     "id": "EMAIL-REMETENTE",
     "area": "comunicacao",
     "norma": "Regras de remetente do Gmail e do Yahoo (SPF, DKIM, DMARC, descadastro de um clique, spam abaixo de 0,3%)",

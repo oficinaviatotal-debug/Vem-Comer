@@ -21,6 +21,7 @@ import business_api
 import compliance_api
 import consent
 import titular_api
+import vendas_api
 import courier
 import delivery
 from costs_view import (  # noqa: F401 (cost_since e build_cost_view tambem sao usados pelos testes)
@@ -5155,6 +5156,10 @@ titular_api.register_private(app, require_auth=require_auth, require_platform_ad
 
 # Painel "Seu negócio" (vendas, ticket médio, horários, pratos que dão lucro, tempos): só dono e gerente.
 business_api.register(app, require_roles=require_roles, require_company_access=require_company_access, error_response=error_response)
+
+# Maquina de vendas do Vem (vendas.py, migracao 021): so o administrador da plataforma. Nada aqui envia mensagem.
+vendas_api.register(app, require_platform_admin=require_platform_admin, error_response=error_response)
+vendas_api.register_public(app, error_response=error_response)
 
 
 @app.route('/api/admin/subscription', methods=['GET'])
