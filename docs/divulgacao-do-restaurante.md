@@ -57,9 +57,18 @@ Divido pelo que **eu posso construir sem enviar nada a ninguém** e o que precis
 
 Mensagem fria no WhatsApp ou no Telegram; lista comprada ou raspada de contatos pessoais; promessa que o sistema não sabe cumprir ("entrega em 20 minutos" sem medir); depoimento ou avaliação inventados; imagem de prato que não é o do restaurante.
 
-## 3. O que o GD precisa decidir (quando puder)
+## 3. As quatro decisões e o que o GD respondeu
 
-1. "Feito com o Vem Comer" no cartão: **ligado** (como está) ou desligado por padrão?
-2. O nome do menu: **Meu link** (como está) ou **Divulgar**?
-3. Posso começar a **página pública do restaurante** (2.1, item 1) em ramo separado, em rascunho?
-4. O **"Meus clientes"** (2.2, item 6): quer que eu escreva o texto de consentimento e o desenho da tela para o advogado ver, ainda sem ligar nada?
+O GD respondeu em 24/10/2026, 06:57: "…e para as demais decisões, tudo ok. Por favor, prosseguir." Tratei as quatro como **aprovadas como eu havia proposto**, sem que isso seja o "pode" para juntar, ir ao ar ou enviar mensagem:
+
+1. **"Feito com o Vem Comer" no cartão: ligado por padrão** (como está). O dono pode desligar.
+2. **Nome do menu: "Meu link"** (como está).
+3. **Página pública do restaurante:** começo em **ramo separado, em rascunho** (próxima rodada desta frente).
+4. **"Meus clientes":** escrevo o **texto de consentimento e o desenho da tela para o advogado ver**, sem ligar nada.
+
+## 4. Duas frentes, duas responsabilidades
+
+Na mesma mensagem o GD separou o trabalho em dois lados:
+
+- **O dono do software (Vem Tecnologia)** entra em contato com clientes e vai atrás de clientes, "tudo isso o mais automatizado possível", para conquistar novos bares, restaurantes, sorveterias, pastelarias e outros. Isso é a **máquina de vendas do Vem** (`docs/maquina-de-vendas-do-vem.md`, PR #77): o sistema acha, lembra, mede e escreve o rascunho; uma pessoa do Vem envia, uma por vez, e toca em "Já mandei". Nada envia sozinho.
+- **O dono do restaurante** tem o trabalho de marketing de **divulgar o link dele**: o da pastelaria, o da sorveteria, o da pizzaria. O Vem dá a ferramenta (esta tela, o cartão, o QR e, em seguida, a página pública); divulgar é trabalho dele.
