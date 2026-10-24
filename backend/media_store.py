@@ -88,3 +88,16 @@ def public_urls(company_id, key) -> dict:
         "image_url": f"/media/{company}/{key}.webp",
         "thumb_url": f"/media/{company}/{key}-thumb.webp",
     }
+
+
+def read_full(company_id, key, max_bytes: int = 6 * 1024 * 1024) -> bytes | None:
+    """Os bytes da foto grande, ou None (chave inválida, arquivo ausente ou grande demais). Nunca levanta erro:
+    quem usa (a imagem de prévia da página pública) se vira sem a foto."""
+    try:
+        full_path, _ = _paths(company_id, key)
+        if os.path.getsize(full_path) > max_bytes:
+            return None
+        with open(full_path, "rb") as fh:
+            return fh.read()
+    except (OSError, ValueError):
+        return None

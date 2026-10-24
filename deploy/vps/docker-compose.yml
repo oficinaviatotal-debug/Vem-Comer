@@ -73,6 +73,11 @@ services:
       SIGNUP_MAX_PER_DAY: ${SIGNUP_MAX_PER_DAY:-}
       SIGNUP_PER_IP_PER_HOUR: ${SIGNUP_PER_IP_PER_HOUR:-}
       SIGNUP_PER_IP_PER_DAY: ${SIGNUP_PER_IP_PER_DAY:-}
+      # página pública do restaurante (/r/<restaurante>, prévia do WhatsApp, Google, QR do link): DESLIGADA até o administrador
+      # ligar (veja abrir-pagina-publica.sh). PUBLIC_PAGE_INDEX só vale com a primeira ligada e convida o Google.
+      PUBLIC_PAGE_OPEN: ${PUBLIC_PAGE_OPEN:-}
+      PUBLIC_PAGE_INDEX: ${PUBLIC_PAGE_INDEX:-}
+      PUBLIC_BASE_URL: https://${SITE_ADDRESS}
       # cobrança do plano do restaurante (R$ 190/mês): DESLIGADA até o administrador ligar (veja cobranca.sh)
       BILLING_ENFORCED: ${BILLING_ENFORCED:-}
       PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-}

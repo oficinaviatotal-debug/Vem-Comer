@@ -26,3 +26,5 @@ jobs:
           for f in deploy/vps/*.sh; do bash -n "$f"; done
       - name: Updater tests (needs root)
         run: sudo -E env "PATH=$PATH" python3 deploy/vps/test_atualizar_sozinho.py
+      - name: Public page switch tests (needs root)
+        run: sudo -E env "PATH=$PATH" python3 deploy/vps/test_abrir_pagina_publica.py

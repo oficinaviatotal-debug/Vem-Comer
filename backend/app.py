@@ -45,6 +45,7 @@ import menu_templates
 import order_status
 import pix
 import product_fields
+import public_page_routes
 import push
 import signup
 import subscription
@@ -5647,6 +5648,18 @@ def resolve_platform_help(request_id):
     except Exception as e:
         _close_quietly(conn, cur)
         return error_response("Erro ao resolver o pedido", e)
+
+
+# Pagina publica do restaurante (/r/<restaurante>, previa do WhatsApp, Google, QR do link). DESLIGADA de fabrica:
+# so responde com PUBLIC_PAGE_OPEN=1 (deploy/vps/abrir-pagina-publica.sh). Veja public_page.py.
+public_page_routes.register(
+    app,
+    query_db=query_db,
+    get_db_connection=get_db_connection,
+    public_company=public_company,
+    accepts_orders=company_accepts_orders,
+    require_roles=require_roles,
+)
 
 
 if __name__ == '__main__':

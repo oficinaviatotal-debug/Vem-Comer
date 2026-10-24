@@ -31,6 +31,21 @@
 		file_server
 	}
 
+	# Página pública do restaurante (/r/<restaurante>: cardápio legível, prévia do WhatsApp, dados do Google, QR do link),
+	# o robots.txt e o sitemap.xml: o servidor monta. DESLIGADOS de fábrica: sem PUBLIC_PAGE_OPEN=1 no .env todos
+	# respondem 404 (veja deploy/vps/abrir-pagina-publica.sh e docs/pagina-publica-do-restaurante.md).
+	handle /r/* {
+		reverse_proxy api:5000
+	}
+
+	handle /robots.txt {
+		reverse_proxy api:5000
+	}
+
+	handle /sitemap.xml {
+		reverse_proxy api:5000
+	}
+
 	handle {
 		root * /srv/site
 		@casca path / /index.html /sw.js
