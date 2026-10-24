@@ -56,3 +56,24 @@ Atrapalha o uso? (não deixa pedir / incomoda / só estético)
 ```
 
 Um erro por mensagem, com o print. Eu repito no meu lado, corrijo, testo e digo qual versão contém a correção.
+
+## Fica para depois: testar o visual novo em celular de verdade (Android e iPhone)
+
+Pedido do GD em 23/10/2026, 21:22: "Em relação aos testes, coloque junto com as outras pendências que faremos depois." **Nada abaixo foi feito ainda**, e o que foi conferido até aqui foi num navegador de computador com microfone de teste (`docs/acessibilidade.md` e `docs/front-end-novo.md`). O visual novo (`?novo=1`) só deve ir ao ar depois deste roteiro, e depois do "pode" do GD.
+
+Quando o GD puder, com **um Android (Chrome) e um iPhone (Safari)**, na ordem em que mais pode dar errado:
+
+1. **Voz.** Falar em português de verdade, em cozinha com barulho e em sala calma: preço ("vinte e cinco reais", "dezoito e cinquenta"), horário ("de segunda a sexta das 11 às 15 e das 18 às 23"), prato esgotado ("acabou o pastel de carne"), nome de tela na bolinha ("pedidos", "mesas"), "desfazer", "sim" e "não". Anotar o que o aparelho **não** entendeu para eu afinar as listas de palavras (`service/spokenHours`, `assistant/voiceIO`, `novo/voice`). No iPhone, conferir se o microfone existe no Safari e o que a tela faz quando não existe (deve mostrar só os botões, sem erro).
+2. **Microfone e permissão.** O pedido de permissão aparece na hora certa? Se a pessoa negar, a tela explica e continua tocável? Funciona com o aplicativo instalado na tela inicial?
+3. **Campo de hora.** O seletor de hora do aparelho (12 h ou 24 h, rodinha ou teclado) deixa preencher "11:00" e "22:30" sem erro? Os dois turnos cabem na tela?
+4. **Teclado em cima dos botões.** Com o teclado aberto, **Salvar**, **Cadastrar** e **Enviar o pedido** continuam à vista ou o teclado cobre? A barra de baixo respeita o "queixo" do iPhone e a barra do Android?
+5. **Leitor de tela de verdade.** TalkBack (Android) e VoiceOver (iPhone), nas telas principais: cardápio do cliente, sacola, acompanhar o pedido, Hoje, Pedidos, Cozinha, Pratos, Horário. A ordem faz sentido? Os avisos (pedido novo, erro, "salvo") são lidos sozinhos? O código de entrega é lido por inteiro?
+6. **Letra grande.** Aumentar o texto do aparelho ao máximo (Android: Tamanho da fonte; iPhone: Texto maior) e passar pelas mesmas telas: algo rola de lado ou fica cortado?
+7. **Instalar na tela inicial e aviso.** Pedir de novo com o aplicativo **fechado**: o aviso chegou? A cozinha vibra e apita pedido novo (o iPhone não vibra pelo navegador, e a tela deve continuar avisando de outro jeito)?
+8. **Foto e câmera.** Cardápio por foto, foto do prato, logomarca: abrir a câmera e a galeria, foto grande (5 a 10 MB), foto de lado. Demora? Aparece o que está acontecendo?
+9. **Copiar e abrir outro aplicativo.** Copiar o código Pix, ligar para o restaurante (`tel:`), abrir o WhatsApp, compartilhar o link do cardápio.
+10. **Celular simples.** Em um Android de entrada (2 a 3 GB), as telas abrem rápido? A rolagem trava? As peças em relevo (3D) pesam?
+11. **Sol forte e mão suja.** Na rua (entregador) e na cozinha: dá para ler com o brilho baixo? Os botões acertam com o dedo molhado ou engordurado?
+12. **Rede ruim.** Com o sinal indo e voltando, o pedido sai duas vezes? As mensagens de erro dizem o que fazer?
+
+**Como me contar:** o mesmo modelo de erro acima (um erro por mensagem, com print). Quando o GD me mandar "testei o item 3 e deu certo", eu risco aqui. Os itens 1 e 5 são os que mais podem mudar o desenho.

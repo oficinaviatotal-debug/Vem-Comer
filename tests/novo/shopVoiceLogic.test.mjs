@@ -236,6 +236,25 @@ test("a voz nunca envia o pedido: \"enviar\", \"finalizar\", \"pagar\" só abrem
   assert.doesNotMatch(read("loja/shopVoiceLogic.ts"), /kind: "(send|pay|order|call)"/);
 });
 
+test("\"enviar\" e \"terminar\" sozinhos também levam à sacola (antes a lista tinha as palavras e nada as ligava)", () => {
+  const filled = [line("p1", "Pastel de carne", 9, 1)];
+  for (const said of ["enviar", "terminar", "Enviar!", "pode enviar", "quero terminar"]) {
+    const answer = ask(said, { cart: filled });
+    assert.equal(answer.kind, "go", said);
+    assert.equal(answer.screen, "bag", said);
+    assert.match(answer.say, /Enviar pedido/, `${said}: o envio continua sendo no botão`);
+    const here = ask(said, { cart: filled, screen: "bag" });
+    assert.equal(here.kind, "stay", said);
+    assert.match(here.say, /Enviar pedido/, `${said}: na sacola, a voz diz onde tocar`);
+  }
+  // Sacola vazia: diz que não há o que enviar, nunca finge.
+  assert.equal(ask("enviar").kind, "stay");
+  assert.match(ask("enviar").say, /vazia|nada na sacola|sacola/);
+  // Prato com o verbo ainda é prato, e uma palavra solta qualquer continua sem ser entendida.
+  assert.equal(ask("quero pastel de carne", { cart: filled }).kind, "add");
+  assert.equal(ask("banana azul").kind, "unknown");
+});
+
 // ---------------------------------------------------------------- buscar no cardápio
 
 test("\"buscar suco\" e \"tem suco?\" buscam, preenchem a caixa quando ela existe e dizem o que a tela vai mostrar", () => {

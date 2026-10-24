@@ -141,7 +141,7 @@ export default function JobsHome({ jobs, city, onTab, onSearch, onShortcut, onAl
       </main>
 
       {crossOpen ? (
-        <div className="nv-cross">
+        <nav className="nv-cross" aria-label="Outro caminho">
           <span className="nv-cross-bubble is-food">
             <NvIcon name="fork" />
             <button type="button" className="nv-cross-link nv-hit" onClick={onFood}>
@@ -151,7 +151,7 @@ export default function JobsHome({ jobs, city, onTab, onSearch, onShortcut, onAl
               <NvIcon name="close" />
             </button>
           </span>
-        </div>
+        </nav>
       ) : null}
 
       <div className="nv-dock is-float">

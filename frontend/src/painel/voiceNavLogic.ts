@@ -353,3 +353,11 @@ export function voiceViews(): string[] {
 export function voicePhrases(): string[] {
   return [...TARGETS.flatMap((target) => target.says), ...HELP_SAYS, ...BRIEF_SAYS];
 }
+
+/**
+ * Tudo o que a voz do painel entende, por tela, para o roteiro `docs/comandos-de-voz.md` e para o teste conferir que cada
+ * frase leva à tela dela. Só leitura: mexer na lista é mexer em `TARGETS`, `BRIEF_SAYS` e `HELP_SAYS`.
+ */
+export function voiceCatalog(): { screens: { view: string; says: readonly string[]; instead?: string }[]; brief: readonly string[]; help: readonly string[] } {
+  return { screens: TARGETS.map(({ view, says, instead }) => ({ view, says, instead })), brief: BRIEF_SAYS, help: HELP_SAYS };
+}

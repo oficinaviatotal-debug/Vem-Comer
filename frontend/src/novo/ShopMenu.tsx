@@ -95,7 +95,7 @@ export default function ShopMenu({
         <TopBar mark={shop.mark} logo={shop.logo} title={shop.name} sub={shop.sub} onMenu={onMenu} showMenu={showMenu} />
 
         {facts.length > 0 ? (
-          <div className="nv-facts" aria-label="Informações do restaurante">
+          <div className="nv-facts" role="group" aria-label="Informações do restaurante">
             {facts.map((fact) => (
               <span key={fact.text} className={`nv-fact ${fact.tone === "open" ? "is-open" : "is-closed"}`}>
                 <NvIcon name="clock" /> {fact.text}
@@ -218,7 +218,7 @@ export default function ShopMenu({
       </main>
 
       {cross ? (
-        <div className="nv-cross">
+        <nav className="nv-cross" aria-label="Outro caminho">
           <span className="nv-cross-bubble">
             <NvIcon name="briefcase" />
             <a className="nv-cross-link nv-hit" href={jobsHref ?? undefined}>
@@ -228,7 +228,7 @@ export default function ShopMenu({
               <NvIcon name="close" />
             </button>
           </span>
-        </div>
+        </nav>
       ) : null}
 
       <div className="nv-dock">

@@ -279,7 +279,7 @@ test("acompanhar o pedido: o andamento e a comanda são painéis de sombra macia
 
 test("o código de entrega é grande, lido número a número por quem usa leitor de tela, e o desenho dos números é escondido dele", () => {
   const tracking = read("Tracking.tsx");
-  assert.match(tracking, /className="nv-dcode-digits" aria-label=\{track\.deliveryCode\.spoken\}/);
+  assert.match(tracking, /className="nv-dcode-digits" role="img" aria-label=\{track\.deliveryCode\.spoken\}/); // role="img": nome em <p> sem papel o leitor de tela ignora (tests/novo/acessibilidade.test.mjs)
   assert.match(tracking, /className="nv-dcode-digit" aria-hidden="true"/);
   assert.match(block(".nv-dcode-digit"), /font: 700 4\dpx/);
 });
@@ -919,7 +919,7 @@ test("pratos: o lápis é um botão redondo de verdade, diz de qual prato fala, 
     "o lápis: botão redondo, com nome do prato, parado enquanto algo está sendo feito",
   );
   assert.match(view, /const locked = busy\.resetting \|\| busy\.removing !== null \|\| busy\.adding \|\| row\.editing;/, "o prato que está sendo mudado não pode ser removido nem marcado");
-  assert.match(block(".nv-dishcard.is-editing"), /opacity: 0\.6/);
+  assert.match(block(".nv-dishcard.is-editing"), /opacity: 0\.8/); // 0,8 e não 0,6: com 0,6 as etiquetas davam 3,2:1 de contraste
   assert.match(view, /\{row\.editing \? <p className="nv-dishcard-note">\{DISHES_EDITING\}<\/p> : null\}/, "o prato em mudança diz em palavra, não só no apagado");
   assert.ok(!/box-shadow/.test(block(".nv-dishcard-note")), "o aviso só informa");
 });

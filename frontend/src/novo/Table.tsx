@@ -69,7 +69,7 @@ export default function TablePage({ shop, view, onCall, onMenu, onTrack }: Props
           </button>
         ) : null}
 
-        <div className="nv-calls" aria-label="Chamar o atendente">
+        <div className="nv-calls" role="group" aria-label="Chamar o atendente">
           {view.main.map((tile) => (
             <Tile key={tile.kind} tile={tile} size="big" onCall={onCall} />
           ))}

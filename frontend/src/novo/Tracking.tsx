@@ -271,7 +271,7 @@ export function TrackSlip({
       {track.deliveryCode ? (
         <section className="nv-dcode" role="group" aria-label={track.deliveryCode.title}>
           <h2>{track.deliveryCode.title}</h2>
-          <p className="nv-dcode-digits" aria-label={track.deliveryCode.spoken}>
+          <p className="nv-dcode-digits" role="img" aria-label={track.deliveryCode.spoken}>
             {track.deliveryCode.digits.map((digit, index) => (
               <span key={index} className="nv-dcode-digit" aria-hidden="true">
                 {digit}

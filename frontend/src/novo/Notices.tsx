@@ -18,8 +18,11 @@ export default function Notices({ notices, onAct }: Props) {
     <div className="nv-root nv-notices" role="region" aria-label="Avisos">
       <ul className="nv-notices-list">
         {notices.map((notice) => (
-          <li key={notice.id} className={`nv-notice is-${notice.tone}`} role={notice.tone === "urgent" ? "alert" : "status"}>
-            <p className="nv-notice-text">{notice.text}</p>
+          <li key={notice.id} className={`nv-notice is-${notice.tone}`}>
+            {/* O aviso falado pelo leitor de tela é só o texto (o papel vai no parágrafo: na lista, o <li> não pode ter papel próprio). */}
+            <p className="nv-notice-text" role={notice.tone === "urgent" ? "alert" : "status"}>
+              {notice.text}
+            </p>
             <button type="button" className={`nv-btn is-small${notice.tone === "urgent" ? " is-fire" : " is-ghost"}`} onClick={() => onAct?.(notice.id)}>
               {notice.action}
             </button>

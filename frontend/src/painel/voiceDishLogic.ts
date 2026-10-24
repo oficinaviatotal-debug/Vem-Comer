@@ -118,12 +118,18 @@ export function confirmationOf(text: string): "yes" | "no" | null {
   const words = plain(text)
     .split(/[^a-z0-9]+/)
     .filter(Boolean);
-  const NO = ["nao", "cancela", "cancelar", "cancelei", "deixa", "esquece", "errado", "errou", "pare"];
-  const YES = ["sim", "pode", "isso", "confirma", "confirmo", "confirmado", "certo", "correto", "ok", "claro", "fechou", "exato", "positivo"];
   // "Não" ganha de "sim": "não pode" é não.
-  if (words.some((word) => NO.includes(word))) return "no";
-  if (words.some((word) => YES.includes(word))) return "yes";
+  if (words.some((word) => NO_WORDS.includes(word))) return "no";
+  if (words.some((word) => YES_WORDS.includes(word))) return "yes";
   return null;
+}
+
+const NO_WORDS: readonly string[] = ["nao", "cancela", "cancelar", "cancelei", "deixa", "esquece", "errado", "errou", "pare"];
+const YES_WORDS: readonly string[] = ["sim", "pode", "isso", "confirma", "confirmo", "confirmado", "certo", "correto", "ok", "claro", "fechou", "exato", "positivo"];
+
+/** As palavras que a voz entende para marcar prato (para o roteiro `docs/comandos-de-voz.md` e para o teste). Só leitura. */
+export function dishVoiceCatalog(): { soldout: readonly string[]; back: readonly string[]; yes: readonly string[]; no: readonly string[]; notADish: readonly string[] } {
+  return { soldout: SOLD_SAYS, back: BACK_SAYS, yes: YES_WORDS, no: NO_WORDS, notADish: [...NOT_A_DISH] };
 }
 
 /** O que a voz responde ao pedido, já com o que fazer a seguir. */

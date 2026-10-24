@@ -42,13 +42,15 @@
   --nv-green: #2e7032;
   --nv-green-soft: #e6f1e3;
   --nv-fire: #ff6f00;
-  --nv-fire-text: #c74700;
+  /* O laranja de texto sobre o fundo pêssego: #c74700 dava 4,27:1 (o mínimo é 4,5). */
+  --nv-fire-text: #b84200;
   /* O laranja do texto pequeno sobre o fundo pêssego: o mais claro que ainda passa de 4,5:1. */
   --nv-fire-deep: #a83c00;
   --nv-sun: #ffc83a;
   --nv-paper: #ffffff;
   --nv-peach: #fdeedf;
-  --nv-muted: #566a5f;
+  /* Texto de apoio: sobre as caixas de cor clara o #566a5f dava 4,37:1; este passa de 4,5:1. */
+  --nv-muted: #4d6157;
   --nv-line: rgba(27, 67, 50, 0.12);
   --nv-ember-a: #7c1d0c;
   --nv-ember-b: #d2470f;
@@ -822,12 +824,13 @@
 
 .nv-now-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
 .nv-now-cell {
   min-width: 0;
+  overflow-wrap: anywhere; /* letra muito grande: a palavra quebra em vez de empurrar a tela */
   min-height: 64px;
   padding: 10px 12px;
   border: 0;
@@ -953,6 +956,7 @@ button.nv-now-cell:active {
   margin: 0;
   font: 700 36px/1 var(--nv-display);
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere; /* letra muito grande: quebra em vez de passar da tela */
 }
 
 .nv-sales-note {
@@ -1027,18 +1031,26 @@ button.nv-now-cell:active {
 
 .nv-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Cada aba pede espaço em "em" (cresce com a letra): com a letra bem grande as abas descem para outra linha. */
+  grid-template-columns: repeat(auto-fit, minmax(max(3.3em, 30%), 1fr));
   gap: 6px;
   padding: 5px;
-  border-radius: 999px;
+  border-radius: var(--nv-r-lg);
   background: var(--nv-green-soft);
   box-shadow: inset 0 3px 6px rgba(27, 67, 50, 0.16), inset 0 -2px 0 #fff;
 }
 
 .nv-tab {
+  /* Com letra grande a conta (o número) desce para baixo do nome em vez de empurrar a aba para fora da tela. */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+  gap: 2px 4px;
   min-width: 0;
   min-height: 48px;
-  padding: 0 4px;
+  padding: 2px 4px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -1046,7 +1058,6 @@ button.nv-now-cell:active {
 }
 
 .nv-tab b {
-  margin-left: 4px;
   padding: 1px 8px;
   border-radius: 999px;
   background: rgba(27, 67, 50, 0.12);
@@ -1214,7 +1225,8 @@ button.nv-now-cell:active {
   --nv-ink: #0b2a6f;
   --nv-green: #0f4bd1;
   --nv-green-soft: #e6eeff;
-  --nv-fire: #1f63ff;
+  /* Botão azul com letra branca e brilho em cima: #1f63ff dava 4,2:1 no ponto mais claro; este passa de 4,5:1. */
+  --nv-fire: #1650e0;
   --nv-fire-text: #0f4bd1;
   --nv-peach: #eaf1ff;
   --nv-muted: #4b5f86;
@@ -1433,7 +1445,8 @@ button.nv-now-cell:active {
 
 .nv-cross-bubble.is-food {
   --nv-edge: #7d2f00;
-  background: var(--nv-shine), var(--nv-brand-comer);
+  /* Letra branca de 14 px: com o brilho em cima, #c74700 dava 4,2:1; um tom mais escuro passa de 4,5:1. */
+  background: var(--nv-shine), #b84200;
   box-shadow: var(--nv-hi), 0 4px 0 var(--nv-edge), 0 14px 18px -8px rgba(125, 47, 0, 0.55);
 }
 
@@ -1614,6 +1627,15 @@ button.nv-now-cell:active {
 }
 
 /* Aviso de erro e etapa vazia: dizem o que fazer, em frase inteira. */
+.nv-error,
+.nv-ok,
+.nv-hint,
+.nv-empty,
+.nv-code-hint,
+.nv-notice-text {
+  overflow-wrap: anywhere; /* e-mail, link e número compridos quebram em vez de passar da tela */
+}
+
 .nv-error {
   margin: 0 0 14px;
   padding: 12px 14px;
@@ -1670,7 +1692,6 @@ button.nv-now-cell:active {
   }
 
   .nv-tab b {
-    margin-left: 2px;
     padding: 1px 6px;
   }
 }
@@ -2109,10 +2130,16 @@ button.nv-now-cell:active {
 /* Linha de cardápio com pontinhos: o nome de um lado, o valor do outro. */
 .nv-leader {
   display: flex;
+  flex-wrap: wrap; /* letra grande: o valor desce para a linha de baixo em vez de sair da tela */
   align-items: baseline;
-  gap: 8px;
+  gap: 4px 8px;
   margin: 0;
   font-size: 16px;
+}
+
+.nv-leader > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .nv-leader i {
@@ -2123,6 +2150,7 @@ button.nv-now-cell:active {
 
 .nv-leader b {
   font: 700 17px/1 var(--nv-display);
+  white-space: nowrap;
 }
 
 .nv-leader.is-total {
@@ -2370,6 +2398,7 @@ button.nv-now-cell:active {
 
 .nv-steps li {
   position: relative;
+  overflow-wrap: anywhere; /* letra muito grande: a palavra quebra em vez de passar da tela */
   padding-top: 34px;
   color: var(--nv-muted);
   font-size: 13px;
@@ -4496,9 +4525,11 @@ button.nv-now-cell:active {
 
 .nv-dishlist-head {
   display: flex;
+  flex-wrap: wrap; /* letra grande: a conta de pratos desce para baixo do nome */
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: 4px 12px;
+  overflow-wrap: anywhere;
   margin: 0;
   font: 700 24px/1.1 var(--nv-display);
 }
@@ -4610,7 +4641,8 @@ button.nv-now-cell:active {
 
 /* O formulário de cima está mudando este prato: o cartão fica de lado, sem botão que se possa tocar. */
 .nv-dishcard.is-editing {
-  opacity: 0.6;
+  /* 0,8 e não menos: com 0,6 o texto das etiquetas caía para 3,2 de contraste (o mínimo é 4,5). */
+  opacity: 0.8;
 }
 
 .nv-dishcard-note {

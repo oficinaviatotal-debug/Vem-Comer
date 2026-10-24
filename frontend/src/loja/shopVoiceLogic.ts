@@ -293,7 +293,8 @@ export function interpretShopVoice(input: ShopVoiceInput): ShopAnswer {
   // Ajuda: a frase diz o que falar agora, com exemplos reais.
   if (has(text, HELP_SAYS)) return { kind: "stay", say: phrase.say(SAY_SHOP_HELP, examplesFor(input, phrase)) };
 
-  const target = bestTarget(text);
+  // "Enviar" e "terminar" sozinhos também falam da sacola (estão na lista do envio, mas nenhuma frase de tela os tinha): a voz abre a sacola e diz que o envio é no botão.
+  const target = bestTarget(text) ?? (has(text, SEND_SAYS) ? "bag" : null);
   const ordering = has(text, ORDER_VERBS);
   const removing = has(text, REMOVE_VERBS);
   const heard = wordsOf(text);
@@ -439,4 +440,17 @@ function dishAnswer(input: ShopVoiceInput, phrase: Phraser, words: readonly stri
   const added = quantityOf(after, product.id) - before;
   if (added <= 0) return stay(phrase.say(SAY_SHOP_MAX, name));
   return { answer: { kind: "add", product, quantity: added, toMenu, say: phrase.say(SAY_SHOP_ADDED, whatOf(name, added), bagText(after)) }, none: false };
+}
+
+/** Tudo o que a voz do cliente entende (para o roteiro `docs/comandos-de-voz.md` e para o teste). Só leitura. */
+export function shopVoiceCatalog(): {
+  screens: readonly Target[];
+  myOrder: readonly string[];
+  help: readonly string[];
+  send: readonly string[];
+  search: readonly string[];
+  order: readonly string[];
+  remove: readonly string[];
+} {
+  return { screens: TARGETS, myOrder: MY_ORDER_SAYS, help: HELP_SAYS, send: SEND_SAYS, search: SEARCH_VERBS, order: ORDER_VERBS, remove: REMOVE_VERBS };
 }
