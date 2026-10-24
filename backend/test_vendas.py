@@ -792,6 +792,11 @@ class OverviewTests(unittest.TestCase):
         self.assertEqual(result["today"]["touches_today"], 4)
         self.assertEqual(result["funnel"]["paying"], 1)
 
+    def test_the_view_tells_what_kind_of_answer_came_so_the_draft_fits_it(self):
+        answered = prospect(id="1", stage="respondeu", touches=1, replied_at=NOW, reply_kind="duvida", last_touch_at=NOW - timedelta(days=1))
+        self.assertEqual(v.view_of(answered, NOW)["reply_kind"], "duvida")
+        self.assertIsNone(v.view_of(prospect(id="2"), NOW)["reply_kind"])
+
     def test_the_list_marks_who_is_on_the_blocked_list(self):
         sql = " ".join(v.SQL_LIST.split())
         self.assertIn("phone_suppression", sql)

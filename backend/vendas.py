@@ -572,6 +572,7 @@ def view_of(prospect: dict, now: datetime | None = None, *, suppressed: bool = F
         "touches": int(prospect.get("touches") or 0),
         "channels": channels_of(prospect),
         "last_channel": prospect.get("last_channel"),
+        "reply_kind": prospect.get("reply_kind"),
         "move": {
             "action": move.action,
             "reason": move.reason,
