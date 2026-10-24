@@ -225,9 +225,13 @@ class MigrationTests(unittest.TestCase):
     def test_the_migration_matches_the_code(self):
         import os
 
-        path = os.path.join(os.path.dirname(__file__), "..", "database", "migrations", "018_conformidade.sql")
-        with open(path, encoding="utf-8") as handle:
-            sql = handle.read()
+        # A 018 cria as tabelas; migrações seguintes podem ampliar a lista de finalidades (a 021 acrescenta o contato comercial).
+        folder = os.path.join(os.path.dirname(__file__), "..", "database", "migrations")
+        sql = ""
+        for name in ("018_conformidade.sql", "021_vendas_do_vem.sql"):
+            if os.path.exists(os.path.join(folder, name)):
+                with open(os.path.join(folder, name), encoding="utf-8") as handle:
+                    sql += handle.read()
         for value in consent.PURPOSES + consent.KINDS + consent.CHANNELS + o.SOURCES + o.LEGAL_BASES + o.SUPPRESSION_REASONS:
             self.assertIn(f"'{value}'", sql, value)
         for trigger in ("BEFORE UPDATE OR DELETE ON consent_records", "BEFORE TRUNCATE ON consent_records"):

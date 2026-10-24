@@ -65,4 +65,4 @@ jobs:
           done
       - name: Testes que dependem do banco
         working-directory: backend
-        run: python3 -B -m unittest test_conformidade_db test_inventario_dados test_titular_db test_business_db test_approvals_db -v
+        run: python3 -B -m unittest test_conformidade_db test_inventario_dados test_titular_db test_business_db test_approvals_db test_vendas_db -v

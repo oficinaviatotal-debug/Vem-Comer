@@ -91,16 +91,16 @@
     },
     {
       "id": "prova-de-aceite",
-      "titular": "Quem aceitou termos e privacidade, ou pediu para não receber e-mail",
+      "titular": "Quem aceitou termos e privacidade, ou pediu para não receber e-mail ou mensagem",
       "papel_da_plataforma": "controlador",
-      "dados": "impressão digital (SHA-256) do e-mail, o que foi aceito ou retirado, versão do texto, canal, data, impressão digital do IP misturada com a chave do servidor; na lista de bloqueio, só a impressão digital do e-mail",
+      "dados": "impressão digital (SHA-256) do e-mail, o que foi aceito ou retirado, versão do texto, canal, data, impressão digital do IP misturada com a chave do servidor; na lista de bloqueio, só a impressão digital do e-mail ou do telefone",
       "campos": [
         "consent_records.subject_hash", "consent_records.ip_hash", "consent_records.document_sha256",
-        "email_suppression.email_hash"
+        "email_suppression.email_hash", "phone_suppression.phone_hash"
       ],
       "finalidade": "Provar que houve consentimento (LGPD art. 8º, §2º) e respeitar para sempre o pedido de não receber e-mail.",
       "base_legal": "obrigacao_legal",
-      "compartilha_com": "Ninguém. A impressão digital do e-mail da lista de bloqueio pode ser trocada entre o Vem Comer e o Vem Trabalhar para o pedido valer nos dois.",
+      "compartilha_com": "Ninguém. A impressão digital do e-mail e do telefone da lista de bloqueio pode ser trocada entre o Vem Comer e o Vem Trabalhar para o pedido valer nos dois.",
       "guarda": "Proposta da engenharia: a prova de aceite por 5 anos depois do fim da relação; a lista de bloqueio sem prazo, porque apagar faria o sistema esquecer o pedido da pessoa.",
       "eliminacao": "Não se apaga durante o prazo (o registro só recebe linhas novas); a pessoa não aparece, só a impressão digital.",
       "revisao_juridica": "proposta_da_engenharia"
@@ -202,6 +202,23 @@
       "guarda": "Proposta da engenharia: enquanto o sistema existir, porque é a prova do que foi decidido. Regra de projeto, ainda não conferida por código: o cartão descreve a decisão e não carrega dado de cliente, de candidato nem de contato de empresa. Se o usuário que decidiu for apagado, o banco tira o identificador dele da ação sozinho; o histórico não é alterado.",
       "eliminacao": "O identificador de quem decidiu some quando a conta é apagada (o banco faz). O texto não tem rotina de apagar: por regra não deve conter dado de pessoa.",
       "revisao_juridica": "pendente_do_advogado"
+    },
+    {
+      "id": "vendas-do-vem",
+      "titular": "Dono ou contato de restaurante, lanchonete, pizzaria, pastelaria, sorveteria, bar ou padaria a quem o Vem Tecnologia quer apresentar o Vem Comer",
+      "papel_da_plataforma": "controlador",
+      "dados": "nome do negócio, nome da pessoa de contato (se houver), telefone ou WhatsApp, e-mail, Instagram, site, de onde veio o contato e por que podemos escrever, anotação de quem cadastrou, etapa da conversa e quantas vezes foi procurado; a história guarda só a classe do que aconteceu (mensagem, resposta, etapa), nunca o texto da pessoa",
+      "campos": [
+        "sales_prospects.business_name", "sales_prospects.contact_person", "sales_prospects.phone",
+        "sales_prospects.phone_hash", "sales_prospects.email", "sales_prospects.email_hash",
+        "sales_prospects.instagram", "sales_prospects.site", "sales_prospects.source_note", "sales_prospects.note"
+      ],
+      "finalidade": "Apresentar o sistema a negócios de comida: no máximo 3 contatos por negócio e 2 por WhatsApp, só pelo canal que o próprio negócio divulgou ou pediu, sempre por uma pessoa do Vem (nenhum envio automático por WhatsApp ou Telegram), e saber qual origem de contato traz quem se cadastra e paga.",
+      "base_legal": "interesse_legitimo",
+      "compartilha_com": "Ninguém. A conversa por WhatsApp, e-mail ou telefone acontece nos aplicativos da própria pessoa do Vem que fala com o negócio.",
+      "guarda": "Proposta da engenharia: até o negócio dizer que não quer (aí telefone, e-mail e nome somem na hora e fica só a impressão digital no bloqueio) ou 24 meses depois de encerrado sem resposta; quem virar cliente passa a ser tratado como conta de restaurante.",
+      "eliminacao": "Pedido de apagar: a ficha e a história somem; ficam só as impressões digitais do telefone e do e-mail na lista de bloqueio, para a pessoa não ser cadastrada de novo.",
+      "revisao_juridica": "pendente_do_advogado"
     }
   ],
   "tabelas_sem_dado_pessoal": {
@@ -220,12 +237,14 @@
     "product_ingredients": "ingredientes de cada prato",
     "products": "pratos, preços e fotos de pratos",
     "push_config": "chaves do servidor para enviar avisos (segredo do sistema, não é dado de pessoa)",
+    "sales_events": "história de cada negócio da máquina de vendas: só a classe do que aconteceu (mensagem, resposta, etapa) e o canal, sem o texto da pessoa",
     "subscriptions": "situação da assinatura de cada restaurante",
     "table_calls": "chamadas de mesa (mesa e horário)",
     "tables": "mesas do restaurante"
   },
   "colunas_excecoes": {
     "companies.slug": "endereço público do restaurante, não identifica pessoa por si",
+    "sales_prospects.whatsapp_touches": "quantas vezes o negócio foi chamado por WhatsApp (um número)",
     "subscription_payments.amount_cents": "valor"
   }
 }
