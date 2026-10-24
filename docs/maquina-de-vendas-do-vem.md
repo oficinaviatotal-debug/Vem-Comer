@@ -18,6 +18,7 @@ A frente B é do dono do restaurante: o Vem entrega a ferramenta (link, cartão 
 Automatizar é tirar trabalho da pessoa, não tirar a pessoa do meio. O sistema:
 
 - lista **quem procurar hoje** (no máximo 10), em ordem de importância: quem respondeu primeiro, depois quem viu a demonstração e não se cadastrou, depois os primeiros contatos e lembretes;
+- mantém na tela **quem está esperando resposta** (com a data em que volta a ser a vez), para a pessoa anotar a resposta quando ela chegar;
 - diz **por qual canal** e **em que horário** (cada tipo de negócio tem uma hora de folga: a cozinha cheia não atende conversa de vendas);
 - guarda **de onde veio cada contato** (obrigatório);
 - lembra do **próximo passo** (esperar, lembrete, convidar para a demonstração, perguntar se travou, ajudar a montar o cardápio, encerrar);
@@ -89,7 +90,7 @@ No servidor, no arquivo de ambiente, acrescentar `INTEREST_OPEN=1` e reiniciar o
 | Inventário de dados (toda coluna classificada) e obrigação de conformidade | `backend/inventario_dados.json`, `compliance/obligations.json` |
 | Testes | `backend/test_vendas.py`, `test_vendas_db.py` (banco de verdade), `test_vendas_endpoint.py` |
 
-Rotas do administrador: ver o resumo do dia e o funil; ler um texto colado; anotar um negócio; "já mandei"; registrar a resposta; mudar a etapa; apagar uma ficha (pede para escrever APAGAR).
+Rotas do administrador: ver o resumo do dia (quem procurar hoje, quem está esperando) e o funil; ler um texto colado; anotar um negócio; "já mandei"; registrar a resposta; mudar a etapa; apagar uma ficha (pede para escrever APAGAR).
 
 ## 7. O que fica desligado, de propósito
 

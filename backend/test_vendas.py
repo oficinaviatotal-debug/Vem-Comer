@@ -783,6 +783,45 @@ class StageAndForgetTests(unittest.TestCase):
         self.assertNotIn("pagando", v.SQL_PURGE)
 
 
+class WaitingListTests(unittest.TestCase):
+    """Quem já foi chamado precisa continuar na tela, para a pessoa anotar a resposta quando ela chegar."""
+
+    def called(self, ident, days_ago, **over):
+        base = dict(stage="chamado", touches=1, last_touch_at=NOW - days_ago * DAY, last_channel="whatsapp", whatsapp_touches=1, stage_since=NOW - days_ago * DAY)
+        base.update(over)
+        return prospect(id=ident, **base)
+
+    def test_who_was_called_and_is_inside_the_wait_is_listed_with_the_date_to_look_again(self):
+        waiting = v.waiting_list([self.called("a", 2)], NOW)
+        self.assertEqual([item["id"] for item in waiting["items"]], ["a"])
+        self.assertEqual(waiting["items"][0]["move"]["action"], "esperar")
+        self.assertIsNotNone(waiting["items"][0]["move"]["due"])
+
+    def test_who_is_ready_for_today_is_not_listed_twice(self):
+        due = self.called("b", 9)
+        fresh = prospect(id="c")
+        waiting = v.waiting_list([due, fresh], NOW)
+        self.assertEqual(waiting["items"], [])
+
+    def test_closed_and_blocked_businesses_never_show_up_as_waiting(self):
+        closed = self.called("d", 2, stage="nao_quer")
+        blocked = self.called("e", 2, suppressed=True)
+        self.assertEqual(v.waiting_list([closed, blocked], NOW)["items"], [])
+
+    def test_the_one_whose_turn_comes_first_comes_first_and_the_snoozed_one_has_its_date(self):
+        late = self.called("late", 1)
+        soon = self.called("soon", 4)
+        snoozed = prospect(id="later", stage="respondeu", touches=1, replied_at=NOW - DAY, last_touch_at=NOW - DAY, reply_kind="adiar", snooze_until=NOW + 10 * DAY, stage_since=NOW - DAY)
+        order = [item["id"] for item in v.waiting_list([late, snoozed, soon], NOW)["items"]]
+        self.assertEqual(order, ["soon", "late", "later"])
+
+    def test_the_list_is_capped_and_says_how_many_were_left_out(self):
+        many = [self.called(f"id-{n:03d}", 2) for n in range(45)]
+        waiting = v.waiting_list(many, NOW)
+        self.assertEqual(len(waiting["items"]), v.WAITING_LIMIT)
+        self.assertEqual(waiting["more"], 5)
+
+
 class OverviewTests(unittest.TestCase):
     def test_the_overview_joins_today_and_the_funnel(self):
         rows = [prospect(id="1"), prospect(id="2", stage="pagando", touches=1)]
@@ -791,6 +830,7 @@ class OverviewTests(unittest.TestCase):
         self.assertEqual([item["id"] for item in result["today"]["items"]], ["1"])
         self.assertEqual(result["today"]["touches_today"], 4)
         self.assertEqual(result["funnel"]["paying"], 1)
+        self.assertEqual(result["waiting"], {"items": [], "more": 0})
 
     def test_the_view_tells_what_kind_of_answer_came_so_the_draft_fits_it(self):
         answered = prospect(id="1", stage="respondeu", touches=1, replied_at=NOW, reply_kind="duvida", last_touch_at=NOW - timedelta(days=1))

@@ -177,6 +177,18 @@ class VendasBancoTests(unittest.TestCase):
         v.record_reply(self.cur, prospect_id, "gd", text="agora não, me chama mais tarde")
         self.assertIsNotNone(self.row(prospect_id)["snooze_until"])
         self.assertEqual([item["id"] for item in v.overview(self.cur)["today"]["items"] if item["id"] == prospect_id], [])
+        # ... e passa a esperar, com a data, para a pessoa achar a ficha quando ele voltar a falar
+        waiting = [item for item in v.overview(self.cur)["waiting"]["items"] if item["id"] == prospect_id]
+        self.assertEqual(len(waiting), 1)
+        self.assertEqual(waiting[0]["move"]["action"], "esperar")
+        self.assertIsNotNone(waiting[0]["move"]["due"])
+
+    def test_who_was_just_called_stays_on_the_screen_as_waiting_for_the_answer(self):
+        prospect_id = self.add()
+        v.record_touch(self.cur, prospect_id, "whatsapp", "gd")
+        overview = v.overview(self.cur)
+        self.assertEqual([item["id"] for item in overview["today"]["items"] if item["id"] == prospect_id], [])
+        self.assertEqual([item["id"] for item in overview["waiting"]["items"] if item["id"] == prospect_id], [prospect_id])
 
     # ---- pedido de contato pelo formulário do site
 

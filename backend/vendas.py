@@ -608,6 +608,25 @@ def today_list(prospects: list[dict], now: datetime | None = None, *, touches_to
     return {"items": shown, "more": max(0, len(ranked) - len(shown)), "touches_today": touches_today, "notes": notes}
 
 
+WAITING_LIMIT = 40
+
+
+def waiting_list(prospects: list[dict], now: datetime | None = None, *, limit: int = WAITING_LIMIT) -> dict:
+    """Quem já foi chamado e está na vez do outro: a tela precisa disso para a pessoa anotar a resposta quando ela chegar.
+    Do que vence primeiro para o que vence depois (quem pediu para falar depois entra aqui com a data)."""
+    now = now or datetime.now(timezone.utc)
+    waiting = []
+    for prospect in prospects:
+        move = next_move(prospect, now, suppressed=bool(prospect.get("suppressed")))
+        if move.action != "esperar":
+            continue
+        since = prospect.get("stage_since") or prospect.get("created_at") or now
+        waiting.append((move.due is None, move.due or since, str(prospect.get("name") or prospect.get("business_name") or ""), str(prospect.get("id")), prospect))
+    waiting.sort(key=lambda item: item[:4])
+    shown = [view_of(item[4], now, suppressed=bool(item[4].get("suppressed"))) for item in waiting[: max(0, limit)]]
+    return {"items": shown, "more": max(0, len(waiting) - len(shown))}
+
+
 def _rate(part: int, whole: int) -> float:
     return round(part / whole, 3) if whole else 0.0
 
@@ -948,9 +967,9 @@ def add_inbound(cur, data, *, ip: str | None = None, secret: str = "") -> dict:
 
 
 def overview(cur, now: datetime | None = None) -> dict:
-    """Tudo o que a tela "Vendas" precisa de uma vez: quem procurar hoje, o funil e as origens."""
+    """Tudo o que a tela "Vendas" precisa de uma vez: quem procurar hoje, quem está esperando resposta, o funil e as origens."""
     now = now or datetime.now(timezone.utc)
     cur.execute(SQL_LIST)
     rows = cur.fetchall()
     done_today = touches_today(cur)
-    return {"today": today_list(rows, now, touches_today=done_today), "funnel": funnel(rows)}
+    return {"today": today_list(rows, now, touches_today=done_today), "waiting": waiting_list(rows, now), "funnel": funnel(rows)}
