@@ -5373,3 +5373,145 @@ button.nv-now-cell:active {
     animation: none;
   }
 }
+
+/* ---------- Horário: agora (aberto, fechado, pausado), os sete dias e o que a pessoa falou ---------- */
+
+.nv-hours-now {
+  gap: 4px;
+  --nv-tape: var(--nv-green);
+}
+
+.nv-hours-now.is-closed {
+  --nv-tape: var(--nv-alert);
+}
+
+.nv-hours-now.is-paused {
+  --nv-tape: var(--nv-sun);
+}
+
+.nv-hours-now.is-none {
+  --nv-tape: var(--nv-slab-edge);
+}
+
+.nv-hours-pause {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nv-hours-day .nv-order-where {
+  font-size: 24px;
+}
+
+.nv-hours-shift {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: end;
+}
+
+.nv-hours-time {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nv-hours-time-label {
+  color: var(--nv-muted);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.nv-hours-time .nv-field {
+  padding: 0 10px;
+}
+
+.nv-hours-time .nv-field input {
+  width: 100%;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tirar o turno vai numa linha própria, com o nome escrito: assim as duas horas têm a largura toda (nenhuma fica cortada, nem com letra grande) e fica claro qual turno sai. */
+.nv-hours-remove {
+  grid-column: 1 / -1;
+  justify-self: end;
+}
+
+/* O que o celular está ouvindo e o que ele entendeu: faixa lisa e verde clara (só informa; os botões dela tocam). */
+.nv-hours-listen,
+.nv-hours-heard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+}
+
+.nv-hours-listen p,
+.nv-hours-heard p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.nv-hours-heard ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.nv-hours-said,
+.nv-hours-understood {
+  font-weight: 700;
+}
+
+.nv-hours-failed {
+  color: var(--nv-alert);
+  font-weight: 700;
+}
+
+.nv-hours-summary {
+  margin: 0;
+  color: var(--nv-ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.nv-hours-unsaved {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nv-hours-missing {
+  margin: 0 0 4px;
+}
+
+.nv-page-hours .nv-error ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.nv-page-hours .nv-error,
+.nv-page-hours .nv-ok {
+  margin: 0;
+}
+
+/* Celular bem pequeno (320 px): os dois horários cabem lado a lado, inteiros, sem rolar de lado. */
+@media (max-width: 340px) {
+  .nv-hours-shift {
+    gap: 6px;
+  }
+
+  .nv-hours-time .nv-field {
+    padding: 0 6px;
+  }
+
+  .nv-hours-time .nv-field input {
+    font-size: 16px;
+  }
+}

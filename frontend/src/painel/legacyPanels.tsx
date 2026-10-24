@@ -13,7 +13,6 @@ import ConfirmButton from "../service/ConfirmButton";
 import DeliveryPanel from "../service/DeliveryPanel";
 import HelpInbox from "../service/HelpInbox";
 import HelpSheet from "../service/HelpSheet";
-import HoursPanel from "../service/HoursPanel";
 import PauseStrip from "../service/PauseStrip";
 import PixSettingsPanel from "../service/PixSettingsPanel";
 import PlatformPanel from "../service/PlatformPanel";
@@ -418,8 +417,6 @@ export default function LegacyView({ screen, companyId, slug, name, role, plan, 
       return <PixSettingsPanel companyId={companyId} canEdit={role === "OWNER"} />;
     case "link":
       return <ShareLinkView slug={slug} name={name || slug} onGo={onGo} />;
-    case "hours":
-      return <HoursPanel />;
     case "zones":
       return <DeliveryPanel />;
     case "team":

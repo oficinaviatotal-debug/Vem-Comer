@@ -11,6 +11,7 @@ import TablePage from "./Table";
 import Desk from "./Desk";
 import Orders from "./Orders";
 import Deliveries from "./Deliveries";
+import Hours from "./Hours";
 import Settle from "./Settle";
 import MenuSetup from "./MenuSetup";
 import Dishes, { NOT_BUSY } from "./Dishes";
@@ -69,6 +70,8 @@ import {
 import { ORDERS_CHANGED, nextStatusOf, ordersViewOf, type PanelOrder } from "../painel/ordersLogic";
 import { deliveriesViewOf, pickedText, type CourierOrder } from "../painel/deliveriesLogic";
 import { armKey, markedIds, settleViewOf, toggleLeft } from "../painel/settleLogic";
+import { addShift, copyToAll, fromApi, hoursViewOf, removeShift, setClosed, setShift, validate, type ApiHours } from "../painel/hoursViewLogic";
+import { HOURS_SAVED } from "./copy";
 import {
   allBack,
   categoriesViewOf,
@@ -127,7 +130,7 @@ import {
 import { codeIsComplete, deliveredText, onlyCodeDigits } from "../courier/courierLogic";
 import type { CashView } from "../courier/courierLogic";
 import { emptyText, isKitchenTab, kitchenTabs, ticketsFor, type KitchenTabId } from "../cozinha/kitchenLogic";
-import { DISH_MENUS_EXAMPLE, DISH_PRODUCTS_EXAMPLE, OPTIONS_EXAMPLE, MENU_READ_EXAMPLE, MENU_SPOKEN_EXAMPLE, MODEL_EXAMPLE, MODEL_TYPES_EXAMPLE, ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
+import { DISH_MENUS_EXAMPLE, DISH_PRODUCTS_EXAMPLE, OPTIONS_EXAMPLE, MENU_READ_EXAMPLE, MENU_SPOKEN_EXAMPLE, MODEL_EXAMPLE, MODEL_TYPES_EXAMPLE, ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, hoursExample, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
 import { choicesViewOf, confirmChoices, nextQuantity, pressOption } from "../loja/choicesLogic";
 import { bagProblem, bagViewOf } from "../loja/bagLogic";
 import { copiedOutcome, pixOf, ratingOf, trackOf } from "../loja/trackingLogic";
@@ -145,6 +148,7 @@ import type { Selection } from "../customer/options";
  * #/pedidos (dono), #/pedidos-caixa (abre no dinheiro a receber), #/pedidos-garcom (sem a aba Receber), #/pedidos-cozinha (sem endereço nem telefone), #/pedidos-calmo (nenhum pedido) e #/pedidos-erro (frase de erro ao tocar) e #/pedidos-enviando (o botão esperando o servidor),
  * #/entregas (entregador: na rua), #/entregas-pegar, #/entregas-entregues, #/entregas-codigo (campo dos 4 números; o código de exemplo é 4821), #/entregas-bloqueado, #/entregas-erro, #/entregas-calmo, #/entregas-carregando e #/entregas-gerente (vê também as de outros motoqueiros),
  * #/acerto (caixa), #/acerto-confirmar (primeiro toque dado), #/acerto-calmo, #/acerto-erro e #/acerto-carregando,
+ * #/horario (aberto agora), #/horario-fechado, #/horario-pausado, #/horario-sem (sem horário salvo), #/horario-ouvindo, #/horario-entendi, #/horario-nao-entendi, #/horario-problema (turno que abre e fecha na mesma hora), #/horario-salvo, #/horario-carregando e #/horario-erro,
  * #/cardapio (a porta), #/cardapio-sem-foto, #/cardapio-sem-ia, #/cardapio-carregando, #/cardapio-erro, #/cardapio-foto, #/cardapio-foto-erro, #/cardapio-lendo, #/cardapio-falar, #/cardapio-ouvindo, #/cardapio-sem-microfone, #/cardapio-conferir, #/cardapio-editando, #/cardapio-sem-preco, #/cardapio-vazio, #/cardapio-erro-cadastro e #/cardapio-cadastrado,
  * #/pratos (dono), #/pratos-cozinha (só esgotou/voltou), #/pratos-novo (formulário do prato novo), #/pratos-novo-erro (preço que não entendi), #/pratos-mudar (o lápis: formulário já preenchido), #/pratos-mudar-erro (nome que já existe), #/pratos-remover (primeiro toque na lixeira), #/pratos-busca, #/pratos-sem-resultado, #/pratos-vazio, #/pratos-vazio-cozinha, #/pratos-sem-categorias, #/pratos-carregando e #/pratos-erro,
  * #/categorias, #/categorias-vazio, #/categorias-remover, #/categorias-repetida, #/categorias-erro e #/categorias-carregando,
@@ -584,6 +588,75 @@ function SettlePreview({ stage = "normal" }: { stage?: SettleStage }) {
         setCash({ ...cash, couriers: cash.couriers.filter((entry) => entry.courier_id !== groupId) });
       }}
       onRefresh={() => setNotice("")}
+      showMenu
+    />
+  );
+}
+
+type HoursStage = "normal" | "fechado" | "pausado" | "sem" | "ouvindo" | "entendi" | "nao-entendi" | "problema" | "salvo" | "carregando" | "erro";
+
+/** O horário da conferência: passa pela conta de verdade (`hoursViewOf`); os dias, os turnos e a pausa funcionam na tela. */
+function HoursPreview({ stage = "normal" }: { stage?: HoursStage }) {
+  const first: ApiHours =
+    stage === "sem"
+      ? hoursExample({ configured: false })
+      : stage === "fechado"
+        ? hoursExample({ open: false, message: "Abrimos hoje às 18h." })
+        : stage === "pausado"
+          ? hoursExample({ paused: true })
+          : hoursExample();
+  const [server, setServer] = useState<ApiHours>(first);
+  const [week, setWeek] = useState(() => (stage === "problema" ? setShift(fromApi(first), 1, 0, { opens: "12:00", closes: "12:00" }) : fromApi(first)));
+  const [problems, setProblems] = useState<string[]>(() => (stage === "problema" ? validate(setShift(fromApi(first), 1, 0, { opens: "12:00", closes: "12:00" })) : []));
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(stage === "salvo" ? { ok: true, text: HOURS_SAVED } : null);
+  const [armed, setArmed] = useState(false);
+  const change = (next: typeof week) => {
+    setWeek(next);
+    setProblems([]);
+    setNotice(null);
+    setArmed(false);
+  };
+  const spoken =
+    stage === "entendi"
+      ? { said: "de segunda a sexta das onze às três e das seis às onze, sábado das onze às onze, domingo fechado", lines: ["Seg a sex: 11h às 15h e 18h às 23h", "Sáb: 11h às 23h", "Dom: fechado"], notes: [] }
+      : stage === "nao-entendi"
+        ? { said: "abrimos quando dá", lines: [], notes: [] }
+        : null;
+  const view = hoursViewOf({
+    load: stage === "carregando" ? "loading" : stage === "erro" ? "error" : "ready",
+    server: stage === "carregando" || stage === "erro" ? null : server,
+    week,
+    person: "João Silva, dono",
+    error: "Não consegui abrir o horário.",
+    switching: false,
+    saving: false,
+    removing: false,
+    removeArmed: armed,
+    problems,
+    notice,
+    listening: stage === "ouvindo",
+    heard: stage === "ouvindo" ? "de segunda a sexta das onze às três" : "",
+    spoken,
+    canSpeak: true,
+    speakHelp: "Diga os dias e as horas, por exemplo: de segunda a sexta das 11 às 15 e das 18 às 23.",
+  });
+  return (
+    <Hours
+      view={view}
+      onToggleDay={(weekday) => change(setClosed(week, weekday, !week.find((day) => day.weekday === weekday)?.closed))}
+      onShift={(weekday, index, patch) => change(setShift(week, weekday, index, patch))}
+      onAddShift={(weekday) => change(addShift(week, weekday))}
+      onRemoveShift={(weekday, index) => change(removeShift(week, weekday, index))}
+      onCopyAll={(weekday) => change(copyToAll(week, weekday))}
+      onPause={() => setServer((now) => ({ ...now, orders_paused: !now.orders_paused }))}
+      onSave={() => {
+        const found = validate(week);
+        if (found.length > 0) return setProblems(found);
+        setServer((now) => ({ ...now, configured: true, week }));
+        setNotice({ ok: true, text: HOURS_SAVED });
+      }}
+      onDiscard={() => change(fromApi(server))}
+      onRemove={() => setArmed((now) => !now)}
       showMenu
     />
   );
@@ -1553,6 +1626,20 @@ function Screen() {
     "categorias-carregando": "carregando",
   };
   if (categoryRoutes[route]) return <CategoriesPreview stage={categoryRoutes[route]} />;
+  const hoursRoutes: Record<string, HoursStage> = {
+    horario: "normal",
+    "horario-fechado": "fechado",
+    "horario-pausado": "pausado",
+    "horario-sem": "sem",
+    "horario-ouvindo": "ouvindo",
+    "horario-entendi": "entendi",
+    "horario-nao-entendi": "nao-entendi",
+    "horario-problema": "problema",
+    "horario-salvo": "salvo",
+    "horario-carregando": "carregando",
+    "horario-erro": "erro",
+  };
+  if (hoursRoutes[route]) return <HoursPreview stage={hoursRoutes[route]} />;
   if (route === "acerto") return <SettlePreview />;
   if (route === "acerto-confirmar") return <SettlePreview stage="confirmar" />;
   if (route === "acerto-calmo") return <SettlePreview stage="calmo" />;

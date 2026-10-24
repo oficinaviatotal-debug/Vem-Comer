@@ -9,6 +9,7 @@ import DeliveriesScreen from "./DeliveriesScreen";
 import DeskScreen from "./DeskScreen";
 import DishesScreen from "./DishesScreen";
 import LoginScreen from "./LoginScreen";
+import HoursScreen from "./HoursScreen";
 import LogoScreen from "./LogoScreen";
 import MenuSetupScreen from "./MenuSetupScreen";
 import OrdersScreen from "./OrdersScreen";
@@ -245,6 +246,8 @@ function Panel({ companyId, companySlug, companyName, onBack, user, onLogout }: 
         return <CategoriesScreen key="categories" companyId={companyId} onMenu={openMenu} />;
       case "logo":
         return <LogoScreen key="logo" companyId={companyId} onBack={() => go("inicio")} onMenu={openMenu} />;
+      case "hours":
+        return <HoursScreen key="hours" person={person} onMenu={openMenu} />;
     }
   }
 

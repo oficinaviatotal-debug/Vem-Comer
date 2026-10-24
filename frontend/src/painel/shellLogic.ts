@@ -84,7 +84,7 @@ export function shownView(wanted: string, context: ShellContext): string {
 // ---------------------------------------------------------------- qual tela desenha cada nome
 
 /** As telas que já são do visual novo. */
-export type NewScreen = "today" | "orders" | "kitchen" | "desk" | "deliveries" | "settle" | "setup" | "dishes" | "categories" | "logo";
+export type NewScreen = "today" | "orders" | "kitchen" | "desk" | "deliveries" | "settle" | "setup" | "dishes" | "categories" | "logo" | "hours";
 
 /** As telas que ainda são as antigas, dentro da moldura nova (cada uma sai quando chegar a sua rodada). */
 export type OldScreen =
@@ -94,7 +94,6 @@ export type OldScreen =
   | "costs"
   | "pix"
   | "link"
-  | "hours"
   | "zones"
   | "team"
   | "plan"
@@ -114,13 +113,13 @@ const NEW_BY_VIEW: Record<string, NewScreen> = {
   produtos: "dishes",
   categorias: "categories",
   marca: "logo",
+  horario: "hours",
 };
 
 const OLD_BY_VIEW: Record<string, OldScreen> = {
   custos: "costs",
   pagamento: "pix",
   meulink: "link",
-  horario: "hours",
   entrega: "zones",
   usuarios: "team",
   plano: "plan",

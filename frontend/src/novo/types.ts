@@ -889,3 +889,72 @@ export type LoginView = {
 
 /** Um aviso no alto do painel (plano, pedido novo, mesa chamando). */
 export type ShellNotice = { id: string; tone: "info" | "warn" | "urgent"; text: string; action: string };
+
+// ---------------------------------------------------------------- Horário (27ª rodada)
+
+/** Como o restaurante está agora para o cliente: recebendo, fora do horário, pausado ou sem horário nenhum. */
+export type HoursNowTone = "open" | "closed" | "paused" | "none";
+
+export type HoursShiftView = {
+  opens: string;
+  closes: string;
+  /** O que o leitor de tela fala em cada campo ("Segunda, turno 1, hora de abrir"). */
+  opensLabel: string;
+  closesLabel: string;
+  /** "Tirar o turno 2 de segunda"; `null` quando o dia só tem um turno (aí não há o que tirar). */
+  removeLabel: string | null;
+};
+
+export type HoursDayView = {
+  weekday: number;
+  /** "Segunda", "Terça"… */
+  name: string;
+  closed: boolean;
+  /** O que o leitor de tela fala no botão do dia ("Segunda: aberto. Toque para fechar"). */
+  toggleLabel: string;
+  shifts: HoursShiftView[];
+  canAddShift: boolean;
+  /** O botão "Copiar para todos os dias" fica só no primeiro dia aberto. */
+  canCopy: boolean;
+};
+
+/** O que a pessoa entendeu depois de falar o horário: nada foi salvo. */
+export type HoursSpokenView = {
+  said: string;
+  /** "Seg a sex: 11h às 15h e 18h às 23h"; vazio quando nada foi entendido. */
+  lines: string[];
+  notes: string[];
+  /** A frase de quando nada foi entendido (já com a ajuda de como falar); vazia quando algo foi entendido. */
+  failed: string;
+};
+
+export type HoursView = {
+  sub: string;
+  load: "loading" | "ready" | "error";
+  error: string;
+  now: { tone: HoursNowTone; title: string; detail: string } | null;
+  paused: boolean;
+  pauseHelp: string;
+  pauseButton: string;
+  switching: boolean;
+  /** "Ainda sem horário…"; vazio quando já há horário salvo. */
+  noHoursHint: string;
+  days: HoursDayView[];
+  /** A semana em uma linha ("Seg a sáb 11h às 22h · Dom fechado"). */
+  summary: string;
+  dirty: boolean;
+  saving: boolean;
+  canSave: boolean;
+  problems: string[];
+  notice: { ok: boolean; text: string } | null;
+  /** O celular está ouvindo; `heard` são as palavras até agora. `null` quando não está. */
+  listening: { heard: string } | null;
+  spoken: HoursSpokenView | null;
+  /** O celular escuta (senão o microfone e o "Falar o horário" nem aparecem). */
+  canSpeak: boolean;
+  canRemoveHours: boolean;
+  removeArmed: boolean;
+  removing: boolean;
+  /** A frase que o leitor de tela lê quando algo muda. */
+  live: string;
+};

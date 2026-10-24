@@ -1192,6 +1192,35 @@ outra frase/silêncio/cancelar derrubam a pergunta, servidor com defeito e recus
 (**199 conferências, 36 novas**): prato simples na sacola com a quantidade dita, Desfazer, folha de escolhas com a faixa por cima e quantidade 2, Adicionar pelo toque, esgotado e indisponível sem pôr nada, busca escrita na caixa, sacola aberta por voz, "enviar" que não envia, **nenhuma chamada ao servidor em toda a conversa**, restaurante fechado, mesa (garçom e cardápio), celular sem voz (o toque nos pratos segue valendo), sem a chave o aplicativo de sempre, e 320 px sem rolagem lateral com o botão Enviar e a bolinha lado a lado.
 **726 testes passam só na pasta do visual novo (1565 no total das pastas de teste)**; 200 conferências no navegador (a do link da equipe entrou); tipos, build, segurança e conformidade em ordem.
 
+## Vigésima sétima rodada: o Horário no visual novo, com pausa na hora e horário falado (24/10/2026)
+
+"Continue" (GD, 23/10, 20:13). O Horário era uma das telas ainda no desenho antigo dentro da moldura. Agora é uma tela nova (`novo/Hours.tsx`, ligada em `painel/HoursScreen.tsx`, contas em `painel/hoursViewLogic.ts`), atrás da mesma chave `?novo=1`. **Nenhuma regra mudou:** quem decide se o restaurante está aberto, o que vale e as palavras que o cliente lê continua sendo o servidor (`backend/hours.py`); a edição dos dias, a conferência do que foi digitado e a linha-resumo são as mesmas da tela antiga (`service/hoursDraft`), já testadas.
+
+**O que a tela mostra, de cima para baixo:**
+
+- **Como o cliente vê o restaurante agora:** *Aberto agora*, *Fechado agora* (com a frase que o servidor escreveu, por exemplo "Abrimos amanhã às 11h."), *Pedidos pausados* ou *Sem horário* ("o restaurante recebe pedido a qualquer hora"). A pausa ganha de tudo: pausado nunca aparece como aberto.
+- **O botão de pausar** (*Pausar os pedidos agora* / *Voltar a receber pedidos*): **vale na hora, num toque**, e não mexe nos dias nem perde o que a pessoa estava editando.
+- **Os sete dias**, cada um um cartão com o botão *Aberto/Fechado*, campos de hora *Abre* e *Fecha*, *Outro turno (almoço e jantar)* (no máximo dois), botão *Tirar o turno 2* (em linha própria, com o nome escrito) e *Copiar para todos os dias* só no primeiro dia aberto. A semana em uma linha ("Seg a sáb 11h às 22h · Dom fechado") fica embaixo.
+- **Salvar horário** na barra de baixo (apagado enquanto nada mudou, ligado no primeiro horário), o selo *Não salvo* com *Descartar*, e o que falta acertar escrito em frases ("Quarta: abrir e fechar na mesma hora não vale…"). Se o servidor recusar, a tela mostra a frase dele e **mantém o que a pessoa digitou**.
+- **Tirar o horário (sempre aberto)** pede **dois toques**: o primeiro vira *Toque de novo para tirar o horário* e expira em 4 segundos.
+
+**Falar o horário** (botão da tela e bolinha): "de segunda a sexta das 11 às 15 e das 18 às 23, sábado das 11 às 23, domingo fechado". As palavras viram horas na tela com a lista do que foi entendido e **"Ainda não foi salvo"**: a pessoa confere e toca em *Salvar horário*. Falar nunca grava sozinho (um teste lê o código e confere que `saveAdminHours` só é chamado pelo botão Salvar, depois da conferência). Enquanto ouve, mostra as palavras que chegam, *Pronto* (ou tocar na bolinha de novo) e *Cancelar*. Se não entendeu ou não ouviu nada, a tela diz isso e ensina a frase. Sem microfone no celular, o botão de falar não aparece e tudo se faz tocando.
+
+**Defeitos reais que a conferência no navegador achou e eu corrigi:**
+
+1. Em celular de 320 e 360 px, com dois turnos no dia, a **hora ficava cortada** ("11:00 A"): o botão de tirar o turno (um X) comia o espaço. Agora ele vai numa linha própria, com o nome escrito (*Tirar o turno 2*), e as duas horas ficam com a largura toda; a conferência passou a medir a largura de cada campo.
+2. O aviso "quarta: abrir e fechar na mesma hora não vale" saía com o dia em **minúscula**: a tela agora começa cada aviso com maiúscula.
+3. (Só do teste, não da tela.) O microfone de teste repetia a mesma frase a cada volta do ditado; passou a falar uma vez. E a conferência antiga do "esgotado" falhava de vez em quando porque a fala do celular troca o ponto por vírgula em uma das três formas da frase: agora aceita as duas.
+
+**Limites honestos:**
+
+- **Não foi testado em Android de verdade**, só com microfone de teste. O entendimento do que a pessoa fala é o da tela antiga (`service/spokenHours`); frases fora do padrão podem não ser entendidas, e a tela avisa.
+- O campo de hora é o do próprio navegador (`type="time"`): o seletor muda de aparência de um celular para outro.
+- Nada disso vai ao ar sem o "pode": a chave `?novo=1` continua desligada por padrão. A tela antiga (`service/HoursPanel.tsx`) continua no código, sem uso na moldura nova.
+
+**Como foi conferido:** `tests/novo/hoursViewLogic.test.mjs` (24 testes: aberto, fechado, pausado e sem horário; pausa que ganha de tudo; tela abrindo ou com erro sem dias inventados; sete dias em ordem; turnos; copiar só no primeiro dia aberto; resumo igual ao da tela antiga; só salva o que mudou; frases do que falta acertar; fala entendida, não entendida, não ouvida e ouvindo; tirar o horário; **salvar só no botão**; **pausa num toque e tirar em dois**; nomes de botão iguais aos das frases; frases sem jargão e sem exclamação; ligação na casca; tamanho de dedo e página de conferência). No navegador, com o aplicativo de verdade e o microfone de teste (**247 conferências, 47 novas**): sem horário salvo, salvar, editar e descartar, abrir o domingo, dois turnos, pausa sem perder a edição, horário falado pelo botão e pela bolinha sem gravar até o Salvar, fala sem sentido e silêncio, ouvindo e cancelar, tirar o horário (primeiro toque expira, dois toques tiram), servidor recusando, conferência da tela, pausado ao abrir, servidor fora com *Tentar de novo*, celular sem microfone, e 320 px sem rolagem lateral com campos e botões do tamanho de um dedo. A página de conferência (`preview-novo.html#/horario`) tem as 11 situações: `#/horario`, `#/horario-fechado`, `#/horario-pausado`, `#/horario-sem`, `#/horario-ouvindo`, `#/horario-entendi`, `#/horario-nao-entendi`, `#/horario-problema`, `#/horario-salvo`, `#/horario-carregando`, `#/horario-erro`.
+**1589 testes passam no total das pastas de teste (750 só na pasta do visual novo)**; 247 conferências no navegador; tipos, build, segurança e conformidade em ordem.
+
 ## Como as telas novas entram, sem ir ao ar antes da hora
 
 - Tudo mora em `frontend/src/novo/` (e nas pastas irmãs `cozinha/`, `hoje/`, `loja/`, `painel/`). **Só o `App.tsx` importa o painel novo, atrás da chave `?novo=1`, que vem desligada**

@@ -518,3 +518,58 @@ export const VOICE_YES = "Sim";
 export const VOICE_NO = "Não";
 /** O botão que desfaz o que a voz acabou de pôr na sacola. O nome não varia. */
 export const VOICE_UNDO = "Desfazer";
+
+// ---------------------------------------------------------------- Horário (27ª rodada)
+
+export const HOURS_TITLE = "Horário";
+export const HOURS_INTRO = "Fora do horário, o cliente vê o cardápio, mas não consegue pedir. Mesa e pedido em andamento continuam.";
+export const HOURS_LOADING = "Abrindo o horário…";
+export const HOURS_LOAD_ERROR = "Não consegui abrir o horário.";
+export const HOURS_RETRY = "Tentar de novo";
+export const HOURS_NOW_OPEN = "Aberto agora";
+export const HOURS_NOW_CLOSED = "Fechado agora";
+export const HOURS_NOW_PAUSED = "Pedidos pausados";
+export const HOURS_NOW_PAUSED_DETAIL = "O cliente vê que não estamos recebendo agora.";
+export const HOURS_NOW_NONE = "Sem horário";
+export const HOURS_NOW_NONE_DETAIL = "O restaurante recebe pedido a qualquer hora.";
+export const HOURS_PAUSE_HELP_OFF = "Use quando a cozinha encher. Vale na hora, em qualquer horário.";
+export const HOURS_PAUSE_HELP_ON = "Pausado: ninguém consegue pedir, nem na mesa. O que já foi pedido continua.";
+export const HOURS_PAUSE_ON = "Pausar os pedidos agora";
+export const HOURS_PAUSE_OFF = "Voltar a receber pedidos";
+export const HOURS_PAUSE_DONE_ON = "Pedidos pausados. Os clientes já veem.";
+export const HOURS_PAUSE_DONE_OFF = "Pedidos de volta. Os clientes já veem.";
+export const HOURS_PAUSE_ERROR = "Não consegui mudar. Tente de novo.";
+export const HOURS_DAYS_TITLE = "Dias e horas";
+export const HOURS_NO_HOURS = "Ainda sem horário. Ajuste os dias abaixo e toque em Salvar horário.";
+export const HOURS_NO_HOURS_SPEAK = "Ainda sem horário. Ajuste os dias abaixo, ou fale, e toque em Salvar horário.";
+export const HOURS_OPEN = "Aberto";
+export const HOURS_CLOSED = "Fechado";
+export const HOURS_OPENS = "Abre";
+export const HOURS_CLOSES = "Fecha";
+export const HOURS_ADD_SHIFT = "Outro turno (almoço e jantar)";
+export const HOURS_COPY_ALL = "Copiar para todos os dias";
+/** O texto do botão que tira um turno. O nome para o leitor de tela ("Tirar o turno 2 de Segunda") começa igual. */
+export const HOURS_REMOVE_SHIFT = (number: number): string => `Tirar o turno ${number}`;
+export const HOURS_SPEAK = "Falar o horário";
+export const HOURS_LISTENING = "Estou ouvindo…";
+export const HOURS_SPEAK_HINT = "Pode falar. Ex.: de segunda a sexta das 11 às 15 e das 18 às 23, sábado das 11 às 23, domingo fechado.";
+export const HOURS_DONE = "Pronto";
+export const HOURS_CANCEL = "Cancelar";
+export const HOURS_UNDERSTOOD = "Entendi:";
+export const HOURS_CHECK = "Confira abaixo e toque em Salvar horário. Ainda não foi salvo.";
+export const HOURS_NOT_UNDERSTOOD = "Não entendi nenhum horário.";
+export const HOURS_NOT_HEARD = "Não ouvi nada.";
+export const HOURS_CLOSE_NOTE = "Fechar o aviso";
+export const HOURS_SAVE = "Salvar horário";
+export const HOURS_SAVING = "Salvando…";
+export const HOURS_UNSAVED = "Não salvo";
+export const HOURS_DISCARD = "Descartar";
+export const HOURS_MISSING = "Falta acertar:";
+export const HOURS_SAVED = "Horário salvo. Os clientes já veem.";
+export const HOURS_SAVE_ERROR = "Não consegui salvar. Tente de novo.";
+export const HOURS_REMOVE = "Tirar o horário (sempre aberto)";
+export const HOURS_REMOVE_ARMED = "Toque de novo para tirar o horário";
+export const HOURS_REMOVING = "Tirando…";
+export const HOURS_REMOVED = "Horário tirado. O restaurante recebe pedido a qualquer hora.";
+export const HOURS_REMOVE_ERROR = "Não consegui tirar. Tente de novo.";
+export const HOURS_YOU_SAID = (said: string): string => `Você disse: “${said}”`;

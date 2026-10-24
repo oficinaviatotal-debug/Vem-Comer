@@ -678,3 +678,27 @@ export const OPTIONS_EXAMPLE = [
     ],
   },
 ];
+
+/** O horário de exemplo da conferência: almoço e jantar de segunda a sábado, domingo fechado (o formato do servidor). */
+export function hoursExample(over: { configured?: boolean; paused?: boolean; open?: boolean; message?: string } = {}): {
+  configured: boolean;
+  week: { weekday: number; closed: boolean; shifts: { opens: string; closes: string }[] }[];
+  orders_paused: boolean;
+  open_now: boolean;
+  open_message: string;
+} {
+  const configured = over.configured ?? true;
+  return {
+    configured,
+    week: configured
+      ? [0, 1, 2, 3, 4, 5, 6].map((weekday) =>
+          weekday === 6
+            ? { weekday, closed: true, shifts: [] }
+            : { weekday, closed: false, shifts: [{ opens: "11:00", closes: "15:00" }, { opens: "18:00", closes: "23:00" }] },
+        )
+      : [],
+    orders_paused: over.paused ?? false,
+    open_now: over.open ?? true,
+    open_message: configured ? (over.message ?? "Aberto até 15h. Volta às 18h.") : "",
+  };
+}

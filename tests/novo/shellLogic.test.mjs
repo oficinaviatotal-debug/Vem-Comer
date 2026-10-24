@@ -133,13 +133,13 @@ test("as telas novas são as das rodadas feitas; o resto ainda é a antiga", () 
     produtos: "dishes",
     categorias: "categories",
     marca: "logo",
+    horario: "hours",
   };
   for (const [view, id] of Object.entries(fresh)) assert.deepEqual(screenOf(view, "OWNER"), { kind: "new", id }, view);
   const old = {
     custos: "costs",
     pagamento: "pix",
     meulink: "link",
-    horario: "hours",
     entrega: "zones",
     usuarios: "team",
     plano: "plan",
