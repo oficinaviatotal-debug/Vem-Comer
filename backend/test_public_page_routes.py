@@ -362,12 +362,21 @@ class GoogleFilesTests(RoutesBase):
 class OwnerChoiceTests(RoutesBase):
     URL = "/api/admin/public-page"
 
-    def test_needs_a_login_and_the_owner_role(self):
+    def test_needs_a_login_and_the_right_role(self):
         self.assertEqual(self.client.get(self.URL).status_code, 401)
         self.assertEqual(self.client.put(self.URL, json={"listed": True}).status_code, 401)
-        for role in ("MANAGER", "WAITER", "KITCHEN", "COURIER"):
+        for role in ("WAITER", "KITCHEN", "COURIER"):
             self.assertEqual(self.client.get(self.URL, headers=auth(role)).status_code, 403, role)
             self.assertEqual(self.client.put(self.URL, json={"listed": True}, headers=auth(role)).status_code, 403, role)
+
+    def test_the_manager_can_read_the_link_but_not_change_the_choice(self):
+        # o gerente também manda o link (a tela Meu link é dele); a escolha de aparecer no Google é só do dono
+        got = self.client.get(self.URL, headers=auth("MANAGER"))
+        self.assertEqual(got.status_code, 200)
+        self.assertIs(got.get_json()["can_change"], False)
+        self.assertEqual(self.client.put(self.URL, json={"listed": True}, headers=auth("MANAGER")).status_code, 403)
+        self.assertEqual(self.db.commits, 0)
+        self.assertIs(self.client.get(self.URL, headers=auth("OWNER")).get_json()["can_change"], True)
 
     def test_the_owner_sees_the_link_and_the_choice(self):
         self.db.listed = False
@@ -379,7 +388,7 @@ class OwnerChoiceTests(RoutesBase):
         self.assertEqual(data["indexed"], True)
         self.assertEqual(data["page_url"], f"https://vem.example.com/r/{SLUG}")
         self.assertEqual(data["qr_path"], f"/r/{SLUG}/qr.png")
-        self.assertNotIn("owner_phone", data)
+        self.assertEqual(sorted(data), ["can_change", "indexed", "listed", "open", "page_url", "qr_path", "slug"])
 
     def test_the_owner_says_yes_and_no(self):
         for value in (True, False):

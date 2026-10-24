@@ -53,8 +53,8 @@ Cada comando mexe só em duas linhas do `.env` e reinicia só o servidor (alguns
 
 O servidor já tem o que a tela precisa:
 
-- `GET /api/admin/public-page` → `{ open, indexed, listed, slug, page_url, qr_path }` (só o dono do restaurante, `OWNER`);
-- `PUT /api/admin/public-page` com `{"listed": true|false}` → "Aparecer no Google". Só aceita verdadeiro ou falso de verdade (`"sim"` ou `1` são recusados).
+- `GET /api/admin/public-page` → `{ open, indexed, listed, can_change, slug, page_url, qr_path }` (dono e gerente leem, porque os dois mandam o link; `can_change` diz se quem lê pode mudar);
+- `PUT /api/admin/public-page` com `{"listed": true|false}` → "Aparecer no Google". **Só o dono** (`OWNER`). Só aceita verdadeiro ou falso de verdade (`"sim"` ou `1` são recusados).
 
 A tela vai: mostrar o link novo no lugar do link velho **somente quando `open` for verdadeiro** (antes disso, o link velho continua), baixar o QR, e ter o interruptor "Aparecer no Google" com a frase honesta do que ele faz. O link velho (`/?empresa=…`) continua funcionando para sempre: a página nova só leva até ele.
 
@@ -71,7 +71,7 @@ A tela vai: mostrar o link novo no lugar do link velho **somente quando `open` f
 ## O que foi conferido
 
 - `backend/test_public_page.py` (65): chaves desligadas, entradas, preço, texto, horário, ordem das categorias igual à do aplicativo, escape, JSON do Google, contraste das cores (todas passam de 4,5:1), CSP, sitemap, robots, limite, imagem da prévia (acento desenhado, tamanho, nome enorme, foto estragada).
-- `backend/test_public_page_routes.py` (33): 404 em tudo com a chave desligada **sem tocar no banco**, cada rota, limite 429, 503 sem detalhe, a escolha do dono (login, cargo, só `true` ou `false`).
+- `backend/test_public_page_routes.py` (33): 404 em tudo com a chave desligada **sem tocar no banco**, cada rota, limite 429, 503 sem detalhe, a escolha do dono (login, cargo: o gerente lê mas não muda; só `true` ou `false`).
 - `backend/test_public_page_db.py` (11, PostgreSQL de verdade): um restaurante nunca mostra o prato de outro, categoria desligada some, esgotado aparece, o texto escapado depois de ir e voltar do banco, só quem disse sim entra no sitemap.
 - `deploy/vps/test_abrir_pagina_publica.py` (14).
 - Migração `022_pagina_publica.sql` (uma coluna, padrão falso) aplicada duas vezes sem erro.

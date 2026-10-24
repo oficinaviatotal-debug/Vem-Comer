@@ -10,8 +10,8 @@ Tudo responde 404 enquanto PUBLIC_PAGE_OPEN não estiver ligada. Nenhuma rota gr
 nenhuma recebe dado de pessoa. Só duas rotas do painel (do dono) gravam, e só um sim ou não sobre o próprio
 restaurante:
 
-    GET /api/admin/public-page   o dono vê o link da página e se o Google pode guardá-la
-    PUT /api/admin/public-page   {"listed": true|false}: "Aparecer no Google" (padrão: não)
+    GET /api/admin/public-page   dono e gerente veem o link da página e se o Google pode guardá-la
+    PUT /api/admin/public-page   só o dono: {"listed": true|false}, "Aparecer no Google" (padrão: não)
 
 `register` recebe do app.py o que precisa (consulta e conexão ao banco, a montagem dos dados públicos do restaurante,
 "este restaurante recebe pedidos?" e a trava por cargo), assim este arquivo não importa o app e os testes rodam
@@ -207,13 +207,13 @@ def register(app, *, query_db, get_db_connection, public_company, accepts_orders
     # ------------------------------------------------------------------ o dono decide: aparecer no Google?
 
     def owner_view(row) -> dict:
-        slug = row["slug"]
-        return {
-            **public_page.owner_view(slug, bool(row.get("public_page_listed")), base()),
-        }
+        # Dono e gerente leem (os dois mandam o link); só o dono muda a escolha: `can_change` diz isso ao painel.
+        view = public_page.owner_view(row["slug"], bool(row.get("public_page_listed")), base())
+        view["can_change"] = request.user.get("role") == "OWNER"
+        return view
 
     @app.route("/api/admin/public-page", methods=["GET"])
-    @require_roles("OWNER")
+    @require_roles("OWNER", "MANAGER")
     def admin_get_public_page():
         try:
             row = query_db(SQL_OWNER_GET, (str(request.user.get("company_id")),), one=True)
