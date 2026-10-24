@@ -70,5 +70,5 @@ O GD respondeu em 24/10/2026, 06:57: "…e para as demais decisões, tudo ok. Po
 
 Na mesma mensagem o GD separou o trabalho em dois lados:
 
-- **O dono do software (Vem Tecnologia)** entra em contato com clientes e vai atrás de clientes, "tudo isso o mais automatizado possível", para conquistar novos bares, restaurantes, sorveterias, pastelarias e outros. Isso é a **máquina de vendas do Vem** (`docs/maquina-de-vendas-do-vem.md`, PR #77): o sistema acha, lembra, mede e escreve o rascunho; uma pessoa do Vem envia, uma por vez, e toca em "Já mandei". Nada envia sozinho.
+- **O dono do software (Vem Tecnologia)** entra em contato com clientes e vai atrás de clientes, "tudo isso o mais automatizado possível", para conquistar novos bares, restaurantes, sorveterias, pastelarias e outros. Isso é a **máquina de vendas do Vem** (`docs/maquina-de-vendas-do-vem.md`, PR #77): o sistema acha, lembra, mede e escreve o rascunho; uma pessoa do Vem envia, uma por vez, e toca em "Já mandei". Nada envia sozinho. A tela disso é a **Vendas** do painel novo, só para o dono do sistema (`docs/front-end-novo.md`, trigésima primeira rodada).
 - **O dono do restaurante** tem o trabalho de marketing de **divulgar o link dele**: o da pastelaria, o da sorveteria, o da pizzaria. O Vem dá a ferramenta (esta tela, o cartão, o QR e, em seguida, a página pública); divulgar é trabalho dele.

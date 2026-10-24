@@ -122,6 +122,24 @@ test("o dono do sistema que fala 'chamados' ouve a mesa; os pedidos de ajuda ped
   assert.equal(ask("assinaturas", { platformAdmin: true }).view, "assinaturas");
 });
 
+test("as vendas do Vem abrem só para o dono do sistema; 'vendas' sozinho continua sendo os números do negócio", () => {
+  for (const phrase of ["vendas do vem", "máquina de vendas", "quem procurar hoje", "conquistar restaurantes", "prospectar"]) {
+    const answer = ask(phrase, { platformAdmin: true });
+    assert.equal(answer.kind, "go", phrase);
+    assert.equal(answer.view, "vendas", phrase);
+    assert.equal(answer.say, "Abrindo as vendas do Vem.", phrase);
+  }
+  // o dono de um restaurante que fala isso não ganha a tela: ouve que não pode abrir...
+  const blocked = ask("prospectar", { platformAdmin: false });
+  assert.equal(blocked.kind, "stay");
+  assert.match(blocked.say, /vendas do Vem/);
+  // ...e "vendas do vem" cai na palavra "vendas", que para ele é a tela dos números do negócio dele
+  assert.equal(ask("vendas do vem", { platformAdmin: false }).view, "dashboard");
+  assert.equal(ask("vendas", { platformAdmin: true }).view, "dashboard");
+  assert.equal(ask("vendas de hoje", { platformAdmin: true }).view, "dashboard");
+  assert.equal(spokenIn("vendas", "OWNER"), "nas vendas do Vem");
+});
+
 test("os números têm o nome de quem olha: o dono vê 'os números do negócio'; o garçom, 'o resumo'", () => {
   assert.equal(ask("números").say, "Abrindo os números do negócio.");
   assert.equal(ask("números", { role: "WAITER" }).say, "Abrindo o resumo.");

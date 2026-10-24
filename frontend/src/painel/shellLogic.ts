@@ -62,6 +62,7 @@ export function allowedViews(context: ShellContext): string[] {
     platformAdmin: context.platformAdmin,
     openOrders: 0,
     helpCount: null,
+    newPanel: true,
   }).flatMap((group) => group.items.map((item) => item.view));
 }
 
@@ -84,7 +85,7 @@ export function shownView(wanted: string, context: ShellContext): string {
 // ---------------------------------------------------------------- qual tela desenha cada nome
 
 /** As telas que já são do visual novo. */
-export type NewScreen = "today" | "orders" | "kitchen" | "desk" | "deliveries" | "settle" | "setup" | "dishes" | "categories" | "logo" | "hours" | "share";
+export type NewScreen = "today" | "orders" | "kitchen" | "desk" | "deliveries" | "settle" | "setup" | "dishes" | "categories" | "logo" | "hours" | "share" | "sales";
 
 /** As telas que ainda são as antigas, dentro da moldura nova (cada uma sai quando chegar a sua rodada). */
 export type OldScreen =
@@ -114,6 +115,7 @@ const NEW_BY_VIEW: Record<string, NewScreen> = {
   marca: "logo",
   horario: "hours",
   meulink: "share",
+  vendas: "sales",
 };
 
 const OLD_BY_VIEW: Record<string, OldScreen> = {

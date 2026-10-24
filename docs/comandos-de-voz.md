@@ -39,6 +39,7 @@ As frases estão escritas **sem acento e sem maiúscula** porque é assim que a 
 | Plano | todos | "plano", "meu plano", "pagar o plano", "pagar plano", "mensalidade", "vencimento" |
 | Aprovações | só o dono do sistema | "aprovacao", "aprovacoes", "aprovar", "o que espera meu aval" |
 | Assinaturas | só o dono do sistema | "assinaturas" |
+| Vendas | só o dono do sistema | "vendas do vem", "vender o vem", "maquina de vendas", "caderno de vendas", "conquistar", "conquistar restaurantes", "restaurantes novos", "prospectar", "prospeccao", "quem procurar", "quem procurar hoje" |
 | Chamados | só o dono do sistema | "chamados de ajuda", "pedidos de ajuda", "chamados dos donos" |
 
 ### Perguntar como está o dia

@@ -13,6 +13,7 @@ import Orders from "./Orders";
 import Deliveries from "./Deliveries";
 import Hours from "./Hours";
 import Share from "./Share";
+import Vendas from "./Vendas";
 import Settle from "./Settle";
 import MenuSetup from "./MenuSetup";
 import Dishes, { NOT_BUSY } from "./Dishes";
@@ -73,6 +74,7 @@ import { deliveriesViewOf, pickedText, type CourierOrder } from "../painel/deliv
 import { armKey, markedIds, settleViewOf, toggleLeft } from "../painel/settleLogic";
 import { addShift, copyToAll, fromApi, hoursViewOf, removeShift, setClosed, setShift, validate, type ApiHours } from "../painel/hoursViewLogic";
 import { renderCard } from "../painel/shareCardRender";
+import { anotherDraft, applyRead, channelOf, copyTextOf, draftKey, draftOf, emptyForm, formViewOf, hasDraft, salesViewOf, savedText, type CardUi, type Draft } from "../painel/vendasLogic";
 import { anotherCaption, anotherMessage, captionOf, cardSpec, dishChoices, messageOf, shareViewOf, type CardFormat } from "../painel/shareLogic";
 import { createPhraser, plainPhraser } from "./phrasing";
 import type { ShareManual } from "./types";
@@ -135,7 +137,7 @@ import {
 import { codeIsComplete, deliveredText, onlyCodeDigits } from "../courier/courierLogic";
 import type { CashView } from "../courier/courierLogic";
 import { emptyText, isKitchenTab, kitchenTabs, ticketsFor, type KitchenTabId } from "../cozinha/kitchenLogic";
-import { DISH_MENUS_EXAMPLE, DISH_PRODUCTS_EXAMPLE, OPTIONS_EXAMPLE, MENU_READ_EXAMPLE, MENU_SPOKEN_EXAMPLE, MODEL_EXAMPLE, MODEL_TYPES_EXAMPLE, ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, hoursExample, shareProductsExample, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
+import { DISH_MENUS_EXAMPLE, DISH_PRODUCTS_EXAMPLE, OPTIONS_EXAMPLE, MENU_READ_EXAMPLE, MENU_SPOKEN_EXAMPLE, MODEL_EXAMPLE, MODEL_TYPES_EXAMPLE, ACAI_PRODUCT, DESK_TABLES, JOBS, PROMO, QUOTE_EXAMPLE, QUOTE_NONE_EXAMPLE, callsExample, cashExample, courierOrders, hoursExample, salesExample, shareProductsExample, deskCallsExample, deskOrdersExample, kitchenOrders, orderExample, panelOrders, pixExample, shopExample, todayExample } from "./demo";
 import { choicesViewOf, confirmChoices, nextQuantity, pressOption } from "../loja/choicesLogic";
 import { bagProblem, bagViewOf } from "../loja/bagLogic";
 import { copiedOutcome, pixOf, ratingOf, trackOf } from "../loja/trackingLogic";
@@ -681,6 +683,119 @@ function SharePreview({ stage = "normal" }: { stage?: ShareStage }) {
       onBrand={setBrand}
       onCopyCaption={() => setCopied("caption")}
       onOtherCaption={() => dish && setCaption((now) => anotherCaption(talker, dish.name, dish.price, SHARE_URL, now))}
+    />
+  );
+}
+
+type SalesStage =
+  | "normal"
+  | "vazio"
+  | "carregando"
+  | "erro"
+  | "avisos"
+  | "anotar"
+  | "anotar-lido"
+  | "anotar-erro"
+  | "guardado"
+  | "copiado"
+  | "manual"
+  | "resposta"
+  | "mais"
+  | "confirma-nao"
+  | "confirma-apagar"
+  | "ocupado"
+  | "erro-cartao"
+  | "email"
+  | "ligacao";
+
+const SALES_LINK = "https://vem.example/?vender=1";
+
+/** A tela Vendas da conferência: passa pela conta de verdade (`salesViewOf`); o canal, o copiar, "outro texto" e as perguntas funcionam. */
+function SalesPreview({ stage = "normal" }: { stage?: SalesStage }) {
+  const [now] = useState(() => Date.now());
+  const overview = stage === "carregando" || stage === "erro" ? null : salesExample(now, { empty: stage === "vazio", notes: stage === "avisos" ? ["Já são 16 mensagens hoje: passou do que dá para escrever com cuidado.", "Domingo é só para responder quem escreveu."] : [], more: stage === "avisos" ? 7 : 0 });
+  const [talker] = useState(() => createPhraser());
+  const [sender, setSender] = useState("João");
+  const first = overview?.today.items[0]?.id ?? "p1";
+  const second = overview?.today.items[1]?.id ?? "p2";
+  const [ui, setUi] = useState<Record<string, CardUi>>(() => {
+    if (stage === "copiado") return { [first]: { copied: true } };
+    if (stage === "manual") return { [first]: { manual: "Olá, Zé! Aqui é o João, da Vem Tecnologia." } };
+    if (stage === "resposta") return { [second]: { replyOpen: true } };
+    if (stage === "mais") return { [second]: { moreOpen: true } };
+    if (stage === "confirma-nao") return { [first]: { confirm: "nao_quer" } };
+    if (stage === "confirma-apagar") return { [first]: { confirm: "apagar" } };
+    if (stage === "ocupado") return { [first]: { busy: true } };
+    if (stage === "erro-cartao") return { [first]: { error: "Não consegui anotar. Tente de novo." } };
+    if (stage === "email") return { [second]: { channel: "email" } };
+    if (stage === "ligacao") return { [first]: { channel: "ligacao" } };
+    return {};
+  });
+  const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  const [form, setForm] = useState(() => {
+    const open = stage === "anotar" || stage === "anotar-lido" || stage === "anotar-erro";
+    if (!open) return null;
+    const values = emptyForm();
+    if (stage === "anotar-lido") {
+      values.paste = "Pizzaria Forno a Lenha, fone 84 98765-4321, @fornoalenha.natal";
+      const next = applyRead(values, { name: "Pizzaria Forno a Lenha", phone: "5584987654321", other_phones: [], email: null, instagram: "fornoalenha.natal", site: null });
+      return { values: next.values, readNote: next.note, error: "" };
+    }
+    return { values, readNote: "", error: stage === "anotar-erro" ? "Escreva de onde veio o contato." : "" };
+  });
+  const [live, setLive] = useState("");
+
+  const draftFor = (id: string): Draft | null => {
+    const prospect = overview?.today.items.find((item) => item.id === id);
+    if (!prospect || !hasDraft(prospect)) return null;
+    const channel = channelOf(prospect, ui[id]?.channel);
+    const key = draftKey(prospect, channel, sender, SALES_LINK);
+    return drafts[key] ?? draftOf({ prospect, sender, salesLink: SALES_LINK, channel, phraser: plainPhraser });
+  };
+  const patch = (id: string, change: Partial<CardUi>) => setUi((now) => ({ ...now, [id]: { ...now[id], ...change } }));
+  const drafted: Record<string, Draft | null> = {};
+  for (const prospect of overview?.today.items ?? []) drafted[prospect.id] = draftFor(prospect.id);
+
+  const view = salesViewOf({
+    load: stage === "carregando" ? "loading" : stage === "erro" ? "error" : "ready",
+    error: "Não consegui abrir as Vendas. Tente de novo.",
+    overview,
+    sender,
+    ui,
+    drafts: drafted,
+    form: form ? formViewOf(form.values, { readNote: form.readNote, error: form.error }) : null,
+    saved: stage === "guardado" ? savedText({ created: true, reason: null }, "Pizzaria Forno a Lenha") : "",
+    live,
+    now: new Date(now),
+  });
+
+  return (
+    <Vendas
+      view={view}
+      showMenu
+      onSender={setSender}
+      onAdd={() => setForm({ values: emptyForm(), readNote: "", error: "" })}
+      onCancelForm={() => setForm(null)}
+      onField={(field, value) => setForm((then) => (then ? { ...then, values: { ...then.values, [field]: value } } : then))}
+      onChannel={(id, channel) => patch(id, { channel, copied: false, manual: null })}
+      onCopy={(id) => {
+        const draft = draftFor(id);
+        if (draft) setLive(copyTextOf(draft));
+        patch(id, { copied: true });
+      }}
+      onAnother={(id) => {
+        const prospect = overview?.today.items.find((item) => item.id === id);
+        const current = draftFor(id);
+        if (!prospect || !current) return;
+        const channel = channelOf(prospect, ui[id]?.channel);
+        const key = draftKey(prospect, channel, sender, SALES_LINK);
+        setDrafts((now) => ({ ...now, [key]: anotherDraft({ prospect, sender, salesLink: SALES_LINK, channel, phraser: talker }, current) }));
+        patch(id, { copied: false });
+      }}
+      onAskReply={(id) => patch(id, { replyOpen: !ui[id]?.replyOpen, moreOpen: false, confirm: null })}
+      onMore={(id) => patch(id, { moreOpen: !ui[id]?.moreOpen, replyOpen: false, confirm: null })}
+      onAskConfirm={(id, kind) => patch(id, { confirm: kind })}
+      onCancelConfirm={(id) => patch(id, { confirm: null })}
     />
   );
 }
@@ -1748,6 +1863,28 @@ function Screen() {
     "divulgar-sem-nome": "sem-nome",
   };
   if (shareRoutes[route]) return <SharePreview stage={shareRoutes[route]} />;
+  const salesRoutes: Record<string, SalesStage> = {
+    vendas: "normal",
+    "vendas-vazio": "vazio",
+    "vendas-carregando": "carregando",
+    "vendas-erro": "erro",
+    "vendas-avisos": "avisos",
+    "vendas-anotar": "anotar",
+    "vendas-anotar-lido": "anotar-lido",
+    "vendas-anotar-erro": "anotar-erro",
+    "vendas-guardado": "guardado",
+    "vendas-copiado": "copiado",
+    "vendas-manual": "manual",
+    "vendas-resposta": "resposta",
+    "vendas-mais": "mais",
+    "vendas-confirma-nao": "confirma-nao",
+    "vendas-confirma-apagar": "confirma-apagar",
+    "vendas-ocupado": "ocupado",
+    "vendas-erro-cartao": "erro-cartao",
+    "vendas-email": "email",
+    "vendas-ligacao": "ligacao",
+  };
+  if (salesRoutes[route]) return <SalesPreview stage={salesRoutes[route]} />;
   if (route === "acerto") return <SettlePreview />;
   if (route === "acerto-confirmar") return <SettlePreview stage="confirmar" />;
   if (route === "acerto-calmo") return <SettlePreview stage="calmo" />;

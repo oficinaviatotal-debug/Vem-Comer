@@ -1024,3 +1024,115 @@ export type ShareView = {
   /** A frase que o leitor de tela lê quando algo muda. */
   live: string;
 };
+
+// ---------------------------------------------------------------- Vendas (o painel do dono do sistema)
+
+export type SalesChannelId = "whatsapp" | "email" | "ligacao" | "instagram" | "presencial";
+
+export type SalesChoice = { id: string; label: string };
+
+/** O rascunho de um negócio: o que escrever (ou dizer), por qual canal, e o botão que abre o aplicativo com o texto pronto. */
+export type SalesDraftView = {
+  /** Os jeitos de falar com este negócio. Só aparecem se houver mais de um. */
+  channels: Array<SalesChoice & { selected: boolean }>;
+  channel: SalesChannelId;
+  channelLabel: string;
+  /** O assunto, só no e-mail. */
+  subject: string | null;
+  /** O texto para mandar (WhatsApp, e-mail ou Instagram). Vazio na ligação e na visita. */
+  text: string;
+  /** O roteiro, só na ligação e na visita. */
+  script: string[];
+  /** O botão que abre o WhatsApp, o e-mail, o telefone ou o Instagram. Nada sai sozinho. */
+  openHref: string | null;
+  openLabel: string;
+  copied: boolean;
+  /** O celular não deixou copiar: o texto aparece marcado. */
+  manual: string | null;
+};
+
+export type SalesCardView = {
+  id: string;
+  name: string;
+  /** "Pastelaria · Natal · Centro". */
+  meta: string;
+  /** "(84) 99999-8888 · @pizzariadoze". */
+  contact: string;
+  /** "Veio de: Anúncio público. Onde vi: …". */
+  origin: string;
+  stage: string;
+  /** O que fazer com este negócio (ou a espera). */
+  line: string;
+  /** "Boa hora para procurar (14h às 17h)" / "Melhor hora: 14h às 17h". Vazio para quem está esperando. */
+  timing: string;
+  goodTime: boolean;
+  draft: SalesDraftView | null;
+  /** Falta telefone, e-mail ou Instagram. */
+  noChannel: boolean;
+  canMarkSent: boolean;
+  sendLabel: string;
+  /** O Vem sugere encerrar (3 contatos sem resposta, ou sem contato anotado): mostra "Encerrar este negócio". */
+  canClose: boolean;
+  replyOpen: boolean;
+  replies: SalesChoice[];
+  stages: SalesChoice[];
+  moreOpen: boolean;
+  confirm: "nao_quer" | "apagar" | null;
+  busy: boolean;
+  error: string;
+};
+
+export type SalesFunnelView = {
+  total: number;
+  paying: number;
+  stages: Array<{ id: string; label: string; count: number; share: number }>;
+  sources: Array<{ id: string; label: string; line: string }>;
+};
+
+export type SalesFormValues = {
+  paste: string;
+  name: string;
+  kind: string;
+  city: string;
+  neighborhood: string;
+  person: string;
+  phone: string;
+  email: string;
+  instagram: string;
+  site: string;
+  source: string;
+  seen: string;
+  note: string;
+};
+
+export type SalesFormView = {
+  values: SalesFormValues;
+  kinds: SalesChoice[];
+  sources: SalesChoice[];
+  reading: boolean;
+  /** O que a leitura achou ("Separei o que achei…"). */
+  readNote: string;
+  saving: boolean;
+  error: string;
+  canSave: boolean;
+};
+
+export type SalesView = {
+  sub: string;
+  load: "loading" | "ready" | "error";
+  error: string;
+  /** O nome que assina os rascunhos. */
+  sender: string;
+  /** Avisos do dia (domingo, muitas mensagens). */
+  notes: string[];
+  today: SalesCardView[];
+  todayMore: string;
+  waiting: SalesCardView[];
+  waitingMore: string;
+  funnel: SalesFunnelView;
+  form: SalesFormView | null;
+  /** "Negócio guardado.", mostrado depois de guardar. */
+  saved: string;
+  /** A frase que o leitor de tela lê quando algo muda. */
+  live: string;
+};

@@ -53,6 +53,7 @@ export type NvIconName =
   | "cashier"
   | "courier"
   | "approvals"
+  | "sales"
   | "customer"
   | "owner"
   | "chevron"
@@ -190,6 +191,7 @@ const PATHS: Record<NvIconName, ReactNode> = {
   cashier: <path d="M5 11h14v8.5H5z M8 11V5h8v6 M8.5 14.5h2 M13.5 14.5h2" />,
   courier: <path d="M5.5 17m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0 M18.5 17m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0 M8 17h5l2-6h3 M12 11H8l-1-3.5H4.5" />,
   approvals: <path d="M12 3l7 3v5c0 4.5-2.9 8.2-7 10-4.1-1.8-7-5.5-7-10V6z M8.8 12l2.4 2.4 4.2-4.6" />,
+  sales: <path d="M3 17l6-6 4 4 8-8 M15 7h6v6" />,
   customer: <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4.5 21c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5" />,
   owner: <path d="M4 20V10l8-6 8 6v10 M9 20v-6h6v6 M3 10.5 12 4l9 6.5" />,
   chevron: <path d="M9.5 6l6 6-6 6" />,

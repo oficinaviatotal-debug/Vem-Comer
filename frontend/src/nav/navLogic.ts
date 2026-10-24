@@ -58,6 +58,7 @@ export type IconName =
   | "owner"
   | "link"
   | "approvals"
+  | "sales"
   | "qr";
 
 export type NavGroupKey = "hoje" | "vender" | "cardapio" | "numeros" | "loja" | "plataforma";
@@ -87,6 +88,8 @@ export type NavContext = {
   helpCount: number | null;
   /** Decisions waiting for the owner of the platform (null or missing: not known). */
   approvalsCount?: number | null;
+  /** The new look of the panel (`?novo=1`). A few screens only exist there; the old panel never passes this. */
+  newPanel?: boolean;
 };
 
 type Entry = {
@@ -99,6 +102,8 @@ type Entry = {
   roles?: string[];
   /** Shown only when the plan has something to say / for the platform owner. */
   need?: "plan" | "platform";
+  /** The screen exists only in the new look of the panel. */
+  newOnly?: boolean;
 };
 
 const MANAGERS = MANAGER_ROLES;
@@ -147,6 +152,7 @@ const CATALOG: Entry[] = [
 
   { group: "plataforma", view: "aprovacoes", label: "Aprovações", hint: "O que espera o seu aval", icon: "approvals", need: "platform" },
   { group: "plataforma", view: "assinaturas", label: "Assinaturas", hint: "Restaurantes e planos", icon: "subscriptions", need: "platform" },
+  { group: "plataforma", view: "vendas", label: "Vendas", hint: "Quem procurar para conquistar", icon: "sales", need: "platform", newOnly: true },
   { group: "plataforma", view: "ajuda", label: "Chamados", hint: "Pedidos de ajuda dos donos", icon: "help", need: "platform" },
 ];
 
@@ -174,6 +180,7 @@ export function menuFor(context: NavContext): NavGroup[] {
     if (entry.roles && !entry.roles.includes(role)) continue;
     if (entry.need === "plan" && !context.hasPlanTab) continue;
     if (entry.need === "platform" && !context.platformAdmin) continue;
+    if (entry.newOnly && !context.newPanel) continue;
     if (!context.allowed(entry.view)) continue;
 
     let badge: number | null = null;
@@ -188,9 +195,13 @@ export function menuFor(context: NavContext): NavGroup[] {
   return groups.filter((group) => group.items.length > 0);
 }
 
-/** Every screen name the menu can open (the panel keeps its own list; a test compares the two). */
-export function menuViews(): string[] {
-  return CATALOG.map((entry) => entry.view);
+/**
+ * Every screen name the menu can open (the panel keeps its own list; a test compares the two). By default this is the
+ * new panel's list; `{ newPanel: false }` leaves out the screens that only exist there, which is the old panel's list.
+ */
+export function menuViews(options: { newPanel?: boolean } = {}): string[] {
+  const newPanel = options.newPanel !== false;
+  return CATALOG.filter((entry) => newPanel || !entry.newOnly).map((entry) => entry.view);
 }
 
 /** The name on top of the screen, next to the menu button. */

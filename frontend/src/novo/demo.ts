@@ -12,6 +12,7 @@ import { hourOf, todayOf, type SetupFacts } from "../hoje/todayLogic";
 import { shopViewOf, type ShopView } from "../loja/shopLogic";
 import type { Job, Promo, Today } from "./types";
 import type { OrderView, Product } from "../customer/types";
+import type { SalesMove, SalesOverview, SalesProspect } from "../painel/vendasLogic";
 
 /**
  * O cardápio de EXEMPLO: restaurante, categorias e pratos no formato que o servidor manda, passando pela mesma conta
@@ -728,4 +729,176 @@ export function shareProductsExample(over: { many?: boolean; soldOutOnly?: boole
   if (!over.many) return base;
   const more = ["Pastel de pizza", "Pastel de palmito", "Pastel de carne seca", "Pastel de camarão", "Pastel doce de banana", "Pastel de nutella", "Suco de laranja", "Guaraná lata"];
   return [...base, ...more.map((name, index): Product => ({ id: `m${index}`, menu_id: "m1", name, price: String(7 + index) }))];
+}
+
+// ---------------------------------------------------------------- Vendas (conferência da tela do dono do sistema)
+
+type SalesDemoOver = { empty?: boolean; notes?: string[]; more?: number };
+
+function demoProspect(over: Partial<Omit<SalesProspect, "move">> & { move?: Partial<SalesMove> } = {}): SalesProspect {
+  const { move, ...rest } = over;
+  return {
+    id: "p1",
+    business_name: "Pastelaria do Zé",
+    kind: "pastelaria",
+    kind_label: "Pastelaria",
+    city: "Natal",
+    neighborhood: "Tirol",
+    contact_person: "Zé Carlos",
+    phone: "(84) 99999-8888",
+    whatsapp: "5584999998888",
+    email: null,
+    instagram: "pastelariadoze",
+    site: null,
+    source: "anuncio_publico",
+    source_label: "Anúncio público",
+    source_note: "Anúncio no Instagram em 20/10",
+    note: null,
+    stage: "achado",
+    stage_label: "Achado",
+    days_in_stage: 1,
+    touches: 0,
+    channels: ["whatsapp", "ligacao"],
+    last_channel: null,
+    reply_kind: null,
+    window: "14h às 17h",
+    good_time: true,
+    ...rest,
+    move: { action: "primeiro_contato", reason: "Ainda não foi procurado.", channel: "whatsapp", due: null, tags: [], ...(move ?? {}) },
+  };
+}
+
+/** Quem procurar hoje, quem espera resposta e o funil, no formato que o servidor manda. Os negócios são inventados. */
+export function salesExample(now: number, over: SalesDemoOver = {}): SalesOverview {
+  const day = 86400000;
+  if (over.empty) {
+    return {
+      today: { items: [], more: 0, touches_today: 0, notes: over.notes ?? [] },
+      waiting: { items: [], more: 0 },
+      funnel: { total: 0, paying: 0, by_stage: [], by_source: [] },
+    };
+  }
+  const today: SalesProspect[] = [
+    demoProspect(),
+    demoProspect({
+      id: "p2",
+      business_name: "Sorveteria Gelato Natal",
+      kind: "sorveteria",
+      kind_label: "Sorveteria",
+      neighborhood: "Ponta Negra",
+      contact_person: "Dona Maria Souza",
+      phone: "(84) 98888-7777",
+      whatsapp: "5584988887777",
+      email: "contato@gelatonatal.example",
+      instagram: null,
+      source: "indicacao",
+      source_label: "Indicação",
+      source_note: "Indicada pelo Seu Chico, do Bar do Chico",
+      stage: "chamado",
+      stage_label: "Já chamei",
+      days_in_stage: 6,
+      touches: 1,
+      channels: ["whatsapp", "email"],
+      last_channel: "whatsapp",
+      good_time: false,
+      window: "10h às 11h30",
+      move: { action: "lembrete", reason: "Chamado há 6 dias, sem resposta: um lembrete só.", channel: "email" },
+    }),
+    demoProspect({
+      id: "p3",
+      business_name: "Bar do Chico",
+      kind: "bar",
+      kind_label: "Bar",
+      neighborhood: "Petrópolis",
+      contact_person: "Chico",
+      phone: "(84) 97777-6666",
+      whatsapp: "5584977776666",
+      instagram: null,
+      stage: "respondeu",
+      stage_label: "Respondeu",
+      days_in_stage: 0,
+      touches: 1,
+      last_channel: "whatsapp",
+      reply_kind: "quer_saber_origem",
+      move: { action: "responder_origem", reason: "Perguntou de onde veio o contato: diga a origem e ofereça parar.", channel: "whatsapp", tags: ["privacidade"] },
+    }),
+    demoProspect({
+      id: "p4",
+      business_name: "Pizzaria Forno a Lenha",
+      kind: "pizzaria",
+      kind_label: "Pizzaria",
+      neighborhood: null,
+      contact_person: null,
+      phone: "",
+      whatsapp: null,
+      instagram: "fornoalenha.natal",
+      channels: [],
+      good_time: false,
+      window: "",
+      move: { action: "achar_contato", reason: "Só tem o Instagram anotado: ache um telefone ou e-mail.", channel: null },
+    }),
+  ];
+  const waiting: SalesProspect[] = [
+    demoProspect({
+      id: "w1",
+      business_name: "Hamburgueria Brasa",
+      kind: "hamburgueria",
+      kind_label: "Hamburgueria",
+      neighborhood: "Capim Macio",
+      phone: "(84) 96666-5555",
+      whatsapp: "5584966665555",
+      instagram: "hamburgueriabrasa",
+      source: "site_da_empresa",
+      source_label: "Site da empresa",
+      source_note: "Site da própria hamburgueria",
+      stage: "chamado",
+      stage_label: "Já chamei",
+      days_in_stage: 2,
+      touches: 1,
+      last_channel: "whatsapp",
+      move: { action: "esperar", reason: "Já foi chamado: espere a resposta.", due: new Date(now + 3 * day).toISOString() },
+    }),
+    demoProspect({
+      id: "w2",
+      business_name: "Açaí da Praia",
+      kind: "acaiteria",
+      kind_label: "Açaiteria",
+      neighborhood: "Areia Preta",
+      phone: "(84) 95555-4444",
+      whatsapp: "5584955554444",
+      instagram: null,
+      source: "indicacao",
+      source_label: "Indicação",
+      source_note: "Indicado pelo Seu Chico",
+      stage: "respondeu",
+      stage_label: "Respondeu",
+      days_in_stage: 1,
+      touches: 2,
+      last_channel: "whatsapp",
+      move: { action: "esperar", reason: "Você já respondeu: espere a vez dele.", due: new Date(now + 2 * day).toISOString() },
+    }),
+  ];
+  return {
+    today: { items: today, more: over.more ?? 0, touches_today: 3, notes: over.notes ?? [] },
+    waiting: { items: waiting, more: 0 },
+    funnel: {
+      total: 12,
+      paying: 1,
+      by_stage: [
+        { stage: "achado", label: "Achado", count: 5 },
+        { stage: "chamado", label: "Já chamei", count: 4 },
+        { stage: "respondeu", label: "Respondeu", count: 2 },
+        { stage: "demonstracao", label: "Viu a demonstração", count: 0 },
+        { stage: "cadastrou", label: "Cadastrou", count: 0 },
+        { stage: "pagando", label: "Pagando", count: 1 },
+        { stage: "nao_quer", label: "Não quer", count: 0 },
+        { stage: "sem_resposta", label: "Sem resposta", count: 3 },
+        { stage: "perdido", label: "Perdido", count: 0 },
+      ],
+      by_source: [
+        { source: "indicacao", label: "Indicação", total: 4, chamados: 4, responderam: 3, cadastraram: 1, pagando: 1, taxa_resposta: 0.75, taxa_cadastro: 0.333, taxa_pagamento: 1 },
+        { source: "anuncio_publico", label: "Anúncio público", total: 8, chamados: 0, responderam: 0, cadastraram: 0, pagando: 0, taxa_resposta: 0, taxa_cadastro: 0, taxa_pagamento: 0 },
+      ],
+    },
+  };
 }

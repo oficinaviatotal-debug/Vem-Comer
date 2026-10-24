@@ -16,6 +16,7 @@ import OrdersScreen from "./OrdersScreen";
 import PanelMenu from "./PanelMenu";
 import SettleScreen from "./SettleScreen";
 import ShareScreen from "./ShareScreen";
+import VendasScreen from "./VendasScreen";
 import KitchenScreen from "../cozinha/KitchenScreen";
 import TodayScreen from "../hoje/TodayScreen";
 import { isManager, viewTitle } from "../nav/navLogic";
@@ -251,6 +252,8 @@ function Panel({ companyId, companySlug, companyName, onBack, user, onLogout }: 
         return <HoursScreen key="hours" person={person} onMenu={openMenu} />;
       case "share":
         return <ShareScreen key="share" companyId={companyId} slug={companySlug} name={companyName ?? ""} person={person} onGo={go} onMenu={openMenu} />;
+      case "sales":
+        return <VendasScreen key="sales" senderName={user.name} onMenu={openMenu} />;
     }
   }
 
@@ -289,6 +292,7 @@ function Panel({ companyId, companySlug, companyName, onBack, user, onLogout }: 
           allowed={(screenName) => viewAllowed(screenName, planBlocked)}
           hasPlanTab={context.hasPlanTab}
           platformAdmin={platformAdmin}
+          newPanel
           openOrders={orders.open ?? 0}
           helpCount={platform.help}
           approvalsCount={platform.approvals}

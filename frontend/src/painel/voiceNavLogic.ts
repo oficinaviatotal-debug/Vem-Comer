@@ -152,6 +152,22 @@ const TARGETS: readonly Target[] = [
   { view: "plano", says: ["plano", "meu plano", "pagar o plano", "pagar plano", "mensalidade", "vencimento"] },
   { view: "aprovacoes", says: ["aprovacao", "aprovacoes", "aprovar", "o que espera meu aval"] },
   { view: "assinaturas", says: ["assinaturas"] },
+  {
+    view: "vendas",
+    says: [
+      "vendas do vem",
+      "vender o vem",
+      "maquina de vendas",
+      "caderno de vendas",
+      "conquistar",
+      "conquistar restaurantes",
+      "restaurantes novos",
+      "prospectar",
+      "prospeccao",
+      "quem procurar",
+      "quem procurar hoje",
+    ],
+  },
   { view: "ajuda", says: ["chamados de ajuda", "pedidos de ajuda", "chamados dos donos"] },
 ];
 
@@ -235,6 +251,8 @@ function spokenParts(view: string, role: string | null | undefined): Spoken {
       return { article: "as", noun: "aprovações" };
     case "assinaturas":
       return { article: "as", noun: "assinaturas" };
+    case "vendas":
+      return { article: "as", noun: "vendas do Vem" };
     case "ajuda":
       return { article: "os", noun: "chamados de ajuda" };
     default:

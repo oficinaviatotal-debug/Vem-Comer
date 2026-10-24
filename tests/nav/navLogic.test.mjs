@@ -183,9 +183,23 @@ test("every screen the menu opens exists in AdminPanel.tsx (and Hoje is the only
   const block = panel.match(/const ADMIN_VIEWS: string\[\] = \[([\s\S]*?)\];/);
   assert.ok(block, "ADMIN_VIEWS not found in AdminPanel.tsx");
   const known = [...block[1].matchAll(/"([a-z]+)"/g)].map((m) => m[1]);
-  for (const view of menuViews()) assert.ok(known.includes(view), `${view} is not an admin view`);
+  // the old panel never shows the screens that only exist in the new look (like Vendas)
+  for (const view of menuViews({ newPanel: false })) assert.ok(known.includes(view), `${view} is not an admin view`);
   // and the other way round: no screen of the panel is left without a way in
-  for (const view of known) assert.ok(menuViews().includes(view), `${view} has no menu entry`);
+  for (const view of known) assert.ok(menuViews({ newPanel: false }).includes(view), `${view} has no menu entry`);
+});
+
+test("Vendas only exists in the new panel and only for the owner of the platform", () => {
+  const roles = ["OWNER", "MANAGER", "WAITER", "CASHIER", "KITCHEN", "COURIER", null];
+  for (const role of roles) {
+    // the old panel never passes `newPanel`: Vendas must not leak into it, not even for the platform owner
+    assert.ok(!viewsOf(base(role, { platformAdmin: true })).includes("vendas"), `old panel, ${role}`);
+    assert.ok(!viewsOf(base(role, { platformAdmin: false, newPanel: true })).includes("vendas"), `new panel, not platform, ${role}`);
+  }
+  assert.ok(viewsOf(base("OWNER", { platformAdmin: true, newPanel: true })).includes("vendas"));
+  const group = menuFor(base("OWNER", { platformAdmin: true, newPanel: true })).find((item) => item.key === "plataforma");
+  assert.deepEqual(group.items.map((item) => item.view), ["aprovacoes", "assinaturas", "vendas", "ajuda"]);
+  assert.ok(menuViews().includes("vendas") && !menuViews({ newPanel: false }).includes("vendas"));
 });
 
 // ---------------------------------------------------------------- statuses

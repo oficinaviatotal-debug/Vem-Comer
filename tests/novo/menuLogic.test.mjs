@@ -17,6 +17,7 @@ const base = (extra = {}) => ({
   place: "Açaí do João",
   personName: "João",
   canHelp: true,
+  newPanel: true,
   ...extra,
 });
 const viewsOf = (menu) => menu.groups.flatMap((group) => group.items.map((item) => item.view));

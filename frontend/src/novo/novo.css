@@ -5755,3 +5755,277 @@ button.nv-now-cell:active {
   font-size: 15px;
   line-height: 1.35;
 }
+
+/* ---------- Vendas (o caderno do dono do sistema para conquistar restaurantes) ---------- */
+
+/* Botão de ação sem volta (dizer que o negócio não quer ser procurado, apagar): vermelho, nunca perto do verde. */
+.nv-btn.is-alert {
+  --nv-edge: #7a1409;
+  background: var(--nv-shine), var(--nv-alert);
+  color: #fff;
+}
+
+.nv-page-sales {
+  gap: 16px;
+}
+
+.nv-sale-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nv-sale-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-sale {
+  --nv-tape: var(--nv-fire);
+  gap: 10px;
+}
+
+.nv-sale-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nv-sale-name {
+  flex: 1 1 10em;
+  min-width: 0;
+  margin: 0;
+  font: 700 21px/1.15 var(--nv-display);
+  overflow-wrap: anywhere;
+}
+
+.nv-sale-meta,
+.nv-sale-contact,
+.nv-sale-origin,
+.nv-sale-line,
+.nv-sale-time,
+.nv-sale-subject,
+.nv-sale-ask {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.nv-sale-meta {
+  color: var(--nv-muted);
+  font-size: 15px;
+}
+
+.nv-sale-contact {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.nv-sale-origin {
+  color: var(--nv-muted);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.nv-sale-line {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.nv-sale-time {
+  color: var(--nv-fire-deep);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.nv-sale-time.is-good {
+  color: var(--nv-green);
+}
+
+/* Cada pedaço dentro do cartão (rascunho, perguntas, confirmação) é um vão liso: só informa. */
+.nv-sale-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--nv-r-md);
+  background: #f6f3ea;
+}
+
+.nv-sale-box.is-warn {
+  background: var(--nv-alert-soft);
+}
+
+.nv-sale-ask {
+  color: var(--nv-alert);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.nv-sale-subject {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+/* Os canais: botões de escolher (um só está ligado). A borda grossa mostra qual. */
+.nv-sale-chans {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nv-sale-chan {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 2px solid var(--nv-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--nv-ink);
+  font: 700 16px/1 var(--nv-ui);
+}
+
+.nv-sale-chan.is-on {
+  border-color: var(--nv-green);
+  background: var(--nv-green-soft);
+}
+
+.nv-sale-chan:focus-visible {
+  outline: 3px solid var(--nv-fire);
+  outline-offset: 2px;
+}
+
+.nv-sale-script {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding-left: 22px;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.nv-sale-script li {
+  overflow-wrap: anywhere;
+}
+
+.nv-sale-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nv-sale-note {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-peach);
+  color: var(--nv-ink);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.nv-sale-saved {
+  padding: 12px 14px;
+  border-radius: var(--nv-r-sm);
+  background: var(--nv-green-soft);
+  color: var(--nv-ink);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.nv-sale-readnote {
+  font-size: 15px;
+}
+
+.nv-sale-sender,
+.nv-sale-fieldrow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nv-sale-label {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.nv-sale-form {
+  gap: 14px;
+}
+
+/* O funil: cada etapa com a barra proporcional ao maior número e o número ao lado. */
+.nv-sale-funnel,
+.nv-sale-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nv-sale-funnel li {
+  display: grid;
+  grid-template-columns: minmax(0, 8.5em) minmax(0, 1fr) 2.2em;
+  align-items: center;
+  gap: 10px;
+}
+
+.nv-sale-funnel-label {
+  font-size: 15px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.nv-sale-funnel-bar {
+  height: 14px;
+  border-radius: 999px;
+  background: var(--nv-green-soft);
+  overflow: hidden;
+}
+
+.nv-sale-funnel-bar i {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: 999px;
+  background: var(--nv-green);
+}
+
+.nv-sale-funnel b {
+  font-size: 17px;
+  text-align: right;
+}
+
+.nv-sale-sources li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: var(--nv-r-md);
+  background: var(--nv-green-soft);
+  overflow-wrap: anywhere;
+}
+
+.nv-sale-sources li span {
+  color: var(--nv-muted);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+@media (max-width: 340px) {
+  .nv-sale-funnel li {
+    grid-template-columns: minmax(0, 6.5em) minmax(0, 1fr) 2em;
+    gap: 8px;
+  }
+
+  .nv-sale-name {
+    font-size: 19px;
+  }
+}
